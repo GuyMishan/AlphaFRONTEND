@@ -53,7 +53,7 @@ export function AppShell({ children, title = "מרכז התפעול" }: { childr
       <div className="workspace">
         <header className="topbar">
           <div className="topbar-title"><b>{title}</b><span>מערכת תפעול פנסיוני</span></div>
-          <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className="dot online" />חיבור API פעיל</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
+          <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className={`dot${session.mode === "demo" ? "" : " online"}`} />{session.mode === "demo" ? "מצב הדגמה" : "חיבור API פעיל"}</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
         </header>
         <main className="main">{children}</main>
       </div>
