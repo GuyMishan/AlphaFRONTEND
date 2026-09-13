@@ -3,18 +3,15 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, LockKeyhole } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { AuthBrand } from "@/components/auth-brand";
-import { alphaApi } from "@/lib/api";
+import { DEMO_CREDENTIALS } from "@/lib/demo-data";
 import { setSession } from "@/lib/session";
-
-const DEFAULT_DEV_USER = "00000000-0000-0000-0000-000000000001";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [userId, setUserId] = useState(DEFAULT_DEV_USER);
-  const [displayName, setDisplayName] = useState("מנהל מערכת");
-  const [platformAdmin, setPlatformAdmin] = useState(true);
+  const [nationalId, setNationalId] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -22,14 +19,13 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setError("");
-    setSession({ mode: "development", userId, platformAdmin, displayName });
-    try {
-      await alphaApi.organizations();
-      router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "ההתחברות נכשלה");
+    if (nationalId !== DEMO_CREDENTIALS.nationalId || phone !== DEMO_CREDENTIALS.phone) {
+      setError("תעודת הזהות או מספר הטלפון אינם תואמים לפרטי ההדגמה");
       setLoading(false);
+      return;
     }
+    setSession({ mode: "demo", platformAdmin: false, displayName: "משתמש הדגמה" });
+    router.push("/dashboard");
   }
 
   return (
@@ -40,23 +36,19 @@ export default function LoginPage() {
           <h2>כניסה למערכת</h2>
           <p>התחברו כדי להמשיך לסביבת העבודה שלכם</p>
           <div className="notice notice-info" style={{ marginBottom: 20 }}>
-            <LockKeyhole size={15} style={{ verticalAlign: "middle", marginLeft: 6 }} />
-            ה־Backend משתמש כרגע באימות Development Header. המסך יוחלף ב־OIDC כאשר יוגדר ספק הזהויות.
+            <ShieldCheck size={15} style={{ verticalAlign: "middle", marginLeft: 6 }} />
+            בעתיד יישלח קוד חד־פעמי למספר הטלפון לצורך אימות זהות.
           </div>
           <form className="form" onSubmit={submit}>
             <div className="field">
-              <label htmlFor="display-name">שם לתצוגה</label>
-              <input id="display-name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+              <label htmlFor="national-id">תעודת זהות</label>
+              <input id="national-id" inputMode="numeric" autoComplete="username" dir="ltr" value={nationalId} onChange={(e) => setNationalId(e.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="9 ספרות" required />
             </div>
             <div className="field">
-              <label htmlFor="user-id">מזהה משתמש (UUID)</label>
-              <input id="user-id" dir="ltr" value={userId} onChange={(e) => setUserId(e.target.value)} pattern="[0-9a-fA-F-]{36}" required />
-              <small>נשלח לשרת כ־X-User-Id, בהתאם לחוזה האימות הקיים.</small>
+              <label htmlFor="phone">מספר טלפון</label>
+              <input id="phone" type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="05XXXXXXXX" required />
             </div>
-            <label className="check-row">
-              <input type="checkbox" checked={platformAdmin} onChange={(e) => setPlatformAdmin(e.target.checked)} />
-              כניסה כמנהל פלטפורמה בסביבת הפיתוח
-            </label>
+            <div className="notice notice-warning"><b>פרטי כניסה להדגמה</b><br />תעודת זהות: <span dir="ltr">123456789</span><br />טלפון: <span dir="ltr">0501234567</span></div>
             {error ? <div className="notice notice-error">{error}</div> : null}
             <button className="btn btn-primary btn-lg wide" disabled={loading}>
               {loading ? "מתחבר..." : "כניסה למערכת"}<ArrowLeft size={18} />
