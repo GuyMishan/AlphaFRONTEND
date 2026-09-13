@@ -55,7 +55,7 @@ export default function NewReportPage() {
   }
 
   return (
-    <AppShell title="דיווח חדש">
+    <AppShell title="דיווח חדש" hideScopeController={step > 1}>
       <div className="wizard">
         <div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer ? `${employer.legalName} · ח.פ. ${employer.registrationNumber}` : "יש לבחור מעסיק בבורר העליון"}</p></div></div>
         <div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>
