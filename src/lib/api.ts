@@ -1,5 +1,6 @@
 import { getSession } from "./session";
 import type { ApiProblem, Employee, Employer, Organization } from "./types";
+import { demoEmployees, demoEmployers, demoOrganizations } from "./demo-data";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public problem?: ApiProblem) {
@@ -31,10 +32,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const alphaApi = {
   health: () => request<{ status: string; service: string }>("/health"),
-  organizations: () => request<Organization[]>("/api/organizations/"),
-  employers: (organizationId: string) => request<Employer[]>(`/api/organizations/${organizationId}/employers/`),
-  employees: (organizationId: string, employerId: string) =>
-    request<Employee[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees`),
+  organizations: (): Promise<Organization[]> => getSession()?.mode === "demo"
+    ? Promise.resolve(demoOrganizations)
+    : request<Organization[]>("/api/organizations/"),
+  employers: (organizationId: string): Promise<Employer[]> => getSession()?.mode === "demo"
+    ? Promise.resolve(demoEmployers.filter((item) => item.organizationId === organizationId))
+    : request<Employer[]>(`/api/organizations/${organizationId}/employers/`),
+  employees: (organizationId: string, employerId: string): Promise<Employee[]> => getSession()?.mode === "demo"
+    ? Promise.resolve(demoEmployers.some((item) => item.id === employerId && item.organizationId === organizationId) ? demoEmployees : [])
+    : request<Employee[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees`),
   createUser: (payload: { externalSubject: string; email: string; displayName: string }) =>
     request<{ id: string }>("/api/platform/users", { method: "POST", body: JSON.stringify(payload) }),
 };
