@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Building2, Network, UserRound } from "lucide-react";
+import { Building2, UserRound } from "lucide-react";
 import { alphaApi } from "@/lib/api";
 import {
   getEmployeeSelection,
@@ -103,7 +103,6 @@ export function ScopeController() {
 
   return (
     <div className="scopebar" aria-label="בחירת הקשר עבודה">
-      <div className="scopebar-label"><Network size={18} /><span><b>הקשר עבודה</b><small>הנתונים במסך מסוננים לפי הבחירה</small></span></div>
       <div className="scope-selects">
         <label><span>ארגון</span><div><Building2 size={16} /><select value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>{organizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div></label>
         {level !== "organization" ? <label><span>מעסיק</span><div><Building2 size={16} /><select value={employerId} disabled={loading || !organizationId} onChange={(event) => void changeEmployer(event.target.value)}>{employers.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)}</select></div></label> : null}
