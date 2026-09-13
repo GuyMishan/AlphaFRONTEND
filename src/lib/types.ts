@@ -29,7 +29,7 @@ export type Employee = {
 };
 
 export type Session = {
-  mode: "development" | "oidc";
+  mode: "development" | "oidc" | "demo";
   userId?: string;
   accessToken?: string;
   platformAdmin: boolean;
