@@ -74,6 +74,17 @@ a { color: inherit; text-decoration: none; }
 .user-chip { display: flex; gap: 10px; align-items: center; }
 .avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
 .main { padding: 32px 34px 60px; max-width: 1500px; margin: auto; }
+.scopebar { min-height: 82px; padding: 13px 34px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.scopebar-label { display: flex; align-items: center; gap: 10px; color: var(--navy); white-space: nowrap; }
+.scopebar-label > svg { color: var(--blue); }
+.scopebar-label span, .scopebar-label b, .scopebar-label small { display: block; }
+.scopebar-label small { color: var(--muted); font-weight: 400; }
+.scope-selects { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.scope-selects label > span { display: block; font-size: 11px; color: var(--muted); font-weight: 650; margin: 0 2px 3px; }
+.scope-selects label > div { position: relative; }
+.scope-selects label svg { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--blue); pointer-events: none; }
+.scope-selects select { min-width: 210px; height: 39px; border: 1px solid var(--line); border-radius: 9px; background: #f9fbfd; color: var(--text); padding: 0 37px 0 32px; outline: none; cursor: pointer; }
+.scope-selects select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(40,101,216,.1); }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
 .page-head h1 { font-size: 30px; margin: 0 0 5px; }
 .page-head p { color: var(--muted); margin: 0; }
@@ -163,6 +174,9 @@ td { font-size: 14px; }
   .sidebar { display: none; }
   .topbar { padding: 0 18px; }
   .main { padding: 24px 18px 45px; }
+  .scopebar { padding: 12px 18px; align-items: stretch; flex-direction: column; gap: 10px; }
+  .scope-selects { display: grid; width: 100%; justify-content: stretch; }
+  .scope-selects select { width: 100%; }
   .page-head { align-items: stretch; flex-direction: column; }
   .stats, .two-cols { grid-template-columns: 1fr; }
   .steps { grid-template-columns: repeat(4, minmax(75px, 1fr)); overflow-x: auto; padding-bottom: 8px; }

@@ -5,11 +5,10 @@ import Link from "next/link";
 import { AlertTriangle, ArrowLeft, Building2, CircleCheck, FilePenLine, FilePlus2, Search, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { alphaApi } from "@/lib/api";
-import { getEmployerSelection, setEmployerSelection } from "@/lib/session";
-import type { Employer, Organization } from "@/lib/types";
+import { getEmployerSelection, getOrganizationSelection, setEmployerSelection } from "@/lib/session";
+import type { Employer } from "@/lib/types";
 
 export default function DashboardPage() {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationId, setOrganizationId] = useState("");
   const [employers, setEmployers] = useState<Employer[]>([]);
   const [employerId, setEmployerId] = useState("");
@@ -19,9 +18,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     alphaApi.organizations().then((items) => {
-      setOrganizations(items);
-      const saved = getEmployerSelection();
-      setOrganizationId(saved?.organizationId && items.some((x) => x.id === saved.organizationId) ? saved.organizationId : items[0]?.id ?? "");
+      const saved = getOrganizationSelection();
+      setOrganizationId(saved && items.some((item) => item.id === saved) ? saved : items[0]?.id ?? "");
     }).catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגונים נכשלה")).finally(() => setLoading(false));
   }, []);
 
@@ -66,10 +64,7 @@ export default function DashboardPage() {
       <section className="grid content-grid">
         <div className="card">
           <div className="card-head"><div><h2>בחירת מעסיק</h2><span style={{ color: "var(--muted)" }}>מוצגים רק מעסיקים שהמשתמש רשאי לגשת אליהם</span></div></div>
-          <div className="toolbar">
-            <div className="field" style={{ minWidth: 220 }}><select aria-label="בחירת ארגון" value={organizationId} onChange={(e) => setOrganizationId(e.target.value)}>{organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}</select></div>
-            <div className="search"><Search size={17} /><input placeholder="חיפוש לפי שם או ח.פ..." value={query} onChange={(e) => setQuery(e.target.value)} /></div>
-          </div>
+          <div className="toolbar"><div className="search"><Search size={17} /><input placeholder="חיפוש לפי שם או ח.פ..." value={query} onChange={(e) => setQuery(e.target.value)} /></div></div>
           {loading ? <div className="empty">טוען נתונים מה־Backend...</div> : filtered.length ? (
             <div className="employer-list">{filtered.map((employer) => <button key={employer.id} className={`employer${employer.id === employerId ? " active" : ""}`} onClick={() => chooseEmployer(employer.id)}><span className="employer-logo">{employer.legalName.slice(0, 2)}</span><span className="employer-info"><b>{employer.legalName}</b><span>ח.פ. {employer.registrationNumber} · תיק ניכויים {employer.withholdingFileNumber}</span></span><span className={employer.status === 2 ? "badge badge-green" : "badge badge-orange"}>{employer.status === 2 ? "פעיל" : "בתהליך הקמה"}</span></button>)}</div>
           ) : <div className="empty"><Building2 size={34} /><div>לא נמצאו מעסיקים בארגון הזה.</div></div>}

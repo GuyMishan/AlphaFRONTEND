@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Building2, FileClock, FilePlus2, Gauge, LogOut, Settings, ShieldCheck, Users } from "lucide-react";
 import { Brand } from "./brand";
+import { ScopeController } from "./scope-controller";
 import { clearSession, getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
@@ -55,6 +56,7 @@ export function AppShell({ children, title = "מרכז התפעול" }: { childr
           <div className="topbar-title"><b>{title}</b><span>מערכת תפעול פנסיוני</span></div>
           <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className={`dot${session.mode === "demo" ? "" : " online"}`} />{session.mode === "demo" ? "מצב הדגמה" : "חיבור API פעיל"}</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
         </header>
+        <ScopeController />
         <main className="main">{children}</main>
       </div>
     </div>

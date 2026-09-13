@@ -57,7 +57,7 @@ export default function NewReportPage() {
   return (
     <AppShell title="דיווח חדש">
       <div className="wizard">
-        <div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer ? `${employer.legalName} · ח.פ. ${employer.registrationNumber}` : "יש לבחור מעסיק לפני יצירת דיווח"}</p></div><button className="btn btn-secondary" onClick={() => router.push("/dashboard")}>החלפת מעסיק</button></div>
+        <div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer ? `${employer.legalName} · ח.פ. ${employer.registrationNumber}` : "יש לבחור מעסיק בבורר העליון"}</p></div></div>
         <div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>
         {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
         {loading ? <div className="card empty">טוען את המעסיק והעובדים מה־Backend...</div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : (
