@@ -91,8 +91,60 @@
   .card-head > div { min-width: 0; }
   .card-head span { overflow-wrap: anywhere; }
 
+  .field { min-width: 0; width: 100%; }
+  .field input, .field select, .field textarea {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  .field input[type="date"],
+  .field input[type="month"] {
+    display: block;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    inline-size: 100%;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
   .toolbar, .search { min-width: 0; width: 100%; }
   .search input { min-width: 0; width: 100%; }
+
+  .wizard { width: 100%; max-width: 100%; min-width: 0; }
+  .wizard > .card { width: 100%; min-width: 0; overflow: hidden; }
+  .wizard-footer { margin: 24px -17px -17px; padding: 16px 17px; gap: 10px; }
+  .wizard-footer .btn { min-width: 0; }
+
+  .upload-zone {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 28px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .upload-zone h3 {
+    width: 100%;
+    max-width: 100%;
+    margin: 12px 0 6px;
+    font-size: 16px;
+    line-height: 1.45;
+    text-align: center;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .upload-zone p {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 15px;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .upload-zone .btn { width: 100%; max-width: 260px; }
 
   .employer-list { min-width: 0; width: 100%; }
   .employer {
