@@ -28,12 +28,12 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
 
   return <>
     <div className="card-head deposit-head">
-      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>כל שורה מייצגת מוצר פנסיוני של עובד. לחצו עריכה כדי לעדכן את פרטי המוצר וההפקדות.</span></div>
+      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>הנתונים במסך זה שייכים לדיווח הנוכחי בלבד. כל שורה מייצגת מוצר פנסיוני של עובד בתוך הדיווח הזה.</span></div>
       <div className="deposit-summary"><span className="badge badge-blue">{rows.length} שורות</span><span className="badge badge-green">סה״כ ₪{total.toLocaleString("he-IL")}</span></div>
     </div>
     <div className="toolbar deposit-toolbar"><div className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void load()} placeholder="עובד, ת״ז או מספר פוליסה" /></div><button className="btn btn-soft" onClick={() => void load()}>חיפוש</button></div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 12 }}>{error}</div> : null}
-    {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד.</span></div> : <div className="deposit-table-wrap"><table className="deposit-table"><thead><tr><th>עובד / מוצר</th><th>מס׳ פוליסה</th><th>סכום הפקדה</th><th>חודש שכר</th><th>שכר</th><th>סוג דיווח</th><th>רובד</th><th></th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><b>{row.employeeName}</b><span>{productNames[row.productType] ?? "מוצר"} · ת״ז {row.nationalId}</span></td><td>{row.policyNumber || "—"}</td><td>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</td><td>{row.salaryMonth?.slice(0, 7)}</td><td>₪{Number(row.salary).toLocaleString("he-IL")}</td><td>{row.reportingType}</td><td>{row.salaryLayer}</td><td><button className="icon-button" aria-label="עריכה" onClick={() => setEditing(row)}><Pencil size={17} /></button></td></tr>)}</tbody></table></div>}
+    {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <div className="deposit-table-wrap"><table className="deposit-table"><thead><tr><th>עובד / מוצר</th><th>מס׳ פוליסה</th><th>סכום הפקדה</th><th>חודש שכר</th><th>שכר</th><th>סוג דיווח</th><th>רובד</th><th></th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><b>{row.employeeName}</b><span>{productNames[row.productType] ?? "מוצר"} · ת״ז {row.nationalId}</span></td><td>{row.policyNumber || "—"}</td><td>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</td><td>{row.salaryMonth?.slice(0, 7)}</td><td>₪{Number(row.salary).toLocaleString("he-IL")}</td><td>{row.reportingType}</td><td>{row.salaryLayer}</td><td><button className="icon-button" aria-label="עריכה" onClick={() => setEditing(row)}><Pencil size={17} /></button></td></tr>)}</tbody></table></div>}
     {editing ? <DepositEditor organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); }} /> : null}
   </>;
 }
@@ -86,7 +86,7 @@ function DepositEditor({ organizationId, employerId, reportId, row, onClose, onS
   }
 
   return <div className="report-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><div className="report-modal deposit-editor-modal" role="dialog" aria-modal="true">
-    <div className="report-modal-header"><div><h2>עריכת נתוני הפקדה</h2><span>{row.employeeName} · {productNames[row.productType] ?? "מוצר"}</span></div><button className="icon-button" onClick={onClose}><X size={20} /></button></div>
+    <div className="report-modal-header"><div><h2>עריכת נתוני הפקדה</h2><span>{row.employeeName} · {productNames[row.productType] ?? "מוצר"} · לדיווח הנוכחי בלבד</span></div><button className="icon-button" onClick={onClose}><X size={20} /></button></div>
     <div className="report-modal-body">{error ? <div className="notice notice-error">{error}</div> : !product ? <div className="empty">טוען...</div> : <>
       <div className="deposit-editor-grid">
         <div className="field"><label>מס׳ פוליסה</label><input value={product.policyNumber} onChange={(e) => patch({ policyNumber: e.target.value })} /></div>
