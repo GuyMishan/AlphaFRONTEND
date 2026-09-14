@@ -13,10 +13,11 @@ type Props<T> = {
   maxHeight?: number;
   overscan?: number;
   tableClassName?: string;
+  wrapperClassName?: string;
   onRowClick?: (item: T) => void;
 };
 
-export function VirtualizedTable<T>({ items, columns, rowKey, renderCells, rowHeight = 56, maxHeight = 520, overscan = 6, tableClassName = "", onRowClick }: Props<T>) {
+export function VirtualizedTable<T>({ items, columns, rowKey, renderCells, rowHeight = 56, maxHeight = 520, overscan = 6, tableClassName = "", wrapperClassName = "", onRowClick }: Props<T>) {
   const [scrollTop, setScrollTop] = useState(0);
   const viewportRows = Math.ceil(maxHeight / rowHeight);
   const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
@@ -25,7 +26,7 @@ export function VirtualizedTable<T>({ items, columns, rowKey, renderCells, rowHe
   const top = start * rowHeight;
   const bottom = Math.max(0, (items.length - end) * rowHeight);
 
-  return <div className="table-wrap virtual-table-wrap" style={{ maxHeight, overflowY: "auto" }} onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}>
+  return <div className={`table-wrap virtual-table-wrap ${wrapperClassName}`.trim()} style={{ maxHeight, overflowY: "auto" }} onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}>
     <table className={tableClassName}>
       <thead><tr>{columns.map((column) => <th key={column.key} style={column.width ? { width: column.width } : undefined}>{column.label}</th>)}</tr></thead>
       <tbody>
