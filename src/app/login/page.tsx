@@ -19,13 +19,42 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setError("");
-    if (nationalId !== DEMO_CREDENTIALS.nationalId || phone !== DEMO_CREDENTIALS.phone) {
-      setError("תעודת הזהות או מספר הטלפון אינם תואמים לפרטי ההדגמה");
+
+    try {
+      const response = await fetch("/api/backend/api/auth/prototype-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ nationalId, phone }),
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        setError(response.status === 401
+          ? "תעודת הזהות או מספר הטלפון אינם תואמים לפרטי ההדגמה"
+          : "לא ניתן להתחבר כרגע. נסו שוב בעוד רגע.");
+        return;
+      }
+
+      const result = await response.json() as {
+        accessToken: string;
+        userId: string;
+        platformAdmin: boolean;
+        displayName: string;
+      };
+
+      setSession({
+        mode: "oidc",
+        accessToken: result.accessToken,
+        userId: result.userId,
+        platformAdmin: result.platformAdmin,
+        displayName: result.displayName,
+      });
+      router.push("/dashboard");
+    } catch {
+      setError("לא ניתן להתחבר כרגע. נסו שוב בעוד רגע.");
+    } finally {
       setLoading(false);
-      return;
     }
-    setSession({ mode: "demo", platformAdmin: false, displayName: "משתמש הדגמה" });
-    router.push("/dashboard");
   }
 
   return (
@@ -48,7 +77,7 @@ export default function LoginPage() {
               <label htmlFor="phone">מספר טלפון</label>
               <input id="phone" type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="05XXXXXXXX" required />
             </div>
-            <div className="notice notice-warning"><b>פרטי כניסה להדגמה</b><br />תעודת זהות: <span dir="ltr">123456789</span><br />טלפון: <span dir="ltr">0501234567</span></div>
+            <div className="notice notice-warning"><b>פרטי כניסה להדגמה</b><br />תעודת זהות: <span dir="ltr">{DEMO_CREDENTIALS.nationalId}</span><br />טלפון: <span dir="ltr">{DEMO_CREDENTIALS.phone}</span></div>
             {error ? <div className="notice notice-error">{error}</div> : null}
             <button className="btn btn-primary btn-lg wide" disabled={loading}>
               {loading ? "מתחבר..." : "כניסה למערכת"}<ArrowLeft size={18} />
