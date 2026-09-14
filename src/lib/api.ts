@@ -45,7 +45,7 @@ export const alphaApi = {
     ? Promise.resolve({ canCreateEmployer: true })
     : request<OrganizationCapabilities>(`/api/organizations/${organizationId}/capabilities`),
   employerCapabilities: (organizationId: string, employerId: string): Promise<EmployerCapabilities> => getSession()?.mode === "demo"
-    ? Promise.resolve({ canCreateEmployee: true })
+    ? Promise.resolve({ canEditEmployer: true, canCreateEmployee: true, canEditEmployee: true })
     : request<EmployerCapabilities>(`/api/organizations/${organizationId}/employers/${employerId}/capabilities`),
   createEmployer: (organizationId: string, payload: EmployerInput) => getSession()?.mode === "demo"
     ? Promise.resolve({ id: crypto.randomUUID(), organizationId, ...payload, status: 1 } as Employer)
