@@ -13,7 +13,19 @@ export default function EmployeeProfilePage() {
   const { organizationId, employerId } = useQueryContext();
   const [employee, setEmployee] = useState<Employee>();
   const [employer, setEmployer] = useState<Employer>();
+  const [canEditEmployee, setCanEditEmployee] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => { if (organizationId && employerId && id) Promise.all([alphaApi.employee(organizationId, employerId, id), alphaApi.employer(organizationId, employerId)]).then(([person, company]) => { setEmployee(person); setEmployer(company); }).catch((err) => setError(err instanceof Error ? err.message : "טעינת העובד נכשלה")); }, [id, organizationId, employerId]);
-  return <AppShell title="פרופיל עובד" hideScopeController><div className="page-head"><div><h1>פרופיל עובד</h1><p>{employer ? <>משויך אל <a className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}>{employer.legalName}</a></> : "פרטי העובד וההעסקה"}</p></div></div>{error ? <div className="notice notice-error">{error}</div> : employee ? <EmployeeForm organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} /> : <div className="empty">טוען פרופיל...</div>}</AppShell>;
+  useEffect(() => {
+    if (!organizationId || !employerId || !id) return;
+    Promise.all([
+      alphaApi.employee(organizationId, employerId, id),
+      alphaApi.employer(organizationId, employerId),
+      alphaApi.employerCapabilities(organizationId, employerId)
+    ]).then(([person, company, capabilities]) => {
+      setEmployee(person);
+      setEmployer(company);
+      setCanEditEmployee(capabilities.canEditEmployee);
+    }).catch((err) => setError(err instanceof Error ? err.message : "טעינת העובד נכשלה"));
+  }, [id, organizationId, employerId]);
+  return <AppShell title="פרופיל עובד" hideScopeController><div className="page-head"><div><h1>פרופיל עובד</h1><p>{employer ? <>משויך אל <a className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}>{employer.legalName}</a></> : "פרטי העובד וההעסקה"}</p></div></div>{error ? <div className="notice notice-error">{error}</div> : employee ? <EmployeeForm organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /> : <div className="empty">טוען פרופיל...</div>}</AppShell>;
 }
