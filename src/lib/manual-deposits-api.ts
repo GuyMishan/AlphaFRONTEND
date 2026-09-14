@@ -1,5 +1,4 @@
 import { getSession } from "./session";
-import type { ManualProductInput, ManualReportEmployeeDetail } from "./types";
 
 export type ManualDepositRow = {
   id: string;
@@ -16,7 +15,21 @@ export type ManualDepositRow = {
   section14: boolean;
   section14StartDate: string | null;
   totalDeposit: number;
+  providerName: string;
+  providerAccount: string;
+  paymentMethod: string;
+  valueDate: string | null;
+  referenceNumber: string;
+  employerBankName: string;
+  employerBankCode: string;
+  employerBranch: string;
+  employerAccount: string;
+  confirmationFileName: string;
 };
+
+export type ManualPaymentInput = Pick<ManualDepositRow,
+  "providerName" | "providerAccount" | "paymentMethod" | "valueDate" | "referenceNumber" |
+  "employerBankName" | "employerBankCode" | "employerBranch" | "employerAccount" | "confirmationFileName">;
 
 export type DepositPage = { items: ManualDepositRow[]; hasMore: boolean };
 
@@ -37,11 +50,9 @@ export const manualDepositsApi = {
     const params = new URLSearchParams({ search, skip: String(skip), take: String(take) });
     return request<DepositPage>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/deposits?${params}`);
   },
-  employee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string) =>
-    request<ManualReportEmployeeDetail>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`),
-  saveEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string, products: ManualProductInput[]) =>
-    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`, {
+  savePayment: (organizationId: string, employerId: string, reportId: string, reportProductId: string, payload: ManualPaymentInput) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/deposits/${reportProductId}`, {
       method: "PUT",
-      body: JSON.stringify({ products }),
+      body: JSON.stringify(payload),
     }),
 };
