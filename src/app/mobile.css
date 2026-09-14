@@ -1,0 +1,131 @@
+.topbar-leading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.mobile-sidebar { display: none; }
+.mobile-sidebar-backdrop { display: none; }
+.mobile-close { display: none; }
+
+@media (max-width: 760px) {
+  html, body { max-width: 100%; overflow-x: hidden; }
+
+  .workspace { width: 100%; max-width: 100vw; overflow-x: hidden; }
+  .topbar { height: 68px; padding: 0 14px; gap: 10px; }
+  .topbar-leading { min-width: 0; flex: 1; }
+  .topbar-title { min-width: 0; }
+  .topbar-title b, .topbar-title span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-title span { font-size: 12px; }
+  .user-chip { flex: 0 0 auto; }
+  .avatar { width: 34px; height: 34px; }
+
+  .mobile-menu {
+    display: inline-grid !important;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: white;
+    color: var(--navy);
+    cursor: pointer;
+  }
+
+  .mobile-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    border: 0;
+    padding: 0;
+    background: rgba(7, 20, 34, .48);
+    backdrop-filter: blur(2px);
+  }
+
+  .mobile-sidebar {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 90;
+    width: min(84vw, 310px);
+    height: 100dvh;
+    padding: 20px 16px;
+    background: var(--navy);
+    color: white;
+    box-shadow: -18px 0 48px rgba(5, 19, 33, .28);
+    transform: translateX(105%);
+    transition: transform .22s ease;
+    visibility: hidden;
+  }
+  .mobile-sidebar.open { transform: translateX(0); visibility: visible; }
+  .mobile-sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .mobile-sidebar-head .brand { padding: 0; }
+  .mobile-close {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 10px;
+    background: rgba(255,255,255,.08);
+    color: white;
+    cursor: pointer;
+  }
+  .mobile-sidebar .nav { min-width: 0; }
+  .mobile-sidebar .nav a { width: 100%; }
+  .mobile-sidebar .sidebar-bottom { margin-top: auto; }
+
+  .main { width: 100%; max-width: 100%; padding: 20px 14px 40px; overflow-x: hidden; }
+  .scopebar { width: 100%; padding: 10px 14px; overflow-x: hidden; }
+  .scope-selects, .scope-selects label, .scope-selects label > div { min-width: 0; width: 100%; }
+  .scope-selects select { min-width: 0; width: 100%; max-width: 100%; }
+
+  .page-head { width: 100%; min-width: 0; margin-bottom: 20px; }
+  .page-head > div { min-width: 0; }
+  .page-head h1 { font-size: 25px; line-height: 1.2; }
+  .page-head .btn { width: 100%; }
+
+  .grid, .content-grid, .stats { width: 100%; min-width: 0; }
+  .card, .stat-card { min-width: 0; max-width: 100%; }
+  .card { padding: 17px; }
+  .card-head { min-width: 0; align-items: flex-start; }
+  .card-head > div { min-width: 0; }
+  .card-head span { overflow-wrap: anywhere; }
+
+  .toolbar, .search { min-width: 0; width: 100%; }
+  .search input { min-width: 0; width: 100%; }
+
+  .employer-list { min-width: 0; width: 100%; }
+  .employer {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+    gap: 9px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .employer-select { min-width: 0; width: 100%; gap: 10px; }
+  .employer-logo { width: 38px; height: 38px; }
+  .employer-info { min-width: 0; max-width: 100%; }
+  .employer-info b, .employer-info span { max-width: 100%; }
+  .employer > .btn { grid-column: 1; width: fit-content; max-width: 100%; padding: 8px 11px; }
+  .employer > .badge { grid-column: 2; grid-row: 2; justify-self: end; white-space: nowrap; }
+
+  .quick-actions { min-width: 0; width: 100%; }
+  .quick-action {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+    gap: 10px;
+  }
+  .quick-action > span:nth-child(2) { min-width: 0; flex: 1; }
+  .quick-action > span:nth-child(2) b,
+  .quick-action > span:nth-child(2) span { white-space: normal; overflow-wrap: anywhere; }
+  .quick-action-icon { flex: 0 0 38px; }
+  .quick-action > svg { flex: 0 0 auto; }
+
+  .notice { max-width: 100%; overflow-wrap: anywhere; }
+  .steps { max-width: 100%; }
+}
