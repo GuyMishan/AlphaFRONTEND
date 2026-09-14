@@ -41,26 +41,17 @@
 .contribution-table th:first-child { min-width: 110px; }
 .contribution-table input { width: 100%; min-width: 110px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; text-align: right; background: #fff; }
 
+.virtual-table-wrap thead { position: sticky; top: 0; z-index: 2; background: white; }
+.virtual-table-wrap .virtual-spacer:hover { background: transparent; }
 .deposit-head { gap: 14px; }
 .deposit-summary { display: flex; gap: 8px; flex-wrap: wrap; }
 .deposit-toolbar { margin-bottom: 14px; }
 .deposit-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
-.deposit-table { width: 100%; min-width: 980px; }
+.deposit-table { width: 100%; min-width: 1180px; }
 .deposit-table td:first-child b, .deposit-table td:first-child span { display: block; }
 .deposit-table td:first-child span { color: var(--muted); font-size: 12px; margin-top: 2px; }
-.deposit-editor-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
-.mobile-contribution-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.mobile-contribution-card { border: 1px solid var(--line); border-radius: 12px; background: white; padding: 12px; min-width: 0; }
-.mobile-contribution-card > b { display: block; margin-bottom: 9px; }
-.mobile-contribution-card label { display: block; margin-top: 8px; }
-.mobile-contribution-card label span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
-.mobile-contribution-card input { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 8px; box-sizing: border-box; }
 
-@media (max-width: 900px) {
-  .report-product-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .deposit-editor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .mobile-contribution-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
+@media (max-width: 900px) { .report-product-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 @media (max-width: 760px) {
   .manual-report-head { display: grid; }
@@ -70,7 +61,6 @@
   .manual-employee-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; padding: 11px; }
   .manual-employee-products { grid-column: 2 / 4; justify-self: start; }
   .manual-edit-btn { grid-column: 3; grid-row: 1; min-width: 0; padding: 8px 10px; }
-
   .report-modal-backdrop { padding: 0; place-items: stretch; }
   .report-modal { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; }
   .report-modal-header, .report-modal-footer { padding: 14px; }
@@ -82,8 +72,6 @@
   .employee-report-summary { grid-template-columns: 1fr; }
   .report-product-card { padding: 10px; min-width: 0; overflow: hidden; }
   .report-product-fields { grid-template-columns: 1fr; }
-
-  /* Keep employer/employee contributions table-shaped on phones, but compact enough to fit the viewport. */
   .contribution-section { margin-top: 14px; }
   .contribution-section h3 { margin-bottom: 6px; font-size: 14px; }
   .contribution-table-wrap { overflow: hidden; width: 100%; max-width: 100%; }
@@ -95,29 +83,22 @@
 
   .deposit-head { display: grid; }
   .deposit-toolbar { display: grid; }
-  .deposit-toolbar .btn { width: 100%; }
-  .deposit-table-wrap { overflow: visible; border: 0; }
+  .deposit-table-wrap { border: 0; max-height: 62vh !important; overflow-y: auto !important; overflow-x: hidden !important; }
   .deposit-table { min-width: 0; width: 100%; display: block; }
   .deposit-table thead { display: none; }
   .deposit-table tbody { display: grid; gap: 10px; }
-  .deposit-table tr { display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: white; }
+  .deposit-table tr:not(.virtual-spacer) { display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: white; height: auto !important; }
   .deposit-table td { border: 0 !important; padding: 0 !important; min-width: 0; }
   .deposit-table td:first-child { grid-column: 1 / 2; }
   .deposit-table td:last-child { grid-column: 2; grid-row: 1; }
-  .deposit-table td:nth-child(n+2):not(:last-child) { grid-column: 1 / -1; display: grid; grid-template-columns: 120px minmax(0,1fr); gap: 8px; }
-  .deposit-table td:nth-child(2)::before { content: "מס׳ פוליסה"; color: var(--muted); }
-  .deposit-table td:nth-child(3)::before { content: "סכום הפקדה"; color: var(--muted); }
-  .deposit-table td:nth-child(4)::before { content: "חודש שכר"; color: var(--muted); }
-  .deposit-table td:nth-child(5)::before { content: "שכר"; color: var(--muted); }
-  .deposit-table td:nth-child(6)::before { content: "סוג דיווח"; color: var(--muted); }
-  .deposit-table td:nth-child(7)::before { content: "רובד"; color: var(--muted); }
-  .deposit-editor-grid { grid-template-columns: 1fr; }
-
-  /* Deposit editor uses the same compact horizontal matrix on mobile instead of tall stacked cards. */
-  .mobile-contribution-grid { grid-template-columns: 1fr; gap: 5px; }
-  .mobile-contribution-card { display: grid; grid-template-columns: 58px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: end; padding: 6px; border-radius: 8px; }
-  .mobile-contribution-card > b { margin: 0; align-self: center; font-size: 12px; }
-  .mobile-contribution-card label { min-width: 0; margin: 0; }
-  .mobile-contribution-card label span { font-size: 9px; line-height: 1.1; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mobile-contribution-card input { min-width: 0; width: 100%; padding: 5px 3px; border-radius: 6px; font-size: 12px; }
+  .deposit-table td:nth-child(n+2):not(:last-child) { grid-column: 1 / -1; display: grid; grid-template-columns: 125px minmax(0,1fr); gap: 8px; }
+  .deposit-table td:nth-child(2)::before { content: "חשבון יצרן"; color: var(--muted); }
+  .deposit-table td:nth-child(3)::before { content: "סכום לתשלום"; color: var(--muted); }
+  .deposit-table td:nth-child(4)::before { content: "אופן תשלום"; color: var(--muted); }
+  .deposit-table td:nth-child(5)::before { content: "חשבון מעסיק"; color: var(--muted); }
+  .deposit-table td:nth-child(6)::before { content: "מס׳ אסמכתא"; color: var(--muted); }
+  .deposit-table td:nth-child(7)::before { content: "תאריך ערך"; color: var(--muted); }
+  .deposit-table td:nth-child(8)::before { content: "סוג דיווח"; color: var(--muted); }
+  .deposit-table tr.virtual-spacer { display: block; border: 0; padding: 0; background: transparent; }
+  .deposit-table tr.virtual-spacer td { display: block !important; width: 1px; }
 }
