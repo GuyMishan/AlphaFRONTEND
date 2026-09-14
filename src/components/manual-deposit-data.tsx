@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Search, X } from "lucide-react";
-import { manualDepositsApi, type ManualDepositRow } from "@/lib/manual-deposits-api";
-import type { ContributionComponent, ManualContributionInput, ManualProductInput, PensionProductType } from "@/lib/types";
+import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, X } from "lucide-react";
+import { alphaApi } from "@/lib/api";
+import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
+import type { Employer } from "@/lib/types";
 
 const productNames: Record<number, string> = { 1: "קרן פנסיה", 2: "קרן השתלמות", 3: "ביטוח מנהלים", 4: "קופת גמל", 99: "אחר" };
-const contributionLabels: Record<number, string> = { 1: "פיצויים", 2: "תגמולים", 3: "אכ״ע", 4: "שונות" };
 
 export function ManualDepositData({ organizationId, employerId, reportId }: { organizationId: string; employerId: string; reportId: string }) {
   const [rows, setRows] = useState<ManualDepositRow[]>([]);
@@ -14,6 +14,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<ManualDepositRow | null>(null);
+  const [employer, setEmployer] = useState<Employer | null>(null);
 
   async function load() {
     setLoading(true); setError("");
@@ -22,87 +23,123 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
     finally { setLoading(false); }
   }
 
-  useEffect(() => { void load(); }, [organizationId, employerId, reportId]);
+  useEffect(() => {
+    void load();
+    alphaApi.employer(organizationId, employerId).then(setEmployer).catch(() => setEmployer(null));
+  }, [organizationId, employerId, reportId]);
 
   const total = useMemo(() => rows.reduce((sum, row) => sum + Number(row.totalDeposit || 0), 0), [rows]);
 
   return <>
     <div className="card-head deposit-head">
-      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>הנתונים במסך זה שייכים לדיווח הנוכחי בלבד. כל שורה מייצגת מוצר פנסיוני של עובד בתוך הדיווח הזה.</span></div>
+      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>פרטי התשלום והאסמכתאות של הדיווח הנוכחי בלבד.</span></div>
       <div className="deposit-summary"><span className="badge badge-blue">{rows.length} שורות</span><span className="badge badge-green">סה״כ ₪{total.toLocaleString("he-IL")}</span></div>
     </div>
-    <div className="toolbar deposit-toolbar"><div className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void load()} placeholder="עובד, ת״ז או מספר פוליסה" /></div><button className="btn btn-soft" onClick={() => void load()}>חיפוש</button></div>
+    <div className="toolbar deposit-toolbar"><div className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void load()} placeholder="יצרן, מוצר, עובד או אסמכתא" /></div><button className="btn btn-soft" onClick={() => void load()}>חיפוש</button></div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 12 }}>{error}</div> : null}
-    {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <div className="deposit-table-wrap"><table className="deposit-table"><thead><tr><th>עובד / מוצר</th><th>מס׳ פוליסה</th><th>סכום הפקדה</th><th>חודש שכר</th><th>שכר</th><th>סוג דיווח</th><th>רובד</th><th></th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><b>{row.employeeName}</b><span>{productNames[row.productType] ?? "מוצר"} · ת״ז {row.nationalId}</span></td><td>{row.policyNumber || "—"}</td><td>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</td><td>{row.salaryMonth?.slice(0, 7)}</td><td>₪{Number(row.salary).toLocaleString("he-IL")}</td><td>{row.reportingType}</td><td>{row.salaryLayer}</td><td><button className="icon-button" aria-label="עריכה" onClick={() => setEditing(row)}><Pencil size={17} /></button></td></tr>)}</tbody></table></div>}
-    {editing ? <DepositEditor organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); }} /> : null}
+    {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <div className="deposit-table-wrap"><table className="deposit-table"><thead><tr><th>שם יצרן / מוצר</th><th>חשבון יצרן</th><th>סכום לתשלום</th><th>אופן תשלום</th><th>פרטי חשבון מעסיק</th><th>מס׳ אסמכתא</th><th>תאריך ערך</th><th>סוג דיווח</th><th></th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><b>{row.providerName || productNames[row.productType] || "מוצר פנסיוני"}</b><span>{row.employeeName} · {row.policyNumber || "ללא מס׳ פוליסה"}</span></td><td>{row.providerAccount || "—"}</td><td>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</td><td>{row.paymentMethod || "העברה בנקאית"}</td><td>{formatEmployerAccount(row)}</td><td>{row.referenceNumber || "—"}</td><td>{row.valueDate ? formatDate(row.valueDate) : "—"}</td><td>{row.reportingType}</td><td><button className="icon-button" aria-label="עריכת אמצעי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button></td></tr>)}</tbody></table></div>}
+    {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} onClose={() => setEditing(null)} onSaved={(updated) => {
+      setRows((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setEditing(null);
+    }} /> : null}
   </>;
 }
 
-function normalize(items: Array<{ component: ContributionComponent; amount: number; percentage: number; exemptPayments: number }>): ManualContributionInput[] {
-  const keys: ContributionComponent[] = [1, 2, 3, 4];
-  return keys.map((component) => {
-    const found = items.find((x) => Number(x.component) === component);
-    return found ? { component, amount: Number(found.amount), percentage: Number(found.percentage), exemptPayments: Number(found.exemptPayments) } : { component, amount: 0, percentage: 0, exemptPayments: 0 };
-  });
+function formatEmployerAccount(row: ManualDepositRow) {
+  const values = [row.employerBankCode, row.employerBranch, row.employerAccount].filter(Boolean);
+  return values.length ? values.join(" - ") : "—";
 }
 
-function DepositEditor({ organizationId, employerId, reportId, row, onClose, onSaved }: { organizationId: string; employerId: string; reportId: string; row: ManualDepositRow; onClose: () => void; onSaved: () => Promise<void> }) {
-  const [products, setProducts] = useState<ManualProductInput[] | null>(null);
-  const [target, setTarget] = useState(-1);
+function formatDate(value: string) {
+  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("he-IL");
+}
+
+function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, onClose, onSaved }: {
+  employer: Employer | null;
+  organizationId: string;
+  employerId: string;
+  reportId: string;
+  row: ManualDepositRow;
+  onClose: () => void;
+  onSaved: (row: ManualDepositRow) => void;
+}) {
+  const [form, setForm] = useState<ManualPaymentInput>({
+    providerName: row.providerName || productNames[row.productType] || "",
+    providerAccount: row.providerAccount || "",
+    paymentMethod: row.paymentMethod || "העברה בנקאית",
+    valueDate: row.valueDate,
+    referenceNumber: row.referenceNumber || "",
+    employerBankName: row.employerBankName || "",
+    employerBankCode: row.employerBankCode || "",
+    employerBranch: row.employerBranch || "",
+    employerAccount: row.employerAccount || "",
+    confirmationFileName: row.confirmationFileName || "",
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    manualDepositsApi.employee(organizationId, employerId, reportId, row.reportEmployeeId).then((detail) => {
-      const mapped = detail.products.map((p) => ({
-        productType: Number(p.productType) as PensionProductType,
-        policyNumber: p.policyNumber,
-        salaryMonth: p.salaryMonth,
-        salary: Number(p.salary),
-        reportingType: p.reportingType,
-        salaryLayer: p.salaryLayer,
-        section14: p.section14,
-        section14StartDate: p.section14StartDate,
-        employerContributions: normalize(p.employerContributions),
-        employeeContributions: normalize(p.employeeContributions),
-      }));
-      setProducts(mapped);
-      setTarget(detail.products.findIndex((p) => p.id === row.id));
-    }).catch((err) => setError(err instanceof Error ? err.message : "טעינת השורה נכשלה"));
-  }, [organizationId, employerId, reportId, row.id, row.reportEmployeeId]);
-
-  const product = products && target >= 0 ? products[target] : null;
-  function patch(patchValue: Partial<ManualProductInput>) { if (!products || target < 0) return; setProducts(products.map((p, i) => i === target ? { ...p, ...patchValue } : p)); }
-  function contribution(party: "employerContributions" | "employeeContributions", component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) {
-    if (!products || target < 0) return;
-    setProducts(products.map((p, i) => i !== target ? p : { ...p, [party]: p[party].map((c) => c.component === component ? { ...c, [key]: value } : c) }));
+  function patch<K extends keyof ManualPaymentInput>(key: K, value: ManualPaymentInput[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
   }
 
   async function save() {
-    if (!products) return;
-    setSaving(true); setError("");
-    try { await manualDepositsApi.saveEmployee(organizationId, employerId, reportId, row.reportEmployeeId, products); await onSaved(); }
-    catch (err) { setError(err instanceof Error ? err.message : "שמירת נתוני ההפקדה נכשלה"); setSaving(false); }
+    setError("");
+    if (!form.providerName.trim()) { setError("יש להזין שם יצרן / מוצר."); return; }
+    if (!form.paymentMethod.trim()) { setError("יש לבחור אופן תשלום."); return; }
+    setSaving(true);
+    try {
+      await manualDepositsApi.savePayment(organizationId, employerId, reportId, row.id, form);
+      onSaved({ ...row, ...form });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שמירת פרטי אמצעי התשלום נכשלה");
+      setSaving(false);
+    }
   }
 
-  return <div className="report-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><div className="report-modal deposit-editor-modal" role="dialog" aria-modal="true">
-    <div className="report-modal-header"><div><h2>עריכת נתוני הפקדה</h2><span>{row.employeeName} · {productNames[row.productType] ?? "מוצר"} · לדיווח הנוכחי בלבד</span></div><button className="icon-button" onClick={onClose}><X size={20} /></button></div>
-    <div className="report-modal-body">{error ? <div className="notice notice-error">{error}</div> : !product ? <div className="empty">טוען...</div> : <>
-      <div className="deposit-editor-grid">
-        <div className="field"><label>מס׳ פוליסה</label><input value={product.policyNumber} onChange={(e) => patch({ policyNumber: e.target.value })} /></div>
-        <div className="field"><label>חודש שכר</label><input type="month" value={product.salaryMonth.slice(0,7)} onChange={(e) => patch({ salaryMonth: `${e.target.value}-01` })} /></div>
-        <div className="field"><label>שכר</label><input type="number" min="0" value={product.salary || ""} onChange={(e) => patch({ salary: Number(e.target.value) })} /></div>
-        <div className="field"><label>סוג דיווח</label><select value={product.reportingType} onChange={(e) => patch({ reportingType: e.target.value })}><option>שוטף</option><option>הפרשים</option><option>תיקון</option><option>שלילי</option></select></div>
-        <div className="field"><label>רובד שכר</label><select value={product.salaryLayer} onChange={(e) => patch({ salaryLayer: e.target.value })}><option>רובד 1</option><option>רובד 2</option><option>רובד 3</option></select></div>
-        <label className="section14-check"><input type="checkbox" checked={product.section14} onChange={(e) => patch({ section14: e.target.checked })} />סעיף 14</label>
-      </div>
-      <ContributionCards title="הפקדות מעסיק" items={product.employerContributions} onChange={(component,key,value) => contribution("employerContributions", component, key, value)} />
-      <ContributionCards title="הפקדות עובד" items={product.employeeContributions} onChange={(component,key,value) => contribution("employeeContributions", component, key, value)} />
-    </>}</div>
-    <div className="report-modal-footer"><button className="btn btn-secondary" onClick={onClose}>ביטול</button><button className="btn btn-primary" disabled={saving || !product} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button></div>
-  </div></div>;
-}
+  return <div className="report-modal-backdrop payment-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="payment-modal" role="dialog" aria-modal="true" aria-label="פרטי אמצעי תשלום">
+      <button className="payment-modal-close" onClick={onClose} aria-label="סגירה"><X size={22} /></button>
+      <div className="payment-modal-title">פרטי אמצעי תשלום</div>
+      <div className="payment-employer-chip"><BriefcaseBusiness size={19} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={16} /></div>
 
-function ContributionCards({ title, items, onChange }: { title: string; items: ManualContributionInput[]; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
-  return <section className="contribution-section"><h3>{title}</h3><div className="mobile-contribution-grid">{items.map((item) => <div className="mobile-contribution-card" key={item.component}><b>{contributionLabels[item.component]}</b><label><span>סכום</span><input type="number" min="0" value={item.amount || ""} onChange={(e) => onChange(item.component, "amount", Number(e.target.value))} /></label><label><span>אחוז</span><input type="number" min="0" step="0.01" value={item.percentage || ""} onChange={(e) => onChange(item.component, "percentage", Number(e.target.value))} /></label><label><span>תשלומים פטורים</span><input type="number" min="0" value={item.exemptPayments || ""} onChange={(e) => onChange(item.component, "exemptPayments", Number(e.target.value))} /></label></div>)}</div></section>;
+      {error ? <div className="notice notice-error payment-error">{error}</div> : null}
+
+      <div className="payment-layout">
+        <aside className="payment-notes">
+          <b>לתשומת לבך</b>
+          <p>יש להזין את פרטי התשלום והאסמכתא המתאימים להעברה שבוצעה עבור הדיווח הנוכחי.</p>
+          <p>בהעברה בנקאית יש לציין את תאריך הערך, מספר האסמכתא ופרטי חשבון המעסיק שממנו בוצעה ההעברה.</p>
+          <p>הסכום מוצג לפי נתוני ההפקדות שנקלטו בדיווח ואינו משנה את רכיבי ההפקדה של העובד.</p>
+        </aside>
+
+        <div className="payment-main">
+          <section className="payment-panel">
+            <h3>פרטי חשבון יצרן לזיכוי</h3>
+            <div className="payment-provider-grid">
+              <div className="field payment-provider-name"><label>שם יצרן / מוצר</label><input value={form.providerName} onChange={(e) => patch("providerName", e.target.value)} /></div>
+              <div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div>
+              <div className="field payment-provider-account"><label>חשבון יצרן לזיכוי</label><div className="payment-input-icon"><input value={form.providerAccount} onChange={(e) => patch("providerAccount", e.target.value)} placeholder="בנק - סניף - חשבון" /><Pencil size={16} /></div></div>
+            </div>
+          </section>
+
+          <section className="payment-panel">
+            <h3>פרטי אופן תשלום</h3>
+            <div className="payment-method-grid">
+              <div className="field payment-method"><label>אופן התשלום</label><select value={form.paymentMethod} onChange={(e) => patch("paymentMethod", e.target.value)}><option>העברה בנקאית</option><option>מס״ב</option><option>המחאה</option><option>אחר</option></select></div>
+              <div className="field"><label>תאריך ערך</label><div className="payment-input-icon"><input type="date" value={form.valueDate?.slice(0, 10) || ""} onChange={(e) => patch("valueDate", e.target.value || null)} /><CalendarDays size={16} /></div></div>
+              <div className="field"><label>מס׳ אסמכתא</label><input value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div>
+              <label className="payment-upload"><FileUp size={17} /><span>{form.confirmationFileName || "צירוף אישור העברה"}</span><input type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label>
+              <div className="field"><label>בנק</label><input value={form.employerBankName} onChange={(e) => patch("employerBankName", e.target.value)} placeholder="שם הבנק" /></div>
+              <div className="field"><label>מס׳ בנק</label><input inputMode="numeric" value={form.employerBankCode} onChange={(e) => patch("employerBankCode", e.target.value)} /></div>
+              <div className="field"><label>סניף</label><input inputMode="numeric" value={form.employerBranch} onChange={(e) => patch("employerBranch", e.target.value)} /></div>
+              <div className="field"><label>מס׳ חשבון</label><input inputMode="numeric" value={form.employerAccount} onChange={(e) => patch("employerAccount", e.target.value)} /></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div className="payment-modal-footer"><button className="btn btn-primary" disabled={saving} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button><button className="btn btn-secondary" onClick={onClose}>ביטול</button></div>
+    </div>
+  </div>;
 }
