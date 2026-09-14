@@ -11,7 +11,7 @@ import { alphaApi } from "@/lib/api";
 import { getEmployerSelection } from "@/lib/session";
 import type { Employee, Employer, ReportMode } from "@/lib/types";
 
-const steps = ["פרטי הדיווח", "קליטת נתונים", "נתוני הפקדות", "סיכום ושליחה"];
+const steps = ["פרטי הדיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
 const monthNow = new Date().toISOString().slice(0, 7);
 
 export default function NewReportPage() {
@@ -100,7 +100,7 @@ export default function NewReportPage() {
 
 function ReportDetails({ mode, setMode, month, setMonth, salaryPaymentDate, setSalaryPaymentDate }: { mode: ReportMode; setMode: (value: ReportMode) => void; month: string; setMonth: (value: string) => void; salaryPaymentDate: string; setSalaryPaymentDate: (value: string) => void }) {
   const choices = [
-    { value: "manual" as const, icon: Keyboard, title: "דיווח ידני", text: "רשימת עובדים, מוצרים והפקדות לכל עובד" },
+    { value: "manual" as const, icon: Keyboard, title: "דיווח ידני", text: "רשימת עובדים, מוצרים והפקדות הנשמרים בטיוטת הדיווח הנוכחית בלבד" },
     { value: "excel" as const, icon: FileSpreadsheet, title: "קובץ Excel", text: "העלאת קובץ שכר, התאמת עמודות ובדיקת הנתונים" },
     { value: "correction" as const, icon: FilePenLine, title: "תיקון דיווח", text: "תיקון דיווח קיים או יצירת דיווח הפרשים" },
   ];
@@ -109,4 +109,4 @@ function ReportDetails({ mode, setMode, month, setMonth, salaryPaymentDate, setS
 
 function ExcelData({ fileName, selectFile }: { fileName: string; selectFile: (event: ChangeEvent<HTMLInputElement>) => void }) { return <><div className="card-head"><div><h2>העלאת קובץ שכר</h2><span style={{ color: "var(--muted)" }}>קובצי Excel בלבד, עד 10MB</span></div></div><label className="upload-zone" htmlFor="excel-file"><UploadCloud size={38} /><h3>{fileName || "גררו קובץ לכאן או בחרו מהמחשב"}</h3><p>הקובץ ייבדק לפני המשך התהליך</p><span className="btn btn-soft">בחירת קובץ</span><input id="excel-file" type="file" accept=".xlsx,.xls,.csv" hidden onChange={selectFile} /></label></>; }
 function CorrectionData({ reason, setReason }: { reason: string; setReason: (value: string) => void }) { return <><div className="card-head"><div><h2>פרטי התיקון</h2></div></div><div className="field"><label htmlFor="reason">סיבת התיקון</label><textarea id="reason" value={reason} onChange={(e) => setReason(e.target.value)} required /></div></>; }
-function Summary({ employer, month, mode, selectedCount, fileName }: { employer: Employer; month: string; mode: ReportMode; selectedCount: number; fileName: string }) { const modeLabel = mode === "manual" ? "דיווח ידני" : mode === "excel" ? "קובץ Excel" : "תיקון דיווח"; return <><div className="card-head"><div><h2>סיכום הדיווח</h2><span style={{ color: "var(--muted)" }}>הדיווח עדיין בטיוטה.</span></div></div><div className="summary-row"><b>מעסיק</b><span>{employer.legalName}</span></div><div className="summary-row"><b>חודש דיווח</b><span>{month}</span></div><div className="summary-row"><b>אופן דיווח</b><span>{modeLabel}</span></div><div className="summary-row"><b>{mode === "manual" ? "עובדים" : "מקור"}</b><span>{mode === "manual" ? selectedCount : fileName || "—"}</span></div></>; }
+function Summary({ employer, month, mode, selectedCount, fileName }: { employer: Employer; month: string; mode: ReportMode; selectedCount: number; fileName: string }) { const modeLabel = mode === "manual" ? "דיווח ידני" : mode === "excel" ? "קובץ Excel" : "תיקון דיווח"; return <><div className="card-head"><div><h2>סיכום הדיווח</h2><span style={{ color: "var(--muted)" }}>הדיווח עדיין בטיוטה.</span></div></div><div className="summary-row"><b>מעסיק</b><span>{employer.legalName}</span></div><div className="summary-row"><b>חודש דיווח</b><span>{month}</span></div><div className="summary-row"><b>אופן דיווח</b><span>{modeLabel}</span></div><div className="summary-row"><b>{mode === "manual" ? "עובדים בדיווח" : "מקור"}</b><span>{mode === "manual" ? selectedCount : fileName || "—"}</span></div></>; }
