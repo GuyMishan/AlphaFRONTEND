@@ -72,9 +72,25 @@ export function ScopeController() {
         const orgId = savedOrg && orgItems.some((item) => item.id === savedOrg) ? savedOrg : orgItems[0]?.id ?? "";
         setOrganizationId(orgId);
         if (orgId) setOrganizationSelection(orgId);
+
+        let empId = "";
+        let empEmployeeId = "";
         if (level !== "organization" && orgId) {
-          const empId = await loadEmployers(orgId);
-          if (level === "employee" && empId) await loadEmployees(orgId, empId);
+          empId = await loadEmployers(orgId);
+          if (level === "employee" && empId) empEmployeeId = await loadEmployees(orgId, empId);
+        }
+
+        // The page and the scope controller mount at the same time. A saved employer can
+        // be stale (especially for platform admins who can switch organizations), while
+        // loadEmployers may resolve a different valid employer. Always publish the resolved
+        // initial scope so employer-scoped pages load with the validated IDs instead of the
+        // stale session selection.
+        if (active && orgId) {
+          emitScopeChange({
+            organizationId: orgId,
+            employerId: empId || undefined,
+            employeeId: empEmployeeId || undefined,
+          });
         }
       } finally {
         if (active) setLoading(false);
