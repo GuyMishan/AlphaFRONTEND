@@ -122,11 +122,24 @@ export function ScopeController() {
     emitScopeChange({ organizationId, employerId, employeeId: value });
   }
 
+  const organization = organizations.find((item) => item.id === organizationId);
+  const employer = employers.find((item) => item.id === employerId);
+
   return (
     <div className="scopebar" aria-label="בחירת הקשר עבודה">
       <div className="scope-selects">
-        <label><span>ארגון</span><div><Building2 size={16} /><select value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>{organizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div></label>
-        {level !== "organization" ? <label><span>מעסיק</span><div><Building2 size={16} /><select value={employerId} disabled={loading || !organizationId} onChange={(event) => void changeEmployer(event.target.value)}>{employers.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)}</select></div></label> : null}
+        {organizations.length > 1 ? (
+          <label><span>ארגון</span><div><Building2 size={16} /><select value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>{organizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div></label>
+        ) : organization ? (
+          <label><span>ארגון</span><div><Building2 size={16} /><span>{organization.name}</span></div></label>
+        ) : null}
+
+        {level !== "organization" ? employers.length > 1 ? (
+          <label><span>מעסיק</span><div><Building2 size={16} /><select value={employerId} disabled={loading || !organizationId} onChange={(event) => void changeEmployer(event.target.value)}>{employers.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)}</select></div></label>
+        ) : employer ? (
+          <label><span>מעסיק</span><div><Building2 size={16} /><span>{employer.legalName}</span></div></label>
+        ) : null : null}
+
         {level === "employee" ? <label><span>עובד</span><div><UserRound size={16} /><select value={employeeId} disabled={loading || !employerId} onChange={(event) => changeEmployee(event.target.value)}>{employees.map((item) => <option key={item.id} value={item.id}>{item.firstName} {item.lastName}</option>)}</select></div></label> : null}
       </div>
     </div>
