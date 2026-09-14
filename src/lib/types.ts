@@ -37,6 +37,7 @@ export type Session = {
 };
 
 export type ReportMode = "manual" | "excel" | "correction";
+export type ManualReportKind = 1 | 2 | 3;
 export type ReportDraft = {
   organizationId: string;
   employerId: string;
@@ -76,7 +77,22 @@ export type ManualReportDraft = {
   reportingMonth: string;
   salaryPaymentDate: string | null;
   status: string | number;
+  reportKind?: string | number;
+  sourceReportId?: string | null;
   employeeCount: number;
+};
+
+export type SourceManualReport = {
+  id: string;
+  reportingMonth: string;
+  salaryPaymentDate: string | null;
+  status: string | number;
+  reportKind: string | number;
+  sourceReportId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  employeeCount: number;
+  productCount: number;
 };
 
 export type ManualReportEmployeeSummary = {
