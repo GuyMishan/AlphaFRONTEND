@@ -3,6 +3,7 @@ import { Heebo } from "next/font/google";
 import "./globals.css";
 import "./mobile.css";
 import "./reporting.css";
+import "./payment-editor.css";
 
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo" });
 
