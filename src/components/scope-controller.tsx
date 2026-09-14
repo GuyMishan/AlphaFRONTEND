@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Building2, UserRound } from "lucide-react";
 import { alphaApi } from "@/lib/api";
 import {
@@ -22,8 +22,13 @@ function requiredScope(pathname: string): ScopeLevel {
   return "organization";
 }
 
+function emitScopeChange(detail: { organizationId: string; employerId?: string; employeeId?: string }) {
+  window.dispatchEvent(new CustomEvent("alpha:scope-change", { detail }));
+}
+
 export function ScopeController() {
   const pathname = usePathname();
+  const router = useRouter();
   const level = requiredScope(pathname);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [employers, setEmployers] = useState<Employer[]>([]);
@@ -46,13 +51,14 @@ export function ScopeController() {
   }, []);
 
   const loadEmployees = useCallback(async (orgId: string, empId: string) => {
-    if (!empId) { setEmployees([]); return; }
+    if (!empId) { setEmployees([]); setEmployeeId(""); return ""; }
     const items = await alphaApi.employees(orgId, empId);
     setEmployees(items);
     const saved = getEmployeeSelection();
     const nextId = saved && items.some((item) => item.id === saved) ? saved : items[0]?.id ?? "";
     setEmployeeId(nextId);
     if (nextId) setEmployeeSelection(nextId);
+    return nextId;
   }, []);
 
   useEffect(() => {
@@ -81,24 +87,39 @@ export function ScopeController() {
   async function changeOrganization(value: string) {
     setOrganizationId(value);
     setOrganizationSelection(value);
+    let nextEmployerId = "";
+    let nextEmployeeId = "";
     if (level !== "organization") {
-      const empId = await loadEmployers(value);
-      if (level === "employee") await loadEmployees(value, empId);
+      nextEmployerId = await loadEmployers(value);
+      if (level === "employee") nextEmployeeId = await loadEmployees(value, nextEmployerId);
     }
-    window.location.assign(pathname);
+    if (level === "employee" && nextEmployeeId) {
+      router.replace(`/employees/${nextEmployeeId}`);
+      return;
+    }
+    emitScopeChange({ organizationId: value, employerId: nextEmployerId || undefined });
   }
 
   async function changeEmployer(value: string) {
     setEmployerId(value);
     setEmployerSelection(organizationId, value);
-    if (level === "employee") await loadEmployees(organizationId, value);
-    window.location.assign(pathname);
+    let nextEmployeeId = "";
+    if (level === "employee") nextEmployeeId = await loadEmployees(organizationId, value);
+    if (level === "employee" && nextEmployeeId) {
+      router.replace(`/employees/${nextEmployeeId}`);
+      return;
+    }
+    emitScopeChange({ organizationId, employerId: value });
   }
 
   function changeEmployee(value: string) {
     setEmployeeId(value);
     setEmployeeSelection(value);
-    window.location.assign(pathname);
+    if (/^\/employees\/[^/]+/.test(pathname)) {
+      router.replace(`/employees/${value}`);
+      return;
+    }
+    emitScopeChange({ organizationId, employerId, employeeId: value });
   }
 
   return (
