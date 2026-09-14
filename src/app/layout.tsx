@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
 import "./globals.css";
+import "./mobile.css";
 
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo" });
 
