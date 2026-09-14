@@ -67,6 +67,9 @@ export const alphaApi = {
   employers: (organizationId: string): Promise<Employer[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoEmployers.filter((item) => item.organizationId === organizationId))
     : request<Employer[]>(`/api/organizations/${organizationId}/employers/`),
+  employerSearch: (organizationId: string, search = "", skip = 0, take = 50): Promise<PagedResult<Employer>> => getSession()?.mode === "demo"
+    ? Promise.resolve({ items: demoEmployers.filter((item) => item.organizationId === organizationId && `${item.legalName} ${item.registrationNumber} ${item.withholdingFileNumber}`.includes(search)), hasMore: false })
+    : request<PagedResult<Employer>>(`/api/organizations/${organizationId}/employers/search${qs({ search, skip, take })}`),
   employer: (organizationId: string, employerId: string): Promise<Employer> => getSession()?.mode === "demo"
     ? Promise.resolve(demoEmployers.find((item) => item.id === employerId && item.organizationId === organizationId)!)
     : request<Employer>(`/api/organizations/${organizationId}/employers/${employerId}`),
@@ -85,6 +88,9 @@ export const alphaApi = {
   employees: (organizationId: string, employerId: string): Promise<Employee[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoEmployers.some((item) => item.id === employerId && item.organizationId === organizationId) ? demoEmployees : [])
     : request<Employee[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees`),
+  employeeSearch: (organizationId: string, employerId: string, search = "", skip = 0, take = 50): Promise<PagedResult<Employee>> => getSession()?.mode === "demo"
+    ? Promise.resolve({ items: demoEmployees.filter((item) => `${item.firstName} ${item.lastName} ${item.nationalId} ${item.employeeNumber}`.includes(search)), hasMore: false })
+    : request<PagedResult<Employee>>(`/api/organizations/${organizationId}/employers/${employerId}/employees/search${qs({ search, skip, take })}`),
   employee: (organizationId: string, employerId: string, employeeId: string): Promise<Employee> => getSession()?.mode === "demo"
     ? Promise.resolve(demoEmployees.find((item) => item.id === employeeId)!)
     : request<Employee>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}`),
@@ -113,39 +119,21 @@ export const alphaApi = {
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`, { method: "PUT", body: JSON.stringify({ products }) }),
 
   accessUsers: (organizationId: string, search = "", skip = 0, take = 30): Promise<PagedResult<AccessUser>> =>
-    getSession()?.mode === "demo"
-      ? Promise.resolve({ items: [], hasMore: false })
-      : request<PagedResult<AccessUser>>(`/api/organizations/${organizationId}/access/users${qs({ search, skip, take })}`),
+    getSession()?.mode === "demo" ? Promise.resolve({ items: [], hasMore: false }) : request<PagedResult<AccessUser>>(`/api/organizations/${organizationId}/access/users${qs({ search, skip, take })}`),
   accessUserCandidates: (organizationId: string, search: string, take = 20): Promise<UserCandidate[]> =>
-    getSession()?.mode === "demo"
-      ? Promise.resolve([])
-      : request<UserCandidate[]>(`/api/organizations/${organizationId}/access/user-candidates${qs({ search, take })}`),
+    getSession()?.mode === "demo" ? Promise.resolve([]) : request<UserCandidate[]>(`/api/organizations/${organizationId}/access/user-candidates${qs({ search, take })}`),
   addAccessUser: (organizationId: string, payload: { userId: string; role: OrganizationRole; employerAccessMode: EmployerAccessMode }) =>
-    getSession()?.mode === "demo"
-      ? Promise.resolve()
-      : request<void>(`/api/organizations/${organizationId}/access/users`, { method: "POST", body: JSON.stringify(payload) }),
+    getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users`, { method: "POST", body: JSON.stringify(payload) }),
   updateAccessUser: (organizationId: string, userId: string, payload: { role: OrganizationRole; employerAccessMode: EmployerAccessMode }) =>
-    getSession()?.mode === "demo"
-      ? Promise.resolve()
-      : request<void>(`/api/organizations/${organizationId}/access/users/${userId}`, { method: "PUT", body: JSON.stringify(payload) }),
+    getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}`, { method: "PUT", body: JSON.stringify(payload) }),
   removeAccessUser: (organizationId: string, userId: string) =>
-    getSession()?.mode === "demo"
-      ? Promise.resolve()
-      : request<void>(`/api/organizations/${organizationId}/access/users/${userId}`, { method: "DELETE" }),
+    getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}`, { method: "DELETE" }),
   assignedEmployers: (organizationId: string, userId: string, search = "", skip = 0, take = 30): Promise<PagedResult<AccessEmployer>> =>
-    getSession()?.mode === "demo"
-      ? Promise.resolve({ items: [], hasMore: false })
-      : request<PagedResult<AccessEmployer>>(`/api/organizations/${organizationId}/access/users/${userId}/employers${qs({ search, skip, take })}`),
+    getSession()?.mode === "demo" ? Promise.resolve({ items: [], hasMore: false }) : request<PagedResult<AccessEmployer>>(`/api/organizations/${organizationId}/access/users/${userId}/employers${qs({ search, skip, take })}`),
   employerAccessOptions: (organizationId: string, userId: string, search: string, take = 20): Promise<EmployerOption[]> =>
-    getSession()?.mode === "demo"
-      ? Promise.resolve([])
-      : request<EmployerOption[]>(`/api/organizations/${organizationId}/access/employer-options${qs({ userId, search, take })}`),
+    getSession()?.mode === "demo" ? Promise.resolve([]) : request<EmployerOption[]>(`/api/organizations/${organizationId}/access/employer-options${qs({ userId, search, take })}`),
   grantEmployerAccess: (organizationId: string, userId: string, employerId: string) =>
-    getSession()?.mode === "demo"
-      ? Promise.resolve()
-      : request<void>(`/api/organizations/${organizationId}/access/users/${userId}/employers/${employerId}`, { method: "POST" }),
+    getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}/employers/${employerId}`, { method: "POST" }),
   revokeEmployerAccess: (organizationId: string, userId: string, employerId: string) =>
-    getSession()?.mode === "demo"
-      ? Promise.resolve()
-      : request<void>(`/api/organizations/${organizationId}/access/users/${userId}/employers/${employerId}`, { method: "DELETE" }),
+    getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}/employers/${employerId}`, { method: "DELETE" }),
 };
