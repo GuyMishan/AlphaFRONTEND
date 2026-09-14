@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+const DEFAULT_API_URL = "https://alphabackend-s9h0.onrender.com";
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
-  const baseUrl = process.env.ALPHA_API_URL ?? "http://localhost:5080";
+  const baseUrl = process.env.ALPHA_API_URL ?? DEFAULT_API_URL;
   const url = new URL(path.join("/"), `${baseUrl.replace(/\/$/, "")}/`);
   url.search = request.nextUrl.search;
 
