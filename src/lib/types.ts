@@ -54,3 +54,10 @@ export type ApiProblem = {
   error?: string;
   status?: number;
 };
+
+export type OrganizationCapabilities = {
+  canCreateEmployer: boolean;
+};
+
+export type EmployerInput = Pick<Employer, "legalName" | "registrationNumber" | "withholdingFileNumber">;
+export type EmployeeInput = Pick<Employee, "nationalId" | "firstName" | "lastName" | "employeeNumber" | "startDate">;

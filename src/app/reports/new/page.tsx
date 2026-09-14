@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, FilePenLine, FileSpreadsheet, Info, Keyboard, Search, Send, UploadCloud } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { alphaApi } from "@/lib/api";
@@ -24,11 +25,13 @@ export default function NewReportPage() {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [scope, setScope] = useState<{ organizationId: string; employerId: string } | null>(null);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("mode") === "correction") setMode("correction");
     const selected = getEmployerSelection();
     if (!selected) { setLoading(false); return; }
+    setScope(selected);
     Promise.all([
       alphaApi.employers(selected.organizationId),
       alphaApi.employees(selected.organizationId, selected.employerId),
@@ -57,13 +60,13 @@ export default function NewReportPage() {
   return (
     <AppShell title="דיווח חדש" hideScopeController={step > 1}>
       <div className="wizard">
-        <div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer ? `${employer.legalName} · ח.פ. ${employer.registrationNumber}` : "יש לבחור מעסיק בבורר העליון"}</p></div></div>
+        <div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer && scope ? <><Link className="profile-link" href={`/employers/${employer.id}?organizationId=${scope.organizationId}`}>{employer.legalName}</Link> · ח.פ. {employer.registrationNumber}</> : "יש לבחור מעסיק בבורר העליון"}</p></div></div>
         <div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>
         {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
         {loading ? <div className="card empty">טוען את המעסיק והעובדים מה־Backend...</div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : (
           <section className="card">
             {step === 1 ? <ReportDetails mode={mode} setMode={setMode} month={month} setMonth={setMonth} /> : null}
-            {step === 2 && mode === "manual" ? <ManualData employees={filtered} selectedIds={selectedIds} toggleEmployee={toggleEmployee} query={query} setQuery={setQuery} allEmployees={employees} setSelectedIds={setSelectedIds} /> : null}
+            {step === 2 && mode === "manual" ? <ManualData employees={filtered} selectedIds={selectedIds} toggleEmployee={toggleEmployee} query={query} setQuery={setQuery} allEmployees={employees} setSelectedIds={setSelectedIds} scope={scope} /> : null}
             {step === 2 && mode === "excel" ? <ExcelData fileName={fileName} selectFile={selectFile} /> : null}
             {step === 2 && mode === "correction" ? <CorrectionData reason={reason} setReason={setReason} /> : null}
             {step === 3 ? <Validation mode={mode} selectedCount={selectedIds.length} fileName={fileName} /> : null}
@@ -88,8 +91,8 @@ function ReportDetails({ mode, setMode, month, setMonth }: { mode: ReportMode; s
   return <><div className="card-head"><div><h2>איך תרצו לדווח?</h2><span style={{ color: "var(--muted)" }}>בחרו תקופה ואופן קליטת הנתונים</span></div></div><div className="grid two-cols" style={{ marginBottom: 24 }}><div className="field"><label htmlFor="month">חודש דיווח</label><input id="month" type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></div><div className="field"><label htmlFor="salary-date">תאריך תשלום שכר</label><input id="salary-date" type="date" /></div></div><div className="grid choice-grid">{choices.map(({ value, icon: Icon, title, text }) => <button key={value} className={`choice-card${mode === value ? " selected" : ""}`} onClick={() => setMode(value)}><Icon className="choice-icon" size={28} /><b>{title}</b><p>{text}</p></button>)}</div></>;
 }
 
-function ManualData({ employees, selectedIds, toggleEmployee, query, setQuery, allEmployees, setSelectedIds }: { employees: Employee[]; selectedIds: string[]; toggleEmployee: (id: string) => void; query: string; setQuery: (value: string) => void; allEmployees: Employee[]; setSelectedIds: (ids: string[]) => void }) {
-  return <><div className="card-head"><div><h2>בחירת עובדים לדיווח</h2><span style={{ color: "var(--muted)" }}>רשימת העובדים התקבלה מ־GET /employees</span></div><span className="badge badge-blue">נבחרו {selectedIds.length}</span></div><div className="toolbar"><div className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="שם, תעודת זהות או מספר עובד" /></div><button className="btn btn-soft" onClick={() => setSelectedIds(allEmployees.map((x) => x.id))}>בחירת הכל</button></div><div className="table-wrap"><table><thead><tr><th></th><th>עובד</th><th>תעודת זהות</th><th>מספר עובד</th><th>תחילת עבודה</th><th>סטטוס</th></tr></thead><tbody>{employees.map((employee) => <tr key={employee.id}><td><input type="checkbox" aria-label={`בחירת ${employee.firstName} ${employee.lastName}`} checked={selectedIds.includes(employee.id)} onChange={() => toggleEmployee(employee.id)} /></td><td><b>{employee.firstName} {employee.lastName}</b></td><td>{employee.nationalId}</td><td>{employee.employeeNumber}</td><td>{employee.startDate}</td><td><span className={employee.status === 1 ? "badge badge-green" : "badge badge-gray"}>{employee.status === 1 ? "פעיל" : "לא פעיל"}</span></td></tr>)}</tbody></table></div></>;
+function ManualData({ employees, selectedIds, toggleEmployee, query, setQuery, allEmployees, setSelectedIds, scope }: { employees: Employee[]; selectedIds: string[]; toggleEmployee: (id: string) => void; query: string; setQuery: (value: string) => void; allEmployees: Employee[]; setSelectedIds: (ids: string[]) => void; scope: { organizationId: string; employerId: string } | null }) {
+  return <><div className="card-head"><div><h2>בחירת עובדים לדיווח</h2><span style={{ color: "var(--muted)" }}>רשימת העובדים התקבלה מ־GET /employees</span></div><span className="badge badge-blue">נבחרו {selectedIds.length}</span></div><div className="toolbar"><div className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="שם, תעודת זהות או מספר עובד" /></div><button className="btn btn-soft" onClick={() => setSelectedIds(allEmployees.map((x) => x.id))}>בחירת הכל</button></div><div className="table-wrap"><table><thead><tr><th></th><th>עובד</th><th>תעודת זהות</th><th>מספר עובד</th><th>תחילת עבודה</th><th>סטטוס</th></tr></thead><tbody>{employees.map((employee) => <tr key={employee.id}><td><input type="checkbox" aria-label={`בחירת ${employee.firstName} ${employee.lastName}`} checked={selectedIds.includes(employee.id)} onChange={() => toggleEmployee(employee.id)} /></td><td>{scope ? <Link className="profile-link" href={`/employees/${employee.id}?organizationId=${scope.organizationId}&employerId=${scope.employerId}`}><b>{employee.firstName} {employee.lastName}</b></Link> : <b>{employee.firstName} {employee.lastName}</b>}</td><td>{employee.nationalId}</td><td>{employee.employeeNumber}</td><td>{employee.startDate}</td><td><span className={employee.status === 1 ? "badge badge-green" : "badge badge-gray"}>{employee.status === 1 ? "פעיל" : "לא פעיל"}</span></td></tr>)}</tbody></table></div></>;
 }
 
 function ExcelData({ fileName, selectFile }: { fileName: string; selectFile: (event: ChangeEvent<HTMLInputElement>) => void }) {

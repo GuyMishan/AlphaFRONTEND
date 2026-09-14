@@ -66,7 +66,7 @@ export default function DashboardPage() {
           <div className="card-head"><div><h2>בחירת מעסיק</h2><span style={{ color: "var(--muted)" }}>מוצגים רק מעסיקים שהמשתמש רשאי לגשת אליהם</span></div></div>
           <div className="toolbar"><div className="search"><Search size={17} /><input placeholder="חיפוש לפי שם או ח.פ..." value={query} onChange={(e) => setQuery(e.target.value)} /></div></div>
           {loading ? <div className="empty">טוען נתונים מה־Backend...</div> : filtered.length ? (
-            <div className="employer-list">{filtered.map((employer) => <button key={employer.id} className={`employer${employer.id === employerId ? " active" : ""}`} onClick={() => chooseEmployer(employer.id)}><span className="employer-logo">{employer.legalName.slice(0, 2)}</span><span className="employer-info"><b>{employer.legalName}</b><span>ח.פ. {employer.registrationNumber} · תיק ניכויים {employer.withholdingFileNumber}</span></span><span className={employer.status === 2 ? "badge badge-green" : "badge badge-orange"}>{employer.status === 2 ? "פעיל" : "בתהליך הקמה"}</span></button>)}</div>
+            <div className="employer-list">{filtered.map((employer) => <div key={employer.id} className={`employer${employer.id === employerId ? " active" : ""}`}><button className="employer-select" onClick={() => chooseEmployer(employer.id)}><span className="employer-logo">{employer.legalName.slice(0, 2)}</span><span className="employer-info"><b>{employer.legalName}</b><span>ח.פ. {employer.registrationNumber} · תיק ניכויים {employer.withholdingFileNumber}</span></span></button><Link className="btn btn-soft" href={`/employers/${employer.id}?organizationId=${organizationId}`}>לפרופיל</Link><span className={employer.status === 2 ? "badge badge-green" : "badge badge-orange"}>{employer.status === 2 ? "פעיל" : "בתהליך הקמה"}</span></div>)}</div>
           ) : <div className="empty"><Building2 size={34} /><div>לא נמצאו מעסיקים בארגון הזה.</div></div>}
         </div>
         <aside className="card">
@@ -76,7 +76,7 @@ export default function DashboardPage() {
             <Link className="quick-action" href="/reports/new?mode=correction"><span className="quick-action-icon"><FilePenLine size={19} /></span><span><b>תיקון דיווח</b><span>תיקון או דיווח הפרשים</span></span><ArrowLeft size={17} /></Link>
             <Link className="quick-action" href="/employees"><span className="quick-action-icon"><Users size={19} /></span><span><b>רשימת עובדים</b><span>הנתונים נמשכים מה־API</span></span><ArrowLeft size={17} /></Link>
           </div>
-          {selected ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>המעסיק הפעיל:</b><br />{selected.legalName}</div> : null}
+          {selected ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>המעסיק הפעיל:</b><br /><Link className="profile-link" href={`/employers/${selected.id}?organizationId=${organizationId}`}>{selected.legalName}</Link></div> : null}
         </aside>
       </section>
     </AppShell>
