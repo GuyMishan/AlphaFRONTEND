@@ -1,5 +1,5 @@
 import { getSession } from "./session";
-import type { ApiProblem, Employee, EmployeeInput, Employer, EmployerInput, Organization, OrganizationCapabilities } from "./types";
+import type { ApiProblem, Employee, EmployeeInput, Employer, EmployerCapabilities, EmployerInput, Organization, OrganizationCapabilities } from "./types";
 import { demoEmployees, demoEmployers, demoOrganizations } from "./demo-data";
 
 export class ApiError extends Error {
@@ -44,6 +44,9 @@ export const alphaApi = {
   capabilities: (organizationId: string): Promise<OrganizationCapabilities> => getSession()?.mode === "demo"
     ? Promise.resolve({ canCreateEmployer: true })
     : request<OrganizationCapabilities>(`/api/organizations/${organizationId}/capabilities`),
+  employerCapabilities: (organizationId: string, employerId: string): Promise<EmployerCapabilities> => getSession()?.mode === "demo"
+    ? Promise.resolve({ canCreateEmployee: true })
+    : request<EmployerCapabilities>(`/api/organizations/${organizationId}/employers/${employerId}/capabilities`),
   createEmployer: (organizationId: string, payload: EmployerInput) => getSession()?.mode === "demo"
     ? Promise.resolve({ id: crypto.randomUUID(), organizationId, ...payload, status: 1 } as Employer)
     : request<Employer>(`/api/organizations/${organizationId}/employers/`, { method: "POST", body: JSON.stringify(payload) }),
