@@ -10,6 +10,10 @@ import type {
   EmployerCapabilities,
   EmployerInput,
   EmployerOption,
+  ManualProductInput,
+  ManualReportDraft,
+  ManualReportEmployeeDetail,
+  ManualReportEmployeeSummary,
   Organization,
   OrganizationCapabilities,
   OrganizationRole,
@@ -92,6 +96,21 @@ export const alphaApi = {
     : request<Employee>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}`, { method: "PUT", body: JSON.stringify(payload) }),
   createUser: (payload: { externalSubject: string; email: string; displayName: string }) =>
     request<{ id: string }>("/api/platform/users", { method: "POST", body: JSON.stringify(payload) }),
+
+  createManualReport: (organizationId: string, employerId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null; employmentIds: string[] }): Promise<ManualReportDraft> =>
+    request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/`, { method: "POST", body: JSON.stringify(payload) }),
+  manualReport: (organizationId: string, employerId: string, reportId: string): Promise<ManualReportDraft> =>
+    request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}`),
+  updateManualReportDetails: (organizationId: string, employerId: string, reportId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null }) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/details`, { method: "PUT", body: JSON.stringify(payload) }),
+  syncManualReportEmployees: (organizationId: string, employerId: string, reportId: string, employmentIds: string[]) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/selection`, { method: "PUT", body: JSON.stringify({ employmentIds }) }),
+  manualReportEmployees: (organizationId: string, employerId: string, reportId: string, search = "", skip = 0, take = 100): Promise<PagedResult<ManualReportEmployeeSummary>> =>
+    request<PagedResult<ManualReportEmployeeSummary>>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees${qs({ search, skip, take })}`),
+  manualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string): Promise<ManualReportEmployeeDetail> =>
+    request<ManualReportEmployeeDetail>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`),
+  saveManualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string, products: ManualProductInput[]) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`, { method: "PUT", body: JSON.stringify({ products }) }),
 
   accessUsers: (organizationId: string, search = "", skip = 0, take = 30): Promise<PagedResult<AccessUser>> =>
     getSession()?.mode === "demo"
