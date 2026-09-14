@@ -65,19 +65,19 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<ManualReportEmployeeDetail | null>(null);
 
-  async function loadRows() {
-    setLoading(true);
+  async function loadRows(showLoading = true) {
+    if (showLoading) setLoading(true);
     try {
       const result = await alphaApi.manualReportEmployees(organizationId, employerId, reportId, "", 0, 100);
       setRows(result.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת עובדי הדיווח נכשלה");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }
 
-  useEffect(() => { void loadRows(); }, [organizationId, employerId, reportId]);
+  useEffect(() => { void loadRows(true); }, [organizationId, employerId, reportId]);
 
   const rowByEmployment = useMemo(() => new Map(rows.map((row) => [row.employmentId, row])), [rows]);
   const filteredEmployees = useMemo(() => {
@@ -87,15 +87,19 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   }, [employees, query]);
 
   async function changeSelection(employeeId: string, checked: boolean) {
+    const previousIds = selectedIds;
+    const previousRows = rows;
     const next = checked ? Array.from(new Set([...selectedIds, employeeId])) : selectedIds.filter((id) => id !== employeeId);
     setSelectedIds(next);
+    if (!checked) setRows((current) => current.filter((row) => row.employmentId !== employeeId));
     setSyncing(true);
     setError("");
     try {
       await alphaApi.syncManualReportEmployees(organizationId, employerId, reportId, next);
-      await loadRows();
+      await loadRows(false);
     } catch (err) {
-      setSelectedIds(selectedIds);
+      setSelectedIds(previousIds);
+      setRows(previousRows);
       setError(err instanceof Error ? err.message : "עדכון העובדים בדיווח נכשל");
     } finally {
       setSyncing(false);
@@ -124,7 +128,17 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       <div className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
       <button className="btn btn-soft" disabled={syncing} onClick={async () => {
         const ids = employees.filter((x) => x.status === 1).map((x) => x.id);
-        setSelectedIds(ids); setSyncing(true); await alphaApi.syncManualReportEmployees(organizationId, employerId, reportId, ids); await loadRows(); setSyncing(false);
+        setSelectedIds(ids);
+        setSyncing(true);
+        setError("");
+        try {
+          await alphaApi.syncManualReportEmployees(organizationId, employerId, reportId, ids);
+          await loadRows(false);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "עדכון העובדים בדיווח נכשל");
+        } finally {
+          setSyncing(false);
+        }
       }}>בחירת כל הפעילים</button>
     </div>
     <div className="manual-employee-list">
@@ -134,7 +148,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
         return <div className={`manual-employee-row${selected ? " selected" : ""}`} key={employee.id}>
           <label className="manual-employee-check"><input type="checkbox" checked={selected} disabled={syncing} onChange={(e) => void changeSelection(employee.id, e.target.checked)} /></label>
           <div className="manual-employee-main"><b>{employee.firstName} {employee.lastName}</b><span>ת״ז {employee.nationalId} · עובד {employee.employeeNumber}</span></div>
-          <div className="manual-employee-products">{selected && row ? <>{row.productCount ? <span className="badge badge-green"><CircleCheck size={13} />{row.productCount} מוצרים</span> : <span className="badge badge-orange"><CircleAlert size={13} />חסרים מוצרים</span>}</> : <span className="badge badge-gray">לא בדיווח</span>}</div>
+          <div className="manual-employee-products">{selected && row ? <>{row.productCount ? <span className="badge badge-green"><CircleCheck size={13} />{row.productCount} מוצרים</span> : <span className="badge badge-orange"><CircleAlert size={13} />חסרים מוצרים</span>}</> : selected ? <span className="badge badge-gray">שומר...</span> : <span className="badge badge-gray">לא בדיווח</span>}</div>
           <button className="btn btn-soft manual-edit-btn" disabled={!selected || !row} onClick={() => row && void editEmployee(row)}><Pencil size={16} />עריכה</button>
         </div>;
       })}
@@ -142,7 +156,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
     {editing ? <EmployeeProductsModal employee={editing} month={month} onClose={() => setEditing(null)} onSave={async (products) => {
       await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, products);
       setEditing(null);
-      await loadRows();
+      await loadRows(false);
     }} /> : null}
   </>;
 }
