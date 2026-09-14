@@ -60,7 +60,9 @@ export type OrganizationCapabilities = {
 };
 
 export type EmployerCapabilities = {
+  canEditEmployer: boolean;
   canCreateEmployee: boolean;
+  canEditEmployee: boolean;
 };
 
 export type EmployerInput = Pick<Employer, "legalName" | "registrationNumber" | "withholdingFileNumber">;
