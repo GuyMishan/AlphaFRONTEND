@@ -167,9 +167,9 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator {
   opacity: .38;
 }
 
-/* Wider, denser employee-product modal: compact fields beside contribution tables. */
+/* Employee-product modal: three compact field columns, then contribution tables. */
 .report-modal {
-  width: min(1380px, 98vw) !important;
+  width: min(1440px, 98vw) !important;
 }
 
 .report-modal-body {
@@ -178,7 +178,7 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator {
 
 .report-modal .report-product-card {
   display: grid;
-  grid-template-columns: minmax(360px, 0.82fr) minmax(620px, 1.55fr);
+  grid-template-columns: minmax(500px, 560px) minmax(0, 1fr);
   gap: 10px 12px;
   align-items: start;
   padding: 9px 10px !important;
@@ -192,8 +192,8 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator {
 .report-modal .report-product-fields {
   grid-column: 1;
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(150px, 1fr)) !important;
-  gap: 5px 7px !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 5px 6px !important;
   align-items: end;
   min-width: 0;
 }
@@ -203,20 +203,45 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator {
   min-width: 0;
 }
 
-.report-modal .report-product-fields input,
+.report-modal .report-product-fields input:not([type="checkbox"]),
 .report-modal .report-product-fields select {
   width: 100%;
   min-width: 0;
-  min-height: 32px !important;
-  padding: 5px 7px !important;
-  font-size: 12px !important;
+  min-height: 30px !important;
+  height: 30px;
+  padding: 4px 6px !important;
+  font-size: 11.5px !important;
+}
+
+.report-modal .report-product-fields .field label {
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .report-modal .report-product-fields .section14-check {
-  height: 32px;
+  width: 100%;
+  height: 30px;
   min-width: 0;
-  padding-inline: 8px;
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 7px;
+  font-size: 11.5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  box-sizing: border-box;
+}
+
+.report-modal .report-product-fields .section14-check input[type="checkbox"] {
+  width: 15px !important;
+  height: 15px !important;
+  min-width: 15px !important;
+  min-height: 15px !important;
+  margin: 0;
+  padding: 0 !important;
+  flex: 0 0 15px;
+  accent-color: var(--blue);
 }
 
 .report-modal .contribution-grid {
@@ -242,7 +267,7 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator {
   height: 25px !important;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1240px) {
   .report-modal .report-product-card {
     grid-template-columns: 1fr;
   }
