@@ -22,7 +22,6 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
   const router = useRouter();
   const [session, setLocalSession] = useState<Session | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scopeVersion, setScopeVersion] = useState(0);
 
   useEffect(() => {
     const active = getSession();
@@ -33,12 +32,6 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    const handleScopeChange = () => setScopeVersion((value) => value + 1);
-    window.addEventListener("alpha:scope-change", handleScopeChange);
-    return () => window.removeEventListener("alpha:scope-change", handleScopeChange);
-  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -95,7 +88,7 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
           <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className={`dot${session.mode === "demo" ? "" : " online"}`} />{session.mode === "demo" ? "מצב הדגמה" : "חיבור API פעיל"}</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
         </header>
         {hideScopeController ? null : <ScopeController />}
-        <main className="main" key={`${pathname}-${scopeVersion}`}>{children}</main>
+        <main className="main">{children}</main>
       </div>
     </div>
   );
