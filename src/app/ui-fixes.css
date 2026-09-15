@@ -167,6 +167,38 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator {
   opacity: .38;
 }
 
+/* A modal owns the scroll while it is open; the page behind it must stay fixed. */
+body:has(.report-modal-backdrop) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.report-modal-backdrop {
+  overscroll-behavior: contain;
+}
+
+/* Validation in the employee-product modal is field-first while editing.
+   Save-time validation still uses the existing toast/error flow. */
+.report-modal-body > .notice-error {
+  display: none;
+}
+
+.report-modal input:not(:disabled):user-invalid,
+.report-modal select:not(:disabled):user-invalid,
+.report-modal textarea:not(:disabled):user-invalid {
+  border-color: #dc2626 !important;
+  outline: 2px solid rgba(220, 38, 38, .16) !important;
+  outline-offset: 1px;
+  box-shadow: none !important;
+}
+
+.report-modal input:not(:disabled):user-invalid:focus,
+.report-modal select:not(:disabled):user-invalid:focus,
+.report-modal textarea:not(:disabled):user-invalid:focus {
+  border-color: #dc2626 !important;
+  outline-color: rgba(220, 38, 38, .25) !important;
+}
+
 /* Employee-product modal: three compact field columns, then contribution tables. */
 .report-modal {
   width: min(1440px, 98vw) !important;
