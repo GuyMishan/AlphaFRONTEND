@@ -59,6 +59,11 @@ function qs(values: Record<string, string | number | undefined>) {
   return value ? `?${value}` : "";
 }
 
+function normalizePaged<T>(result: PagedResult<T> | T[], take: number): PagedResult<T> {
+  if (Array.isArray(result)) return { items: result, hasMore: result.length >= take };
+  return result;
+}
+
 export const alphaApi = {
   health: () => request<{ status: string; service: string }>("/health"),
   organizations: (): Promise<Organization[]> => getSession()?.mode === "demo"
@@ -90,7 +95,7 @@ export const alphaApi = {
     : request<Employee[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees`),
   employeeSearch: (organizationId: string, employerId: string, search = "", skip = 0, take = 50): Promise<PagedResult<Employee>> => getSession()?.mode === "demo"
     ? Promise.resolve({ items: demoEmployees.filter((item) => `${item.firstName} ${item.lastName} ${item.nationalId} ${item.employeeNumber}`.includes(search)), hasMore: false })
-    : request<PagedResult<Employee>>(`/api/organizations/${organizationId}/employers/${employerId}/employees/search${qs({ search, skip, take })}`),
+    : request<PagedResult<Employee> | Employee[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees/search${qs({ search, skip, take })}`).then((result) => normalizePaged(result, take)),
   employee: (organizationId: string, employerId: string, employeeId: string): Promise<Employee> => getSession()?.mode === "demo"
     ? Promise.resolve(demoEmployees.find((item) => item.id === employeeId)!)
     : request<Employee>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}`),
@@ -112,7 +117,7 @@ export const alphaApi = {
   syncManualReportEmployees: (organizationId: string, employerId: string, reportId: string, employmentIds: string[]) =>
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/selection`, { method: "PUT", body: JSON.stringify({ employmentIds }) }),
   manualReportEmployees: (organizationId: string, employerId: string, reportId: string, search = "", skip = 0, take = 100): Promise<PagedResult<ManualReportEmployeeSummary>> =>
-    request<PagedResult<ManualReportEmployeeSummary>>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees${qs({ search, skip, take })}`),
+    request<PagedResult<ManualReportEmployeeSummary> | ManualReportEmployeeSummary[]>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees${qs({ search, skip, take })}`).then((result) => normalizePaged(result, take)),
   manualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string): Promise<ManualReportEmployeeDetail> =>
     request<ManualReportEmployeeDetail>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`),
   saveManualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string, products: ManualProductInput[]) =>
