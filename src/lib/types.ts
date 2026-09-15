@@ -22,7 +22,7 @@ export type Employee = {
   status: number;
   startDate: string;
   endDate: string | null;
-  monthlySalary: number;
+  monthlySalary?: number;
   personId: string;
   nationalId: string;
   firstName: string;
