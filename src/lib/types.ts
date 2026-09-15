@@ -51,6 +51,7 @@ export type ReportDraft = {
 
 export type PensionProductType = 1 | 2 | 3 | 4 | 99;
 export type ContributionComponent = 1 | 2 | 3 | 4;
+export type SalaryAllocationType = 1 | 2 | 3 | 4;
 
 export type ManualContributionInput = {
   component: ContributionComponent;
@@ -64,6 +65,9 @@ export type ManualProductInput = {
   policyNumber: string;
   salaryMonth: string;
   salary: number;
+  salaryAllocationType?: SalaryAllocationType;
+  salaryAllocationValue?: number | null;
+  allocationOrder?: number;
   reportingType: string;
   salaryLayer: string;
   section14: boolean;
@@ -90,6 +94,9 @@ export type EmployeePensionProductInput = {
   effectiveTo?: string | null;
   institutionalBody?: string;
   manufacturer?: string;
+  salaryAllocationType?: SalaryAllocationType;
+  salaryAllocationValue?: number | null;
+  allocationOrder?: number;
   employerContributions: EmployeePensionContributionInput[];
   employeeContributions: EmployeePensionContributionInput[];
 };
@@ -100,13 +107,16 @@ export type EmployeePensionContribution = EmployeePensionContributionInput & {
   party: string | number;
 };
 
-export type EmployeePensionProduct = Omit<EmployeePensionProductInput, "isActive" | "effectiveFrom" | "effectiveTo" | "institutionalBody" | "manufacturer"> & {
+export type EmployeePensionProduct = Omit<EmployeePensionProductInput, "isActive" | "effectiveFrom" | "effectiveTo" | "institutionalBody" | "manufacturer" | "salaryAllocationType" | "salaryAllocationValue" | "allocationOrder"> & {
   id: string;
   isActive: boolean;
   effectiveFrom: string;
   effectiveTo: string | null;
   institutionalBody: string;
   manufacturer: string;
+  salaryAllocationType: SalaryAllocationType;
+  salaryAllocationValue: number | null;
+  allocationOrder: number;
   missingDetails: string[];
   isComplete: boolean;
   employerContributions: EmployeePensionContribution[];
@@ -144,6 +154,7 @@ export type ManualReportEmployeeSummary = {
   firstName: string;
   lastName: string;
   employeeNumber: string;
+  monthlySalary: number;
   productCount: number;
   validationStatus: "ready" | "missing-products";
 };
