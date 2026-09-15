@@ -20,8 +20,6 @@ import type {
   OrganizationCapabilities,
   OrganizationRole,
   PagedResult,
-  PensionProductType,
-  ContributionComponent,
   UserCandidate,
 } from "./types";
 import { demoEmployees, demoEmployers, demoOrganizations } from "./demo-data";
@@ -66,37 +64,6 @@ function qs(values: Record<string, string | number | undefined>) {
 function normalizePaged<T>(result: PagedResult<T> | T[], take: number): PagedResult<T> {
   if (Array.isArray(result)) return { items: result, hasMore: result.length >= take };
   return result;
-}
-
-async function saveManualReportEmployeeWithSalarySync(organizationId: string, employerId: string, reportId: string, reportEmployeeId: string, products: ManualProductInput[]) {
-  const detail = await request<ManualReportEmployeeDetail>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`);
-  const salaryChanged = products.some((product, index) => detail.products[index] && Number(detail.products[index].salary) !== Number(product.salary));
-  const updateProfileSalary = salaryChanged && typeof window !== "undefined"
-    ? window.confirm("השכר שונה בדיווח. האם לעדכן את השכר החדש גם בתמהיל העובד כדי שישמש כברירת מחדל בדיווחים הבאים?")
-    : false;
-
-  await request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`, { method: "PUT", body: JSON.stringify({ products }) });
-  if (!updateProfileSalary) return;
-
-  const mixPath = `/api/organizations/${organizationId}/employers/${employerId}/employees/${detail.employmentId}/pension-mix/`;
-  const mix = await request<EmployeePensionProduct[]>(mixPath);
-  const updatedMix: EmployeePensionProductInput[] = mix.map((mixProduct) => {
-    const reportProduct = products.find((product) => Number(product.productType) === Number(mixProduct.productType)
-      && product.policyNumber.trim() === mixProduct.policyNumber.trim()
-      && product.salaryLayer === mixProduct.salaryLayer);
-    return {
-      productType: Number(mixProduct.productType) as PensionProductType,
-      policyNumber: mixProduct.policyNumber,
-      salary: reportProduct ? Number(reportProduct.salary) : Number(mixProduct.salary),
-      reportingType: mixProduct.reportingType,
-      salaryLayer: mixProduct.salaryLayer,
-      section14: mixProduct.section14,
-      section14StartDate: mixProduct.section14StartDate,
-      employerContributions: mixProduct.employerContributions.map((item) => ({ component: Number(item.component) as ContributionComponent, percentage: Number(item.percentage) })),
-      employeeContributions: mixProduct.employeeContributions.map((item) => ({ component: Number(item.component) as ContributionComponent, percentage: Number(item.percentage) })),
-    };
-  });
-  await request<void>(mixPath, { method: "PUT", body: JSON.stringify({ products: updatedMix }) });
 }
 
 export const alphaApi = {
@@ -161,7 +128,8 @@ export const alphaApi = {
     request<PagedResult<ManualReportEmployeeSummary> | ManualReportEmployeeSummary[]>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees${qs({ search, skip, take })}`).then((result) => normalizePaged(result, take)),
   manualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string): Promise<ManualReportEmployeeDetail> =>
     request<ManualReportEmployeeDetail>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`),
-  saveManualReportEmployee: saveManualReportEmployeeWithSalarySync,
+  saveManualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string, monthlySalary: number, products: ManualProductInput[]) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`, { method: "PUT", body: JSON.stringify({ monthlySalary, products }) }),
 
   accessUsers: (organizationId: string, search = "", skip = 0, take = 30): Promise<PagedResult<AccessUser>> =>
     getSession()?.mode === "demo" ? Promise.resolve({ items: [], hasMore: false }) : request<PagedResult<AccessUser>>(`/api/organizations/${organizationId}/access/users${qs({ search, skip, take })}`),
