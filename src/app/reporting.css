@@ -11,45 +11,64 @@
 .manual-employee-products { white-space: nowrap; }
 .manual-edit-btn { min-width: 86px; }
 
-.report-modal-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 24px; background: rgba(8, 22, 38, .55); backdrop-filter: blur(4px); }
-.report-modal { width: min(1180px, 96vw); max-height: 92vh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--surface); border-radius: 18px; box-shadow: 0 24px 70px rgba(5, 20, 36, .28); overflow: hidden; }
-.report-modal-header, .report-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 22px; border-bottom: 1px solid var(--line); background: white; }
-.report-modal-header h2 { margin: 0 0 3px; }
-.report-modal-header span { color: var(--muted); font-size: 13px; }
-.report-modal-footer { border-top: 1px solid var(--line); border-bottom: 0; }
-.report-modal-body { overflow-y: auto; padding: 20px 22px 28px; background: #f8fafc; }
-.icon-button { width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 10px; background: white; display: grid; place-items: center; cursor: pointer; color: var(--text); }
+.report-modal-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 18px; background: rgba(8, 22, 38, .52); backdrop-filter: blur(4px); }
+.report-modal { width: min(1080px, 95vw); max-height: 90vh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--surface); border-radius: 18px; box-shadow: 0 24px 70px rgba(5, 20, 36, .28); overflow: hidden; }
+.report-modal-header, .report-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: white; }
+.report-modal-header h2 { margin: 0 0 1px; font-size: 18px; }
+.report-modal-header span { color: var(--muted); font-size: 12px; }
+.report-modal-footer { border-top: 1px solid var(--line); border-bottom: 0; padding-block: 10px; }
+.report-modal-footer .btn { padding: 8px 13px; }
+.report-modal-body { overflow-y: auto; padding: 12px 14px 16px; background: #f8fafc; }
+.report-modal-body > .notice { margin-bottom: 10px; }
+.report-modal .field { gap: 4px; }
+.report-modal .field label { font-size: 12px; }
+.report-modal .field input, .report-modal .field select, .report-modal .field textarea { min-height: 36px; padding: 7px 9px; border-radius: 8px; font-size: 13px; }
+.icon-button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 9px; background: white; display: grid; place-items: center; cursor: pointer; color: var(--text); }
 .icon-button.danger { color: var(--danger); background: #fff7f8; }
-.employee-report-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
-.employee-report-summary > div { border: 1px solid var(--line); background: white; border-radius: 11px; padding: 12px 14px; }
+.employee-report-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 10px; }
+.employee-report-summary > div { border: 1px solid var(--line); background: white; border-radius: 9px; padding: 7px 10px; }
 .employee-report-summary span, .employee-report-summary b { display: block; }
-.employee-report-summary span { color: var(--muted); font-size: 12px; }
-.employee-report-summary b { margin-top: 3px; }
-.product-editor-list { display: grid; gap: 16px; margin-bottom: 14px; }
-.report-product-card { border: 1px solid var(--line); background: white; border-radius: 14px; padding: 17px; box-shadow: 0 2px 8px rgba(16,38,64,.03); }
-.report-product-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.employee-report-summary span { color: var(--muted); font-size: 11px; }
+.employee-report-summary b { margin-top: 1px; font-size: 13px; }
+.product-editor-list { display: grid; gap: 10px; margin-bottom: 10px; }
+.report-product-card { border: 1px solid var(--line); background: white; border-radius: 12px; padding: 11px; box-shadow: 0 2px 8px rgba(16,38,64,.03); }
+.report-product-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
 .report-product-title span, .report-product-title b { display: block; }
-.report-product-title span { color: var(--muted); font-size: 12px; }
-.report-product-title b { margin-top: 2px; font-size: 17px; }
-.report-product-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; }
-.section14-check { height: 45px; display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 10px; padding: 0 13px; background: #fbfcfe; font-weight: 600; }
-.section14-check input { width: 18px; height: 18px; accent-color: var(--blue); }
-.contribution-section { margin-top: 18px; }
-.contribution-section h3 { margin: 0 0 9px; font-size: 15px; }
-.contribution-table-wrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; }
-.contribution-table { min-width: 620px; background: white; }
-.contribution-table th:first-child { min-width: 110px; }
-.contribution-table input { width: 100%; min-width: 110px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; text-align: right; background: #fff; }
+.report-product-title span { color: var(--muted); font-size: 11px; }
+.report-product-title b { margin-top: 1px; font-size: 15px; }
+.report-product-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.section14-check { height: 36px; display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; background: #fbfcfe; font-size: 13px; font-weight: 600; }
+.section14-check input { width: 16px; height: 16px; accent-color: var(--blue); }
+.contribution-section { margin-top: 10px; }
+.contribution-section h3 { margin: 0 0 5px; font-size: 13px; }
+.contribution-table-wrap { overflow: hidden; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+.contribution-table { width: 100%; min-width: 0; table-layout: fixed; background: white; }
+.contribution-table th, .contribution-table td { padding: 4px 5px; font-size: 12px; }
+.contribution-table th:first-child { width: 18%; min-width: 0; }
+.contribution-table th:last-child { width: 26%; }
+.contribution-table input { width: 100%; min-width: 0; height: 29px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; text-align: right; background: #fff; font-size: 12px; }
 
 .virtual-table-wrap thead { position: sticky; top: 0; z-index: 2; background: white; }
 .virtual-table-wrap .virtual-spacer:hover { background: transparent; }
 .deposit-head { gap: 14px; }
 .deposit-summary { display: flex; gap: 8px; flex-wrap: wrap; }
-.deposit-toolbar { margin-bottom: 14px; }
-.deposit-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
-.deposit-table { width: 100%; min-width: 1180px; }
+.deposit-toolbar { margin-bottom: 10px; }
+.deposit-table-wrap { width: 100%; max-width: 100%; overflow-x: hidden; border: 1px solid var(--line); border-radius: 12px; }
+.deposit-table { width: 100%; min-width: 0; table-layout: fixed; }
+.deposit-table th, .deposit-table td { padding: 7px 6px; font-size: 12px; white-space: normal; line-height: 1.25; vertical-align: middle; }
+.deposit-table th { font-size: 11px; }
 .deposit-table td:first-child b, .deposit-table td:first-child span { display: block; }
-.deposit-table td:first-child span { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.deposit-table td:first-child span { color: var(--muted); font-size: 11px; margin-top: 1px; }
+.deposit-table th:first-child, .deposit-table td:first-child { width: 18%; }
+.deposit-table th:nth-child(2), .deposit-table td:nth-child(2) { width: 11%; }
+.deposit-table th:nth-child(3), .deposit-table td:nth-child(3) { width: 10%; }
+.deposit-table th:nth-child(4), .deposit-table td:nth-child(4) { width: 11%; }
+.deposit-table th:nth-child(5), .deposit-table td:nth-child(5) { width: 14%; }
+.deposit-table th:nth-child(6), .deposit-table td:nth-child(6) { width: 11%; }
+.deposit-table th:nth-child(7), .deposit-table td:nth-child(7) { width: 10%; }
+.deposit-table th:nth-child(8), .deposit-table td:nth-child(8) { width: 9%; }
+.deposit-table th:last-child, .deposit-table td:last-child { width: 6%; text-align: center; }
+.deposit-table .icon-button { width: 30px; height: 30px; margin: auto; }
 
 @media (max-width: 900px) { .report-product-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
@@ -63,23 +82,23 @@
   .manual-edit-btn { grid-column: 3; grid-row: 1; min-width: 0; padding: 8px 10px; }
   .report-modal-backdrop { padding: 0; place-items: stretch; }
   .report-modal { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; }
-  .report-modal-header, .report-modal-footer { padding: 14px; }
+  .report-modal-header, .report-modal-footer { padding: 11px 12px; }
   .report-modal-header > div { min-width: 0; }
-  .report-modal-header h2 { font-size: 20px; }
+  .report-modal-header h2 { font-size: 18px; }
   .report-modal-header span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .report-modal-body { padding: 12px 10px 18px; overflow-x: hidden; }
+  .report-modal-body { padding: 10px 8px 14px; overflow-x: hidden; }
   .report-modal-footer .btn { flex: 1; min-width: 0; }
-  .employee-report-summary { grid-template-columns: 1fr; }
-  .report-product-card { padding: 10px; min-width: 0; overflow: hidden; }
+  .employee-report-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .report-product-card { padding: 9px; min-width: 0; overflow: hidden; }
   .report-product-fields { grid-template-columns: 1fr; }
-  .contribution-section { margin-top: 14px; }
-  .contribution-section h3 { margin-bottom: 6px; font-size: 14px; }
+  .contribution-section { margin-top: 9px; }
+  .contribution-section h3 { margin-bottom: 4px; font-size: 12px; }
   .contribution-table-wrap { overflow: hidden; width: 100%; max-width: 100%; }
   .contribution-table { width: 100%; min-width: 0; table-layout: fixed; font-size: 11px; }
-  .contribution-table th, .contribution-table td { padding: 5px 3px !important; min-width: 0; }
+  .contribution-table th, .contribution-table td { padding: 4px 3px !important; min-width: 0; }
   .contribution-table th:first-child, .contribution-table td:first-child { width: 21%; min-width: 0; }
   .contribution-table th:last-child, .contribution-table td:last-child { width: 29%; }
-  .contribution-table input { width: 100%; min-width: 0; box-sizing: border-box; padding: 5px 3px; border-radius: 6px; font-size: 12px; }
+  .contribution-table input { width: 100%; min-width: 0; box-sizing: border-box; padding: 4px 3px; height: 27px; border-radius: 5px; font-size: 11px; }
 
   .deposit-head { display: grid; }
   .deposit-toolbar { display: grid; }
@@ -88,7 +107,7 @@
   .deposit-table thead { display: none; }
   .deposit-table tbody { display: grid; gap: 10px; }
   .deposit-table tr:not(.virtual-spacer) { display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: white; height: auto !important; }
-  .deposit-table td { border: 0 !important; padding: 0 !important; min-width: 0; }
+  .deposit-table td { border: 0 !important; padding: 0 !important; min-width: 0; width: auto !important; }
   .deposit-table td:first-child { grid-column: 1 / 2; }
   .deposit-table td:last-child { grid-column: 2; grid-row: 1; }
   .deposit-table td:nth-child(n+2):not(:last-child) { grid-column: 1 / -1; display: grid; grid-template-columns: 125px minmax(0,1fr); gap: 8px; }
@@ -100,5 +119,5 @@
   .deposit-table td:nth-child(7)::before { content: "תאריך ערך"; color: var(--muted); }
   .deposit-table td:nth-child(8)::before { content: "סוג דיווח"; color: var(--muted); }
   .deposit-table tr.virtual-spacer { display: block; border: 0; padding: 0; background: transparent; }
-  .deposit-table tr.virtual-spacer td { display: block !important; width: 1px; }
+  .deposit-table tr.virtual-spacer td { display: block !important; width: 1px !important; }
 }
