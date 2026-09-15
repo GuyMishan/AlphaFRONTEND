@@ -73,6 +73,28 @@
 .deposit-table th:last-child, .deposit-table td:last-child { width: 6%; text-align: center; }
 .deposit-table .icon-button { width: 30px; height: 30px; margin: auto; }
 
+.upload-zone { position: relative; display: grid; place-items: center; gap: 8px; min-height: 225px; border: 1.5px dashed #a9bdd4; border-radius: 16px; padding: 28px 24px; background: linear-gradient(180deg, #fbfdff, #f5f9ff); cursor: pointer; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease; }
+.upload-zone:hover, .upload-zone.drag-active { border-color: var(--blue); background: #f2f7ff; box-shadow: inset 0 0 0 1px rgba(40,101,216,.08); }
+.upload-zone.drag-active { transform: translateY(-1px); }
+.upload-zone > svg { width: 46px; height: 46px; padding: 11px; border-radius: 13px; background: var(--blue-soft); color: var(--blue); }
+.upload-zone h3 { margin: 4px 0 0; font-size: 17px; font-weight: 750; }
+.upload-zone p { margin: 0 0 5px; font-size: 13px; color: var(--muted); }
+.upload-zone .btn { pointer-events: none; min-width: 124px; padding: 8px 14px; }
+.salary-upload-tools-root { margin-top: 13px; }
+.salary-upload-tools { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr); gap: 12px; }
+.salary-upload-info, .salary-template-panel { border: 1px solid var(--line); border-radius: 12px; background: white; padding: 13px 15px; min-width: 0; }
+.salary-upload-info { display: flex; gap: 10px; align-items: flex-start; }
+.salary-upload-info > svg { color: var(--blue); flex: 0 0 auto; margin-top: 2px; }
+.salary-upload-info b { display: block; margin-bottom: 3px; font-size: 13px; }
+.salary-upload-info span { display: block; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.salary-template-title { display: flex; gap: 9px; align-items: flex-start; margin-bottom: 9px; }
+.salary-template-title > svg { color: var(--blue); flex: 0 0 auto; margin-top: 1px; }
+.salary-template-title h3 { margin: 0; font-size: 14px; }
+.salary-template-title span { display: block; color: var(--muted); font-size: 11px; margin-top: 1px; }
+.salary-template-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.salary-template-actions .btn { padding: 7px 10px; font-size: 12px; min-width: 78px; }
+.salary-template-panel p { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+
 @media (max-width: 900px) { .report-product-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 @media (max-width: 760px) {
@@ -104,6 +126,10 @@
   .contribution-table th:first-child, .contribution-table td:first-child { width: 21%; min-width: 0; }
   .contribution-table th:last-child, .contribution-table td:last-child { width: 29%; }
   .contribution-table input { width: 100%; min-width: 0; box-sizing: border-box; padding: 4px 3px; height: 27px; border-radius: 5px; font-size: 11px; }
+  .upload-zone { min-height: 195px; padding: 22px 14px; }
+  .upload-zone h3 { font-size: 15px; text-align: center; }
+  .salary-upload-tools { grid-template-columns: 1fr; }
+  .salary-template-actions .btn { flex: 1; min-width: 0; }
 
   .deposit-head { display: grid; }
   .deposit-toolbar { display: grid; }
