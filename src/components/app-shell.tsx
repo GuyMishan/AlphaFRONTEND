@@ -46,8 +46,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   const pathname = usePathname();
   const router = useRouter();
   const [session, setLocalSession] = useState<Session | null>(null);
-  const [singleEmployerUser, setSingleEmployerUser] = useState(false);
-  const [scopeResolved, setScopeResolved] = useState(false);
+  const [singleEmployerUser, setSingleEmployerUser] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pageConfig, setPageConfigState] = useState<ShellPageConfig>(initialConfig);
 
@@ -56,6 +55,8 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   }, []);
   const shellContext = useMemo(() => ({ setPageConfig }), [setPageConfig]);
 
+  // Resolve authentication and access scope once for the lifetime of the shared shell.
+  // Navigation between protected routes must not re-run this check or temporarily expose broader navigation.
   useEffect(() => {
     let active = true;
     const current = getSession();
@@ -63,20 +64,26 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
       router.replace("/login");
       return;
     }
+
     setLocalSession(current);
     resolveSingleEmployerScope()
       .then((scope) => {
-        if (!active) return;
-        const isSingle = Boolean(scope);
-        setSingleEmployerUser(isSingle);
-        if (isSingle && (pathname.startsWith("/employers") || pathname.startsWith("/access"))) {
-          router.replace("/dashboard");
-        }
+        if (active) setSingleEmployerUser(Boolean(scope));
       })
-      .catch(() => { if (active) setSingleEmployerUser(false); })
-      .finally(() => { if (active) setScopeResolved(true); });
+      .catch(() => {
+        if (active) setSingleEmployerUser(true);
+      });
+
     return () => { active = false; };
-  }, [pathname, router]);
+  }, [router]);
+
+  // Route protection depends on the already-resolved scope, but does not re-resolve it.
+  useEffect(() => {
+    if (singleEmployerUser !== true) return;
+    if (pathname.startsWith("/employers") || pathname.startsWith("/access")) {
+      router.replace("/dashboard");
+    }
+  }, [pathname, router, singleEmployerUser]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -94,9 +101,8 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     router.replace("/login");
   }
 
-  // On the first protected page load we still wait for authentication/scope resolution.
-  // Once mounted in the shared layout, this frame remains mounted while route children change.
-  if (!session || !scopeResolved) return null;
+  // Fail closed: do not render the protected application chrome until the user's scope is known.
+  if (!session || singleEmployerUser === null) return null;
 
   const visibleNav = singleEmployerUser ? nav.filter((item) => item.href !== "/employers") : nav;
   const navigation = (
