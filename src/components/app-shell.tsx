@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Building2, FileClock, FilePlus2, Gauge, LogOut, Menu, Settings, ShieldCheck, Users, X } from "lucide-react";
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
@@ -18,13 +18,43 @@ const nav = [
   { href: "/employers", label: "מעסיקים", icon: Building2 },
 ];
 
+type ShellPageConfig = {
+  title: string;
+  hideScopeController: boolean;
+};
+
+type ShellContextValue = {
+  setPageConfig: (config: ShellPageConfig) => void;
+};
+
+const ShellContext = createContext<ShellContextValue | null>(null);
+
 export function AppShell({ children, title = "מרכז התפעול", hideScopeController = false }: { children: React.ReactNode; title?: string; hideScopeController?: boolean }) {
+  const parentShell = useContext(ShellContext);
+
+  useEffect(() => {
+    if (!parentShell) return;
+    parentShell.setPageConfig({ title, hideScopeController });
+  }, [parentShell, title, hideScopeController]);
+
+  if (parentShell) return <>{children}</>;
+
+  return <AppShellFrame initialConfig={{ title, hideScopeController }}>{children}</AppShellFrame>;
+}
+
+function AppShellFrame({ children, initialConfig }: { children: React.ReactNode; initialConfig: ShellPageConfig }) {
   const pathname = usePathname();
   const router = useRouter();
   const [session, setLocalSession] = useState<Session | null>(null);
   const [singleEmployerUser, setSingleEmployerUser] = useState(false);
   const [scopeResolved, setScopeResolved] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pageConfig, setPageConfigState] = useState<ShellPageConfig>(initialConfig);
+
+  const setPageConfig = useCallback((config: ShellPageConfig) => {
+    setPageConfigState((current) => current.title === config.title && current.hideScopeController === config.hideScopeController ? current : config);
+  }, []);
+  const shellContext = useMemo(() => ({ setPageConfig }), [setPageConfig]);
 
   useEffect(() => {
     let active = true;
@@ -64,6 +94,8 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
     router.replace("/login");
   }
 
+  // On the first protected page load we still wait for authentication/scope resolution.
+  // Once mounted in the shared layout, this frame remains mounted while route children change.
   if (!session || !scopeResolved) return null;
 
   const visibleNav = singleEmployerUser ? nav.filter((item) => item.href !== "/employers") : nav;
@@ -84,32 +116,34 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
   );
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <Brand />
-        {navigation}
-      </aside>
-
-      {mobileMenuOpen ? <button className="mobile-sidebar-backdrop" aria-label="סגירת תפריט" onClick={() => setMobileMenuOpen(false)} /> : null}
-      <aside className={`mobile-sidebar${mobileMenuOpen ? " open" : ""}`} aria-hidden={!mobileMenuOpen}>
-        <div className="mobile-sidebar-head">
+    <ShellContext.Provider value={shellContext}>
+      <div className="app-shell">
+        <aside className="sidebar">
           <Brand />
-          <button className="mobile-close" onClick={() => setMobileMenuOpen(false)} aria-label="סגירת תפריט"><X size={22} /></button>
-        </div>
-        {navigation}
-      </aside>
+          {navigation}
+        </aside>
 
-      <div className="workspace">
-        <header className="topbar">
-          <div className="topbar-leading">
-            <button className="mobile-menu" onClick={() => setMobileMenuOpen(true)} aria-label="פתיחת תפריט"><Menu size={23} /></button>
-            <div className="topbar-title"><b>{title}</b><span>מערכת תפעול פנסיוני</span></div>
+        {mobileMenuOpen ? <button className="mobile-sidebar-backdrop" aria-label="סגירת תפריט" onClick={() => setMobileMenuOpen(false)} /> : null}
+        <aside className={`mobile-sidebar${mobileMenuOpen ? " open" : ""}`} aria-hidden={!mobileMenuOpen}>
+          <div className="mobile-sidebar-head">
+            <Brand />
+            <button className="mobile-close" onClick={() => setMobileMenuOpen(false)} aria-label="סגירת תפריט"><X size={22} /></button>
           </div>
-          <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className={`dot${session.mode === "demo" ? "" : " online"}`} />{session.mode === "demo" ? "מצב הדגמה" : "חיבור API פעיל"}</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
-        </header>
-        {hideScopeController ? null : <ScopeController singleEmployerUser={singleEmployerUser} />}
-        <main className="main">{children}</main>
+          {navigation}
+        </aside>
+
+        <div className="workspace">
+          <header className="topbar">
+            <div className="topbar-leading">
+              <button className="mobile-menu" onClick={() => setMobileMenuOpen(true)} aria-label="פתיחת תפריט"><Menu size={23} /></button>
+              <div className="topbar-title"><b>{pageConfig.title}</b><span>מערכת תפעול פנסיוני</span></div>
+            </div>
+            <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className={`dot${session.mode === "demo" ? "" : " online"}`} />{session.mode === "demo" ? "מצב הדגמה" : "חיבור API פעיל"}</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
+          </header>
+          {pageConfig.hideScopeController ? null : <ScopeController singleEmployerUser={singleEmployerUser} />}
+          <main className="main">{children}</main>
+        </div>
       </div>
-    </div>
+    </ShellContext.Provider>
   );
 }
