@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, X } from "lucide-react";
 import { VirtualizedTable } from "@/components/virtualized-table";
+import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
 import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
 import type { Employer } from "@/lib/types";
@@ -21,7 +22,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
   async function load(search = query) {
     setLoading(true); setError("");
     try { setRows((await manualDepositsApi.list(organizationId, employerId, reportId, search.trim(), 0, 100)).items); }
-    catch (err) { setError(err instanceof Error ? err.message : "טעינת נתוני ההפקדות נכשלה"); }
+    catch (err) { const message = err instanceof Error ? err.message : "טעינת נתוני ההפקדות נכשלה"; setError(message); notify.error(message); }
     finally { setLoading(false); }
   }
 
@@ -48,7 +49,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
     {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <VirtualizedTable
       items={rows}
       rowKey={(row) => row.id}
-      rowHeight={62}
+      rowHeight={48}
       maxHeight={560}
       tableClassName="deposit-table"
       wrapperClassName="deposit-table-wrap"
@@ -68,6 +69,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
     {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} onClose={() => setEditing(null)} onSaved={(updated) => {
       setRows((current) => current.map((item) => item.id === updated.id ? updated : item));
       setEditing(null);
+      notify.success("פרטי אמצעי התשלום נשמרו בהצלחה");
     }} /> : null}
   </>;
 }
@@ -114,13 +116,15 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   async function save() {
     setError("");
     const errors = validatePayment(form);
-    if (errors.length) { setError(errors.join(" ")); return; }
+    if (errors.length) { const message = errors.join(" "); setError(message); notify.error(message); return; }
     setSaving(true);
     try {
       await manualDepositsApi.savePayment(organizationId, employerId, reportId, row.id, form);
       onSaved({ ...row, ...form });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שמירת פרטי אמצעי התשלום נכשלה");
+      const message = err instanceof Error ? err.message : "שמירת פרטי אמצעי התשלום נכשלה";
+      setError(message);
+      notify.error(message);
       setSaving(false);
     }
   }
@@ -128,15 +132,15 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const bankRequired = form.paymentMethod === "העברה בנקאית" || form.paymentMethod === "מס״ב";
   return <div className="report-modal-backdrop payment-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
     <div className="payment-modal" role="dialog" aria-modal="true" aria-label="פרטי אמצעי תשלום">
-      <button className="payment-modal-close" onClick={onClose} aria-label="סגירה"><X size={22} /></button>
+      <button className="payment-modal-close" onClick={onClose} aria-label="סגירה"><X size={20} /></button>
       <div className="payment-modal-title">פרטי אמצעי תשלום</div>
-      <div className="payment-employer-chip"><BriefcaseBusiness size={19} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={16} /></div>
+      <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <div className="notice notice-error payment-error">{error}</div> : null}
       <div className="payment-layout">
         <aside className="payment-notes"><b>לתשומת לבך</b><p>יש להזין את פרטי התשלום והאסמכתא המתאימים להעברה שבוצעה עבור הדיווח הנוכחי.</p><p>בהעברה בנקאית יש לציין את תאריך הערך, מספר האסמכתא ופרטי חשבון המעסיק שממנו בוצעה ההעברה.</p><p>הסכום מוצג לפי נתוני ההפקדות שנקלטו בדיווח ואינו משנה את רכיבי ההפקדה של העובד.</p></aside>
         <div className="payment-main">
-          <section className="payment-panel"><h3>פרטי חשבון יצרן לזיכוי</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר *</label><input required maxLength={160} value={form.providerName} onChange={(e) => patch("providerName", e.target.value)} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי *</label><div className="payment-input-icon"><input required maxLength={120} value={form.providerAccount} onChange={(e) => patch("providerAccount", e.target.value)} placeholder="בנק - סניף - חשבון" /><Pencil size={16} /></div></div></div></section>
-          <section className="payment-panel"><h3>פרטי אופן תשלום</h3><div className="payment-method-grid"><div className="field payment-method"><label>אופן התשלום *</label><select required value={form.paymentMethod} onChange={(e) => patch("paymentMethod", e.target.value)}><option>העברה בנקאית</option><option>מס״ב</option><option>המחאה</option><option>אחר</option></select></div><div className="field"><label>תאריך ערך{bankRequired ? " *" : ""}</label><div className="payment-input-icon"><input required={bankRequired} type="date" value={form.valueDate?.slice(0, 10) || ""} onChange={(e) => patch("valueDate", e.target.value || null)} /><CalendarDays size={16} /></div></div><div className="field"><label>מס׳ אסמכתא{bankRequired ? " *" : ""}</label><input required={bankRequired} maxLength={120} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div><label className="payment-upload"><FileUp size={17} /><span>{form.confirmationFileName || "צירוף אישור העברה"}</span><input type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label><div className="field"><label>בנק</label><input maxLength={120} value={form.employerBankName} onChange={(e) => patch("employerBankName", e.target.value)} placeholder="שם הבנק" /></div><div className="field"><label>מס׳ בנק{bankRequired ? " *" : ""}</label><input required={bankRequired} inputMode="numeric" maxLength={4} value={form.employerBankCode} onChange={(e) => patch("employerBankCode", e.target.value.replace(/\D/g, "").slice(0, 4))} /></div><div className="field"><label>סניף{bankRequired ? " *" : ""}</label><input required={bankRequired} inputMode="numeric" maxLength={5} value={form.employerBranch} onChange={(e) => patch("employerBranch", e.target.value.replace(/\D/g, "").slice(0, 5))} /></div><div className="field"><label>מס׳ חשבון{bankRequired ? " *" : ""}</label><input required={bankRequired} inputMode="numeric" maxLength={20} value={form.employerAccount} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div></div></section>
+          <section className="payment-panel"><h3>פרטי חשבון יצרן לזיכוי</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר *</label><input required maxLength={160} value={form.providerName} onChange={(e) => patch("providerName", e.target.value)} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי *</label><div className="payment-input-icon"><input required maxLength={120} value={form.providerAccount} onChange={(e) => patch("providerAccount", e.target.value)} placeholder="בנק - סניף - חשבון" /><Pencil size={14} /></div></div></div></section>
+          <section className="payment-panel"><h3>פרטי אופן תשלום</h3><div className="payment-method-grid"><div className="field payment-method"><label>אופן התשלום *</label><select required value={form.paymentMethod} onChange={(e) => patch("paymentMethod", e.target.value)}><option>העברה בנקאית</option><option>מס״ב</option><option>המחאה</option><option>אחר</option></select></div><div className="field"><label>תאריך ערך{bankRequired ? " *" : ""}</label><div className="payment-input-icon"><input required={bankRequired} type="date" value={form.valueDate?.slice(0, 10) || ""} onChange={(e) => patch("valueDate", e.target.value || null)} /><CalendarDays size={14} /></div></div><div className="field"><label>מס׳ אסמכתא{bankRequired ? " *" : ""}</label><input required={bankRequired} maxLength={120} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div><label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור העברה"}</span><input type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label><div className="field"><label>בנק</label><input maxLength={120} value={form.employerBankName} onChange={(e) => patch("employerBankName", e.target.value)} placeholder="שם הבנק" /></div><div className="field"><label>מס׳ בנק{bankRequired ? " *" : ""}</label><input required={bankRequired} inputMode="numeric" maxLength={4} value={form.employerBankCode} onChange={(e) => patch("employerBankCode", e.target.value.replace(/\D/g, "").slice(0, 4))} /></div><div className="field"><label>סניף{bankRequired ? " *" : ""}</label><input required={bankRequired} inputMode="numeric" maxLength={5} value={form.employerBranch} onChange={(e) => patch("employerBranch", e.target.value.replace(/\D/g, "").slice(0, 5))} /></div><div className="field"><label>מס׳ חשבון{bankRequired ? " *" : ""}</label><input required={bankRequired} inputMode="numeric" maxLength={20} value={form.employerAccount} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div></div></section>
         </div>
       </div>
       <div className="payment-modal-footer"><button className="btn btn-primary" disabled={saving} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button><button className="btn btn-secondary" onClick={onClose}>ביטול</button></div>
