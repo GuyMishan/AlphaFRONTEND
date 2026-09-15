@@ -9,8 +9,8 @@
 
 .pension-fund-search > svg {
   position: absolute;
-  right: 14px;
-  left: auto;
+  left: 14px;
+  right: auto;
   top: 50%;
   transform: translateY(-50%);
   color: var(--muted);
@@ -19,8 +19,8 @@
 }
 
 .pension-fund-search > input {
-  padding-right: 42px !important;
-  padding-left: 14px !important;
+  padding-right: 14px !important;
+  padding-left: 42px !important;
   text-align: right;
   direction: rtl;
 }
@@ -45,7 +45,8 @@
 }
 
 .pension-fund-option,
-.pension-fund-empty {
+.pension-fund-empty,
+.pension-fund-loading {
   display: block;
   width: 100%;
   min-width: max-content;
@@ -82,6 +83,49 @@
 
 .pension-fund-empty {
   color: var(--muted);
+}
+
+.pension-fund-loading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 42px;
+  color: var(--muted);
+}
+
+.loading-dots {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  direction: ltr;
+}
+
+.loading-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pension-loading-dot 1s infinite ease-in-out;
+}
+
+.loading-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.loading-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes pension-loading-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
 }
 
 /* RTL scope/navbar values: reserve room for the icon even when the value is plain text. */
