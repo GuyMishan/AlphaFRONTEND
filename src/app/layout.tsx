@@ -8,6 +8,7 @@ import "./mobile.css";
 import "./reporting.css";
 import "./payment-editor.css";
 import "./notifications.css";
+import "./ui-fixes.css";
 
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo" });
 
