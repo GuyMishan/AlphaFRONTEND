@@ -1,0 +1,111 @@
+.pension-fund-autocomplete {
+  position: relative;
+}
+
+.pension-fund-search {
+  position: relative;
+  width: 100%;
+}
+
+.pension-fund-search > svg {
+  position: absolute;
+  right: 14px;
+  left: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pension-fund-search > input {
+  padding-right: 42px !important;
+  padding-left: 14px !important;
+  text-align: right;
+  direction: rtl;
+}
+
+.pension-fund-options {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  right: 0;
+  left: auto;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(720px, calc(100vw - 32px));
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(16, 38, 64, 0.14);
+}
+
+.pension-fund-option,
+.pension-fund-empty {
+  display: block;
+  width: 100%;
+  min-width: max-content;
+  margin: 0;
+  border: 0;
+  border-radius: 7px;
+  background: #fff;
+  color: #111827;
+  padding: 10px 12px;
+  text-align: right;
+  direction: rtl;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+
+.pension-fund-option {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pension-fund-option:hover,
+.pension-fund-option:focus-visible {
+  background: #f1f4f8;
+  outline: none;
+}
+
+.pension-fund-option.selected,
+.pension-fund-option.selected:hover,
+.pension-fund-option.selected:focus-visible {
+  background: var(--blue-soft);
+  color: var(--text);
+  font-weight: 650;
+}
+
+.pension-fund-empty {
+  color: var(--muted);
+}
+
+/* RTL scope/navbar values: reserve room for the icon even when the value is plain text. */
+.scope-selects label > div > span {
+  display: block;
+  min-width: 210px;
+  min-height: 39px;
+  padding: 9px 37px 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--text);
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Date/month fields are interactive controls and should communicate that visually. */
+input[type="date"],
+input[type="month"] {
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
