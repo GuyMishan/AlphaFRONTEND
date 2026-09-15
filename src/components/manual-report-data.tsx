@@ -45,6 +45,26 @@ function maxPercentage(productType: PensionProductType, party: "employer" | "emp
   return 100;
 }
 
+function snapshotEmployee(row: ManualReportEmployeeSummary): Employee {
+  return {
+    id: row.employmentId,
+    personId: row.personId,
+    nationalId: row.nationalId,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    employeeNumber: row.employeeNumber,
+    status: 1,
+    startDate: "",
+    endDate: null,
+  };
+}
+
+function matchesEmployee(employee: Employee, search: string) {
+  const term = search.trim().toLowerCase();
+  if (!term) return true;
+  return `${employee.firstName} ${employee.lastName} ${employee.nationalId} ${employee.employeeNumber}`.toLowerCase().includes(term);
+}
+
 export function ManualReportData({ organizationId, employerId, reportId, month, employees, selectedIds, setSelectedIds }: Props) {
   const [rows, setRows] = useState<ManualReportEmployeeSummary[]>([]);
   const [visibleEmployees, setVisibleEmployees] = useState<Employee[]>(employees);
@@ -58,24 +78,42 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   async function loadList(search = "", showLoading = true) {
     if (showLoading) setLoading(true);
     setError("");
-    try {
-      const [employeeResult, reportResult] = await Promise.all([
-        alphaApi.employeeSearch(organizationId, employerId, search, 0, 100),
-        alphaApi.manualReportEmployees(organizationId, employerId, reportId, search, 0, 100),
-      ]);
-      setVisibleEmployees(employeeResult.items);
-      setRows(reportResult.items);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "טעינת רשימת העובדים נכשלה");
-    } finally {
-      if (showLoading) setLoading(false);
+
+    const [employeeResult, reportResult] = await Promise.allSettled([
+      alphaApi.employeeSearch(organizationId, employerId, search, 0, 100),
+      alphaApi.manualReportEmployees(organizationId, employerId, reportId, search, 0, 100),
+    ]);
+
+    const reportRows = reportResult.status === "fulfilled" ? reportResult.value.items : [];
+    if (reportResult.status === "fulfilled") setRows(reportRows);
+
+    if (employeeResult.status === "fulfilled" && employeeResult.value.items.length > 0) {
+      setVisibleEmployees(employeeResult.value.items);
+    } else {
+      const fromProps = employees.filter((employee) => matchesEmployee(employee, search));
+      if (fromProps.length > 0) {
+        setVisibleEmployees(fromProps);
+      } else {
+        setVisibleEmployees(reportRows.map(snapshotEmployee));
+      }
     }
+
+    if (employeeResult.status === "rejected" && reportResult.status === "rejected") {
+      const employeeError = employeeResult.reason instanceof Error ? employeeResult.reason.message : "";
+      const reportError = reportResult.reason instanceof Error ? reportResult.reason.message : "";
+      setError(employeeError || reportError || "טעינת רשימת העובדים נכשלה");
+    } else if (reportResult.status === "rejected") {
+      setError(reportResult.reason instanceof Error ? reportResult.reason.message : "טעינת נתוני העובדים בדיווח נכשלה");
+    }
+
+    if (showLoading) setLoading(false);
   }
 
   async function loadRows(search = "") {
     try {
       const result = await alphaApi.manualReportEmployees(organizationId, employerId, reportId, search, 0, 100);
       setRows(result.items);
+      if (visibleEmployees.length === 0 && result.items.length > 0) setVisibleEmployees(result.items.map(snapshotEmployee));
     } catch (err) { setError(err instanceof Error ? err.message : "טעינת עובדי הדיווח נכשלה"); }
   }
 
@@ -83,7 +121,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
     setQuery("");
     setVisibleEmployees(employees);
     void loadList("", true);
-  }, [organizationId, employerId, reportId]);
+  }, [organizationId, employerId, reportId, employees]);
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
