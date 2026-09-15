@@ -1,0 +1,10 @@
+.notification-stack { position: fixed; top: 18px; left: 18px; z-index: 1000; width: min(390px, calc(100vw - 36px)); display: grid; gap: 10px; pointer-events: none; }
+.notification-toast { pointer-events: auto; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: start; gap: 10px; padding: 12px 13px; border-radius: 13px; background: #fff; border: 1px solid var(--line); box-shadow: 0 14px 42px rgba(16,38,64,.16); font-size: 14px; line-height: 1.45; animation: notification-in .18s ease-out; }
+.notification-toast > svg { margin-top: 1px; }
+.notification-toast span { min-width: 0; }
+.notification-toast button { border: 0; background: transparent; color: inherit; padding: 0; cursor: pointer; display: grid; place-items: center; opacity: .72; }
+.notification-error { border-color: #f2c3c9; color: #9e2937; background: #fff9fa; }
+.notification-success { border-color: #bfe6db; color: #087461; background: #f7fffc; }
+.notification-info { border-color: #cbdcf8; color: #275083; background: #f8fbff; }
+@keyframes notification-in { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@media (max-width: 760px) { .notification-stack { top: 12px; left: 12px; right: 12px; width: auto; } }
