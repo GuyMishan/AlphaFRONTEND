@@ -19,8 +19,9 @@ export default function LoginPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
-    if (!isIsraeliId(nationalId)) { setError("תעודת הזהות אינה תקינה."); return; }
-    if (!/^05\d{8}$/.test(phone)) { setError("מספר הטלפון חייב להיות מספר נייד ישראלי בן 10 ספרות."); return; }
+    const isDemoCredentials = nationalId === DEMO_CREDENTIALS.nationalId && phone === DEMO_CREDENTIALS.phone;
+    if (!isDemoCredentials && !isIsraeliId(nationalId)) { setError("תעודת הזהות אינה תקינה."); return; }
+    if (!isDemoCredentials && !/^05\d{8}$/.test(phone)) { setError("מספר הטלפון חייב להיות מספר נייד ישראלי בן 10 ספרות."); return; }
     setLoading(true);
     try {
       const response = await fetch("/api/backend/api/auth/prototype-login", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ nationalId, phone }), cache: "no-store" });
