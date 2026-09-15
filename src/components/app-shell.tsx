@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Building2, FileClock, FilePlus2, Gauge, LogOut, Menu, Settings, ShieldCheck, Users, X } from "lucide-react";
+import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, LogOut, Menu, Settings, ShieldCheck, Users, X } from "lucide-react";
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
 import { resolveSingleEmployerScope } from "@/lib/access-scope";
@@ -55,8 +55,6 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   }, []);
   const shellContext = useMemo(() => ({ setPageConfig }), [setPageConfig]);
 
-  // Resolve authentication and access scope once for the lifetime of the shared shell.
-  // Navigation between protected routes must not re-run this check or temporarily expose broader navigation.
   useEffect(() => {
     let active = true;
     const current = getSession();
@@ -77,13 +75,16 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     return () => { active = false; };
   }, [router]);
 
-  // Route protection depends on the already-resolved scope, but does not re-resolve it.
   useEffect(() => {
-    if (singleEmployerUser !== true) return;
-    if (pathname.startsWith("/employers") || pathname.startsWith("/access")) {
+    if (!session || singleEmployerUser === null) return;
+    if (pathname.startsWith("/admin") && !session.platformAdmin) {
+      router.replace("/dashboard");
+      return;
+    }
+    if (singleEmployerUser === true && (pathname.startsWith("/employers") || pathname.startsWith("/access"))) {
       router.replace("/dashboard");
     }
-  }, [pathname, router, singleEmployerUser]);
+  }, [pathname, router, session, singleEmployerUser]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -101,7 +102,6 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     router.replace("/login");
   }
 
-  // Fail closed: do not render the protected application chrome until the user's scope is known.
   if (!session || singleEmployerUser === null) return null;
 
   const visibleNav = singleEmployerUser ? nav.filter((item) => item.href !== "/employers") : nav;
@@ -112,6 +112,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
           <Link key={href} href={href} className={pathname === href ? "active" : ""}><Icon size={18} />{label}</Link>
         ))}
         <div className="nav-divider" />
+        {session.platformAdmin ? <Link href="/admin" className={pathname.startsWith("/admin") ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
         {!singleEmployerUser ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />הרשאות</Link> : null}
         <Link href="/settings" className={pathname === "/settings" ? "active" : ""}><Settings size={18} />הגדרות</Link>
       </nav>
