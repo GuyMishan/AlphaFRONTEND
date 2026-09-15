@@ -8,6 +8,16 @@ import { AuthBrand } from "@/components/auth-brand";
 import { setSession } from "@/lib/session";
 import { isIsraeliId } from "@/lib/validation";
 
+const DEMO_LOGIN_CREDENTIALS = new Set([
+  "123456789:0501234567",
+  "200000008:0507000001",
+  "200000016:0507000002",
+]);
+
+function isDemoLogin(nationalId: string, phone: string) {
+  return DEMO_LOGIN_CREDENTIALS.has(`${nationalId}:${phone}`);
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [nationalId, setNationalId] = useState("");
@@ -18,8 +28,11 @@ export default function LoginPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
-    if (!isIsraeliId(nationalId)) { setError("תעודת הזהות אינה תקינה."); return; }
-    if (!/^05\d{8}$/.test(phone)) { setError("מספר הטלפון חייב להיות מספר נייד ישראלי בן 10 ספרות."); return; }
+
+    const demoLogin = isDemoLogin(nationalId, phone);
+    if (!demoLogin && !isIsraeliId(nationalId)) { setError("תעודת הזהות אינה תקינה."); return; }
+    if (!demoLogin && !/^05\d{8}$/.test(phone)) { setError("מספר הטלפון חייב להיות מספר נייד ישראלי בן 10 ספרות."); return; }
+
     setLoading(true);
     try {
       const response = await fetch("/api/backend/api/auth/prototype-login", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ nationalId, phone }), cache: "no-store" });
