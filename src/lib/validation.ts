@@ -1,4 +1,5 @@
-import type { ManualProductInput, PensionProductType } from "./types";
+import type { ContributionPercentageLimit } from "./report-validation-api";
+import type { ManualProductInput } from "./types";
 
 export function isIsraeliId(value: string) {
   if (!/^\d{1,9}$/.test(value)) return false;
@@ -43,20 +44,25 @@ export function validateEmployerInput(input: { legalName: string; registrationNu
   return errors;
 }
 
-function maxPercentage(productType: PensionProductType, party: "employer" | "employee", component: number) {
-  if (component === 4) return 100;
-  if (party === "employer") {
-    if (component === 1) return 8.33;
-    if (component === 2) return 7.5;
-    if (component === 3) return 2.5;
-  }
-  if (party === "employee" && component === 2) return productType === 2 ? 2.5 : 7;
-  return 100;
+const componentName: Record<number, string> = { 1: "פיצויים", 2: "תגמולים", 3: "אכ״ע", 4: "שונות" };
+const productNameToValue: Record<string, number> = { PensionFund: 1, StudyFund: 2, ManagersInsurance: 3, ProvidentFund: 4, Other: 99 };
+const partyNameToValue: Record<string, number> = { Employer: 1, Employee: 2 };
+const componentNameToValue: Record<string, number> = { Severance: 1, Benefits: 2, Disability: 3, Other: 4 };
+
+function enumNumber(value: number | string, names: Record<string, number>) {
+  if (typeof value === "number") return value;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : names[value];
 }
 
-const componentName: Record<number, string> = { 1: "פיצויים", 2: "תגמולים", 3: "אכ״ע", 4: "שונות" };
+function findPercentageLimit(limits: ContributionPercentageLimit[], year: number, productType: number, party: number, component: number) {
+  return limits.find((limit) => limit.year === year
+    && enumNumber(limit.productType, productNameToValue) === productType
+    && enumNumber(limit.party, partyNameToValue) === party
+    && enumNumber(limit.component, componentNameToValue) === component);
+}
 
-export function validateProducts(products: ManualProductInput[]) {
+export function validateProducts(products: ManualProductInput[], limits: ContributionPercentageLimit[] = []) {
   const errors: string[] = [];
   if (!products.length) return ["יש להגדיר לפחות מוצר פנסיוני אחד לעובד."];
 
@@ -75,14 +81,16 @@ export function validateProducts(products: ManualProductInput[]) {
     if (!product.salaryLayer.trim()) errors.push(prefix + "רובד שכר הוא שדה חובה.");
     if (product.section14 && !product.section14StartDate) errors.push(prefix + "יש להזין תאריך תחילת סעיף 14.");
 
+    const year = Number(product.salaryMonth.slice(0, 4));
     (["employerContributions", "employeeContributions"] as const).forEach((partyKey) => {
-      const party = partyKey === "employerContributions" ? "employer" : "employee";
-      const side = party === "employer" ? "מעסיק" : "עובד";
+      const partyValue = partyKey === "employerContributions" ? 1 : 2;
+      const side = partyValue === 1 ? "מעסיק" : "עובד";
       product[partyKey].forEach((item) => {
         if (![item.amount, item.percentage, item.exemptPayments].every(Number.isFinite)) errors.push(prefix + `יש ערך מספרי לא תקין בהפקדות ${side}.`);
         if (item.amount < 0 || item.percentage < 0 || item.exemptPayments < 0) errors.push(prefix + `ערכי הפקדת ${side} לא יכולים להיות שליליים.`);
-        const max = maxPercentage(product.productType, party, item.component);
-        if (item.percentage > max) errors.push(prefix + `אחוז ${componentName[item.component]} של ${side} חורג מהמקסימום (${max}%).`);
+        const limit = findPercentageLimit(limits, year, Number(product.productType), partyValue, Number(item.component));
+        if (!limit) errors.push(prefix + `לא הוגדר גבול אחוזים לשנת ${year} עבור ${componentName[item.component]} של ${side}.`);
+        else if (item.percentage > Number(limit.maxPercentage)) errors.push(prefix + `אחוז ${componentName[item.component]} של ${side} חורג מהמקסימום לשנת ${year} (${Number(limit.maxPercentage)}%).`);
         if (item.exemptPayments > item.amount) errors.push(prefix + `תשלומים פטורים של ${side} לא יכולים להיות גבוהים מסכום ההפקדה.`);
         if (item.amount > product.salary) errors.push(prefix + `סכום ${componentName[item.component]} של ${side} לא יכול להיות גבוה מהשכר.`);
       });
