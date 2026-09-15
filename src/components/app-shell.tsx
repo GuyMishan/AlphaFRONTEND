@@ -39,7 +39,9 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
         if (!active) return;
         const isSingle = Boolean(scope);
         setSingleEmployerUser(isSingle);
-        if (isSingle && pathname.startsWith("/employers")) router.replace("/dashboard");
+        if (isSingle && (pathname.startsWith("/employers") || pathname.startsWith("/access"))) {
+          router.replace("/dashboard");
+        }
       })
       .catch(() => { if (active) setSingleEmployerUser(false); })
       .finally(() => { if (active) setScopeResolved(true); });
