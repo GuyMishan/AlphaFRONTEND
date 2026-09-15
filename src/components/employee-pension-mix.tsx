@@ -61,8 +61,8 @@ function productMissingDetails(product: EmployeePensionProductInput) {
   const missing: string[] = [];
   if (!product.policyNumber.trim()) missing.push("policyNumber");
   if (Number(product.salary) <= 0) missing.push("salary");
-  if (!product.institutionalBody.trim()) missing.push("institutionalBody");
-  if (!product.manufacturer.trim()) missing.push("manufacturer");
+  if (!(product.institutionalBody ?? "").trim()) missing.push("institutionalBody");
+  if (!(product.manufacturer ?? "").trim()) missing.push("manufacturer");
   if (product.section14 && !product.section14StartDate) missing.push("section14StartDate");
   if (![...product.employerContributions, ...product.employeeContributions].some((item) => Number(item.percentage) > 0)) missing.push("contributions");
   return missing;
@@ -119,7 +119,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
     if (products.some((product) => product.isActive && !product.policyNumber.trim())) { setError("למוצר פעיל חייב להיות מספר פוליסה."); return; }
     if (products.some((product) => product.salary < 0)) { setError("שכר לא יכול להיות שלילי."); return; }
     if (products.some((product) => !product.effectiveFrom)) { setError("יש להזין תאריך תחילת תוקף לכל מוצר."); return; }
-    if (products.some((product) => product.effectiveTo && product.effectiveTo < product.effectiveFrom)) { setError("תאריך סיום מוצר לא יכול להיות מוקדם מתאריך תחילת התוקף."); return; }
+    if (products.some((product) => product.effectiveTo && product.effectiveFrom && product.effectiveTo < product.effectiveFrom)) { setError("תאריך סיום מוצר לא יכול להיות מוקדם מתאריך תחילת התוקף."); return; }
     setSaving(true); setError(""); setSaved(false);
     try {
       await alphaApi.saveEmployeePensionMix(organizationId, employerId, employeeId, products);
@@ -171,9 +171,9 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
             <div className="field"><label>סטטוס מוצר</label><select disabled={!editable} value={product.isActive ? "active" : "inactive"} onChange={(e) => updateProduct(index, { isActive: e.target.value === "active" })}><option value="active">פעיל</option><option value="inactive">לא פעיל</option></select></div>
             <div className="field"><label>סוג מוצר *</label><select disabled={!editable} value={product.productType} onChange={(e) => updateProduct(index, { productType: Number(e.target.value) as PensionProductType })}>{productTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></div>
             <div className="field"><label>מספר פוליסה *</label><input disabled={!editable} maxLength={100} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} /></div>
-            <div className="field"><label>גוף מוסדי</label><input disabled={!editable} maxLength={160} value={product.institutionalBody} onChange={(e) => updateProduct(index, { institutionalBody: e.target.value })} placeholder="לדוגמה: מגדל / הראל / מנורה" /></div>
-            <div className="field"><label>יצרן</label><input disabled={!editable} maxLength={160} value={product.manufacturer} onChange={(e) => updateProduct(index, { manufacturer: e.target.value })} /></div>
-            <div className="field"><label>תחילת תוקף *</label><input disabled={!editable} type="date" value={product.effectiveFrom} onChange={(e) => updateProduct(index, { effectiveFrom: e.target.value })} /></div>
+            <div className="field"><label>גוף מוסדי</label><input disabled={!editable} maxLength={160} value={product.institutionalBody ?? ""} onChange={(e) => updateProduct(index, { institutionalBody: e.target.value })} placeholder="לדוגמה: מגדל / הראל / מנורה" /></div>
+            <div className="field"><label>יצרן</label><input disabled={!editable} maxLength={160} value={product.manufacturer ?? ""} onChange={(e) => updateProduct(index, { manufacturer: e.target.value })} /></div>
+            <div className="field"><label>תחילת תוקף *</label><input disabled={!editable} type="date" value={product.effectiveFrom ?? ""} onChange={(e) => updateProduct(index, { effectiveFrom: e.target.value })} /></div>
             <div className="field"><label>סיום תוקף</label><input disabled={!editable} type="date" min={product.effectiveFrom || undefined} value={product.effectiveTo ?? ""} onChange={(e) => updateProduct(index, { effectiveTo: e.target.value || null })} /></div>
             <div className="field"><label>שכר ברירת מחדל *</label><input disabled={!editable} type="number" min="0" step="0.01" value={product.salary || ""} onChange={(e) => updateProduct(index, { salary: Number(e.target.value) })} /></div>
             <div className="field"><label>סוג דיווח ברירת מחדל</label><select disabled={!editable} value={product.reportingType} onChange={(e) => updateProduct(index, { reportingType: e.target.value })}><option>שוטף</option><option>הפרשים</option><option>תיקון</option><option>שלילי</option></select></div>
