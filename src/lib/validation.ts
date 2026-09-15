@@ -88,9 +88,11 @@ export function validateProducts(products: ManualProductInput[], limits: Contrib
       product[partyKey].forEach((item) => {
         if (![item.amount, item.percentage, item.exemptPayments].every(Number.isFinite)) errors.push(prefix + `יש ערך מספרי לא תקין בהפקדות ${side}.`);
         if (item.amount < 0 || item.percentage < 0 || item.exemptPayments < 0) errors.push(prefix + `ערכי הפקדת ${side} לא יכולים להיות שליליים.`);
-        const limit = findPercentageLimit(limits, year, Number(product.productType), partyValue, Number(item.component));
-        if (!limit) errors.push(prefix + `לא הוגדר גבול אחוזים לשנת ${year} עבור ${componentName[item.component]} של ${side}.`);
-        else if (item.percentage > Number(limit.maxPercentage)) errors.push(prefix + `אחוז ${componentName[item.component]} של ${side} חורג מהמקסימום לשנת ${year} (${Number(limit.maxPercentage)}%).`);
+        if (limits.length > 0) {
+          const limit = findPercentageLimit(limits, year, Number(product.productType), partyValue, Number(item.component));
+          if (!limit) errors.push(prefix + `לא הוגדר גבול אחוזים לשנת ${year} עבור ${componentName[item.component]} של ${side}.`);
+          else if (item.percentage > Number(limit.maxPercentage)) errors.push(prefix + `אחוז ${componentName[item.component]} של ${side} חורג מהמקסימום לשנת ${year} (${Number(limit.maxPercentage)}%).`);
+        }
         if (item.exemptPayments > item.amount) errors.push(prefix + `תשלומים פטורים של ${side} לא יכולים להיות גבוהים מסכום ההפקדה.`);
         if (item.amount > product.salary) errors.push(prefix + `סכום ${componentName[item.component]} של ${side} לא יכול להיות גבוה מהשכר.`);
       });
