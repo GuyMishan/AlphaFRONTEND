@@ -85,6 +85,11 @@ export type EmployeePensionProductInput = {
   salaryLayer: string;
   section14: boolean;
   section14StartDate: string | null;
+  isActive: boolean;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  institutionalBody: string;
+  manufacturer: string;
   employerContributions: EmployeePensionContributionInput[];
   employeeContributions: EmployeePensionContributionInput[];
 };
@@ -97,6 +102,8 @@ export type EmployeePensionContribution = EmployeePensionContributionInput & {
 
 export type EmployeePensionProduct = EmployeePensionProductInput & {
   id: string;
+  missingDetails: string[];
+  isComplete: boolean;
   employerContributions: EmployeePensionContribution[];
   employeeContributions: EmployeePensionContribution[];
 };
