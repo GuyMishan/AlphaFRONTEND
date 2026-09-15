@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleAlert, CircleCheck, Pencil, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
@@ -75,6 +75,11 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<ManualReportEmployeeDetail | null>(null);
+  const selectionQueue = useRef<string[] | null>(null);
+  const selectionSyncRunning = useRef(false);
+  const selectedIdsRef = useRef(selectedIds);
+
+  useEffect(() => { selectedIdsRef.current = selectedIds; }, [selectedIds]);
 
   async function loadList(search = "", showLoading = true) {
     if (showLoading) setLoading(true);
@@ -92,11 +97,8 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       setVisibleEmployees(employeeResult.value.items);
     } else {
       const fromProps = employees.filter((employee) => matchesEmployee(employee, search));
-      if (fromProps.length > 0) {
-        setVisibleEmployees(fromProps);
-      } else {
-        setVisibleEmployees(reportRows.map(snapshotEmployee));
-      }
+      if (fromProps.length > 0) setVisibleEmployees(fromProps);
+      else setVisibleEmployees(reportRows.map(snapshotEmployee));
     }
 
     if (employeeResult.status === "rejected" && reportResult.status === "rejected") {
@@ -117,7 +119,10 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       const result = await alphaApi.manualReportEmployees(organizationId, employerId, reportId, search, 0, 100);
       setRows(result.items);
       if (visibleEmployees.length === 0 && result.items.length > 0) setVisibleEmployees(result.items.map(snapshotEmployee));
-    } catch (err) { const message = err instanceof Error ? err.message : "טעינת עובדי הדיווח נכשלה"; setError(message); notify.error(message); }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "טעינת עובדי הדיווח נכשלה";
+      setError(message); notify.error(message);
+    }
   }
 
   useEffect(() => {
@@ -138,25 +143,49 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
 
   const rowByEmployment = useMemo(() => new Map(rows.map((row) => [row.employmentId, row])), [rows]);
 
-  async function changeSelection(employeeId: string, checked: boolean) {
-    const previousIds = selectedIds; const previousRows = rows;
-    const next = checked ? Array.from(new Set([...selectedIds, employeeId])) : selectedIds.filter((id) => id !== employeeId);
-    setSelectedIds(next);
-    if (!checked) setRows((current) => current.filter((row) => row.employmentId !== employeeId));
-    setSyncing(true); setError("");
-    try { await alphaApi.syncManualReportEmployees(organizationId, employerId, reportId, next); await loadRows(query.trim()); }
-    catch (err) { const message = err instanceof Error ? err.message : "עדכון העובדים בדיווח נכשל"; setSelectedIds(previousIds); setRows(previousRows); setError(message); notify.error(message); }
-    finally { setSyncing(false); }
+  async function flushSelectionQueue() {
+    if (selectionSyncRunning.current) return;
+    selectionSyncRunning.current = true;
+    setSyncing(true);
+    try {
+      while (selectionQueue.current) {
+        const ids = selectionQueue.current;
+        selectionQueue.current = null;
+        await alphaApi.syncManualReportEmployees(organizationId, employerId, reportId, ids);
+      }
+      await loadRows(query.trim());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "עדכון העובדים בדיווח נכשל";
+      setError(message); notify.error(message);
+    } finally {
+      selectionSyncRunning.current = false;
+      setSyncing(false);
+      if (selectionQueue.current) void flushSelectionQueue();
+    }
   }
 
-  async function selectAllVisibleActive() {
-    const ids = visibleEmployees.filter((x) => x.status === 1).map((x) => x.id);
-    const next = Array.from(new Set([...selectedIds, ...ids]));
+  function queueSelection(next: string[]) {
+    selectionQueue.current = next;
+    void flushSelectionQueue();
+  }
+
+  function changeSelection(employeeId: string, checked: boolean) {
+    const current = selectedIdsRef.current;
+    const next = checked ? Array.from(new Set([...current, employeeId])) : current.filter((id) => id !== employeeId);
+    selectedIdsRef.current = next;
     setSelectedIds(next);
-    setSyncing(true); setError("");
-    try { await alphaApi.syncManualReportEmployees(organizationId, employerId, reportId, next); await loadRows(query.trim()); }
-    catch (err) { const message = err instanceof Error ? err.message : "עדכון העובדים בדיווח נכשל"; setError(message); notify.error(message); }
-    finally { setSyncing(false); }
+    if (!checked) setRows((existing) => existing.filter((row) => row.employmentId !== employeeId));
+    setError("");
+    queueSelection(next);
+  }
+
+  function selectAllVisibleActive() {
+    const ids = visibleEmployees.filter((x) => x.status === 1).map((x) => x.id);
+    const next = Array.from(new Set([...selectedIdsRef.current, ...ids]));
+    selectedIdsRef.current = next;
+    setSelectedIds(next);
+    setError("");
+    queueSelection(next);
   }
 
   async function editEmployee(row: ManualReportEmployeeSummary) {
@@ -169,9 +198,9 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   return <>
     <div className="card-head manual-report-head"><div><h2>עובדים בדיווח</h2><span style={{ color: "var(--muted)" }}>בחרו את העובדים ולחצו עריכה כדי להזין מוצרים והפקדות.</span></div><div className="manual-report-badges"><span className="badge badge-blue">{selectedIds.length} עובדים</span><span className="badge badge-green">{ready} הושלמו</span></div></div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}
-    <div className="toolbar manual-report-toolbar"><div className="search"><Search size={17} /><input value={query} maxLength={80} onChange={(e) => setQuery(e.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div><button className="btn btn-soft" disabled={syncing || !visibleEmployees.some((x) => x.status === 1)} onClick={() => void selectAllVisibleActive()}>בחירת כל הפעילים בתוצאות</button></div>
+    <div className="toolbar manual-report-toolbar"><div className="search"><Search size={17} /><input value={query} maxLength={80} onChange={(e) => setQuery(e.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div><button className="btn btn-soft" disabled={!visibleEmployees.some((x) => x.status === 1)} onClick={selectAllVisibleActive}>{syncing ? "מעדכן..." : "בחירת כל הפעילים בתוצאות"}</button></div>
     <div className="manual-employee-list">
-      {loading || searching ? <div className="empty">{searching ? "מחפש עובדים..." : "טוען את עובדי המעסיק..."}</div> : visibleEmployees.length === 0 ? <div className="empty"><b>לא נמצאו עובדים</b><span>אם למעסיק יש עובדים, נסו לנקות את החיפוש או לרענן את הבחירה במעסיק.</span></div> : visibleEmployees.map((employee) => { const selected = selectedIds.includes(employee.id); const row = rowByEmployment.get(employee.id); return <div className={`manual-employee-row${selected ? " selected" : ""}`} key={employee.id}><label className="manual-employee-check"><input type="checkbox" checked={selected} disabled={syncing} onChange={(e) => void changeSelection(employee.id, e.target.checked)} /></label><div className="manual-employee-main"><b>{employee.firstName} {employee.lastName}</b><span>ת״ז {employee.nationalId} · עובד {employee.employeeNumber}</span></div><div className="manual-employee-products">{selected && row ? <>{row.productCount ? <span className="badge badge-green"><CircleCheck size={13} />{row.productCount} מוצרים</span> : <span className="badge badge-orange"><CircleAlert size={13} />חסרים מוצרים</span>}</> : selected ? <span className="badge badge-gray">שומר...</span> : <span className="badge badge-gray">לא בדיווח</span>}</div><button className="btn btn-soft manual-edit-btn" disabled={!selected || !row} onClick={() => row && void editEmployee(row)}><Pencil size={16} />עריכה</button></div>; })}
+      {loading || searching ? <div className="empty">{searching ? "מחפש עובדים..." : "טוען את עובדי המעסיק..."}</div> : visibleEmployees.length === 0 ? <div className="empty"><b>לא נמצאו עובדים</b><span>אם למעסיק יש עובדים, נסו לנקות את החיפוש או לרענן את הבחירה במעסיק.</span></div> : visibleEmployees.map((employee) => { const selected = selectedIds.includes(employee.id); const row = rowByEmployment.get(employee.id); return <div className={`manual-employee-row${selected ? " selected" : ""}`} key={employee.id}><label className="manual-employee-check"><input type="checkbox" checked={selected} onChange={(e) => changeSelection(employee.id, e.target.checked)} /></label><div className="manual-employee-main"><b>{employee.firstName} {employee.lastName}</b><span>ת״ז {employee.nationalId} · עובד {employee.employeeNumber}</span></div><div className="manual-employee-products">{selected && row ? <>{row.productCount ? <span className="badge badge-green"><CircleCheck size={13} />{row.productCount} מוצרים</span> : <span className="badge badge-orange"><CircleAlert size={13} />חסרים מוצרים</span>}</> : selected ? <span className="badge badge-gray">שומר...</span> : <span className="badge badge-gray">לא בדיווח</span>}</div><button className="btn btn-soft manual-edit-btn" disabled={!selected || !row} onClick={() => row && void editEmployee(row)}><Pencil size={16} />עריכה</button></div>; })}
     </div>
     {editing ? <EmployeeProductsModal employee={editing} month={month} onClose={() => setEditing(null)} onSave={async (products) => { await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, products); setEditing(null); await loadRows(query.trim()); notify.success("נתוני העובד נשמרו בהצלחה"); }} /> : null}
   </>;
@@ -189,15 +218,15 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
     try { await onSave(products); }
     catch (err) { const message = err instanceof Error ? err.message : "שמירת נתוני העובד נכשלה"; setError(message); notify.error(message); setSaving(false); }
   }
-  return <div className="report-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="report-modal" role="dialog" aria-modal="true" aria-label={`עריכת ${employee.firstName} ${employee.lastName}`}><div className="report-modal-header"><div><h2>{employee.firstName} {employee.lastName}</h2><span>ת״ז {employee.nationalId} · מספר עובד {employee.employeeNumber}</span></div><button className="icon-button" onClick={onClose} aria-label="סגירה"><X size={18} /></button></div><div className="report-modal-body">{error ? <div className="notice notice-error">{error}</div> : null}<div className="employee-report-summary"><div><span>חודש דיווח</span><b>{month}</b></div><div><span>מספר מוצרים</span><b>{products.length}</b></div><div><span>סה״כ הפקדות</span><b>₪{products.reduce((sum, product) => sum + [...product.employerContributions, ...product.employeeContributions].reduce((s, c) => s + Number(c.amount || 0), 0), 0).toLocaleString("he-IL")}</b></div></div><div className="product-editor-list">{products.map((product, index) => <ProductEditor key={index} index={index} product={product} updateProduct={updateProduct} updateContribution={updateContribution} remove={() => setProducts((current) => current.filter((_, i) => i !== index))} />)}{!products.length ? <div className="empty"><div>עדיין לא הוגדרו מוצרים לעובד בדיווח הזה.</div></div> : null}</div><button className="btn btn-soft wide" onClick={() => setProducts((current) => [...current, emptyProduct(month)])}><Plus size={15} />הוספת מוצר</button></div><div className="report-modal-footer"><button className="btn btn-secondary" onClick={onClose}>ביטול</button><button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={15} />{saving ? "שומר..." : "שמירת נתוני העובד"}</button></div></div></div>;
+  return <div className="report-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="report-modal" role="dialog" aria-modal="true" aria-label={`עריכת מוצרים לעובד ${employee.firstName} ${employee.lastName}`}><div className="report-modal-header"><div><h2>עריכת מוצרים לעובד</h2><b className="report-modal-employee">{employee.firstName} {employee.lastName}</b><span>ת״ז {employee.nationalId} · מספר עובד {employee.employeeNumber}</span></div><button className="icon-button" onClick={onClose} aria-label="סגירה"><X size={18} /></button></div><div className="report-modal-body">{error ? <div className="notice notice-error">{error}</div> : null}<div className="employee-report-summary"><div><span>חודש דיווח</span><b>{month}</b></div><div><span>מספר מוצרים</span><b>{products.length}</b></div><div><span>סה״כ הפקדות</span><b>₪{products.reduce((sum, product) => sum + [...product.employerContributions, ...product.employeeContributions].reduce((s, c) => s + Number(c.amount || 0), 0), 0).toLocaleString("he-IL")}</b></div></div><div className="contribution-guidance">אין צורך למלא רכיב שאינו רלוונטי. ברכיב שמדווח יש להזין גם סכום וגם אחוז, ולכל מוצר חייב להיות לפחות רכיב הפקדה אחד.</div><div className="product-editor-list">{products.map((product, index) => <ProductEditor key={index} index={index} product={product} updateProduct={updateProduct} updateContribution={updateContribution} remove={() => setProducts((current) => current.filter((_, i) => i !== index))} />)}{!products.length ? <div className="empty"><div>עדיין לא הוגדרו מוצרים לעובד בדיווח הזה.</div></div> : null}</div><button className="btn btn-soft wide" onClick={() => setProducts((current) => [...current, emptyProduct(month)])}><Plus size={15} />הוספת מוצר</button></div><div className="report-modal-footer"><button className="btn btn-secondary" onClick={onClose}>ביטול</button><button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={15} />{saving ? "שומר..." : "שמירת נתוני העובד"}</button></div></div></div>;
 }
 
 function normalizeContributions(items: Array<{ component: ContributionComponent; amount: number; percentage: number; exemptPayments: number }>): ManualContributionInput[] { return components.map(({ value }) => { const found = items.find((item) => Number(item.component) === value); return found ? { component: value, amount: Number(found.amount), percentage: Number(found.percentage), exemptPayments: Number(found.exemptPayments) } : emptyContribution(value); }); }
 
 function ProductEditor({ index, product, updateProduct, updateContribution, remove }: { index: number; product: ManualProductInput; updateProduct: (index: number, patch: Partial<ManualProductInput>) => void; updateContribution: (productIndex: number, party: "employerContributions" | "employeeContributions", component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void; remove: () => void; }) {
-  return <section className="report-product-card"><div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{productTypes.find((x) => x.value === product.productType)?.label ?? "מוצר פנסיוני"}</b></div><button className="icon-button danger" onClick={remove} aria-label="מחיקת מוצר"><Trash2 size={16} /></button></div><div className="grid report-product-fields"><div className="field"><label>סוג מוצר *</label><select value={product.productType} onChange={(e) => updateProduct(index, { productType: Number(e.target.value) as PensionProductType })}>{productTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></div><div className="field"><label>מספר פוליסה *</label><input required maxLength={100} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} /></div><div className="field"><label>חודש שכר *</label><input required type="month" value={product.salaryMonth.slice(0, 7)} onChange={(e) => updateProduct(index, { salaryMonth: `${e.target.value}-01` })} /></div><div className="field"><label>שכר *</label><input required type="number" min="0.01" max="10000000" step="0.01" value={product.salary || ""} onChange={(e) => updateProduct(index, { salary: Number(e.target.value) })} /></div><div className="field"><label>סוג דיווח *</label><select value={product.reportingType} onChange={(e) => updateProduct(index, { reportingType: e.target.value })}><option>שוטף</option><option>הפרשים</option><option>תיקון</option><option>שלילי</option></select></div><div className="field"><label>רובד שכר *</label><select value={product.salaryLayer} onChange={(e) => updateProduct(index, { salaryLayer: e.target.value })}><option>רובד 1</option><option>רובד 2</option><option>רובד נוסף</option></select></div><label className="section14-check"><input type="checkbox" checked={product.section14} onChange={(e) => updateProduct(index, { section14: e.target.checked, section14StartDate: e.target.checked ? product.section14StartDate : null })} /><span>סעיף 14</span></label><div className="field"><label>תאריך תחילת סעיף 14{product.section14 ? " *" : ""}</label><input required={product.section14} type="date" disabled={!product.section14} value={product.section14StartDate ?? ""} onChange={(e) => updateProduct(index, { section14StartDate: e.target.value || null })} /></div></div><ContributionTable title="הפקדות מעסיק" productType={product.productType} party="employer" items={product.employerContributions} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} /><ContributionTable title="הפקדות עובד" productType={product.productType} party="employee" items={product.employeeContributions} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} /></section>;
+  return <section className="report-product-card"><div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{productTypes.find((x) => x.value === product.productType)?.label ?? "מוצר פנסיוני"}</b></div><button className="icon-button danger" onClick={remove} aria-label="מחיקת מוצר"><Trash2 size={16} /></button></div><div className="grid report-product-fields"><div className="field"><label>סוג מוצר *</label><select value={product.productType} onChange={(e) => updateProduct(index, { productType: Number(e.target.value) as PensionProductType })}>{productTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></div><div className="field"><label>מספר פוליסה *</label><input required maxLength={100} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} /></div><div className="field"><label>חודש שכר *</label><input required type="month" value={product.salaryMonth.slice(0, 7)} onChange={(e) => updateProduct(index, { salaryMonth: `${e.target.value}-01` })} /></div><div className="field"><label>שכר *</label><input required type="number" min="0.01" max="10000000" step="0.01" value={product.salary || ""} onChange={(e) => updateProduct(index, { salary: Number(e.target.value) })} /></div><div className="field"><label>סוג דיווח *</label><select value={product.reportingType} onChange={(e) => updateProduct(index, { reportingType: e.target.value })}><option>שוטף</option><option>הפרשים</option><option>תיקון</option><option>שלילי</option></select></div><div className="field"><label>רובד שכר *</label><select value={product.salaryLayer} onChange={(e) => updateProduct(index, { salaryLayer: e.target.value })}><option>רובד 1</option><option>רובד 2</option><option>רובד נוסף</option></select></div><label className="section14-check"><input type="checkbox" checked={product.section14} onChange={(e) => updateProduct(index, { section14: e.target.checked, section14StartDate: e.target.checked ? product.section14StartDate : null })} /><span>סעיף 14</span></label><div className="field"><label>תאריך תחילת סעיף 14{product.section14 ? " *" : ""}</label><input required={product.section14} type="date" disabled={!product.section14} value={product.section14StartDate ?? ""} onChange={(e) => updateProduct(index, { section14StartDate: e.target.value || null })} /></div></div><div className="contribution-grid"><ContributionTable title="הפקדות מעסיק" productType={product.productType} party="employer" items={product.employerContributions} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} /><ContributionTable title="הפקדות עובד" productType={product.productType} party="employee" items={product.employeeContributions} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} /></div></section>;
 }
 
 function ContributionTable({ title, productType, party, items, onChange }: { title: string; productType: PensionProductType; party: "employer" | "employee"; items: ManualContributionInput[]; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
-  return <div className="contribution-section"><h3>{title}</h3><div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>רכיב</th><th>סכום</th><th>אחוז</th><th>תשלומים פטורים</th></tr></thead><tbody>{components.map(({ value, label }) => { const item = items.find((x) => x.component === value) ?? emptyContribution(value); const max = maxPercentage(productType, party, value); return <tr key={value}><th>{label}</th><td><input inputMode="decimal" type="number" min="0" step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} /></td><td><input inputMode="decimal" type="number" min="0" max={max} step="0.01" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} title={`מקסימום ${max}%`} /></td><td><input inputMode="decimal" type="number" min="0" step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} /></td></tr>; })}</tbody></table></div></div>;
+  return <div className="contribution-section"><h3>{title}</h3><div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>רכיב</th><th>סכום</th><th>אחוז</th><th>פטורים</th></tr></thead><tbody>{components.map(({ value, label }) => { const item = items.find((x) => x.component === value) ?? emptyContribution(value); const max = maxPercentage(productType, party, value); return <tr key={value}><th>{label}</th><td><input inputMode="decimal" type="number" min="0" step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} /></td><td><input inputMode="decimal" type="number" min="0" max={max} step="0.01" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} title={`מקסימום ${max}%`} /></td><td><input inputMode="decimal" type="number" min="0" step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} /></td></tr>; })}</tbody></table></div></div>;
 }
