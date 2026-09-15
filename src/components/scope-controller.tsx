@@ -26,7 +26,7 @@ function emitScopeChange(detail: { organizationId: string; employerId?: string; 
   window.dispatchEvent(new CustomEvent("alpha:scope-change", { detail }));
 }
 
-export function ScopeController() {
+export function ScopeController({ singleEmployerUser = false }: { singleEmployerUser?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const level = requiredScope(pathname);
@@ -80,7 +80,7 @@ export function ScopeController() {
 
         let empId = "";
         let empEmployeeId = "";
-        if (level !== "organization" && orgId) {
+        if ((level !== "organization" || singleEmployerUser) && orgId) {
           empId = await loadEmployers(orgId);
           if (level === "employee" && empId) empEmployeeId = await loadEmployees(orgId, empId);
         }
@@ -88,12 +88,9 @@ export function ScopeController() {
         if (!active || !orgId) return;
 
         const organizationChanged = orgId !== previousOrganizationId;
-        const employerChanged = level !== "organization" && empId !== previousEmployerId;
+        const employerChanged = (level !== "organization" || singleEmployerUser) && empId !== previousEmployerId;
         const employeeChanged = level === "employee" && empEmployeeId !== previousEmployeeId;
 
-        // Initializing the navbar with the same persisted scope must not tell the page to
-        // reload data it has already started loading. Publish only when initialization had
-        // to repair a missing/stale persisted selection.
         if (organizationChanged || employerChanged || employeeChanged) {
           emitScopeChange({
             organizationId: orgId,
@@ -107,7 +104,7 @@ export function ScopeController() {
     }
     void load();
     return () => { active = false; };
-  }, [level, loadEmployers, loadEmployees]);
+  }, [level, singleEmployerUser, loadEmployers, loadEmployees]);
 
   async function changeOrganization(value: string) {
     setOrganizationId(value);
@@ -150,22 +147,26 @@ export function ScopeController() {
   const organization = organizations.find((item) => item.id === organizationId);
   const employer = employers.find((item) => item.id === employerId);
 
+  const showEmployer = level !== "organization" && !singleEmployerUser;
+  const showEmployee = level === "employee";
+  if (singleEmployerUser && !showEmployee) return null;
+
   return (
     <div className="scopebar" aria-label="בחירת הקשר עבודה">
       <div className="scope-selects">
-        {organizations.length > 1 ? (
+        {!singleEmployerUser ? organizations.length > 1 ? (
           <label><span>ארגון</span><div><Building2 size={16} /><select value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>{organizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div></label>
         ) : organization ? (
           <label><span>ארגון</span><div><Building2 size={16} /><span>{organization.name}</span></div></label>
-        ) : null}
+        ) : null : null}
 
-        {level !== "organization" ? employers.length > 1 ? (
+        {showEmployer ? employers.length > 1 ? (
           <label><span>מעסיק</span><div><Building2 size={16} /><select value={employerId} disabled={loading || !organizationId} onChange={(event) => void changeEmployer(event.target.value)}>{employers.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)}</select></div></label>
         ) : employer ? (
           <label><span>מעסיק</span><div><Building2 size={16} /><span>{employer.legalName}</span></div></label>
         ) : null : null}
 
-        {level === "employee" ? <label><span>עובד</span><div><UserRound size={16} /><select value={employeeId} disabled={loading || !employerId} onChange={(event) => changeEmployee(event.target.value)}>{employees.map((item) => <option key={item.id} value={item.id}>{item.firstName} {item.lastName}</option>)}</select></div></label> : null}
+        {showEmployee ? <label><span>עובד</span><div><UserRound size={16} /><select value={employeeId} disabled={loading || !employerId} onChange={(event) => changeEmployee(event.target.value)}>{employees.map((item) => <option key={item.id} value={item.id}>{item.firstName} {item.lastName}</option>)}</select></div></label> : null}
       </div>
     </div>
   );
