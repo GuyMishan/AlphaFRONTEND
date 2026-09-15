@@ -23,16 +23,20 @@ function optionLabel(item: PensionFundOption) {
   return [item.fundCode, item.fundName, item.companyName].filter(Boolean).join(" · ");
 }
 
+function valueLabel(value: FundValue) {
+  return [value.fundCode, value.fundName, value.fundCompanyName].filter(Boolean).join(" · ");
+}
+
 export function PensionFundSelect({ productType, value, disabled = false, onChange }: Props) {
-  const [query, setQuery] = useState(value.fundName || value.fundCode || "");
+  const [query, setQuery] = useState(valueLabel(value));
   const [options, setOptions] = useState<PensionFundOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    setQuery(value.fundName || value.fundCode || "");
-  }, [value.fundExternalKey, value.fundName, value.fundCode]);
+    setQuery(valueLabel(value));
+  }, [value.fundExternalKey, value.fundCode, value.fundName, value.fundCompanyName]);
 
   useEffect(() => {
     if (productType === 99) {
@@ -130,7 +134,7 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
                     fundName: item.fundName,
                     fundCompanyName: item.companyName,
                   });
-                  setQuery(item.fundName || item.fundCode);
+                  setQuery(optionLabel(item));
                   setOpen(false);
                 }}
               >
