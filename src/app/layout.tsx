@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
 import { NotificationCenter } from "@/components/notifications";
+import { PersistentAppLayout } from "@/components/persistent-app-layout";
 import { SalaryFileUploadEnhancer } from "@/components/salary-file-upload-enhancer";
 import "./globals.css";
 import "./mobile.css";
@@ -18,7 +19,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="he" dir="rtl">
-      <body className={heebo.variable}>{children}<NotificationCenter /><SalaryFileUploadEnhancer /></body>
+      <body className={heebo.variable}>
+        <PersistentAppLayout>{children}</PersistentAppLayout>
+        <NotificationCenter />
+        <SalaryFileUploadEnhancer />
+      </body>
     </html>
   );
 }
