@@ -87,6 +87,9 @@ export default function NewReportPage() {
   useEffect(() => {
     const selected = getEmployerSelection();
     if (selected) void loadScope(selected); else setLoading(false);
+  }, []);
+
+  useEffect(() => {
     const handler = (event: Event) => {
       if (step !== 1) return;
       const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail;
