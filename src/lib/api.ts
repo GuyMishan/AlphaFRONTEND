@@ -5,6 +5,8 @@ import type {
   ApiProblem,
   Employee,
   EmployeeInput,
+  EmployeePensionProduct,
+  EmployeePensionProductInput,
   Employer,
   EmployerAccessMode,
   EmployerCapabilities,
@@ -105,6 +107,12 @@ export const alphaApi = {
   updateEmployee: (organizationId: string, employerId: string, employeeId: string, payload: EmployeeInput) => getSession()?.mode === "demo"
     ? Promise.resolve({ id: employeeId, personId: employeeId, ...payload, status: 1, endDate: null } as Employee)
     : request<Employee>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  employeePensionMix: (organizationId: string, employerId: string, employeeId: string): Promise<EmployeePensionProduct[]> => getSession()?.mode === "demo"
+    ? Promise.resolve([])
+    : request<EmployeePensionProduct[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix/`),
+  saveEmployeePensionMix: (organizationId: string, employerId: string, employeeId: string, products: EmployeePensionProductInput[]) => getSession()?.mode === "demo"
+    ? Promise.resolve()
+    : request<void>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix/`, { method: "PUT", body: JSON.stringify({ products }) }),
   createUser: (payload: { externalSubject: string; email: string; displayName: string }) =>
     request<{ id: string }>("/api/platform/users", { method: "POST", body: JSON.stringify(payload) }),
 
