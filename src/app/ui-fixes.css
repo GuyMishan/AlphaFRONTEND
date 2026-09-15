@@ -167,9 +167,9 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator {
   opacity: .38;
 }
 
-/* Wider and denser employee-product modal. */
+/* Wider, denser employee-product modal: compact fields beside contribution tables. */
 .report-modal {
-  width: min(1320px, 97vw) !important;
+  width: min(1380px, 98vw) !important;
 }
 
 .report-modal-body {
@@ -177,24 +177,60 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator {
 }
 
 .report-modal .report-product-card {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.82fr) minmax(620px, 1.55fr);
+  gap: 10px 12px;
+  align-items: start;
   padding: 9px 10px !important;
 }
 
 .report-modal .report-product-title {
-  margin-bottom: 7px !important;
+  grid-column: 1 / -1;
+  margin-bottom: 0 !important;
 }
 
 .report-modal .report-product-fields {
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  gap: 6px 8px !important;
+  grid-column: 1;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(150px, 1fr)) !important;
+  gap: 5px 7px !important;
+  align-items: end;
+  min-width: 0;
+}
+
+.report-modal .report-product-fields .field,
+.report-modal .report-product-fields .pension-fund-autocomplete {
+  min-width: 0;
+}
+
+.report-modal .report-product-fields input,
+.report-modal .report-product-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px !important;
+  padding: 5px 7px !important;
+  font-size: 12px !important;
+}
+
+.report-modal .report-product-fields .section14-check {
+  height: 32px;
+  min-width: 0;
+  padding-inline: 8px;
+  font-size: 12px;
 }
 
 .report-modal .contribution-grid {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px !important;
+  align-items: start;
+  min-width: 0;
 }
 
 .report-modal .contribution-section {
-  margin-top: 7px !important;
+  margin-top: 0 !important;
+  min-width: 0;
 }
 
 .report-modal .contribution-table th,
@@ -206,14 +242,31 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator {
   height: 25px !important;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
+  .report-modal .report-product-card {
+    grid-template-columns: 1fr;
+  }
+  .report-modal .report-product-fields,
+  .report-modal .contribution-grid {
+    grid-column: 1;
+  }
   .report-modal .report-product-fields {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 760px) {
+  .report-modal .report-product-card {
+    display: block;
+  }
+  .report-modal .report-product-title {
+    margin-bottom: 7px !important;
+  }
   .report-modal .report-product-fields {
     grid-template-columns: 1fr !important;
+  }
+  .report-modal .contribution-grid {
+    grid-template-columns: 1fr !important;
+    margin-top: 8px;
   }
 }
