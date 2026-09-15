@@ -100,9 +100,18 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
         />
       </div>
 
-      {open && !disabled && !loading && !error ? (
-        <div className="pension-fund-options" role="listbox">
-          {options.length === 0 ? (
+      {open && !disabled ? (
+        <div className="pension-fund-options" role="listbox" aria-busy={loading}>
+          {loading ? (
+            <div className="pension-fund-loading" role="status" aria-live="polite">
+              <span>בטעינה</span>
+              <span className="loading-dots" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+          ) : error ? null : options.length === 0 ? (
             <div className="pension-fund-empty">לא נמצאו קופות מהסוג שנבחר.</div>
           ) : options.map((item) => {
             const selected = item.externalKey === value.fundExternalKey;
