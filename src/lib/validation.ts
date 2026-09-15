@@ -81,6 +81,9 @@ export function validateProducts(products: ManualProductInput[], limits: Contrib
     if (!product.salaryLayer.trim()) errors.push(prefix + "רובד שכר הוא שדה חובה.");
     if (product.section14 && !product.section14StartDate) errors.push(prefix + "יש להזין תאריך תחילת סעיף 14.");
 
+    const allContributions = [...product.employerContributions, ...product.employeeContributions];
+    if (!allContributions.some((item) => item.amount > 0)) errors.push(prefix + "יש להזין לפחות רכיב הפקדה אחד עם סכום גדול מאפס.");
+
     const year = Number(product.salaryMonth.slice(0, 4));
     (["employerContributions", "employeeContributions"] as const).forEach((partyKey) => {
       const partyValue = partyKey === "employerContributions" ? 1 : 2;
@@ -88,6 +91,8 @@ export function validateProducts(products: ManualProductInput[], limits: Contrib
       product[partyKey].forEach((item) => {
         if (![item.amount, item.percentage, item.exemptPayments].every(Number.isFinite)) errors.push(prefix + `יש ערך מספרי לא תקין בהפקדות ${side}.`);
         if (item.amount < 0 || item.percentage < 0 || item.exemptPayments < 0) errors.push(prefix + `ערכי הפקדת ${side} לא יכולים להיות שליליים.`);
+        if (item.amount > 0 && item.percentage <= 0) errors.push(prefix + `יש להזין אחוז עבור ${componentName[item.component]} של ${side}.`);
+        if (item.percentage > 0 && item.amount <= 0) errors.push(prefix + `יש להזין סכום עבור ${componentName[item.component]} של ${side}.`);
         if (limits.length > 0) {
           const limit = findPercentageLimit(limits, year, Number(product.productType), partyValue, Number(item.component));
           if (!limit) errors.push(prefix + `לא הוגדר גבול אחוזים לשנת ${year} עבור ${componentName[item.component]} של ${side}.`);
