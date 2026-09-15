@@ -72,6 +72,35 @@ export type ManualProductInput = {
   employeeContributions: ManualContributionInput[];
 };
 
+export type EmployeePensionContributionInput = {
+  component: ContributionComponent;
+  percentage: number;
+};
+
+export type EmployeePensionProductInput = {
+  productType: PensionProductType;
+  policyNumber: string;
+  salary: number;
+  reportingType: string;
+  salaryLayer: string;
+  section14: boolean;
+  section14StartDate: string | null;
+  employerContributions: EmployeePensionContributionInput[];
+  employeeContributions: EmployeePensionContributionInput[];
+};
+
+export type EmployeePensionContribution = EmployeePensionContributionInput & {
+  id: string;
+  employeePensionProductId: string;
+  party: string | number;
+};
+
+export type EmployeePensionProduct = EmployeePensionProductInput & {
+  id: string;
+  employerContributions: EmployeePensionContribution[];
+  employeeContributions: EmployeePensionContribution[];
+};
+
 export type ManualReportDraft = {
   id: string;
   reportingMonth: string;
