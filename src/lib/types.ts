@@ -54,6 +54,15 @@ export type PensionProductType = 1 | 2 | 3 | 4 | 99;
 export type ContributionComponent = 1 | 2 | 3 | 4;
 export type SalaryAllocationType = 1 | 2 | 3 | 4;
 
+export type PensionFundOption = {
+  externalKey: string;
+  fundCode: string;
+  fundName: string;
+  companyName: string;
+  domain: string;
+  productType: string;
+};
+
 export type ManualContributionInput = {
   component: ContributionComponent;
   amount: number;
@@ -64,6 +73,10 @@ export type ManualContributionInput = {
 export type ManualProductInput = {
   productType: PensionProductType;
   policyNumber: string;
+  fundExternalKey?: string;
+  fundCode?: string;
+  fundName?: string;
+  fundCompanyName?: string;
   salaryMonth: string;
   salary: number;
   salaryAllocationType?: SalaryAllocationType;
@@ -85,6 +98,10 @@ export type EmployeePensionContributionInput = {
 export type EmployeePensionProductInput = {
   productType: PensionProductType;
   policyNumber: string;
+  fundExternalKey?: string;
+  fundCode?: string;
+  fundName?: string;
+  fundCompanyName?: string;
   salary: number;
   reportingType: string;
   salaryLayer: string;
@@ -115,6 +132,10 @@ export type EmployeePensionProduct = Omit<EmployeePensionProductInput, "isActive
   effectiveTo: string | null;
   institutionalBody: string;
   manufacturer: string;
+  fundExternalKey: string;
+  fundCode: string;
+  fundName: string;
+  fundCompanyName: string;
   salaryAllocationType: SalaryAllocationType;
   salaryAllocationValue: number | null;
   allocationOrder: number;
