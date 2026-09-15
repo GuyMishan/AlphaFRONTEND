@@ -5,6 +5,7 @@ import "./globals.css";
 import "./mobile.css";
 import "./reporting.css";
 import "./payment-editor.css";
+import "./notifications.css";
 
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo" });
 
