@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Building2, FileClock, FilePlus2, Gauge, LogOut, Menu, Settings, ShieldCheck, Users, X } from "lucide-react";
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
+import { resolveSingleEmployerScope } from "@/lib/access-scope";
 import { clearSession, getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
@@ -21,13 +22,29 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
   const pathname = usePathname();
   const router = useRouter();
   const [session, setLocalSession] = useState<Session | null>(null);
+  const [singleEmployerUser, setSingleEmployerUser] = useState(false);
+  const [scopeResolved, setScopeResolved] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const active = getSession();
-    if (!active) router.replace("/login");
-    else setLocalSession(active);
-  }, [router]);
+    let active = true;
+    const current = getSession();
+    if (!current) {
+      router.replace("/login");
+      return;
+    }
+    setLocalSession(current);
+    resolveSingleEmployerScope()
+      .then((scope) => {
+        if (!active) return;
+        const isSingle = Boolean(scope);
+        setSingleEmployerUser(isSingle);
+        if (isSingle && pathname.startsWith("/employers")) router.replace("/dashboard");
+      })
+      .catch(() => { if (active) setSingleEmployerUser(false); })
+      .finally(() => { if (active) setScopeResolved(true); });
+    return () => { active = false; };
+  }, [pathname, router]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -45,16 +62,17 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
     router.replace("/login");
   }
 
-  if (!session) return null;
+  if (!session || !scopeResolved) return null;
 
+  const visibleNav = singleEmployerUser ? nav.filter((item) => item.href !== "/employers") : nav;
   const navigation = (
     <>
       <nav className="nav" aria-label="ניווט ראשי">
-        {nav.map(({ href, label, icon: Icon }) => (
+        {visibleNav.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className={pathname === href ? "active" : ""}><Icon size={18} />{label}</Link>
         ))}
         <div className="nav-divider" />
-        <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />הרשאות</Link>
+        {!singleEmployerUser ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />הרשאות</Link> : null}
         <Link href="/settings" className={pathname === "/settings" ? "active" : ""}><Settings size={18} />הגדרות</Link>
       </nav>
       <div className="sidebar-bottom nav">
@@ -87,7 +105,7 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
           </div>
           <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className={`dot${session.mode === "demo" ? "" : " online"}`} />{session.mode === "demo" ? "מצב הדגמה" : "חיבור API פעיל"}</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
         </header>
-        {hideScopeController ? null : <ScopeController />}
+        {hideScopeController ? null : <ScopeController singleEmployerUser={singleEmployerUser} />}
         <main className="main">{children}</main>
       </div>
     </div>
