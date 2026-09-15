@@ -64,6 +64,11 @@ export function ScopeController() {
   useEffect(() => {
     let active = true;
     async function load() {
+      const previousOrganizationId = getOrganizationSelection() ?? "";
+      const previousEmployer = getEmployerSelection();
+      const previousEmployerId = previousEmployer?.organizationId === previousOrganizationId ? previousEmployer.employerId : "";
+      const previousEmployeeId = getEmployeeSelection() ?? "";
+
       try {
         const orgItems = await alphaApi.organizations();
         if (!active) return;
@@ -80,12 +85,16 @@ export function ScopeController() {
           if (level === "employee" && empId) empEmployeeId = await loadEmployees(orgId, empId);
         }
 
-        // The page and the scope controller mount at the same time. A saved employer can
-        // be stale (especially for platform admins who can switch organizations), while
-        // loadEmployers may resolve a different valid employer. Always publish the resolved
-        // initial scope so employer-scoped pages load with the validated IDs instead of the
-        // stale session selection.
-        if (active && orgId) {
+        if (!active || !orgId) return;
+
+        const organizationChanged = orgId !== previousOrganizationId;
+        const employerChanged = level !== "organization" && empId !== previousEmployerId;
+        const employeeChanged = level === "employee" && empEmployeeId !== previousEmployeeId;
+
+        // Initializing the navbar with the same persisted scope must not tell the page to
+        // reload data it has already started loading. Publish only when initialization had
+        // to repair a missing/stale persisted selection.
+        if (organizationChanged || employerChanged || employeeChanged) {
           emitScopeChange({
             organizationId: orgId,
             employerId: empId || undefined,
