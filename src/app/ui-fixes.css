@@ -128,7 +128,6 @@
   }
 }
 
-/* RTL scope/navbar values: reserve room for the icon even when the value is plain text. */
 .scope-selects label > div > span {
   display: block;
   min-width: 210px;
@@ -143,7 +142,6 @@
   text-overflow: ellipsis;
 }
 
-/* Date/month fields are interactive controls and should communicate that visually. */
 input[type="date"],
 input[type="month"] {
   cursor: pointer;
@@ -152,4 +150,70 @@ input[type="month"] {
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="month"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
+}
+
+input[type="date"]:disabled,
+input[type="month"]:disabled {
+  cursor: not-allowed;
+  background: #f1f3f6 !important;
+  color: #98a2b3 !important;
+  border-color: #e4e7ec !important;
+  opacity: 1;
+}
+
+input[type="date"]:disabled::-webkit-calendar-picker-indicator,
+input[type="month"]:disabled::-webkit-calendar-picker-indicator {
+  cursor: not-allowed;
+  opacity: .38;
+}
+
+/* Wider and denser employee-product modal. */
+.report-modal {
+  width: min(1320px, 97vw) !important;
+}
+
+.report-modal-body {
+  padding: 10px 12px 12px !important;
+}
+
+.report-modal .report-product-card {
+  padding: 9px 10px !important;
+}
+
+.report-modal .report-product-title {
+  margin-bottom: 7px !important;
+}
+
+.report-modal .report-product-fields {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 6px 8px !important;
+}
+
+.report-modal .contribution-grid {
+  gap: 8px !important;
+}
+
+.report-modal .contribution-section {
+  margin-top: 7px !important;
+}
+
+.report-modal .contribution-table th,
+.report-modal .contribution-table td {
+  padding: 2px 4px !important;
+}
+
+.report-modal .contribution-table input {
+  height: 25px !important;
+}
+
+@media (max-width: 1100px) {
+  .report-modal .report-product-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .report-modal .report-product-fields {
+    grid-template-columns: 1fr !important;
+  }
 }
