@@ -20,6 +20,8 @@ import type {
   OrganizationCapabilities,
   OrganizationRole,
   PagedResult,
+  PensionFundOption,
+  PensionProductType,
   UserCandidate,
 } from "./types";
 import { demoEmployees, demoEmployers, demoOrganizations } from "./demo-data";
@@ -113,6 +115,9 @@ export const alphaApi = {
   saveEmployeePensionMix: (organizationId: string, employerId: string, employeeId: string, products: EmployeePensionProductInput[]) => getSession()?.mode === "demo"
     ? Promise.resolve()
     : request<void>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix/`, { method: "PUT", body: JSON.stringify({ products }) }),
+  pensionFunds: (productType: PensionProductType, search = "", take = 500): Promise<PensionFundOption[]> => getSession()?.mode === "demo"
+    ? Promise.resolve([])
+    : request<PensionFundOption[]>(`/api/reference-data/pension-funds${qs({ productType, search, take })}`),
   createUser: (payload: { externalSubject: string; email: string; displayName: string }) =>
     request<{ id: string }>("/api/platform/users", { method: "POST", body: JSON.stringify(payload) }),
 
