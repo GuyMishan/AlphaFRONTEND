@@ -22,6 +22,7 @@ export type Employee = {
   status: number;
   startDate: string;
   endDate: string | null;
+  monthlySalary: number;
   personId: string;
   nationalId: string;
   firstName: string;
@@ -227,4 +228,4 @@ export type PagedResult<T> = {
 };
 
 export type EmployerInput = Pick<Employer, "legalName" | "registrationNumber" | "withholdingFileNumber">;
-export type EmployeeInput = Pick<Employee, "nationalId" | "firstName" | "lastName" | "employeeNumber" | "startDate">;
+export type EmployeeInput = Pick<Employee, "nationalId" | "firstName" | "lastName" | "employeeNumber" | "startDate" | "monthlySalary">;
