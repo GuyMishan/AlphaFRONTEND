@@ -39,6 +39,16 @@ export type EmployerInterfaceProductMetadata = {
 
 export type EmployerInterfaceProductMetadataInput = Omit<EmployerInterfaceProductMetadata, "reportKind">;
 
+export type EmployerInterfacePreflight = {
+  isValid: boolean;
+  reportKind: ManualReportKind | number | string;
+  transmittable: boolean;
+  documentType?: string | null;
+  version?: string | null;
+  schemaFileName?: string | null;
+  issues: string[];
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const session = getSession();
   const headers = new Headers(init?.headers);
@@ -83,4 +93,6 @@ export const employerInterfaceApi = {
     request<EmployerInterfaceProductMetadata>(`${employerPath(organizationId, employerId)}/reports/${reportId}/products/${productId}/metadata`),
   updateProductMetadata: (organizationId: string, employerId: string, reportId: string, productId: string, payload: EmployerInterfaceProductMetadataInput) =>
     request<EmployerInterfaceProductMetadata>(`${employerPath(organizationId, employerId)}/reports/${reportId}/products/${productId}/metadata`, { method: "PUT", body: JSON.stringify(payload) }),
+  preflight: (organizationId: string, employerId: string, reportId: string) =>
+    request<EmployerInterfacePreflight>(`${employerPath(organizationId, employerId)}/reports/${reportId}/preflight`),
 };
