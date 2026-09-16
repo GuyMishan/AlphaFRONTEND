@@ -10,6 +10,7 @@ import { employerInterfaceApi } from "@/lib/employer-interface-api";
 import type { Employee, EmployeeInput, Employer } from "@/lib/types";
 import { isIsraeliId, isValidEmail } from "@/lib/validation";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
+import { AddressAutocompleteFields } from "@/components/address-autocomplete-fields";
 import { Field, type FieldErrors } from "@/components/form-feedback";
 
 export function EmployeeForm({ organizationId, employerId, employee, employer, editable = true }: { organizationId: string; employerId: string; employee?: Employee; employer?: Employer; editable?: boolean }) {
@@ -147,8 +148,15 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         <Field label="מין *" error={errors.gender}><EmployerInterfaceOptionSelect category="gender" value={form.gender ?? null} disabled={!editable} required onChange={(value) => update("gender", value)} /></Field>
         <Field label="אימייל *" error={errors.email}><input disabled={!editable} required type="email" maxLength={50} value={form.email} onChange={(event) => update("email", event.target.value)} /></Field>
         <Field label="נייד *" error={errors.mobile}><input disabled={!editable} required inputMode="numeric" maxLength={15} value={form.mobile} onChange={(event) => update("mobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
-        <Field label="יישוב *" error={errors.city}><input disabled={!editable} required maxLength={100} value={form.city} onChange={(event) => update("city", event.target.value)} /></Field>
-        <Field label="רחוב *" error={errors.street}><input disabled={!editable} required maxLength={100} value={form.street} onChange={(event) => update("street", event.target.value)} /></Field>
+        <AddressAutocompleteFields
+          city={form.city}
+          street={form.street}
+          cityError={errors.city}
+          streetError={errors.street}
+          disabled={!editable}
+          onCityChange={(value) => update("city", value)}
+          onStreetChange={(value) => update("street", value)}
+        />
         <Field label="מספר בית *" error={errors.houseNumber}><input disabled={!editable} required maxLength={20} value={form.houseNumber} onChange={(event) => update("houseNumber", event.target.value)} /></Field>
         <Field label="מספר דירה *" error={errors.apartment}><input disabled={!editable} required maxLength={20} value={form.apartment} onChange={(event) => update("apartment", event.target.value)} /></Field>
         <Field label="מיקוד *" error={errors.postalCode}><input disabled={!editable} required inputMode="numeric" maxLength={10} value={form.postalCode} onChange={(event) => update("postalCode", event.target.value.replace(/\D/g, "").slice(0, 10))} /></Field>
