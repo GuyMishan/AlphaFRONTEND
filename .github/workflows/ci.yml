@@ -15,7 +15,8 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm install --package-lock=false
+      - run: npm ci
+      - run: node scripts/check-hardcoded-select-options.mjs
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
