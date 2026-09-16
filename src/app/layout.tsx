@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { NotificationCenter } from "@/components/notifications";
 import { PersistentAppLayout } from "@/components/persistent-app-layout";
 import { SalaryFileUploadEnhancer } from "@/components/salary-file-upload-enhancer";
+import { ValidationUxBridge } from "@/components/validation-ux-bridge";
 import "./globals.css";
 import "./mobile.css";
 import "./reporting.css";
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <PersistentAppLayout>{children}</PersistentAppLayout>
         <Toaster position="top-center" richColors closeButton dir="rtl" duration={4500} />
         <NotificationCenter />
+        <ValidationUxBridge />
         <SalaryFileUploadEnhancer />
       </body>
     </html>
