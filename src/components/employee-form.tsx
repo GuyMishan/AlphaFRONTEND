@@ -25,6 +25,12 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
     gender: employee?.gender ?? null,
     email: employee?.email ?? "",
     mobile: employee?.mobile ?? "",
+    city: employee?.city ?? "",
+    street: employee?.street ?? "",
+    houseNumber: employee?.houseNumber ?? "",
+    apartment: employee?.apartment ?? "",
+    postalCode: employee?.postalCode ?? "",
+    postOfficeBox: employee?.postOfficeBox ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -56,10 +62,16 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
       if (Number.isNaN(start.getTime()) || start < min || start > max) next.startDate = "תאריך תחילת העבודה אינו הגיוני.";
     }
     if (Number(normalized.monthlySalary ?? 0) < 0) next.monthlySalary = "שכר חודשי לא יכול להיות שלילי.";
-    if (!normalized.birthDate) next.birthDate = "תאריך לידה הוא שדה חובה לדיווח שוטף בממשק מעסיקים 006.";
-    if (!normalized.gender) next.gender = "מין העובד הוא שדה חובה לדיווח שוטף בממשק מעסיקים 006.";
-    if (!isValidEmail(normalized.email ?? "")) next.email = "כתובת האימייל אינה תקינה.";
-    if (!/^\d{1,15}$/.test(normalized.mobile ?? "")) next.mobile = "מספר הנייד חייב להכיל 1-15 ספרות.";
+    if (!normalized.birthDate) next.birthDate = "תאריך לידה הוא שדה חובה.";
+    if (!normalized.gender) next.gender = "מין העובד הוא שדה חובה.";
+    if (!isValidEmail(normalized.email)) next.email = "כתובת האימייל אינה תקינה.";
+    if (!/^\d{1,15}$/.test(normalized.mobile)) next.mobile = "מספר הנייד חייב להכיל 1-15 ספרות.";
+    if (!normalized.city.trim()) next.city = "יישוב הוא שדה חובה.";
+    if (!normalized.street.trim()) next.street = "רחוב הוא שדה חובה.";
+    if (!normalized.houseNumber.trim()) next.houseNumber = "מספר בית הוא שדה חובה.";
+    if (!normalized.apartment.trim()) next.apartment = "מספר דירה הוא שדה חובה.";
+    if (!/^\d+$/.test(normalized.postalCode.trim())) next.postalCode = "מיקוד הוא שדה חובה וחייב להכיל ספרות בלבד.";
+    if (!normalized.postOfficeBox.trim()) next.postOfficeBox = "תא דואר הוא שדה חובה.";
     return next;
   }
 
@@ -73,8 +85,14 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
       lastName: form.lastName.trim(),
       employeeNumber: form.employeeNumber.trim(),
       monthlySalary: Number(form.monthlySalary ?? 0),
-      email: (form.email ?? "").trim(),
-      mobile: (form.mobile ?? "").replace(/\D/g, ""),
+      email: form.email.trim(),
+      mobile: form.mobile.replace(/\D/g, ""),
+      city: form.city.trim(),
+      street: form.street.trim(),
+      houseNumber: form.houseNumber.trim(),
+      apartment: form.apartment.trim(),
+      postalCode: form.postalCode.replace(/\D/g, ""),
+      postOfficeBox: form.postOfficeBox.trim(),
     };
     const nextErrors = validate(normalized);
     setErrors(nextErrors);
@@ -90,10 +108,16 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         employmentId = saved.id;
       }
       await employerInterfaceApi.updateEmployeeProfile(organizationId, employerId, employmentId, {
-        birthDate: normalized.birthDate ?? null,
-        gender: normalized.gender ?? null,
-        email: normalized.email ?? "",
-        mobile: normalized.mobile ?? "",
+        birthDate: normalized.birthDate,
+        gender: normalized.gender,
+        email: normalized.email,
+        mobile: normalized.mobile,
+        city: normalized.city,
+        street: normalized.street,
+        houseNumber: normalized.houseNumber,
+        apartment: normalized.apartment,
+        postalCode: normalized.postalCode,
+        postOfficeBox: normalized.postOfficeBox,
       });
       toast.success(employee ? "פרטי העובד נשמרו בהצלחה" : "העובד הוקם בהצלחה");
       router.push(`/employees/${employmentId}?organizationId=${organizationId}&employerId=${employerId}`);
@@ -117,12 +141,18 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         <Field label="תאריך תחילת עבודה *" error={errors.startDate}><input aria-invalid={Boolean(errors.startDate)} required disabled={!editable} type="date" value={form.startDate} onChange={(event) => update("startDate", event.target.value)} /></Field>
         <Field label="שכר חודשי" error={errors.monthlySalary}><input aria-invalid={Boolean(errors.monthlySalary)} disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={form.monthlySalary || ""} onChange={(event) => update("monthlySalary", Number(event.target.value))} placeholder="לדוגמה 20000" /></Field>
       </div>
-      <div className="notice notice-info">הפרטים הבאים נדרשים לצורך דיווח שוטף בממשק מעסיקים 006.</div>
+      <div className="notice notice-info">פרטי העובד הבאים נשמרים בכרטיס העובד ונדרשים לממשק המעסיקים 006.</div>
       <div className="grid two-cols">
-        <Field label="תאריך לידה *" error={errors.birthDate}><input disabled={!editable} type="date" value={form.birthDate ?? ""} onChange={(event) => update("birthDate", event.target.value || null)} /></Field>
+        <Field label="תאריך לידה *" error={errors.birthDate}><input disabled={!editable} required type="date" value={form.birthDate ?? ""} onChange={(event) => update("birthDate", event.target.value || null)} /></Field>
         <Field label="מין *" error={errors.gender}><EmployerInterfaceOptionSelect category="gender" value={form.gender ?? null} disabled={!editable} required onChange={(value) => update("gender", value)} /></Field>
-        <Field label="אימייל *" error={errors.email}><input disabled={!editable} type="email" maxLength={50} value={form.email ?? ""} onChange={(event) => update("email", event.target.value)} /></Field>
-        <Field label="נייד *" error={errors.mobile}><input disabled={!editable} inputMode="numeric" maxLength={15} value={form.mobile ?? ""} onChange={(event) => update("mobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
+        <Field label="אימייל *" error={errors.email}><input disabled={!editable} required type="email" maxLength={50} value={form.email} onChange={(event) => update("email", event.target.value)} /></Field>
+        <Field label="נייד *" error={errors.mobile}><input disabled={!editable} required inputMode="numeric" maxLength={15} value={form.mobile} onChange={(event) => update("mobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
+        <Field label="יישוב *" error={errors.city}><input disabled={!editable} required maxLength={100} value={form.city} onChange={(event) => update("city", event.target.value)} /></Field>
+        <Field label="רחוב *" error={errors.street}><input disabled={!editable} required maxLength={100} value={form.street} onChange={(event) => update("street", event.target.value)} /></Field>
+        <Field label="מספר בית *" error={errors.houseNumber}><input disabled={!editable} required maxLength={20} value={form.houseNumber} onChange={(event) => update("houseNumber", event.target.value)} /></Field>
+        <Field label="מספר דירה *" error={errors.apartment}><input disabled={!editable} required maxLength={20} value={form.apartment} onChange={(event) => update("apartment", event.target.value)} /></Field>
+        <Field label="מיקוד *" error={errors.postalCode}><input disabled={!editable} required inputMode="numeric" maxLength={10} value={form.postalCode} onChange={(event) => update("postalCode", event.target.value.replace(/\D/g, "").slice(0, 10))} /></Field>
+        <Field label="תא דואר *" error={errors.postOfficeBox}><input disabled={!editable} required maxLength={20} value={form.postOfficeBox} onChange={(event) => update("postOfficeBox", event.target.value)} /></Field>
       </div>
       {employee ? <div className="field"><label>סטטוס</label><input disabled value={employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"} /></div> : null}
       <div className="form-actions"><Link className="btn btn-secondary" href="/employees">חזרה</Link>{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employee ? "שמירת שינויים" : "הקמת עובד"}</button> : null}</div>
