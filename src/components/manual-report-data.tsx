@@ -5,6 +5,7 @@ import { CircleAlert, CircleCheck, Pencil, Plus, Save, Search, Trash2, UserPlus,
 import { InlineEmployeeCreateModal } from "@/components/inline-employee-create-modal";
 import { PensionFundSelect } from "@/components/pension-fund-select";
 import { SalaryLayerSelect } from "@/components/salary-layer-select";
+import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
 import { validateProducts } from "@/lib/validation";
@@ -75,8 +76,8 @@ function emptyProduct(month: string, order: number): ManualProductInput {
     salaryAllocationType: 1,
     salaryAllocationValue: null,
     allocationOrder: order,
-    reportingType: "שוטף",
-    salaryLayer: "שכר יסוד",
+    reportingType: "1",
+    salaryLayer: "1",
     section14: false,
     section14StartDate: null,
     employerContributions: components.map((item) => emptyContribution(item.value)),
@@ -143,7 +144,6 @@ function resolveReportProducts(monthlySalary: number, products: ManualProductInp
   const remainderItems = indexed.filter(({ product }) => Number(product.salaryAllocationType ?? 1) === 4);
   if (remainderItems.length > 1) return { products, error: "אפשר להגדיר מוצר אחד בלבד בשיטת יתרת שכר." };
 
-  // Remainder is always calculated last, regardless of the product's visual position.
   const ordered = [
     ...indexed.filter(({ product }) => Number(product.salaryAllocationType ?? 1) !== 4),
     ...remainderItems,
@@ -381,7 +381,7 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
     salaryAllocationValue: Number(product.salaryAllocationType ?? 1) === 4 ? null : Number(product.salaryAllocationValue ?? product.salary),
     allocationOrder: index,
     reportingType: product.reportingType,
-    salaryLayer: product.salaryLayer || "שכר יסוד",
+    salaryLayer: product.salaryLayer || "1",
     section14: product.section14,
     section14StartDate: product.section14StartDate,
     employerContributions: normalizeContributions(product.employerContributions),
@@ -484,7 +484,7 @@ function ProductEditor({ index, product, rawProduct, updateProduct, updateContri
       <div className="field"><label>חודש שכר *</label><input required type="month" value={rawProduct.salaryMonth.slice(0, 7)} onChange={(event) => updateProduct(index, { salaryMonth: `${event.target.value}-01` })} /></div>
       <div className="field"><label>שיטת הקצאת שכר *</label><select value={allocationType} onChange={(event) => { const type = Number(event.target.value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: type, salaryAllocationValue: type === 4 ? null : rawProduct.salaryAllocationValue ?? rawProduct.salary ?? 0 }); }}>{allocationTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></div>
       <div className="field"><label>{allocationType === 2 ? "אחוז מהשכר" : allocationType === 3 ? "תקרת שכר" : allocationType === 4 ? "ערך הקצאה" : "שכר קבוע"}</label><input disabled={allocationType === 4} type="number" min="0" max={allocationType === 2 ? 100 : undefined} step="0.01" value={allocationType === 4 ? "" : rawProduct.salaryAllocationValue ?? ""} placeholder={allocationType === 4 ? "מחושב אוטומטית" : undefined} onChange={(event) => updateProduct(index, { salaryAllocationValue: Number(event.target.value) })} /></div>
-      <div className="field"><label>סוג דיווח *</label><select value={rawProduct.reportingType} onChange={(event) => updateProduct(index, { reportingType: event.target.value })}><option>שוטף</option><option>הפרשים</option><option>תיקון</option><option>שלילי</option></select></div>
+      <div className="field"><label>סוג תקבול 006 *</label><EmployerInterfaceOptionSelect category="receipt-type" value={Number(rawProduct.reportingType) || null} required onChange={(value) => updateProduct(index, { reportingType: value == null ? "" : String(value) })} /></div>
       <div className="field"><label>רובד שכר *</label><SalaryLayerSelect value={rawProduct.salaryLayer} onChange={(value) => updateProduct(index, { salaryLayer: value })} /></div>
       <label className="section14-check"><input type="checkbox" checked={rawProduct.section14} onChange={(event) => updateProduct(index, { section14: event.target.checked, section14StartDate: event.target.checked ? rawProduct.section14StartDate : null })} /><span>סעיף 14</span></label>
       <div className="field"><label>תאריך תחילת סעיף 14{rawProduct.section14 ? " *" : ""}</label><input required={rawProduct.section14} type="date" disabled={!rawProduct.section14} value={rawProduct.section14StartDate ?? ""} onChange={(event) => updateProduct(index, { section14StartDate: event.target.value || null })} /></div>
