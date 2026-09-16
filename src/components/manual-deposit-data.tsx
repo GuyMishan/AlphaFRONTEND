@@ -6,11 +6,12 @@ import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-o
 import { VirtualizedTable } from "@/components/virtualized-table";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
-import { employerInterfaceApi, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
+import { employerInterfaceApi, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
 import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
 import type { Employer } from "@/lib/types";
 
 const productNames: Record<number, string> = { 1: "קרן פנסיה", 2: "קרן השתלמות", 3: "ביטוח מנהלים", 4: "קופת גמל", 99: "אחר" };
+const emptyPreviousReference = (): EmployerInterfacePreviousReference => ({ previousIdentifier: "", previousClearingIdentifier: "", previousReferenceExceptionCode: null });
 
 export function ManualDepositData({ organizationId, employerId, reportId }: { organizationId: string; employerId: string; reportId: string }) {
   const [rows, setRows] = useState<ManualDepositRow[]>([]);
@@ -87,8 +88,10 @@ function emptyMetadata(): EmployerInterfaceProductMetadataInput {
 }
 function isNegativeKind(value: EmployerInterfaceProductMetadata["reportKind"] | null | undefined) { return value === 3 || value === "3" || value === "Negative"; }
 function isDifferencesKind(value: EmployerInterfaceProductMetadata["reportKind"] | null | undefined) { return value === 2 || value === "2" || value === "Differences"; }
+function isGuidV4(value: string) { return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim()); }
+function requiresPreviousReference(negative: boolean, operationCode: number | null) { return negative ? operationCode === 5 || operationCode === 6 : operationCode === 2 || operationCode === 3 || operationCode === 7; }
 
-function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, form: EmployerInterfaceProductMetadataInput) {
+function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, form: EmployerInterfaceProductMetadataInput, previous: EmployerInterfacePreviousReference) {
   const errors: string[] = [];
   if (!metadata) return ["נתוני ממשק מעסיקים 006 עדיין נטענים."];
   if (isDifferencesKind(metadata.reportKind)) return errors;
@@ -109,6 +112,15 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
   }
   if (!negative && form.employmentPercentage != null && (form.employmentPercentage < 1 || form.employmentPercentage > 100)) errors.push("חלקיות משרה חייבת להיות בין 1 ל־100.");
   if (!negative && form.workDaysInMonth != null && (form.workDaysInMonth < 0 || form.workDaysInMonth > 31)) errors.push("ימי עבודה בחודש חייבים להיות בין 0 ל־31.");
+
+  if (requiresPreviousReference(negative, form.operationCode)) {
+    const hasIdentifier = Boolean(previous.previousIdentifier.trim());
+    const hasClearingIdentifier = Boolean(previous.previousClearingIdentifier.trim());
+    if (!hasIdentifier && !hasClearingIdentifier && !previous.previousReferenceExceptionCode)
+      errors.push("יש לקשר לדיווח המקורי באמצעות מספר זיהוי קודם או מספר מסלקה קודם, או לבחור חריג רשמי.");
+    if (hasIdentifier && !isGuidV4(previous.previousIdentifier)) errors.push("מספר זיהוי קודם חייב להיות GUID גרסה 4.");
+    if (hasClearingIdentifier && !isGuidV4(previous.previousClearingIdentifier)) errors.push("מספר מסלקה קודם חייב להיות GUID גרסה 4.");
+  }
   return errors;
 }
 
@@ -138,18 +150,23 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   });
   const [metadata, setMetadata] = useState<EmployerInterfaceProductMetadata | null>(null);
   const [metadataForm, setMetadataForm] = useState<EmployerInterfaceProductMetadataInput>(emptyMetadata);
+  const [previousReference, setPreviousReference] = useState<EmployerInterfacePreviousReference>(emptyPreviousReference);
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true; setLoadingMetadata(true);
-    employerInterfaceApi.productMetadata(organizationId, employerId, reportId, row.id).then((item) => {
+    Promise.all([
+      employerInterfaceApi.productMetadata(organizationId, employerId, reportId, row.id),
+      employerInterfaceApi.previousReference(organizationId, employerId, reportId, row.id),
+    ]).then(([item, previous]) => {
       if (!active) return;
       setMetadata(item);
       setMetadataForm({ operationCode: item.operationCode, depositStatus: item.depositStatus, employeeStatus: item.employeeStatus, statusStartDate: item.statusStartDate,
         employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason,
         paymentMethodCode: item.paymentMethodCode, employerAccountType: item.employerAccountType, receiverAccountType: item.receiverAccountType });
+      setPreviousReference(previous);
     }).catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת נתוני 006 נכשלה"); })
       .finally(() => { if (active) setLoadingMetadata(false); });
     return () => { active = false; };
@@ -157,24 +174,29 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
 
   function patch<K extends keyof ManualPaymentInput>(key: K, value: ManualPaymentInput[K]) { setForm((current) => ({ ...current, [key]: value })); setError(""); }
   function patchMetadata<K extends keyof EmployerInterfaceProductMetadataInput>(key: K, value: EmployerInterfaceProductMetadataInput[K]) { setMetadataForm((current) => ({ ...current, [key]: value })); setError(""); }
+  function patchPrevious<K extends keyof EmployerInterfacePreviousReference>(key: K, value: EmployerInterfacePreviousReference[K]) { setPreviousReference((current) => ({ ...current, [key]: value })); setError(""); }
 
   const negative = isNegativeKind(metadata?.reportKind);
   const differences = isDifferencesKind(metadata?.reportKind);
   const operationScope = negative ? "negative" : "current";
   const operation5 = negative && metadataForm.operationCode === 5;
   const operation6 = negative && metadataForm.operationCode === 6;
+  const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
   const showOfficialPaymentMethod = !differences && (!negative || operation5);
   const bankRequired = !differences && (!negative || (operation5 && metadataForm.paymentMethodCode === 1));
 
   async function save() {
     setError("");
-    const errors = [...validatePaymentDetails(form, metadata, metadataForm), ...validate006Metadata(metadata, metadataForm)];
+    const errors = [...validatePaymentDetails(form, metadata, metadataForm), ...validate006Metadata(metadata, metadataForm, previousReference)];
     if (errors.length) { const message = errors.join(" "); setError(message); notify.error(message); return; }
     setSaving(true);
     try {
       const persistedPayment = { ...form, paymentMethod: metadataForm.paymentMethodCode == null ? "" : String(metadataForm.paymentMethodCode) };
       await manualDepositsApi.savePayment(organizationId, employerId, reportId, row.id, persistedPayment);
-      if (!differences) await employerInterfaceApi.updateProductMetadata(organizationId, employerId, reportId, row.id, metadataForm);
+      if (!differences) {
+        await employerInterfaceApi.updateProductMetadata(organizationId, employerId, reportId, row.id, metadataForm);
+        await employerInterfaceApi.updatePreviousReference(organizationId, employerId, reportId, row.id, previousReference);
+      }
       onSaved({ ...row, ...persistedPayment });
     } catch (err) {
       const message = err instanceof Error ? err.message : "שמירת פרטי התשלום נכשלה"; setError(message); notify.error(message); setSaving(false);
@@ -190,7 +212,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       {differences ? <div className="notice notice-info payment-error">דיווח הפרשים אינו משודר ישירות בממשק 006. את נתוני 006 משלימים לאחר יצירת דיווח שוטף או שלילי ממנו.</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מבטלים תנועה ללא החזר למעסיק, ולכן לפי Version 6 אין להעביר אמצעי תשלום או פרטי החזר.</div> : null}
       <div className="payment-layout">
-        <aside className="payment-notes"><b>לתשומת לבך</b><p>אמצעי התשלום במסך הוא כעת השדה הרשמי KOD-EMTZAI-TASHLUM של ממשק המעסיקים.</p><p>בדיווח שלילי קוד פעולה 5 הוא בקשה להחזר, וקוד 6 הוא ביטול תנועה ללא החזר.</p><p>שדות שאינם רלוונטיים לסוג הדיווח מוסתרים ולא נשלחים ל־XML.</p></aside>
+        <aside className="payment-notes"><b>לתשומת לבך</b><p>אמצעי התשלום במסך הוא השדה הרשמי KOD-EMTZAI-TASHLUM של ממשק המעסיקים.</p><p>בדיווח שלילי קוד פעולה 5 הוא בקשה להחזר, וקוד 6 הוא ביטול תנועה ללא החזר.</p><p>בפעולות תיקון/ביטול יש לקשר לדיווח המקורי או לציין את החריג הרשמי שמאפשר היעדר קישור.</p></aside>
         <div className="payment-main">
           <section className="payment-panel"><h3>פרטי חשבון יצרן</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר *</label><input required maxLength={160} value={form.providerName} onChange={(e) => patch("providerName", e.target.value)} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי *</label><div className="payment-input-icon"><input required maxLength={120} value={form.providerAccount} onChange={(e) => patch("providerAccount", e.target.value)} placeholder="בנק - סניף - חשבון" /><Pencil size={14} /></div></div></div></section>
 
@@ -217,6 +239,12 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {!negative ? <div className="field"><label>חלקיות משרה (%)</label><input type="number" min="1" max="100" step="0.01" value={metadataForm.employmentPercentage ?? ""} onChange={(e) => patchMetadata("employmentPercentage", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative ? <div className="field"><label>ימי עבודה בחודש</label><input type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
           </div>}</section> : null}
+
+          {needsPrevious ? <section className="payment-panel"><h3>קישור לדיווח המקורי</h3><div className="notice notice-info" style={{ marginBottom: 12 }}>לפי Version 6 יש לקשור את פעולת התיקון/הביטול לדיווח המקורי. ניתן להזין אחד מהמזהים או לבחור חריג רשמי.</div><div className="payment-method-grid">
+            <div className="field"><label>מספר זיהוי קודם (GUID)</label><input maxLength={36} value={previousReference.previousIdentifier} onChange={(e) => patchPrevious("previousIdentifier", e.target.value)} placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" /></div>
+            <div className="field"><label>מספר מסלקה קודם (GUID)</label><input maxLength={36} value={previousReference.previousClearingIdentifier} onChange={(e) => patchPrevious("previousClearingIdentifier", e.target.value)} placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" /></div>
+            <div className="field"><label>חריג להיעדר מזהה קודם</label><EmployerInterfaceOptionSelect category="previous-reference-exception" value={previousReference.previousReferenceExceptionCode} onChange={(value) => patchPrevious("previousReferenceExceptionCode", value)} /></div>
+          </div></section> : null}
         </div>
       </div>
       <div className="payment-modal-footer"><button className="btn btn-primary" disabled={saving || loadingMetadata} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button><button className="btn btn-secondary" onClick={onClose}>ביטול</button></div>
