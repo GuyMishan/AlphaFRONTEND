@@ -20,6 +20,12 @@ export type EmployerInterfaceEmployeeProfile = {
   gender: number | null;
   email: string;
   mobile: string;
+  city: string;
+  street: string;
+  houseNumber: string;
+  apartment: string;
+  postalCode: string;
+  postOfficeBox: string;
 };
 
 export type EmployerInterfaceProductMetadata = {
