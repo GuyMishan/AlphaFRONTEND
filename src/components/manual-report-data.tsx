@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleAlert, CircleCheck, Pencil, Plus, Save, Search, Trash2, UserPlus, X } from "lucide-react";
 import { InlineEmployeeCreateModal } from "@/components/inline-employee-create-modal";
 import { PensionFundSelect } from "@/components/pension-fund-select";
+import { ReferenceOptionSelect } from "@/components/reference-option-select";
 import { SalaryLayerSelect } from "@/components/salary-layer-select";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
 import { notify } from "@/components/notifications";
@@ -29,21 +30,6 @@ type Props = {
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
 };
-
-const productTypes: { value: PensionProductType; label: string }[] = [
-  { value: 1, label: "קרן פנסיה" },
-  { value: 2, label: "קרן השתלמות" },
-  { value: 3, label: "ביטוח מנהלים" },
-  { value: 4, label: "קופת גמל" },
-  { value: 99, label: "אחר" },
-];
-
-const allocationTypes: { value: SalaryAllocationType; label: string }[] = [
-  { value: 1, label: "שכר קבוע" },
-  { value: 2, label: "אחוז מהשכר" },
-  { value: 3, label: "עד תקרה" },
-  { value: 4, label: "יתרת שכר" },
-];
 
 const components: { value: ContributionComponent; label: string }[] = [
   { value: 1, label: "פיצויים" },
@@ -476,13 +462,13 @@ function ProductEditor({ index, product, rawProduct, updateProduct, updateContri
 }) {
   const allocationType = Number(rawProduct.salaryAllocationType ?? 1) as SalaryAllocationType;
   return <section className="report-product-card">
-    <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{productTypes.find((item) => item.value === product.productType)?.label ?? "מוצר פנסיוני"}</b></div><button className="icon-button danger" onClick={remove}><Trash2 size={16} /></button></div>
+    <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{rawProduct.fundName || "מוצר פנסיוני"}</b></div><button className="icon-button danger" onClick={remove}><Trash2 size={16} /></button></div>
     <div className="grid report-product-fields">
-      <div className="field"><label>סוג מוצר *</label><select value={rawProduct.productType} onChange={(event) => updateProduct(index, { productType: Number(event.target.value) as PensionProductType, fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "" })}>{productTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></div>
+      <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" value={rawProduct.productType} required onChange={(value) => updateProduct(index, { productType: Number(value) as PensionProductType, fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "" })} /></div>
       <PensionFundSelect productType={rawProduct.productType} value={rawProduct} onChange={(fund) => updateProduct(index, fund)} />
       <div className="field"><label>מספר פוליסה *</label><input required maxLength={100} value={rawProduct.policyNumber} onChange={(event) => updateProduct(index, { policyNumber: event.target.value })} /></div>
       <div className="field"><label>חודש שכר *</label><input required type="month" value={rawProduct.salaryMonth.slice(0, 7)} onChange={(event) => updateProduct(index, { salaryMonth: `${event.target.value}-01` })} /></div>
-      <div className="field"><label>שיטת הקצאת שכר *</label><select value={allocationType} onChange={(event) => { const type = Number(event.target.value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: type, salaryAllocationValue: type === 4 ? null : rawProduct.salaryAllocationValue ?? rawProduct.salary ?? 0 }); }}>{allocationTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></div>
+      <div className="field"><label>שיטת הקצאת שכר *</label><ReferenceOptionSelect category="salary-allocation-type" value={allocationType} required onChange={(value) => { const type = Number(value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: type, salaryAllocationValue: type === 4 ? null : rawProduct.salaryAllocationValue ?? rawProduct.salary ?? 0 }); }} /></div>
       <div className="field"><label>{allocationType === 2 ? "אחוז מהשכר" : allocationType === 3 ? "תקרת שכר" : allocationType === 4 ? "ערך הקצאה" : "שכר קבוע"}</label><input disabled={allocationType === 4} type="number" min="0" max={allocationType === 2 ? 100 : undefined} step="0.01" value={allocationType === 4 ? "" : rawProduct.salaryAllocationValue ?? ""} placeholder={allocationType === 4 ? "מחושב אוטומטית" : undefined} onChange={(event) => updateProduct(index, { salaryAllocationValue: Number(event.target.value) })} /></div>
       <div className="field"><label>סוג תקבול 006 *</label><EmployerInterfaceOptionSelect category="receipt-type" value={Number(rawProduct.reportingType) || null} required onChange={(value) => updateProduct(index, { reportingType: value == null ? "" : String(value) })} /></div>
       <div className="field"><label>רובד שכר *</label><SalaryLayerSelect value={rawProduct.salaryLayer} onChange={(value) => updateProduct(index, { salaryLayer: value })} /></div>
