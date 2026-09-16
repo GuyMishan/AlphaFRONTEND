@@ -36,6 +36,12 @@ export type Employee = {
   gender?: number | null;
   email?: string;
   mobile?: string;
+  city?: string;
+  street?: string;
+  houseNumber?: string;
+  apartment?: string;
+  postalCode?: string;
+  postOfficeBox?: string;
 };
 
 export type Session = {
@@ -62,6 +68,7 @@ export type ReportDraft = {
 export type PensionProductType = 1 | 2 | 3 | 4 | 99;
 export type ContributionComponent = 1 | 2 | 3 | 4;
 export type SalaryAllocationType = 1 | 2 | 3 | 4;
+export type Section14Code = 1 | 2 | 3 | 4;
 
 export type PensionFundOption = {
   externalKey: string;
@@ -94,6 +101,7 @@ export type ManualProductInput = {
   reportingType: string;
   salaryLayer: string;
   section14: boolean;
+  section14Code?: Section14Code;
   section14StartDate: string | null;
   employerContributions: ManualContributionInput[];
   employeeContributions: ManualContributionInput[];
@@ -115,6 +123,7 @@ export type EmployeePensionProductInput = {
   reportingType: string;
   salaryLayer: string;
   section14: boolean;
+  section14Code?: Section14Code;
   section14StartDate: string | null;
   isActive?: boolean;
   effectiveFrom?: string;
@@ -265,8 +274,14 @@ export type EmployerInput = Pick<Employer, "legalName" | "registrationNumber" | 
   contactMobile?: string;
 };
 export type EmployeeInput = Pick<Employee, "nationalId" | "firstName" | "lastName" | "employeeNumber" | "startDate" | "monthlySalary"> & {
-  birthDate?: string | null;
-  gender?: number | null;
-  email?: string;
-  mobile?: string;
+  birthDate: string | null;
+  gender: number | null;
+  email: string;
+  mobile: string;
+  city: string;
+  street: string;
+  houseNumber: string;
+  apartment: string;
+  postalCode: string;
+  postOfficeBox: string;
 };
