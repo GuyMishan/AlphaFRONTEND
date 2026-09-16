@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CheckCircle2, CircleAlert, Info, X } from "lucide-react";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 type NotificationType = "error" | "success" | "info";
-type NotificationItem = { id: string; type: NotificationType; message: string };
 const EVENT_NAME = "alpha:notify";
 
 function emit(type: NotificationType, message: string) {
@@ -19,27 +18,16 @@ export const notify = {
 };
 
 export function NotificationCenter() {
-  const [items, setItems] = useState<NotificationItem[]>([]);
-
   useEffect(() => {
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ type: NotificationType; message: string }>).detail;
       if (!detail?.message) return;
-      const id = crypto.randomUUID();
-      setItems((current) => [...current.slice(-3), { id, type: detail.type || "info", message: detail.message }]);
-      window.setTimeout(() => setItems((current) => current.filter((item) => item.id !== id)), 5200);
+      if (detail.type === "error") toast.error(detail.message);
+      else if (detail.type === "success") toast.success(detail.message);
+      else toast.info(detail.message);
     };
     window.addEventListener(EVENT_NAME, handler);
     return () => window.removeEventListener(EVENT_NAME, handler);
   }, []);
-
-  if (!items.length) return null;
-  return <div className="notification-stack" aria-live="polite" aria-atomic="false">{items.map((item) => {
-    const Icon = item.type === "error" ? CircleAlert : item.type === "success" ? CheckCircle2 : Info;
-    return <div key={item.id} className={`notification-toast notification-${item.type}`} role={item.type === "error" ? "alert" : "status"}>
-      <Icon size={19} />
-      <span>{item.message}</span>
-      <button type="button" aria-label="סגירת התראה" onClick={() => setItems((current) => current.filter((currentItem) => currentItem.id !== item.id))}><X size={16} /></button>
-    </div>;
-  })}</div>;
+  return null;
 }
