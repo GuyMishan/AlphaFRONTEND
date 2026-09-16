@@ -14,6 +14,11 @@ export type Employer = {
   registrationNumber: string;
   withholdingFileNumber: string;
   status: number;
+  contactFirstName?: string;
+  contactLastName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  contactMobile?: string;
 };
 
 export type Employee = {
@@ -27,6 +32,10 @@ export type Employee = {
   nationalId: string;
   firstName: string;
   lastName: string;
+  birthDate?: string | null;
+  gender?: number | null;
+  email?: string;
+  mobile?: string;
 };
 
 export type Session = {
@@ -248,5 +257,16 @@ export type PagedResult<T> = {
   hasMore: boolean;
 };
 
-export type EmployerInput = Pick<Employer, "legalName" | "registrationNumber" | "withholdingFileNumber">;
-export type EmployeeInput = Pick<Employee, "nationalId" | "firstName" | "lastName" | "employeeNumber" | "startDate" | "monthlySalary">;
+export type EmployerInput = Pick<Employer, "legalName" | "registrationNumber" | "withholdingFileNumber"> & {
+  contactFirstName?: string;
+  contactLastName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  contactMobile?: string;
+};
+export type EmployeeInput = Pick<Employee, "nationalId" | "firstName" | "lastName" | "employeeNumber" | "startDate" | "monthlySalary"> & {
+  birthDate?: string | null;
+  gender?: number | null;
+  email?: string;
+  mobile?: string;
+};
