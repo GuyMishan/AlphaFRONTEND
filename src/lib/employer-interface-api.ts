@@ -20,6 +20,12 @@ export type EmployerInterfaceEmployeeProfile = {
   gender: number | null;
   email: string;
   mobile: string;
+  city: string;
+  street: string;
+  houseNumber: string;
+  apartment: string;
+  postalCode: string;
+  postOfficeBox: string;
 };
 
 export type EmployerInterfaceProductMetadata = {
@@ -38,6 +44,12 @@ export type EmployerInterfaceProductMetadata = {
 };
 
 export type EmployerInterfaceProductMetadataInput = Omit<EmployerInterfaceProductMetadata, "reportKind">;
+
+export type EmployerInterfacePreviousReference = {
+  previousIdentifier: string;
+  previousClearingIdentifier: string;
+  previousReferenceExceptionCode: number | null;
+};
 
 export type EmployerInterfacePreflight = {
   isValid: boolean;
@@ -93,6 +105,10 @@ export const employerInterfaceApi = {
     request<EmployerInterfaceProductMetadata>(`${employerPath(organizationId, employerId)}/reports/${reportId}/products/${productId}/metadata`),
   updateProductMetadata: (organizationId: string, employerId: string, reportId: string, productId: string, payload: EmployerInterfaceProductMetadataInput) =>
     request<EmployerInterfaceProductMetadata>(`${employerPath(organizationId, employerId)}/reports/${reportId}/products/${productId}/metadata`, { method: "PUT", body: JSON.stringify(payload) }),
+  previousReference: (organizationId: string, employerId: string, reportId: string, productId: string) =>
+    request<EmployerInterfacePreviousReference>(`${employerPath(organizationId, employerId)}/reports/${reportId}/products/${productId}/previous-reference`),
+  updatePreviousReference: (organizationId: string, employerId: string, reportId: string, productId: string, payload: EmployerInterfacePreviousReference) =>
+    request<EmployerInterfacePreviousReference>(`${employerPath(organizationId, employerId)}/reports/${reportId}/products/${productId}/previous-reference`, { method: "PUT", body: JSON.stringify(payload) }),
   preflight: (organizationId: string, employerId: string, reportId: string) =>
     request<EmployerInterfacePreflight>(`${employerPath(organizationId, employerId)}/reports/${reportId}/preflight`),
 };
