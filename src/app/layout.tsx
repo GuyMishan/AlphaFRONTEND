@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
+import { Toaster } from "sonner";
 import { NotificationCenter } from "@/components/notifications";
 import { PersistentAppLayout } from "@/components/persistent-app-layout";
 import { SalaryFileUploadEnhancer } from "@/components/salary-file-upload-enhancer";
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="he" dir="rtl">
       <body className={heebo.variable}>
         <PersistentAppLayout>{children}</PersistentAppLayout>
+        <Toaster position="top-center" richColors closeButton dir="rtl" duration={4500} />
         <NotificationCenter />
         <SalaryFileUploadEnhancer />
       </body>
