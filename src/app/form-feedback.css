@@ -1,0 +1,63 @@
+.field-invalid > label,
+.field-label-error {
+  color: #b42318 !important;
+  font-weight: 700;
+}
+
+.field-invalid input,
+.field-invalid select,
+.field-invalid textarea,
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: #d92d20 !important;
+  box-shadow: 0 0 0 1px #d92d20 !important;
+  background: #fff7f6 !important;
+}
+
+.field-invalid input:focus,
+.field-invalid select:focus,
+.field-invalid textarea:focus,
+input[aria-invalid="true"]:focus,
+select[aria-invalid="true"]:focus,
+textarea[aria-invalid="true"]:focus {
+  outline: 2px solid rgba(217, 45, 32, .16) !important;
+  outline-offset: 1px;
+}
+
+.field-error-text {
+  display: block;
+  margin-top: 5px;
+  color: #b42318;
+  font-size: 12px;
+  line-height: 1.35;
+  cursor: help;
+}
+
+.field-invalid[data-error] {
+  position: relative;
+}
+
+.field-invalid[data-error]:hover::after,
+.field-invalid[data-error]:focus-within::after {
+  content: attr(data-error);
+  position: absolute;
+  z-index: 1000;
+  right: 0;
+  top: calc(100% + 6px);
+  max-width: min(420px, 92vw);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #b42318;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: 0 8px 24px rgba(180, 35, 24, .24);
+  pointer-events: none;
+  white-space: normal;
+}
+
+[data-sonner-toaster] {
+  direction: rtl;
+  font-family: var(--font-heebo), sans-serif;
+}
