@@ -8,6 +8,7 @@ import { ValidationUxBridge } from "@/components/validation-ux-bridge";
 import "./globals.css";
 import "./mobile.css";
 import "./reporting.css";
+import "./report-feedback.css";
 import "./payment-editor.css";
 import "./notifications.css";
 import "./ui-fixes.css";
