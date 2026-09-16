@@ -1,4 +1,5 @@
 import { getSession } from "./session";
+import { employerInterfaceApi } from "./employer-interface-api";
 
 export type ReportTransmissionItem = {
   id: string;
@@ -47,6 +48,12 @@ function path(organizationId: string, employerId: string, reportId: string) {
 export const reportTransmissionApi = {
   history: (organizationId: string, employerId: string, reportId: string) =>
     request<ReportTransmissionItem[]>(path(organizationId, employerId, reportId)),
-  send: (organizationId: string, employerId: string, reportId: string, provider = "MockClearinghouse") =>
-    request<SendReportResult>(path(organizationId, employerId, reportId), { method: "POST", body: JSON.stringify({ provider }) }),
+  send: async (organizationId: string, employerId: string, reportId: string, provider = "MockClearinghouse") => {
+    const preflight = await employerInterfaceApi.preflight(organizationId, employerId, reportId);
+    if (!preflight.transmittable)
+      throw new Error("דיווח הפרשים אינו משודר ישירות בממשק מעסיקים 006. יש ליצור ממנו דיווח שוטף או שלילי לפני השידור.");
+    if (!preflight.isValid)
+      throw new Error(preflight.issues.slice(0, 8).join(" ") + (preflight.issues.length > 8 ? ` ועוד ${preflight.issues.length - 8} שגיאות.` : ""));
+    return request<SendReportResult>(path(organizationId, employerId, reportId), { method: "POST", body: JSON.stringify({ provider }) });
+  },
 };

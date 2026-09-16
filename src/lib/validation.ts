@@ -77,8 +77,8 @@ export function validateProducts(products: ManualProductInput[], limits: Contrib
     if (!product.salaryMonth || !/^\d{4}-\d{2}/.test(product.salaryMonth)) errors.push(prefix + "חודש שכר הוא שדה חובה.");
     if (!Number.isFinite(product.salary) || product.salary <= 0) errors.push(prefix + "השכר חייב להיות גדול מאפס.");
     if (product.salary > 10_000_000) errors.push(prefix + "השכר חורג מהטווח המותר.");
-    if (!product.reportingType.trim()) errors.push(prefix + "סוג דיווח הוא שדה חובה.");
-    if (!product.salaryLayer.trim()) errors.push(prefix + "רובד שכר הוא שדה חובה.");
+    if (!/^\d+$/.test(product.reportingType.trim())) errors.push(prefix + "יש לבחור סוג תקבול תקין מ־Reference Data.");
+    if (!/^\d+$/.test(product.salaryLayer.trim())) errors.push(prefix + "יש לבחור רובד שכר תקין מ־Reference Data.");
     if (product.section14 && !product.section14StartDate) errors.push(prefix + "יש להזין תאריך תחילת סעיף 14.");
 
     const allContributions = [...product.employerContributions, ...product.employeeContributions];
@@ -124,8 +124,8 @@ export function validatePayment(input: {
     if (!input.valueDate) errors.push("תאריך ערך הוא שדה חובה.");
     if (!input.referenceNumber.trim()) errors.push("מספר אסמכתא הוא שדה חובה.");
     if (!/^\d+$/.test(input.employerBankCode.trim())) errors.push("מספר בנק חייב להכיל ספרות בלבד.");
-    if (!/^\d+$/.test(input.employerBranch.trim())) errors.push("מספר סניף חייב להכיל ספרות בלבד.");
-    if (!/^\d+$/.test(input.employerAccount.trim())) errors.push("מספר חשבון חייב להכיל ספרות בלבד.");
+    if (!/^\d{3}$/.test(input.employerBranch.trim())) errors.push("מספר סניף חייב להכיל בדיוק 3 ספרות לממשק 006.");
+    if (!/^\d{20}$/.test(input.employerAccount.trim())) errors.push("מספר חשבון מעסיק חייב להכיל בדיוק 20 ספרות לממשק 006.");
   }
   return errors;
 }
