@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { userPreferencesApi, type AppearancePreference } from "@/lib/user-preferences-api";
 
@@ -33,6 +34,8 @@ function applyTheme(preference: AppearancePreference) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const loadedUserKey = useRef<string | null>(null);
   const [appearance, setAppearanceState] = useState<AppearancePreference>("system");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [loading, setLoading] = useState(true);
@@ -40,17 +43,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const session = getSession();
+    const userKey = session?.userId ?? session?.displayName ?? "anonymous";
+    if (loadedUserKey.current === userKey) return;
+    loadedUserKey.current = userKey;
+    setLoading(true);
+
     if (!session) {
+      setAppearanceState("system");
       setResolvedTheme(applyTheme("system"));
       setLoading(false);
       return;
     }
 
-    const cached = localStorage.getItem(cacheKey()) as AppearancePreference | null;
+    const key = cacheKey();
+    const cached = localStorage.getItem(key) as AppearancePreference | null;
     if (cached === "system" || cached === "light" || cached === "dark") {
       setAppearanceState(cached);
       setResolvedTheme(applyTheme(cached));
     } else {
+      setAppearanceState("system");
       setResolvedTheme(applyTheme("system"));
     }
 
@@ -62,12 +73,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     userPreferencesApi.get()
       .then((preferences) => {
         setAppearanceState(preferences.appearance);
-        localStorage.setItem(cacheKey(), preferences.appearance);
+        localStorage.setItem(key, preferences.appearance);
         setResolvedTheme(applyTheme(preferences.appearance));
       })
       .catch(() => undefined)
       .finally(() => setLoading(false));
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (appearance !== "system") return;
