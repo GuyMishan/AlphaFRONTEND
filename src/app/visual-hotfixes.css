@@ -28,6 +28,68 @@
   width: 100%;
 }
 
+.report-modal-wide {
+  width: min(1180px, 96vw);
+}
+
+.employee-form-embedded {
+  background: transparent;
+}
+
+.employee-form-embedded .profile-summary {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+}
+
+.employee-created-next-step {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  text-align: center;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 28px;
+}
+
+.employee-created-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.employee-created-next-step h3 {
+  margin: 0 0 6px;
+}
+
+.employee-created-next-step p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.employee-created-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.employee-products-finish {
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.report-modal-wide .card {
+  box-shadow: none;
+}
+
 @media (max-width: 760px) {
   .steps {
     grid-template-columns: none;
@@ -38,5 +100,15 @@
 
   .employee-profile-layout .profile-card {
     max-width: 100%;
+  }
+
+  .report-modal-wide {
+    width: 100%;
+  }
+
+  .employee-created-actions,
+  .employee-products-finish {
+    display: grid;
+    width: 100%;
   }
 }
