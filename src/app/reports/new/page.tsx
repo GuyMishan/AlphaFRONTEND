@@ -24,7 +24,21 @@ type IntakeMode = Extract<ReportMode, "manual" | "excel">;
 const reportKindLabel: Record<ManualReportKind, string> = { 1: "דיווח שוטף", 2: "דיווח הפרשים", 3: "דיווח שלילי" };
 function kindLabel(value: string | number | undefined) { if (value === 2 || value === "2" || value === "Differences") return "הפרשים"; if (value === 3 || value === "3" || value === "Negative") return "שלילי"; return "שוטף"; }
 function formatMonth(value: string) { const [year, month] = value.slice(0, 7).split("-"); return month && year ? `${month}/${year}` : value; }
-function validationMessage(errors: string[]) { return errors.slice(0, 8).join(" ") + (errors.length > 8 ? ` ועוד ${errors.length - 8} שגיאות.` : ""); }
+function validationMessage(errors: string[]) {
+  if (!errors.length) return "בדיקת הדיווח נכשלה.";
+
+  const missingSalary = errors.filter((error) => error.includes("חסר שכר חודשי")).length;
+  const missingPensionProduct = errors.filter((error) => error.includes("אין מוצר פנסיוני בדיווח")).length;
+  const categorized = missingSalary + missingPensionProduct;
+  const otherErrors = errors.length - categorized;
+  const parts: string[] = [];
+
+  if (missingSalary) parts.push(`חסר שכר חודשי ל־${missingSalary} עובדים`);
+  if (missingPensionProduct) parts.push(`חסר מוצר פנסיוני ל־${missingPensionProduct} עובדים`);
+  if (otherErrors) parts.push(`${otherErrors} שגיאות נוספות`);
+
+  return `לא ניתן להמשיך: ${parts.join(", ")}.`;
+}
 
 export default function NewReportPage() {
   const router = useRouter();
