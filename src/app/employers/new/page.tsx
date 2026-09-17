@@ -4,21 +4,57 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmployerForm } from "@/components/employer-form";
 import { alphaApi } from "@/lib/api";
-import { useQueryContext } from "@/lib/use-query-context";
+import { getOrganizationSelection } from "@/lib/session";
 
 export default function NewEmployerPage() {
-  const { organizationId } = useQueryContext();
+  const [organizationId, setOrganizationId] = useState("");
   const [canCreateEmployer, setCanCreateEmployer] = useState(false);
+  const [scopeResolved, setScopeResolved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!organizationId) { setLoading(false); return; }
-    alphaApi.capabilities(organizationId)
-      .then((capabilities) => setCanCreateEmployer(capabilities.canCreateEmployer))
-      .catch((err) => setError(err instanceof Error ? err.message : "טעינת ההרשאות נכשלה"))
-      .finally(() => setLoading(false));
-  }, [organizationId]);
+  async function loadOrganizationScope(orgId: string) {
+    setOrganizationId(orgId);
+    setScopeResolved(true);
+    setError("");
 
-  return <AppShell title="הקמת מעסיק" hideScopeController><div className="page-head"><div><h1>הקמת מעסיק</h1><p>אותו פרופיל ישמש בהמשך גם לעריכת המעסיק.</p></div></div>{error ? <div className="notice notice-error">{error}</div> : !organizationId ? <div className="notice notice-error">לא נבחר ארגון.</div> : loading ? <div className="empty">טוען הרשאות...</div> : canCreateEmployer ? <EmployerForm organizationId={organizationId} /> : <div className="notice notice-info">אין לך הרשאה להקים מעסיק חדש בארגון הזה.</div>}</AppShell>;
+    if (!orgId) {
+      setCanCreateEmployer(false);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const capabilities = await alphaApi.capabilities(orgId);
+      setCanCreateEmployer(capabilities.canCreateEmployer);
+    } catch (err) {
+      setCanCreateEmployer(false);
+      setError(err instanceof Error ? err.message : "טעינת ההרשאות נכשלה");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orgId = params.get("organizationId") || getOrganizationSelection() || "";
+    void loadOrganizationScope(orgId);
+
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ organizationId: string }>).detail;
+      void loadOrganizationScope(detail.organizationId);
+    };
+    window.addEventListener("alpha:scope-change", handler);
+    return () => window.removeEventListener("alpha:scope-change", handler);
+  }, []);
+
+  return <AppShell title="הקמת מעסיק">
+    <div className="page-head"><div><h1>הקמת מעסיק</h1><p>בחרו ארגון בסרגל העליון והזינו את פרטי המעסיק.</p></div></div>
+    {!scopeResolved || loading ? <div className="empty">טוען הרשאות...</div>
+      : error ? <div className="notice notice-error">{error}</div>
+      : !organizationId ? <div className="empty">בחרו ארגון כדי להתחיל בהקמת המעסיק.</div>
+      : canCreateEmployer ? <EmployerForm organizationId={organizationId} />
+      : <div className="notice notice-info">אין לך הרשאה להקים מעסיק חדש בארגון הזה.</div>}
+  </AppShell>;
 }
