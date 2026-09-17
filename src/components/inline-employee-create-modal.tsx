@@ -146,7 +146,6 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
           <div className="field"><label>תאריך תחילת עבודה *</label><input type="date" value={form.startDate} onChange={(e) => update("startDate", e.target.value)} /></div>
           <div className="field"><label>שכר חודשי</label><input type="number" min="0" step="0.01" value={form.monthlySalary || ""} onChange={(e) => update("monthlySalary", Number(e.target.value))} /></div>
         </div>
-        <div className="notice notice-info" style={{ marginTop: 16, marginBottom: 12 }}>כל הפרטים הבאים נשמרים בכרטיס העובד ונדרשים לממשק המעסיקים 006.</div>
         <div className="grid two-cols">
           <div className="field"><label>תאריך לידה *</label><input type="date" value={form.birthDate ?? ""} onChange={(e) => update("birthDate", e.target.value || null)} /></div>
           <div className="field"><label>מין *</label><EmployerInterfaceOptionSelect category="gender" value={form.gender ?? null} required onChange={(value) => update("gender", value)} /></div>
