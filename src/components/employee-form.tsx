@@ -13,7 +13,19 @@ import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-o
 import { AddressAutocompleteFields } from "@/components/address-autocomplete-fields";
 import { Field, type FieldErrors } from "@/components/form-feedback";
 
-export function EmployeeForm({ organizationId, employerId, employee, employer, editable = true }: { organizationId: string; employerId: string; employee?: Employee; employer?: Employer; editable?: boolean }) {
+type EmployeeFormProps = {
+  organizationId: string;
+  employerId: string;
+  employee?: Employee;
+  employer?: Employer;
+  editable?: boolean;
+  embedded?: boolean;
+  onSaved?: (employee: Employee) => void | Promise<void>;
+  onCancel?: () => void;
+  submitLabel?: string;
+};
+
+export function EmployeeForm({ organizationId, employerId, employee, employer, editable = true, embedded = false, onSaved, onCancel, submitLabel }: EmployeeFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<EmployeeInput>({
     nationalId: employee?.nationalId ?? "",
@@ -101,12 +113,14 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
     setSaving(true);
     try {
       let employmentId: string;
+      let personId = employee?.personId ?? "";
       if (employee) {
         await alphaApi.updateEmployee(organizationId, employerId, employee.id, normalized);
         employmentId = employee.id;
       } else {
         const saved = await alphaApi.createEmployee(organizationId, employerId, normalized);
         employmentId = saved.id;
+        personId = saved.personId;
       }
       await employerInterfaceApi.updateEmployeeProfile(organizationId, employerId, employmentId, {
         birthDate: normalized.birthDate,
@@ -120,13 +134,21 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         postalCode: normalized.postalCode,
         postOfficeBox: normalized.postOfficeBox,
       });
+      const savedEmployee: Employee = {
+        id: employmentId,
+        personId,
+        ...normalized,
+        status: employee?.status ?? 1,
+        endDate: employee?.endDate ?? null,
+      };
       toast.success(employee ? "פרטי העובד נשמרו בהצלחה" : "העובד הוקם בהצלחה");
-      router.push(`/employees/${employmentId}?organizationId=${organizationId}&employerId=${employerId}`);
+      if (onSaved) await onSaved(savedEmployee);
+      else router.push(`/employees/${employmentId}?organizationId=${organizationId}&employerId=${employerId}`);
     } catch (err) { toast.error(err instanceof Error ? err.message : "שמירת העובד נכשלה"); }
     finally { setSaving(false); }
   }
 
-  return <div className="card profile-card">
+  const body = <>
     <div className="profile-summary"><div className="profile-avatar"><UserRound /></div><div><h2 style={{ margin: 0 }}>{title}</h2><span style={{ color: "var(--muted)" }}>{employee ? editable ? "עריכת פרופיל עובד" : "צפייה בפרופיל עובד" : <>הקמת עובד אצל {employer ? <Link className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}>{employer.legalName}</Link> : "המעסיק שנבחר"}</>}</span></div></div>
     {!editable && employee ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה בעובד הזה, ללא הרשאת עריכה.</div> : null}
     <form className="form" onSubmit={submit} noValidate>
@@ -162,7 +184,9 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         <Field label="תא דואר *" error={errors.postOfficeBox}><input disabled={!editable} required maxLength={20} value={form.postOfficeBox} onChange={(event) => update("postOfficeBox", event.target.value)} /></Field>
       </div>
       {employee ? <div className="field"><label>סטטוס</label><input disabled value={employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"} /></div> : null}
-      <div className="form-actions"><Link className="btn btn-secondary" href="/employees">חזרה</Link>{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employee ? "שמירת שינויים" : "הקמת עובד"}</button> : null}</div>
+      <div className="form-actions">{onCancel ? <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={saving}>ביטול</button> : <Link className="btn btn-secondary" href="/employees">חזרה</Link>}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : submitLabel ?? (employee ? "שמירת שינויים" : "הקמת עובד")}</button> : null}</div>
     </form>
-  </div>;
+  </>;
+
+  return embedded ? <div className="employee-form-embedded">{body}</div> : <div className="card profile-card">{body}</div>;
 }
