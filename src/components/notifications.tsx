@@ -5,10 +5,17 @@ import { toast } from "sonner";
 
 type NotificationType = "error" | "success" | "info";
 const EVENT_NAME = "alpha:notify";
+const MAX_ERROR_LENGTH = 220;
+
+function compactError(message: string) {
+  const value = message.trim().replace(/\s+/g, " ");
+  return value.length <= MAX_ERROR_LENGTH ? value : `${value.slice(0, MAX_ERROR_LENGTH - 1).trimEnd()}…`;
+}
 
 function emit(type: NotificationType, message: string) {
   if (typeof window === "undefined" || !message.trim()) return;
-  window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { type, message: message.trim() } }));
+  const normalized = type === "error" ? compactError(message) : message.trim();
+  window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { type, message: normalized } }));
 }
 
 export const notify = {
