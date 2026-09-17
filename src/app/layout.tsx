@@ -13,6 +13,7 @@ import "./payment-editor.css";
 import "./notifications.css";
 import "./ui-fixes.css";
 import "./form-feedback.css";
+import "./visual-hotfixes.css";
 
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo" });
 
