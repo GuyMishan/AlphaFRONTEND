@@ -10,14 +10,19 @@ const labelHints: Array<[RegExp, string[]]> = [
   [/אימייל|דוא״ל/, ["אימייל", "דוא״ל"]], [/טלפון/, ["טלפון"]], [/מספר פוליסה|פוליסה/, ["מספר פוליסה", "פוליסה"]],
   [/חודש שכר/, ["חודש שכר"]], [/סוג דיווח/, ["סוג דיווח"]], [/רובד שכר|רובד/, ["רובד שכר", "רובד"]],
   [/סעיף 14/, ["תאריך תחילת סעיף 14", "סעיף 14"]], [/קופה/, ["קופה", "קרן", "יצרן"]],
-  [/שם יצרן|יצרן/, ["שם יצרן", "יצרן"]], [/חשבון יצרן/, ["חשבון יצרן"]], [/אופן התשלום/, ["אופן התשלום"]],
+  [/שם יצרן|יצרן/, ["שם יצרן", "יצרן"]], [/חשבון יצרן/, ["חשבון יצרן"]], [/אמצעי תשלום|אופן התשלום|אופן החזר/, ["אמצעי תשלום", "אופן החזר"]],
   [/תאריך ערך/, ["תאריך ערך"]], [/אסמכתא/, ["אסמכתא"]], [/מספר בנק|בנק/, ["מספר בנק", "בנק"]],
-  [/סניף/, ["סניף"]], [/מספר חשבון|חשבון/, ["מספר חשבון", "חשבון"]], [/אחוז מהשכר|אחוז/, ["אחוז מהשכר", "אחוז"]],
+  [/סניף/, ["סניף"]], [/מספר חשבון|חשבון/, ["מספר חשבון", "מס׳ חשבון", "חשבון"]], [/אחוז מהשכר|אחוז/, ["אחוז מהשכר", "אחוז"]],
   [/תקרת שכר|שכר קבוע|ערך הקצאת/, ["תקרת שכר", "שכר קבוע", "ערך הקצאה"]],
+  [/סוג פעולה/, ["סוג פעולה"]], [/מעמד הפקדה/, ["מעמד הפקדה"]], [/סטטוס עובד/, ["סטטוס עובד"]],
+  [/תאריך תחילת סטטוס/, ["תאריך תחילת סטטוס"]], [/הפקדה אחרונה/, ["הפקדה אחרונה"]], [/סיבת בקשה להחזר|סיבת בקשה/, ["סיבת בקשה"]],
+  [/סוג חשבון מעסיק/, ["סוג חשבון מעסיק"]], [/סוג חשבון קולט/, ["סוג חשבון קולט"]], [/חלקיות משרה/, ["חלקיות משרה"]],
+  [/ימי עבודה בחודש/, ["ימי עבודה בחודש"]], [/מספר זיהוי קודם/, ["מספר זיהוי קודם"]], [/מספר מסלקה קודם/, ["מספר מסלקה קודם"]],
+  [/חריג רשמי|חריג מתאים|חריג להיעדר/, ["חריג להיעדר מזהה קודם"]],
 ];
 
 function findScope(element: Element) {
-  return element.closest("form, .report-modal, .card, .wizard, main") ?? document.body;
+  return element.closest("form, .payment-modal, .report-modal, .card, .wizard, main") ?? document.body;
 }
 
 function fieldByLabel(scope: Element, hints: string[]) {
@@ -39,22 +44,38 @@ function productScope(scope: Element, message: string) {
 function markField(field: HTMLElement, message: string) {
   field.classList.add("field-invalid");
   field.dataset.error = message;
+  field.dataset.validationErrorTitle = "true";
+  field.title = message;
   const control = field.querySelector<HTMLElement>("input, select, textarea, button[role='combobox']");
   control?.setAttribute("aria-invalid", "true");
-  if (!field.querySelector(".field-error-text")) {
-    const error = document.createElement("span");
-    error.className = "field-error-text legacy-field-error";
-    error.title = message;
-    error.textContent = message.length > 70 ? `${message.slice(0, 67)}...` : message;
-    field.appendChild(error);
+  if (control) {
+    control.dataset.validationErrorTitle = "true";
+    control.title = message;
   }
+  field.querySelector(".legacy-field-error")?.remove();
 }
 
 function clearField(field: HTMLElement) {
   field.classList.remove("field-invalid");
   delete field.dataset.error;
-  field.querySelector<HTMLElement>("input, select, textarea, button[role='combobox']")?.removeAttribute("aria-invalid");
+  if (field.dataset.validationErrorTitle === "true") {
+    field.removeAttribute("title");
+    delete field.dataset.validationErrorTitle;
+  }
+  const control = field.querySelector<HTMLElement>("input, select, textarea, button[role='combobox']");
+  control?.removeAttribute("aria-invalid");
+  if (control?.dataset.validationErrorTitle === "true") {
+    control.removeAttribute("title");
+    delete control.dataset.validationErrorTitle;
+  }
   field.querySelector(".legacy-field-error")?.remove();
+}
+
+function splitValidationMessages(message: string) {
+  return message
+    .split(/(?<=[.!?])\s+(?=[א-תA-Za-z])/)
+    .map((part) => part.trim())
+    .filter(Boolean);
 }
 
 function handleNotice(element: HTMLElement) {
@@ -64,18 +85,25 @@ function handleNotice(element: HTMLElement) {
   element.dataset.validationUxHandled = "true";
   element.style.display = "none";
 
-  let matched = false;
   const baseScope = findScope(element);
-  const scope = productScope(baseScope, message);
-  for (const [pattern, hints] of labelHints) {
-    if (!pattern.test(message)) continue;
-    const field = fieldByLabel(scope, hints);
-    if (!field) continue;
-    markField(field, message);
-    matched = true;
+  const messages = splitValidationMessages(message);
+  const unmatched: string[] = [];
+
+  for (const item of messages) {
+    let matched = false;
+    const scope = productScope(baseScope, item);
+    for (const [pattern, hints] of labelHints) {
+      if (!pattern.test(item)) continue;
+      const field = fieldByLabel(scope, hints);
+      if (!field) continue;
+      markField(field, item);
+      matched = true;
+      break;
+    }
+    if (!matched) unmatched.push(item);
   }
 
-  if (!matched) toast.error(message);
+  if (unmatched.length) toast.error(unmatched.join(" "));
 }
 
 export function ValidationUxBridge() {
