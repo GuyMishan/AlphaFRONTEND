@@ -40,7 +40,7 @@ export default function EmployeeProfilePage() {
       <button type="button" className={`btn ${tab === "mix" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("mix")}>תמהיל העובד</button>
     </div> : null}
     {error ? <div className="notice notice-error">{error}</div> : employee ? tab === "details"
-      ? <EmployeeForm organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} />
+      ? <div className="employee-profile-layout"><EmployeeForm organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /></div>
       : <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={employee.id} editable={canEditEmployee} />
       : <div className="empty">טוען פרופיל...</div>}
   </AppShell>;
