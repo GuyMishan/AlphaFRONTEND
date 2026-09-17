@@ -1,0 +1,33 @@
+.steps {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  column-gap: 2px;
+}
+
+.step {
+  min-width: 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 5px;
+}
+
+.report-product-title > div:first-child {
+  display: none;
+}
+
+.report-product-title:has(> button:last-child) {
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .steps {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(112px, 1fr);
+    gap: 0;
+  }
+}
