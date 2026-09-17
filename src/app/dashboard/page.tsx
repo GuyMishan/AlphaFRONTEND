@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -54,7 +54,7 @@ async function safeEmployees(organizationId: string, employerId: string): Promis
   }
 }
 
-function StatCard({ label, value, icon, badge }: { label: string; value: number | string; icon: React.ReactNode; badge?: string }) {
+function StatCard({ label, value, icon, badge }: { label: string; value: number | string; icon: ReactNode; badge?: string }) {
   return <div className="stat-card">
     <div className="stat-top"><span>{label}</span><span className="stat-icon">{icon}</span></div>
     <div className="stat-value">{value}</div>
@@ -88,29 +88,29 @@ export default function DashboardPage() {
     });
   }
 
-  async function loadOrganizationDashboard(orgId: string, search = "") {
+  async function loadOrganizationDashboard(orgId: string) {
     if (!orgId) {
       setEmployers([]);
       setStats(EMPTY_STATS);
       return;
     }
 
-    const result = await alphaApi.employerSearch(orgId, search.trim(), 0, 100);
-    setEmployers(result.items);
+    const allEmployers = await alphaApi.employers(orgId);
+    setEmployers(allEmployers);
 
     const saved = getEmployerSelection();
-    const selected = saved?.organizationId === orgId && result.items.some((item) => item.id === saved.employerId)
+    const selected = saved?.organizationId === orgId && allEmployers.some((item) => item.id === saved.employerId)
       ? saved.employerId
-      : result.items[0]?.id ?? "";
+      : allEmployers[0]?.id ?? "";
     setEmployerId(selected);
     if (selected) setEmployerSelection(orgId, selected);
 
-    const employeeGroups = await Promise.all(result.items.map((employer) => safeEmployees(orgId, employer.id)));
+    const employeeGroups = await Promise.all(allEmployers.map((employer) => safeEmployees(orgId, employer.id)));
     const employees = employeeGroups.flat();
     setStats({
       organizations: 1,
-      employers: result.items.length,
-      activeEmployers: result.items.filter((item) => item.status === 2).length,
+      employers: allEmployers.length,
+      activeEmployers: allEmployers.filter((item) => item.status === 2).length,
       employees: employees.length,
       activeEmployees: employees.filter((item) => item.status === 1).length,
       inactiveEmployees: employees.filter((item) => item.status !== 1).length,
@@ -190,14 +190,15 @@ export default function DashboardPage() {
   useEffect(() => {
     if (mode !== "organization" || !organizationId) return;
     const timer = window.setTimeout(async () => {
-      setLoading(true);
-      setError("");
-      try { await loadOrganizationDashboard(organizationId, query); }
-      catch (err) { setError(err instanceof Error ? err.message : "טעינת המעסיקים נכשלה"); }
-      finally { setLoading(false); }
+      try {
+        const result = await alphaApi.employerSearch(organizationId, query.trim(), 0, 100);
+        setEmployers(result.items);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "חיפוש המעסיקים נכשל");
+      }
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [query]);
+  }, [query, organizationId, mode]);
 
   useEffect(() => {
     if (mode !== "organization") return;
@@ -208,6 +209,7 @@ export default function DashboardPage() {
       setQuery("");
       setEmployerId("");
       setLoading(true);
+      setError("");
       void loadOrganizationDashboard(detail.organizationId)
         .catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגון נכשלה"))
         .finally(() => setLoading(false));
