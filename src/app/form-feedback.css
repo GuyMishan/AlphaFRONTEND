@@ -57,6 +57,11 @@ textarea[aria-invalid="true"]:focus {
   white-space: normal;
 }
 
+.payment-modal .field-invalid[data-error]:hover::after,
+.payment-modal .field-invalid[data-error]:focus-within::after {
+  content: none;
+}
+
 [data-sonner-toaster] {
   direction: rtl;
   font-family: var(--font-heebo), sans-serif;
