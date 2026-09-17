@@ -43,9 +43,9 @@ export function EmployerForm({ organizationId, employer, editable = true }: { or
     const next: FieldErrors = {};
     if (input.legalName.trim().length < 2) next.legalName = "שם משפטי מלא הוא שדה חובה ולפחות 2 תווים.";
     if (!/^\d{5,15}$/.test(input.registrationNumber.trim())) next.registrationNumber = "מספר חברה / עוסק חייב להכיל 5-15 ספרות.";
-    if (!/^\d{5,9}$/.test(input.withholdingFileNumber.trim())) next.withholdingFileNumber = "מספר תיק ניכויים לממשק מעסיקים חייב להכיל 5-9 ספרות.";
-    if (!(input.contactFirstName ?? "").trim()) next.contactFirstName = "שם פרטי של איש הקשר הוא שדה חובה לממשק מעסיקים 006.";
-    if (!(input.contactLastName ?? "").trim()) next.contactLastName = "שם משפחה של איש הקשר הוא שדה חובה לממשק מעסיקים 006.";
+    if (!/^\d{5,9}$/.test(input.withholdingFileNumber.trim())) next.withholdingFileNumber = "מספר תיק ניכויים חייב להכיל 5-9 ספרות.";
+    if (!(input.contactFirstName ?? "").trim()) next.contactFirstName = "שם פרטי של איש הקשר הוא שדה חובה.";
+    if (!(input.contactLastName ?? "").trim()) next.contactLastName = "שם משפחה של איש הקשר הוא שדה חובה.";
     if (!/^\d{1,11}$/.test(input.contactPhone ?? "")) next.contactPhone = "טלפון איש הקשר חייב להכיל 1-11 ספרות.";
     if (!isValidEmail(input.contactEmail ?? "")) next.contactEmail = "כתובת האימייל של איש הקשר אינה תקינה.";
     if (!/^\d{1,15}$/.test(input.contactMobile ?? "")) next.contactMobile = "מספר הנייד חייב להכיל 1-15 ספרות.";
@@ -94,7 +94,6 @@ export function EmployerForm({ organizationId, employer, editable = true }: { or
         <Field label="מספר חברה / עוסק *" error={errors.registrationNumber}><input aria-invalid={Boolean(errors.registrationNumber)} required disabled={!editable} inputMode="numeric" maxLength={15} value={form.registrationNumber} onChange={(event) => update("registrationNumber", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
         <Field label="מספר תיק ניכויים *" error={errors.withholdingFileNumber}><input aria-invalid={Boolean(errors.withholdingFileNumber)} required disabled={!editable} inputMode="numeric" maxLength={9} value={form.withholdingFileNumber} onChange={(event) => update("withholdingFileNumber", event.target.value.replace(/\D/g, "").slice(0, 9))} /></Field>
       </div>
-      <div className="notice notice-info">פרטי איש הקשר הבאים נדרשים לצורך יצירת קובץ ממשק מעסיקים 006.</div>
       <div className="grid two-cols">
         <Field label="שם פרטי איש קשר *" error={errors.contactFirstName}><input disabled={!editable} maxLength={20} value={form.contactFirstName ?? ""} onChange={(event) => update("contactFirstName", event.target.value)} /></Field>
         <Field label="שם משפחה איש קשר *" error={errors.contactLastName}><input disabled={!editable} maxLength={20} value={form.contactLastName ?? ""} onChange={(event) => update("contactLastName", event.target.value)} /></Field>
