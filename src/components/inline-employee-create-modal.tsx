@@ -20,22 +20,15 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
   const [stage, setStage] = useState<Stage>("create");
   const [working, setWorking] = useState(false);
 
-  async function handleCreated(employee: Employee) {
-    setWorking(true);
-    try {
-      await onCreated(employee);
-      setCreatedEmployee(employee);
-      setStage("confirm-products");
-    } finally {
-      setWorking(false);
-    }
+  function handleCreated(employee: Employee) {
+    setCreatedEmployee(employee);
+    setStage("confirm-products");
   }
 
-  async function finishProducts() {
+  async function addToReportAndClose() {
     if (!createdEmployee) return;
     setWorking(true);
     try {
-      // Re-sync after the pension mix was edited so the report can pick up the new employee defaults.
       await onCreated(createdEmployee);
       onClose();
     } finally {
@@ -47,7 +40,7 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
   const subtitle = stage === "create"
     ? "אותו טופס הקמת עובד של המערכת, בתוך הדיווח הנוכחי."
     : stage === "confirm-products"
-      ? "העובד נוסף לדיווח. אפשר לערוך עכשיו את המוצרים שלו או להמשיך בדיווח."
+      ? "לפני הוספת העובד לדיווח אפשר לערוך את התמהיל שלו, כדי שהמוצרים ייכנסו לדיווח כברירת מחדל."
       : createdEmployee ? `${createdEmployee.firstName} ${createdEmployee.lastName} · המוצרים נשמרים בתמהיל העובד כברירת מחדל לדיווחים.` : "";
 
   return <div className="report-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !working) onClose(); }}>
@@ -63,17 +56,17 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
           embedded
           onCancel={onClose}
           onSaved={handleCreated}
-          submitLabel="הקמת עובד והוספה לדיווח"
+          submitLabel="הקמת עובד"
         /> : null}
 
         {stage === "confirm-products" && createdEmployee ? <div className="employee-created-next-step">
           <div className="employee-created-icon"><UserPlus size={24} /></div>
           <div>
-            <h3>{createdEmployee.firstName} {createdEmployee.lastName} נוסף לדיווח</h3>
-            <p>האם ברצונך לערוך עכשיו את המוצרים הפנסיוניים של העובד?</p>
+            <h3>{createdEmployee.firstName} {createdEmployee.lastName} הוקם בהצלחה</h3>
+            <p>האם ברצונך לערוך עכשיו את המוצרים הפנסיוניים של העובד לפני הוספתו לדיווח?</p>
           </div>
           <div className="employee-created-actions">
-            <button type="button" className="btn btn-secondary" disabled={working} onClick={onClose}>לא, המשך לדיווח</button>
+            <button type="button" className="btn btn-secondary" disabled={working} onClick={() => void addToReportAndClose()}>{working ? "מוסיף לדיווח..." : "לא, הוסף לדיווח וסגור"}</button>
             <button type="button" className="btn btn-primary" disabled={working} onClick={() => setStage("products")}><Boxes size={16} />כן, עריכת מוצרים</button>
           </div>
         </div> : null}
@@ -82,7 +75,7 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
           <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={createdEmployee.id} editable />
           <div className="employee-created-actions employee-products-finish">
             <button type="button" className="btn btn-secondary" disabled={working} onClick={() => setStage("confirm-products")}>חזרה</button>
-            <button type="button" className="btn btn-primary" disabled={working} onClick={() => void finishProducts()}>{working ? "מעדכן את הדיווח..." : "סיום וחזרה לדיווח"}</button>
+            <button type="button" className="btn btn-primary" disabled={working} onClick={() => void addToReportAndClose()}>{working ? "מוסיף לדיווח..." : "סיום, הוספה לדיווח וחזרה"}</button>
           </div>
         </> : null}
       </div>
