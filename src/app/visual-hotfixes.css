@@ -23,6 +23,10 @@
   justify-content: flex-end;
 }
 
+.contribution-guidance {
+  display: none;
+}
+
 .employee-profile-layout .profile-card {
   max-width: 1180px;
   width: 100%;
