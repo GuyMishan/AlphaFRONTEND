@@ -32,6 +32,10 @@
 .payment-modal-footer { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
 .payment-modal-footer .btn { min-width: 100px; border-radius: 9px; padding: 8px 13px; }
 
+/* Error text is intentionally capped visually across the product. Detailed validation stays in the API/logs. */
+.notice-error { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; max-height: 4.8em; overflow-wrap: anywhere; }
+[data-sonner-toast][data-type="error"] [data-content] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; overflow-wrap: anywhere; }
+
 @media (max-width: 900px) {
   .payment-provider-grid { grid-template-columns: minmax(0,1.4fr) minmax(120px,.6fr); }
   .payment-provider-account { grid-column: 1 / -1; }
