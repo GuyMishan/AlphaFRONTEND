@@ -43,7 +43,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
 
   return <>
     <div className="card-head deposit-head">
-      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>פרטי התשלום ושדות ממשק מעסיקים Version 6 ברמת המוצר.</span></div>
+      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>פרטי התשלום והדיווח ברמת המוצר.</span></div>
       <div className="deposit-summary"><span className="badge badge-blue">{rows.length} תוצאות</span><span className="badge badge-green">סה״כ ₪{total.toLocaleString("he-IL")}</span></div>
     </div>
     <div className="toolbar deposit-toolbar"><div className="search"><Search size={17} /><input maxLength={100} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="יצרן, מוצר, עובד או אסמכתא" /></div></div>
@@ -64,13 +64,13 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
         row.referenceNumber || "—",
         row.valueDate ? formatDate(row.valueDate) : "—",
         row.reportingType ? `קוד ${row.reportingType}` : "—",
-        <button className="icon-button" aria-label="עריכת פרטי תשלום ונתוני 006" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
+        <button className="icon-button" aria-label="עריכת פרטי תשלום ודיווח" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}
     {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} onClose={() => setEditing(null)} onSaved={(updated) => {
       setRows((current) => current.map((item) => item.id === updated.id ? updated : item));
       setEditing(null);
-      notify.success("פרטי התשלום ונתוני ממשק 006 נשמרו בהצלחה");
+      notify.success("פרטי התשלום והדיווח נשמרו בהצלחה");
     }} /> : null}
   </>;
 }
@@ -93,7 +93,7 @@ function requiresPreviousReference(negative: boolean, operationCode: number | nu
 
 function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, form: EmployerInterfaceProductMetadataInput, previous: EmployerInterfacePreviousReference) {
   const errors: string[] = [];
-  if (!metadata) return ["נתוני ממשק מעסיקים 006 עדיין נטענים."];
+  if (!metadata) return ["נתוני הדיווח עדיין נטענים."];
   if (isDifferencesKind(metadata.reportKind)) return errors;
   const negative = isNegativeKind(metadata.reportKind);
   if (!form.operationCode) errors.push("סוג פעולה הוא שדה חובה.");
@@ -167,7 +167,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
         employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason,
         paymentMethodCode: item.paymentMethodCode, employerAccountType: item.employerAccountType, receiverAccountType: item.receiverAccountType });
       setPreviousReference(previous);
-    }).catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת נתוני 006 נכשלה"); })
+    }).catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת נתוני הדיווח נכשלה"); })
       .finally(() => { if (active) setLoadingMetadata(false); });
     return () => { active = false; };
   }, [organizationId, employerId, reportId, row.id]);
@@ -204,15 +204,15 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   }
 
   return <div className="report-modal-backdrop payment-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-    <div className="payment-modal" role="dialog" aria-modal="true" aria-label="פרטי תשלום וממשק מעסיקים">
+    <div className="payment-modal" role="dialog" aria-modal="true" aria-label="פרטי תשלום ודיווח">
       <button className="payment-modal-close" onClick={onClose} aria-label="סגירה"><X size={20} /></button>
-      <div className="payment-modal-title">פרטי תשלום וממשק מעסיקים 006</div>
+      <div className="payment-modal-title">פרטי תשלום ודיווח</div>
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <div className="notice notice-error payment-error">{error}</div> : null}
-      {differences ? <div className="notice notice-info payment-error">דיווח הפרשים אינו משודר ישירות בממשק 006. את נתוני 006 משלימים לאחר יצירת דיווח שוטף או שלילי ממנו.</div> : null}
-      {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מבטלים תנועה ללא החזר למעסיק, ולכן לפי Version 6 אין להעביר אמצעי תשלום או פרטי החזר.</div> : null}
+      {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
+      {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מבטלים תנועה ללא החזר למעסיק, ולכן אין להזין אמצעי תשלום או פרטי החזר.</div> : null}
       <div className="payment-layout">
-        <aside className="payment-notes"><b>לתשומת לבך</b><p>אמצעי התשלום במסך הוא השדה הרשמי KOD-EMTZAI-TASHLUM של ממשק המעסיקים.</p><p>בדיווח שלילי קוד פעולה 5 הוא בקשה להחזר, וקוד 6 הוא ביטול תנועה ללא החזר.</p><p>בפעולות תיקון/ביטול יש לקשר לדיווח המקורי או לציין את החריג הרשמי שמאפשר היעדר קישור.</p></aside>
+        <aside className="payment-notes"><b>לתשומת לבך</b><p>יש לבחור את אמצעי התשלום המתאים לדיווח.</p><p>בדיווח שלילי קוד פעולה 5 הוא בקשה להחזר, וקוד 6 הוא ביטול תנועה ללא החזר.</p><p>בפעולות תיקון או ביטול יש לקשר לדיווח המקורי או לציין חריג מתאים כאשר אין קישור.</p></aside>
         <div className="payment-main">
           <section className="payment-panel"><h3>פרטי חשבון יצרן</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר *</label><input required maxLength={160} value={form.providerName} onChange={(e) => patch("providerName", e.target.value)} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי *</label><div className="payment-input-icon"><input required maxLength={120} value={form.providerAccount} onChange={(e) => patch("providerAccount", e.target.value)} placeholder="בנק - סניף - חשבון" /><Pencil size={14} /></div></div></div></section>
 
@@ -224,7 +224,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {bankRequired ? <><div className="field"><label>בנק</label><input maxLength={120} value={form.employerBankName} onChange={(e) => patch("employerBankName", e.target.value)} placeholder="שם הבנק" /></div><div className="field"><label>מס׳ בנק *</label><input required inputMode="numeric" maxLength={3} value={form.employerBankCode} onChange={(e) => patch("employerBankCode", e.target.value.replace(/\D/g, "").slice(0, 3))} /></div><div className="field"><label>סניף *</label><input required inputMode="numeric" maxLength={3} value={form.employerBranch} onChange={(e) => patch("employerBranch", e.target.value.replace(/\D/g, "").slice(0, 3))} /></div><div className="field"><label>מס׳ חשבון *</label><input required inputMode="numeric" maxLength={20} value={form.employerAccount} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div></> : null}
           </div></section> : null}
 
-          {!differences ? <section className="payment-panel"><h3>שדות ממשק מעסיקים 006</h3>{loadingMetadata ? <div className="empty">טוען נתוני 006...</div> : <div className="payment-method-grid">
+          {!differences ? <section className="payment-panel"><h3>פרטי דיווח נוספים</h3>{loadingMetadata ? <div className="empty">טוען נתוני דיווח...</div> : <div className="payment-method-grid">
             <div className="field"><label>סוג פעולה *</label><EmployerInterfaceOptionSelect category="operation-code" scope={operationScope} value={metadataForm.operationCode} required onChange={(value) => {
               patchMetadata("operationCode", value);
               if (negative && value === 6) patchMetadata("paymentMethodCode", null);
@@ -240,7 +240,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {!negative ? <div className="field"><label>ימי עבודה בחודש</label><input type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
           </div>}</section> : null}
 
-          {needsPrevious ? <section className="payment-panel"><h3>קישור לדיווח המקורי</h3><div className="notice notice-info" style={{ marginBottom: 12 }}>לפי Version 6 יש לקשור את פעולת התיקון/הביטול לדיווח המקורי. ניתן להזין אחד מהמזהים או לבחור חריג רשמי.</div><div className="payment-method-grid">
+          {needsPrevious ? <section className="payment-panel"><h3>קישור לדיווח המקורי</h3><div className="notice notice-info" style={{ marginBottom: 12 }}>בפעולת תיקון או ביטול יש לקשר לדיווח המקורי. ניתן להזין אחד מהמזהים או לבחור חריג מתאים.</div><div className="payment-method-grid">
             <div className="field"><label>מספר זיהוי קודם (GUID)</label><input maxLength={36} value={previousReference.previousIdentifier} onChange={(e) => patchPrevious("previousIdentifier", e.target.value)} placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" /></div>
             <div className="field"><label>מספר מסלקה קודם (GUID)</label><input maxLength={36} value={previousReference.previousClearingIdentifier} onChange={(e) => patchPrevious("previousClearingIdentifier", e.target.value)} placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" /></div>
             <div className="field"><label>חריג להיעדר מזהה קודם</label><EmployerInterfaceOptionSelect category="previous-reference-exception" value={previousReference.previousReferenceExceptionCode} onChange={(value) => patchPrevious("previousReferenceExceptionCode", value)} /></div>
