@@ -17,6 +17,7 @@ import type { Employee, Employer, Organization } from "@/lib/types";
 type ScopeLevel = "organization" | "employer" | "employee";
 
 function requiredScope(pathname: string): ScopeLevel {
+  if (pathname === "/employees/new") return "employer";
   if (/^\/employees\/[^/]+/.test(pathname)) return "employee";
   if (pathname === "/reports/new" || pathname === "/reports" || pathname === "/employees") return "employer";
   return "organization";
