@@ -77,6 +77,10 @@ export type PensionFundOption = {
   companyName: string;
   domain: string;
   productType: string;
+  bankCode?: number | null;
+  bankName?: string;
+  branchCode?: number | null;
+  accountNumber?: string;
 };
 
 export type ManualContributionInput = {
