@@ -1,26 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CircleAlert, CircleCheck, Pencil, Plus, Save, Search, Trash2, UserPlus, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Pencil, Save, Search, UserPlus, X } from "lucide-react";
 import { InlineEmployeeCreateModal } from "@/components/inline-employee-create-modal";
-import { PensionFundSelect } from "@/components/pension-fund-select";
-import { ReferenceOptionSelect } from "@/components/reference-option-select";
-import { SalaryLayerSelect } from "@/components/salary-layer-select";
-import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
+import { PensionProductsEditor, normalizePensionEditorProducts, validatePensionEditorProducts, type PensionEditorProduct } from "@/components/pension-products-editor";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
-import { validateProducts } from "@/lib/validation";
-import type {
-  ContributionComponent,
-  Employee,
-  ManualContributionInput,
-  ManualProductInput,
-  ManualReportEmployeeDetail,
-  ManualReportEmployeeSummary,
-  PensionProductType,
-  SalaryAllocationType,
-  Section14Code,
-} from "@/lib/types";
+import type { Employee, ManualProductInput, ManualReportEmployeeDetail, ManualReportEmployeeSummary, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
 
 type Props = {
   organizationId: string;
@@ -31,65 +17,6 @@ type Props = {
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
 };
-
-const components: { value: ContributionComponent; label: string }[] = [
-  { value: 1, label: "פיצויים" },
-  { value: 2, label: "תגמולים" },
-  { value: 3, label: "אכ״ע" },
-  { value: 4, label: "שונות" },
-];
-
-const employeeComponents: { value: ContributionComponent; label: string }[] = [
-  { value: 1, label: "תג 45 שכיר" },
-  { value: 2, label: "תג 47 עצמאי" },
-  { value: 3, label: "אכ״ע" },
-  { value: 4, label: "שונות" },
-];
-
-function emptyContribution(component: ContributionComponent): ManualContributionInput {
-  return { component, amount: 0, percentage: 0, exemptPayments: 0 };
-}
-
-function inferSection14Code(product: Pick<ManualProductInput, "section14" | "section14Code" | "section14StartDate">): Section14Code {
-  if (product.section14Code && [1, 2, 3, 4].includes(Number(product.section14Code))) return Number(product.section14Code) as Section14Code;
-  if (!product.section14 && product.section14StartDate) return 4;
-  if (!product.section14) return 3;
-  return product.section14StartDate ? 2 : 1;
-}
-
-function emptyProduct(month: string, order: number): ManualProductInput {
-  return {
-    productType: 1,
-    policyNumber: "",
-    fundExternalKey: "",
-    fundCode: "",
-    fundName: "",
-    fundCompanyName: "",
-    salaryMonth: `${month}-01`,
-    salary: 0,
-    salaryAllocationType: 1,
-    salaryAllocationValue: null,
-    allocationOrder: order,
-    reportingType: "1",
-    salaryLayer: "1",
-    section14: false,
-    section14Code: 3,
-    section14StartDate: null,
-    employerContributions: components.map((item) => emptyContribution(item.value)),
-    employeeContributions: components.map((item) => emptyContribution(item.value)),
-  };
-}
-
-function maxPercentage(productType: PensionProductType, party: "employer" | "employee", component: ContributionComponent) {
-  if (component === 4) return 100;
-  if (party === "employer") {
-    if (component === 1) return 8.33;
-    if (component === 2) return 7.5;
-    if (component === 3) return 2.5;
-  }
-  if (party === "employee" && component === 2) return productType === 2 ? 2.5 : 7;
-  return 100;
-}
 
 function snapshotEmployee(row: ManualReportEmployeeSummary): Employee {
   return {
@@ -111,80 +38,69 @@ function matchesEmployee(employee: Employee, search: string) {
   return !term || `${employee.firstName} ${employee.lastName} ${employee.nationalId} ${employee.employeeNumber}`.toLowerCase().includes(term);
 }
 
-function roundMoney(value: number) {
-  return Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
-}
-
-function roundPercentage(value: number) {
-  return Math.round((Number.isFinite(value) ? value : 0) * 10000) / 10000;
-}
-
-function amountFromPercentage(salary: number, percentage: number) {
-  return roundMoney(Math.max(0, salary) * Math.max(0, percentage) / 100);
-}
-
-function percentageFromAmount(salary: number, amount: number) {
-  return salary > 0 ? roundPercentage(Math.max(0, amount) / salary * 100) : 0;
-}
-
-function recalcContributions(items: ManualContributionInput[], salary: number) {
-  return items.map((item) => ({ ...item, amount: amountFromPercentage(salary, Number(item.percentage || 0)) }));
-}
-
-function resolveReportProducts(monthlySalary: number, products: ManualProductInput[]) {
-  const salaries = new Map<number, number>();
-  if (products.length && monthlySalary <= 0) return { products, error: "יש להזין שכר חודשי לעובד לפני חישוב המוצרים." };
-
-  const indexed = products.map((product, index) => ({ product, index }));
-  const remainderItems = indexed.filter(({ product }) => Number(product.salaryAllocationType ?? 1) === 4);
-  if (remainderItems.length > 1) return { products, error: "אפשר להגדיר מוצר אחד בלבד בשיטת יתרת שכר." };
-
-  const ordered = [
-    ...indexed.filter(({ product }) => Number(product.salaryAllocationType ?? 1) !== 4),
-    ...remainderItems,
-  ];
-
-  let allocated = 0;
-  for (const { product, index } of ordered) {
-    const type = Number(product.salaryAllocationType ?? 1) as SalaryAllocationType;
-    const value = Number(product.salaryAllocationValue ?? (type === 1 ? product.salary : 0));
-    if (type !== 4 && (!Number.isFinite(value) || value <= 0))
-      return { products, error: `מוצר ${index + 1}: יש להזין ערך הקצאת שכר גדול מאפס.` };
-    if (type === 2 && value > 100)
-      return { products, error: `מוצר ${index + 1}: אחוז מהשכר לא יכול לעבור 100%.` };
-
-    const insuredSalary = type === 1
-      ? value
-      : type === 2
-        ? roundMoney(monthlySalary * value / 100)
-        : type === 3
-          ? Math.min(monthlySalary, value)
-          : Math.max(monthlySalary - allocated, 0);
-
-    if (allocated + insuredSalary > monthlySalary + 0.01)
-      return { products, error: "הקצאות השכר חורגות מהשכר החודשי של העובד." };
-
-    allocated += insuredSalary;
-    salaries.set(index, insuredSalary);
-  }
-
-  const allocationOrderByIndex = new Map<number, number>();
-  ordered.forEach(({ index }, order) => allocationOrderByIndex.set(index, order));
-
+function toEditorProduct(product: ManualProductInput, index: number): PensionEditorProduct {
   return {
-    products: products.map((product, index) => {
-      const salary = salaries.get(index) ?? 0;
-      return {
-        ...product,
-        salary,
-        salaryAllocationType: Number(product.salaryAllocationType ?? 1) as SalaryAllocationType,
-        salaryAllocationValue: Number(product.salaryAllocationType ?? 1) === 4 ? null : Number(product.salaryAllocationValue ?? product.salary ?? 0),
-        allocationOrder: allocationOrderByIndex.get(index) ?? index,
-        employerContributions: recalcContributions(product.employerContributions, salary),
-        employeeContributions: recalcContributions(product.employeeContributions, salary),
-      };
-    }),
-    error: "",
+    productType: Number(product.productType) as PensionProductType,
+    policyNumber: product.policyNumber,
+    fundExternalKey: product.fundExternalKey ?? "",
+    fundCode: product.fundCode ?? "",
+    fundName: product.fundName ?? "",
+    fundCompanyName: product.fundCompanyName ?? "",
+    salaryMonth: product.salaryMonth,
+    salary: Number(product.salary || 0),
+    salaryAllocationType: Number(product.salaryAllocationType ?? 1) as SalaryAllocationType,
+    salaryAllocationValue: Number(product.salaryAllocationType ?? 1) === 4 ? null : Number(product.salaryAllocationValue ?? product.salary ?? 0),
+    allocationOrder: Number(product.allocationOrder ?? index),
+    reportingType: product.reportingType,
+    salaryLayer: product.salaryLayer || "1",
+    section14: product.section14,
+    section14Code: product.section14Code == null ? undefined : Number(product.section14Code) as Section14Code,
+    section14StartDate: product.section14StartDate,
+    employerContributions: product.employerContributions.map((entry) => ({
+      component: entry.component,
+      amount: Number(entry.amount || 0),
+      percentage: Number(entry.percentage || 0),
+      exemptPayments: Number(entry.exemptPayments || 0),
+    })),
+    employeeContributions: product.employeeContributions.map((entry) => ({
+      component: entry.component,
+      amount: Number(entry.amount || 0),
+      percentage: Number(entry.percentage || 0),
+      exemptPayments: Number(entry.exemptPayments || 0),
+    })),
+  };
+}
+
+function toManualProduct(product: PensionEditorProduct, month: string): ManualProductInput {
+  return {
+    productType: product.productType,
+    policyNumber: product.policyNumber,
+    fundExternalKey: product.fundExternalKey ?? "",
+    fundCode: product.fundCode ?? "",
+    fundName: product.fundName ?? "",
+    fundCompanyName: product.fundCompanyName ?? "",
+    salaryMonth: product.salaryMonth || `${month.slice(0, 7)}-01`,
+    salary: Number(product.salary || 0),
+    salaryAllocationType: Number(product.salaryAllocationType ?? 1) as SalaryAllocationType,
+    salaryAllocationValue: product.salaryAllocationValue ?? null,
+    allocationOrder: Number(product.allocationOrder ?? 0),
+    reportingType: product.reportingType,
+    salaryLayer: product.salaryLayer,
+    section14: product.section14,
+    section14Code: product.section14Code,
+    section14StartDate: product.section14StartDate,
+    employerContributions: product.employerContributions.map((entry) => ({
+      component: entry.component,
+      amount: Number(entry.amount || 0),
+      percentage: Number(entry.percentage || 0),
+      exemptPayments: Number(entry.exemptPayments || 0),
+    })),
+    employeeContributions: product.employeeContributions.map((entry) => ({
+      component: entry.component,
+      amount: Number(entry.amount || 0),
+      percentage: Number(entry.percentage || 0),
+      exemptPayments: Number(entry.exemptPayments || 0),
+    })),
   };
 }
 
@@ -363,82 +279,22 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
 
 function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee: ManualReportEmployeeDetail; month: string; onClose: () => void; onSave: (monthlySalary: number, products: ManualProductInput[]) => Promise<void>; }) {
   const [monthlySalary, setMonthlySalary] = useState(Number(employee.monthlySalary || 0));
-  const [products, setProducts] = useState<ManualProductInput[]>(() => employee.products.map((product, index) => {
-    const section14Code = inferSection14Code(product);
-    return {
-      productType: Number(product.productType) as PensionProductType,
-      policyNumber: product.policyNumber,
-      fundExternalKey: product.fundExternalKey ?? "",
-      fundCode: product.fundCode ?? "",
-      fundName: product.fundName ?? "",
-      fundCompanyName: product.fundCompanyName ?? "",
-      salaryMonth: product.salaryMonth,
-      salary: Number(product.salary),
-      salaryAllocationType: Number(product.salaryAllocationType ?? 1) as SalaryAllocationType,
-      salaryAllocationValue: Number(product.salaryAllocationType ?? 1) === 4 ? null : Number(product.salaryAllocationValue ?? product.salary),
-      allocationOrder: index,
-      reportingType: product.reportingType,
-      salaryLayer: product.salaryLayer || "1",
-      section14: section14Code === 1 || section14Code === 2,
-      section14Code,
-      section14StartDate: product.section14StartDate,
-      employerContributions: normalizeContributions(product.employerContributions),
-      employeeContributions: normalizeContributions(product.employeeContributions),
-    };
-  }));
+  const [products, setProducts] = useState<PensionEditorProduct[]>(() => employee.products.map(toEditorProduct));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const resolved = useMemo(() => resolveReportProducts(monthlySalary, products), [monthlySalary, products]);
-
-  function updateProduct(index: number, patch: Partial<ManualProductInput>) {
-    setProducts((current) => current.map((product, i) => i === index ? { ...product, ...patch } : product));
-    setError("");
-  }
-
-  function updateContribution(productIndex: number, party: "employerContributions" | "employeeContributions", component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) {
-    const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
-    const salary = Number(resolved.products[productIndex]?.salary || 0);
-    setProducts((current) => current.map((product, index) => index !== productIndex ? product : {
-      ...product,
-      [party]: product[party].map((item) => {
-        if (item.component !== component) return item;
-        if (key === "percentage") return { ...item, percentage: roundPercentage(safeValue), amount: amountFromPercentage(salary, safeValue) };
-        if (key === "amount") return { ...item, amount: roundMoney(safeValue), percentage: percentageFromAmount(salary, safeValue) };
-        return { ...item, exemptPayments: roundMoney(safeValue) };
-      }),
-    }));
-    setError("");
-  }
 
   async function save() {
-    if (resolved.error) { setError(resolved.error); notify.error(resolved.error); return; }
-    if (resolved.products.some((product) => product.productType !== 99 && !(product.fundExternalKey ?? "").trim())) {
-      const message = "יש לבחור קופה לכל מוצר פנסיוני.";
-      setError(message);
-      notify.error(message);
-      return;
-    }
-    if (resolved.products.some((product) => { const code = inferSection14Code(product); return (code === 2 || code === 4) && !product.section14StartDate; })) {
-      const message = "בסעיף 14 קוד 2 או 4 חובה להזין תאריך תחולה/ביטול.";
-      setError(message);
-      notify.error(message);
-      return;
-    }
-    const normalizedProducts = resolved.products.map((product) => {
-      const code = inferSection14Code(product);
-      return { ...product, section14Code: code, section14: code === 1 || code === 2, section14StartDate: code === 2 || code === 4 ? product.section14StartDate : null };
-    });
-    const errors = validateProducts(normalizedProducts);
-    if (errors.length) {
-      const message = errors.join(" ");
-      setError(message);
-      notify.error(message);
+    const normalized = normalizePensionEditorProducts(monthlySalary, products);
+    const validationError = normalized.error || validatePensionEditorProducts(normalized.products, "report");
+    if (validationError) {
+      setError(validationError);
+      notify.error(validationError);
       return;
     }
     setSaving(true);
     setError("");
     try {
-      await onSave(monthlySalary, normalizedProducts);
+      await onSave(monthlySalary, normalized.products.map((product) => toManualProduct(product, month)));
     } catch (err) {
       const message = err instanceof Error ? err.message : "שמירת נתוני העובד נכשלה";
       setError(message);
@@ -447,7 +303,7 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
     }
   }
 
-  const totalDeposits = resolved.products.reduce((sum, product) => sum + [...product.employerContributions, ...product.employeeContributions].reduce((subtotal, contribution) => subtotal + Number(contribution.amount || 0), 0), 0);
+  const totalDeposits = products.reduce((sum, product) => sum + [...product.employerContributions, ...product.employeeContributions].reduce((subtotal, contribution) => subtotal + Number(contribution.amount || 0), 0), 0);
 
   return <div className="report-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <div className="report-modal" role="dialog" aria-modal="true">
@@ -456,80 +312,18 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
         <button className="icon-button" onClick={onClose}><X size={18} /></button>
       </div>
       <div className="report-modal-body">
-        {error || resolved.error ? <div className="notice notice-error">{error || resolved.error}</div> : null}
+        {error ? <div className="notice notice-error">{error}</div> : null}
         <div className="employee-report-summary"><div><span>חודש דיווח</span><b>{month}</b></div><div><span>מספר מוצרים</span><b>{products.length}</b></div><div><span>סה״כ הפקדות</span><b>₪{totalDeposits.toLocaleString("he-IL")}</b></div></div>
-        <div className="field" style={{ marginBottom: 10 }}><label>שכר חודשי של העובד בדיווח *</label><input type="number" min="0.01" max="10000000" step="0.01" value={monthlySalary || ""} onChange={(event) => { setMonthlySalary(Number(event.target.value)); setError(""); }} /></div>
-        <div className="contribution-guidance">המערכת מחשבת את חלוקת השכר לפי שיטת ההקצאה. מוצר מסוג “יתרת שכר” תמיד מקבל בסוף את כל יתרת השכר שלא הוקצתה למוצרים האחרים.</div>
-        <div className="product-editor-list">{resolved.products.map((product, index) => <ProductEditor key={index} index={index} product={product} rawProduct={products[index]} updateProduct={updateProduct} updateContribution={updateContribution} remove={() => setProducts((current) => current.filter((_, i) => i !== index))} />)}{!products.length ? <div className="empty"><div>עדיין לא הוגדרו מוצרים לעובד בדיווח הזה.</div></div> : null}</div>
-        <button className="btn btn-soft wide" onClick={() => setProducts((current) => [...current, emptyProduct(month, current.length)])}><Plus size={15} />הוספת מוצר</button>
+        <PensionProductsEditor
+          context="report"
+          month={month}
+          monthlySalary={monthlySalary}
+          products={products}
+          onMonthlySalaryChange={(value) => { setMonthlySalary(value); setError(""); }}
+          onProductsChange={(value) => { setProducts(value); setError(""); }}
+        />
       </div>
       <div className="report-modal-footer"><button className="btn btn-secondary" onClick={onClose}>ביטול</button><button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={15} />{saving ? "שומר..." : "שמירת נתוני העובד"}</button></div>
     </div>
-  </div>;
-}
-
-function normalizeContributions(items: Array<{ component: ContributionComponent; amount: number; percentage: number; exemptPayments: number }>): ManualContributionInput[] {
-  return components.map(({ value }) => {
-    const found = items.find((item) => Number(item.component) === value);
-    return found ? { component: value, amount: Number(found.amount), percentage: Number(found.percentage), exemptPayments: Number(found.exemptPayments) } : emptyContribution(value);
-  });
-}
-
-function ProductEditor({ index, product, rawProduct, updateProduct, updateContribution, remove }: {
-  index: number;
-  product: ManualProductInput;
-  rawProduct: ManualProductInput;
-  updateProduct: (index: number, patch: Partial<ManualProductInput>) => void;
-  updateContribution: (productIndex: number, party: "employerContributions" | "employeeContributions", component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void;
-  remove: () => void;
-}) {
-  const allocationType = Number(rawProduct.salaryAllocationType ?? 1) as SalaryAllocationType;
-  const section14Code = inferSection14Code(rawProduct);
-  const section14DateRequired = section14Code === 2 || section14Code === 4;
-  return <section className="report-product-card">
-    <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{rawProduct.fundName || "מוצר פנסיוני"}</b></div><button className="icon-button danger" onClick={remove}><Trash2 size={16} /></button></div>
-    <div className="grid report-product-fields">
-      <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" value={rawProduct.productType} required onChange={(value) => updateProduct(index, { productType: Number(value) as PensionProductType, fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "" })} /></div>
-      <PensionFundSelect productType={rawProduct.productType} value={rawProduct} onChange={(fund) => updateProduct(index, fund)} />
-      <div className="field"><label>מספר פוליסה *</label><input required maxLength={100} value={rawProduct.policyNumber} onChange={(event) => updateProduct(index, { policyNumber: event.target.value })} /></div>
-      <div className="field"><label>חודש שכר *</label><input required type="month" value={rawProduct.salaryMonth.slice(0, 7)} onChange={(event) => updateProduct(index, { salaryMonth: `${event.target.value}-01` })} /></div>
-      <div className="field"><label>שיטת הקצאת שכר *</label><ReferenceOptionSelect category="salary-allocation-type" value={allocationType} required onChange={(value) => { const type = Number(value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: type, salaryAllocationValue: type === 4 ? null : rawProduct.salaryAllocationValue ?? rawProduct.salary ?? 0 }); }} /></div>
-      <div className="field"><label>{allocationType === 2 ? "אחוז מהשכר" : allocationType === 3 ? "תקרת שכר" : allocationType === 4 ? "ערך הקצאה" : "שכר קבוע"}</label><input disabled={allocationType === 4} type="number" min="0" max={allocationType === 2 ? 100 : undefined} step="0.01" value={allocationType === 4 ? "" : rawProduct.salaryAllocationValue ?? ""} placeholder={allocationType === 4 ? "מחושב אוטומטית" : undefined} onChange={(event) => updateProduct(index, { salaryAllocationValue: Number(event.target.value) })} /></div>
-      <div className="field"><label>סוג תקבול 006 *</label><EmployerInterfaceOptionSelect category="receipt-type" value={Number(rawProduct.reportingType) || null} required onChange={(value) => updateProduct(index, { reportingType: value == null ? "" : String(value) })} /></div>
-      <div className="field"><label>רובד שכר *</label><SalaryLayerSelect value={rawProduct.salaryLayer} onChange={(value) => updateProduct(index, { salaryLayer: value })} /></div>
-      <div className="field"><label>סעיף 14 *</label><EmployerInterfaceOptionSelect category="section14-code" value={section14Code} required onChange={(value) => { const code = Number(value ?? 3) as Section14Code; updateProduct(index, { section14Code: code, section14: code === 1 || code === 2, section14StartDate: code === 2 || code === 4 ? rawProduct.section14StartDate : null }); }} /></div>
-      <div className="field"><label>תאריך תחולה/ביטול סעיף 14{section14DateRequired ? " *" : ""}</label><input required={section14DateRequired} type="date" disabled={!section14DateRequired} value={section14DateRequired ? rawProduct.section14StartDate ?? "" : ""} onChange={(event) => updateProduct(index, { section14StartDate: event.target.value || null })} /></div>
-    </div>
-    <div className="contribution-grid">
-      <ContributionTable title="הפקדות מעסיק" salary={product.salary} productType={product.productType} party="employer" items={product.employerContributions} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} />
-      <ContributionTable title="הפקדות עובד" salary={product.salary} productType={product.productType} party="employee" items={product.employeeContributions} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} />
-    </div>
-  </section>;
-}
-
-function ContributionTable({ title, salary, productType, party, items, onChange }: {
-  title: string;
-  salary: number;
-  productType: PensionProductType;
-  party: "employer" | "employee";
-  items: ManualContributionInput[];
-  onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void;
-}) {
-  const labels = party === "employee" ? employeeComponents : components;
-  return <div className="contribution-section">
-    <h3>{title}</h3>
-    <div className="contribution-table-wrap"><table className="contribution-table">
-      <thead><tr><th>רכיב</th><th>סכום</th><th>אחוז</th><th>תשלומים פטורים</th></tr></thead>
-      <tbody>{labels.map(({ value, label }) => {
-        const item = items.find((entry) => entry.component === value) ?? emptyContribution(value);
-        const max = maxPercentage(productType, party, value);
-        return <tr key={value}>
-          <th>{label}</th>
-          <td><input inputMode="decimal" type="number" min="0" step="0.01" value={item.amount || ""} onChange={(event) => onChange(value, "amount", Number(event.target.value))} /></td>
-          <td><input inputMode="decimal" type="number" min="0" max={max} step="0.0001" value={item.percentage || ""} onChange={(event) => onChange(value, "percentage", Number(event.target.value))} /></td>
-          <td><input inputMode="decimal" type="number" min="0" step="0.01" value={item.exemptPayments || ""} onChange={(event) => onChange(value, "exemptPayments", Number(event.target.value))} /></td>
-        </tr>;
-      })}</tbody>
-    </table></div>
   </div>;
 }
