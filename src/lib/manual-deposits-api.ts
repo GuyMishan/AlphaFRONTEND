@@ -8,6 +8,10 @@ export type ManualDepositRow = {
   nationalId: string;
   productType: number;
   policyNumber: string;
+  fundExternalKey: string;
+  fundCode: string;
+  fundName: string;
+  fundCompanyName: string;
   salaryMonth: string;
   salary: number;
   reportingType: string;
