@@ -140,9 +140,8 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
       </div>
       <div className="grid two-cols">
         <Field label="תאריך תחילת עבודה *" error={errors.startDate}><input aria-invalid={Boolean(errors.startDate)} required disabled={!editable} type="date" value={form.startDate} onChange={(event) => update("startDate", event.target.value)} /></Field>
-        <Field label="שכר חודשי" error={errors.monthlySalary}><input aria-invalid={Boolean(errors.monthlySalary)} disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={form.monthlySalary || ""} onChange={(event) => update("monthlySalary", Number(event.target.value))} placeholder="לדוגמה 20000" /></Field>
+        <Field label="שכר חודשי" error={errors.monthlySalary}><input aria-invalid={Boolean(errors.monthlySalary)} disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={form.monthlySalary || ""} onChange={(event) => update("monthlySalary", Number(event.target.value))} /></Field>
       </div>
-      <div className="notice notice-info">פרטי העובד הבאים נשמרים בכרטיס העובד ונדרשים לממשק המעסיקים 006.</div>
       <div className="grid two-cols">
         <Field label="תאריך לידה *" error={errors.birthDate}><input disabled={!editable} required type="date" value={form.birthDate ?? ""} onChange={(event) => update("birthDate", event.target.value || null)} /></Field>
         <Field label="מין *" error={errors.gender}><EmployerInterfaceOptionSelect category="gender" value={form.gender ?? null} disabled={!editable} required onChange={(value) => update("gender", value)} /></Field>
