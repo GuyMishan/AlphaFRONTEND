@@ -1,6 +1,6 @@
 .payment-modal-backdrop { background: rgba(8,22,38,.52); backdrop-filter: blur(4px); }
-.payment-modal { position: relative; width: min(980px, 94vw); max-height: 88vh; overflow: hidden; border-radius: 18px; background: #f8fafc; box-shadow: 0 24px 70px rgba(5,20,36,.28); padding: 14px 14px 12px; }
-.payment-modal-close { position: absolute; top: 10px; left: 10px; z-index: 2; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 9px; background: white; display: grid; place-items: center; cursor: pointer; color: #2b2f33; }
+.payment-modal { position: relative; width: min(980px, 94vw); max-height: 88vh; overflow-y: auto; overflow-x: hidden; border-radius: 18px; background: #f8fafc; box-shadow: 0 24px 70px rgba(5,20,36,.28); padding: 14px 14px 12px; }
+.payment-modal-close { position: sticky; top: 10px; left: 10px; z-index: 3; width: 32px; height: 32px; margin-left: 0; float: left; border: 1px solid var(--line); border-radius: 9px; background: white; display: grid; place-items: center; cursor: pointer; color: #2b2f33; }
 .payment-modal-title { font-weight: 800; font-size: 18px; margin: 0 2px 9px; padding-left: 36px; }
 .payment-employer-chip { min-height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: white; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 3px 12px rgba(25,44,66,.05); margin-bottom: 9px; font-size: 13px; }
 .payment-employer-chip span { margin-inline-start: auto; color: #4b535b; font-size: 12px; }
