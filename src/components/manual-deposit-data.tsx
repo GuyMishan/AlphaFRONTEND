@@ -6,12 +6,14 @@ import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-o
 import { VirtualizedTable } from "@/components/virtualized-table";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
+import { bankReferenceApi, type BankBranchReference, type BankReference } from "@/lib/bank-reference-api";
 import { employerInterfaceApi, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
 import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
-import type { Employer } from "@/lib/types";
+import type { Employer, PensionFundOption, PensionProductType } from "@/lib/types";
 
 const productNames: Record<number, string> = { 1: "קרן פנסיה", 2: "קרן השתלמות", 3: "ביטוח מנהלים", 4: "קופת גמל", 99: "אחר" };
 const emptyPreviousReference = (): EmployerInterfacePreviousReference => ({ previousIdentifier: "", previousClearingIdentifier: "", previousReferenceExceptionCode: null });
+const shortError = (message: string) => message.trim().replace(/\s+/g, " ").slice(0, 220) + (message.trim().replace(/\s+/g, " ").length > 220 ? "…" : "");
 
 export function ManualDepositData({ organizationId, employerId, reportId }: { organizationId: string; employerId: string; reportId: string }) {
   const [rows, setRows] = useState<ManualDepositRow[]>([]);
@@ -24,7 +26,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
   async function load(search = query) {
     setLoading(true); setError("");
     try { setRows((await manualDepositsApi.list(organizationId, employerId, reportId, search.trim(), 0, 100)).items); }
-    catch (err) { const message = err instanceof Error ? err.message : "טעינת נתוני ההפקדות נכשלה"; setError(message); notify.error(message); }
+    catch (err) { const message = shortError(err instanceof Error ? err.message : "טעינת נתוני ההפקדות נכשלה"); setError(message); notify.error(message); }
     finally { setLoading(false); }
   }
 
@@ -43,7 +45,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
 
   return <>
     <div className="card-head deposit-head">
-      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>פרטי התשלום והדיווח ברמת המוצר.</span></div>
+      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>פרטי התשלום ברמת המוצר.</span></div>
       <div className="deposit-summary"><span className="badge badge-blue">{rows.length} תוצאות</span><span className="badge badge-green">סה״כ ₪{total.toLocaleString("he-IL")}</span></div>
     </div>
     <div className="toolbar deposit-toolbar"><div className="search"><Search size={17} /><input maxLength={100} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="יצרן, מוצר, עובד או אסמכתא" /></div></div>
@@ -57,20 +59,20 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
       wrapperClassName="deposit-table-wrap"
       columns={[{ key: "provider", label: "שם יצרן / מוצר" }, { key: "providerAccount", label: "חשבון יצרן" }, { key: "amount", label: "סכום" }, { key: "employerAccount", label: "חשבון מעסיק" }, { key: "reference", label: "אסמכתא" }, { key: "date", label: "תאריך ערך" }, { key: "type", label: "סוג תקבול" }, { key: "edit", label: "" }]}
       renderCells={(row) => [
-        <><b>{row.providerName || productNames[row.productType] || "מוצר פנסיוני"}</b><span>{row.employeeName} · {row.policyNumber || "ללא מס׳ פוליסה"}</span></>,
+        <><b>{row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני"}</b><span>{row.employeeName} · {row.policyNumber || "ללא מס׳ פוליסה"}</span></>,
         row.providerAccount || "—",
         `₪${Number(row.totalDeposit).toLocaleString("he-IL")}`,
         formatEmployerAccount(row),
         row.referenceNumber || "—",
         row.valueDate ? formatDate(row.valueDate) : "—",
         row.reportingType ? `קוד ${row.reportingType}` : "—",
-        <button className="icon-button" aria-label="עריכת פרטי תשלום ודיווח" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
+        <button className="icon-button" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}
     {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} onClose={() => setEditing(null)} onSaved={(updated) => {
       setRows((current) => current.map((item) => item.id === updated.id ? updated : item));
       setEditing(null);
-      notify.success("פרטי התשלום והדיווח נשמרו בהצלחה");
+      notify.success("פרטי התשלום נשמרו בהצלחה");
     }} /> : null}
   </>;
 }
@@ -90,6 +92,12 @@ function isNegativeKind(value: EmployerInterfaceProductMetadata["reportKind"] | 
 function isDifferencesKind(value: EmployerInterfaceProductMetadata["reportKind"] | null | undefined) { return value === 2 || value === "2" || value === "Differences"; }
 function isGuidV4(value: string) { return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim()); }
 function requiresPreviousReference(negative: boolean, operationCode: number | null) { return negative ? operationCode === 5 || operationCode === 6 : operationCode === 2 || operationCode === 3 || operationCode === 7; }
+function providerAccountFromReference(product: PensionFundOption | null) {
+  if (!product?.accountNumber) return "";
+  return [product.bankCode, product.branchCode, product.accountNumber].filter((value) => value !== null && value !== undefined && value !== "").join(" - ");
+}
+function bankLabel(bank: BankReference) { return `${bank.bankCode} - ${bank.bankName}`; }
+function branchLabel(branch: BankBranchReference) { return `${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`; }
 
 function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, form: EmployerInterfaceProductMetadataInput, previous: EmployerInterfacePreviousReference) {
   const errors: string[] = [];
@@ -126,16 +134,16 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
 
 function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInterfaceProductMetadata | null, meta: EmployerInterfaceProductMetadataInput) {
   const errors: string[] = [];
-  if (!form.providerName.trim()) errors.push("שם יצרן / מוצר הוא שדה חובה.");
-  if (!form.providerAccount.trim()) errors.push("חשבון יצרן לזיכוי הוא שדה חובה.");
+  if (!form.providerName.trim()) errors.push("לא נמצאו פרטי יצרן למוצר.");
+  if (!form.providerAccount.trim()) errors.push("לא נמצא חשבון יצרן לזיכוי בנתוני המוצר.");
   if (!metadata || isDifferencesKind(metadata.reportKind)) return errors;
   const negative = isNegativeKind(metadata.reportKind);
   const requireEmployerBank = !negative || (meta.operationCode === 5 && meta.paymentMethodCode === 1);
   if (!negative && !form.referenceNumber.trim()) errors.push("מספר אסמכתא הוא שדה חובה בדיווח שוטף.");
   if (requireEmployerBank) {
-    if (!/^\d+$/.test(form.employerBankCode.trim())) errors.push("מספר בנק חייב להכיל ספרות בלבד.");
-    if (!/^\d{3}$/.test(form.employerBranch.trim())) errors.push("מספר סניף חייב להכיל בדיוק 3 ספרות.");
-    if (!/^\d{20}$/.test(form.employerAccount.trim())) errors.push("מספר חשבון מעסיק חייב להכיל בדיוק 20 ספרות.");
+    if (!/^\d+$/.test(form.employerBankCode.trim())) errors.push("יש לבחור בנק.");
+    if (!/^\d{1,3}$/.test(form.employerBranch.trim())) errors.push("יש לבחור סניף.");
+    if (!/^\d{1,20}$/.test(form.employerAccount.trim())) errors.push("יש להזין מספר חשבון תקין.");
   }
   return errors;
 }
@@ -144,13 +152,18 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   employer: Employer | null; organizationId: string; employerId: string; reportId: string; row: ManualDepositRow; onClose: () => void; onSaved: (row: ManualDepositRow) => void;
 }) {
   const [form, setForm] = useState<ManualPaymentInput>({
-    providerName: row.providerName || productNames[row.productType] || "", providerAccount: row.providerAccount || "", paymentMethod: row.paymentMethod || "",
+    providerName: row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "", providerAccount: row.providerAccount || "", paymentMethod: row.paymentMethod || "",
     valueDate: row.valueDate, referenceNumber: row.referenceNumber || "", employerBankName: row.employerBankName || "", employerBankCode: row.employerBankCode || "",
     employerBranch: row.employerBranch || "", employerAccount: row.employerAccount || "", confirmationFileName: row.confirmationFileName || "",
   });
   const [metadata, setMetadata] = useState<EmployerInterfaceProductMetadata | null>(null);
   const [metadataForm, setMetadataForm] = useState<EmployerInterfaceProductMetadataInput>(emptyMetadata);
   const [previousReference, setPreviousReference] = useState<EmployerInterfacePreviousReference>(emptyPreviousReference);
+  const [providerReference, setProviderReference] = useState<PensionFundOption | null>(null);
+  const [banks, setBanks] = useState<BankReference[]>([]);
+  const [branches, setBranches] = useState<BankBranchReference[]>([]);
+  const [bankSelection, setBankSelection] = useState(row.employerBankCode || row.employerBankName ? `${row.employerBankCode}${row.employerBankCode && row.employerBankName ? " - " : ""}${row.employerBankName}` : "");
+  const [branchSelection, setBranchSelection] = useState(row.employerBranch || "");
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -167,14 +180,59 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
         employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason,
         paymentMethodCode: item.paymentMethodCode, employerAccountType: item.employerAccountType, receiverAccountType: item.receiverAccountType });
       setPreviousReference(previous);
-    }).catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת נתוני הדיווח נכשלה"); })
+    }).catch((err) => { if (active) setError(shortError(err instanceof Error ? err.message : "טעינת נתוני הדיווח נכשלה")); })
       .finally(() => { if (active) setLoadingMetadata(false); });
     return () => { active = false; };
   }, [organizationId, employerId, reportId, row.id]);
 
+  useEffect(() => {
+    let active = true;
+    void bankReferenceApi.banks("", 100).then((items) => { if (active) setBanks(items); }).catch(() => { if (active) setBanks([]); });
+    if (row.fundExternalKey) {
+      void alphaApi.pensionFunds(row.productType as PensionProductType, row.fundExternalKey, 20).then((items) => {
+        if (!active) return;
+        const exact = items.find((item) => item.externalKey === row.fundExternalKey) ?? null;
+        setProviderReference(exact);
+        if (exact) {
+          const account = providerAccountFromReference(exact);
+          setForm((current) => ({
+            ...current,
+            providerName: exact.companyName || exact.fundName || current.providerName,
+            providerAccount: account || current.providerAccount,
+          }));
+        }
+      }).catch(() => { if (active) setProviderReference(null); });
+    }
+    return () => { active = false; };
+  }, [row.fundExternalKey, row.productType]);
+
+  useEffect(() => {
+    const bankCode = Number(form.employerBankCode);
+    if (!bankCode) { setBranches([]); return; }
+    let active = true;
+    void bankReferenceApi.branches(bankCode, "", 200).then((items) => { if (active) setBranches(items); }).catch(() => { if (active) setBranches([]); });
+    return () => { active = false; };
+  }, [form.employerBankCode]);
+
   function patch<K extends keyof ManualPaymentInput>(key: K, value: ManualPaymentInput[K]) { setForm((current) => ({ ...current, [key]: value })); setError(""); }
   function patchMetadata<K extends keyof EmployerInterfaceProductMetadataInput>(key: K, value: EmployerInterfaceProductMetadataInput[K]) { setMetadataForm((current) => ({ ...current, [key]: value })); setError(""); }
   function patchPrevious<K extends keyof EmployerInterfacePreviousReference>(key: K, value: EmployerInterfacePreviousReference[K]) { setPreviousReference((current) => ({ ...current, [key]: value })); setError(""); }
+
+  function chooseBank(value: string) {
+    setBankSelection(value);
+    const bank = banks.find((item) => bankLabel(item) === value || String(item.bankCode) === value || item.bankName === value);
+    if (!bank) return;
+    setForm((current) => ({ ...current, employerBankName: bank.bankName, employerBankCode: String(bank.bankCode), employerBranch: "" }));
+    setBranchSelection("");
+    setError("");
+  }
+
+  function chooseBranch(value: string) {
+    setBranchSelection(value);
+    const branch = branches.find((item) => branchLabel(item) === value || String(item.branchCode) === value);
+    if (!branch) return;
+    patch("employerBranch", String(branch.branchCode));
+  }
 
   const negative = isNegativeKind(metadata?.reportKind);
   const differences = isDifferencesKind(metadata?.reportKind);
@@ -188,7 +246,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   async function save() {
     setError("");
     const errors = [...validatePaymentDetails(form, metadata, metadataForm), ...validate006Metadata(metadata, metadataForm, previousReference)];
-    if (errors.length) { const message = errors.join(" "); setError(message); notify.error(message); return; }
+    if (errors.length) { const message = shortError(errors.join(" ")); setError(message); notify.error(message); return; }
     setSaving(true);
     try {
       const persistedPayment = { ...form, paymentMethod: metadataForm.paymentMethodCode == null ? "" : String(metadataForm.paymentMethodCode) };
@@ -199,29 +257,36 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       }
       onSaved({ ...row, ...persistedPayment });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "שמירת פרטי התשלום נכשלה"; setError(message); notify.error(message); setSaving(false);
+      const message = shortError(err instanceof Error ? err.message : "שמירת פרטי התשלום נכשלה"); setError(message); notify.error(message); setSaving(false);
     }
   }
 
+  const providerAccount = form.providerAccount || providerAccountFromReference(providerReference);
+
   return <div className="report-modal-backdrop payment-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-    <div className="payment-modal" role="dialog" aria-modal="true" aria-label="פרטי תשלום ודיווח">
+    <div className="payment-modal" role="dialog" aria-modal="true" aria-label="פרטי תשלום">
       <button className="payment-modal-close" onClick={onClose} aria-label="סגירה"><X size={20} /></button>
-      <div className="payment-modal-title">פרטי תשלום ודיווח</div>
+      <div className="payment-modal-title">פרטי תשלום</div>
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
-      {error ? <div className="notice notice-error payment-error">{error}</div> : null}
+      {error ? <div className="notice notice-error payment-error" title={error}>{error}</div> : null}
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מבטלים תנועה ללא החזר למעסיק, ולכן אין להזין אמצעי תשלום או פרטי החזר.</div> : null}
       <div className="payment-layout">
-        <aside className="payment-notes"><b>לתשומת לבך</b><p>יש לבחור את אמצעי התשלום המתאים לדיווח.</p><p>בדיווח שלילי קוד פעולה 5 הוא בקשה להחזר, וקוד 6 הוא ביטול תנועה ללא החזר.</p><p>בפעולות תיקון או ביטול יש לקשר לדיווח המקורי או לציין חריג מתאים כאשר אין קישור.</p></aside>
+        <aside className="payment-notes"><b>לתשומת לבך</b><p>פרטי חשבון היצרן נטענים אוטומטית מנתוני המוצר הקיימים במערכת.</p><p>יש לבחור את אמצעי התשלום ואת חשבון המעסיק שממנו בוצע התשלום.</p><p>בפעולות תיקון או ביטול יש לקשר לדיווח המקורי או לציין חריג מתאים כאשר אין קישור.</p></aside>
         <div className="payment-main">
-          <section className="payment-panel"><h3>פרטי חשבון יצרן</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר *</label><input required maxLength={160} value={form.providerName} onChange={(e) => patch("providerName", e.target.value)} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי *</label><div className="payment-input-icon"><input required maxLength={120} value={form.providerAccount} onChange={(e) => patch("providerAccount", e.target.value)} placeholder="בנק - סניף - חשבון" /><Pencil size={14} /></div></div></div></section>
+          <section className="payment-panel"><h3>פרטי חשבון יצרן</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר</label><input readOnly value={form.providerName} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי</label><input readOnly value={providerAccount} placeholder="לא נמצאו פרטי חשבון בנתוני המוצר" /></div></div></section>
 
           {!differences && !operation6 ? <section className="payment-panel"><h3>{negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" value={metadataForm.paymentMethodCode} required onChange={(value) => patchMetadata("paymentMethodCode", value)} /></div> : null}
             {!negative ? <div className="field"><label>תאריך ערך</label><div className="payment-input-icon"><input type="date" value={form.valueDate?.slice(0, 10) || ""} onChange={(e) => patch("valueDate", e.target.value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative ? <div className="field"><label>מס׳ אסמכתא *</label><input required maxLength={120} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
             <label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור"}</span><input type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label>
-            {bankRequired ? <><div className="field"><label>בנק</label><input maxLength={120} value={form.employerBankName} onChange={(e) => patch("employerBankName", e.target.value)} placeholder="שם הבנק" /></div><div className="field"><label>מס׳ בנק *</label><input required inputMode="numeric" maxLength={3} value={form.employerBankCode} onChange={(e) => patch("employerBankCode", e.target.value.replace(/\D/g, "").slice(0, 3))} /></div><div className="field"><label>סניף *</label><input required inputMode="numeric" maxLength={3} value={form.employerBranch} onChange={(e) => patch("employerBranch", e.target.value.replace(/\D/g, "").slice(0, 3))} /></div><div className="field"><label>מס׳ חשבון *</label><input required inputMode="numeric" maxLength={20} value={form.employerAccount} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div></> : null}
+            {bankRequired ? <>
+              <div className="field"><label>בנק *</label><input required list={`banks-${row.id}`} value={bankSelection} onChange={(e) => chooseBank(e.target.value)} placeholder="חיפוש לפי שם או מספר בנק" /><datalist id={`banks-${row.id}`}>{banks.map((bank) => <option key={bank.bankCode} value={bankLabel(bank)} />)}</datalist></div>
+              <div className="field"><label>מס׳ בנק</label><input readOnly value={form.employerBankCode} /></div>
+              <div className="field"><label>סניף *</label><input required list={`branches-${row.id}`} value={branchSelection} onChange={(e) => chooseBranch(e.target.value)} placeholder={form.employerBankCode ? "חיפוש סניף" : "יש לבחור בנק תחילה"} disabled={!form.employerBankCode} /><datalist id={`branches-${row.id}`}>{branches.map((branch) => <option key={branch.branchCode} value={branchLabel(branch)} />)}</datalist></div>
+              <div className="field"><label>מס׳ חשבון *</label><input required inputMode="numeric" maxLength={20} value={form.employerAccount} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div>
+            </> : null}
           </div></section> : null}
 
           {!differences ? <section className="payment-panel"><h3>פרטי דיווח נוספים</h3>{loadingMetadata ? <div className="empty">טוען נתוני דיווח...</div> : <div className="payment-method-grid">
