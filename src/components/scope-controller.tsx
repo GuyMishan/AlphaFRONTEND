@@ -83,8 +83,10 @@ export function ScopeController() {
           : context.organizations[0]?.id ?? "";
 
         let employerEntry: { organization: ScopeOrganization; employer: ScopeEmployer } | null = null;
+        const hasOrganizationScope = context.organizations.some((item) => item.hasOrganizationScope);
+        const needsEmployerScope = level !== "organization" || !hasOrganizationScope;
 
-        if (level !== "organization") {
+        if (needsEmployerScope) {
           if (savedEmployer) {
             employerEntry = context.organizations
               .flatMap((organization) => organization.employers.map((employer) => ({ organization, employer })))
@@ -212,7 +214,7 @@ export function ScopeController() {
     : allEmployers.map((item) => item.employer);
 
   const showEmployerSelector =
-    level !== "organization" &&
+    (level !== "organization" || !hasAnyOrganizationScope) &&
     employerOptions.length > 1;
 
   const showEmployeeSelector = level === "employee" && employees.length > 1;
