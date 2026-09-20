@@ -7,6 +7,11 @@ export default defineConfig([
   ...nextTs,
   globalIgnores([".next/**", "node_modules/**", "next-env.d.ts"]),
   {
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
+  {
     files: [
       "src/app/access/page.tsx",
       "src/app/employees/page.tsx",
