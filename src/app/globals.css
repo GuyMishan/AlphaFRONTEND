@@ -185,3 +185,49 @@ td { font-size: 14px; }
   .steps { grid-template-columns: repeat(4, minmax(75px, 1fr)); overflow-x: auto; padding-bottom: 8px; }
   .user-chip > div:not(.avatar) { display: none; }
 }
+
+
+.otp-inputs-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 6px 0 2px;
+}
+
+.otp-digit-box {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  outline: none;
+}
+
+.otp-digit-box:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.otp-digit-box:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 420px) {
+  .otp-inputs-row { gap: 7px; }
+  .otp-digit-box {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    font-size: 21px;
+  }
+}
