@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { alphaApi } from "@/lib/api";
-import { employerInterfaceApi } from "@/lib/employer-interface-api";
 import type { Employer, EmployerInput } from "@/lib/types";
 import { isValidEmail } from "@/lib/validation";
 import { Field, type FieldErrors } from "@/components/form-feedback";
@@ -43,12 +42,6 @@ export function EmployerForm({
   const [errors, setErrors] = useState<FieldErrors>({});
   const title = employer ? employer.legalName : "מעסיק חדש";
 
-  useEffect(() => {
-    if (!employer || !organizationId) return;
-    employerInterfaceApi.employerProfile(organizationId, employer.id).then((profile) => {
-      setForm((current) => ({ ...current, ...profile }));
-    }).catch(() => { /* keep entity values if profile loading fails */ });
-  }, [organizationId, employer?.id]);
 
   function update(key: keyof EmployerInput, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -62,9 +55,16 @@ export function EmployerForm({
     if (!/^\d{5,9}$/.test(input.withholdingFileNumber.trim())) next.withholdingFileNumber = "מספר תיק ניכויים חייב להכיל 5-9 ספרות. במידה ואין, יש להזין 900000000.";
     if (!(input.contactFirstName ?? "").trim()) next.contactFirstName = "שם פרטי של איש הקשר הוא שדה חובה.";
     if (!(input.contactLastName ?? "").trim()) next.contactLastName = "שם משפחה של איש הקשר הוא שדה חובה.";
-    if (!/^\d{1,11}$/.test(input.contactPhone ?? "")) next.contactPhone = "טלפון איש הקשר חייב להכיל 1-11 ספרות.";
+    const phone = input.contactPhone ?? "";
+    const mobile = input.contactMobile ?? "";
+    if (!phone && !mobile) {
+      next.contactPhone = "יש להזין לפחות טלפון או נייד אחד.";
+      next.contactMobile = "יש להזין לפחות טלפון או נייד אחד.";
+    } else {
+      if (phone && !/^\d{1,11}$/.test(phone)) next.contactPhone = "טלפון איש הקשר חייב להכיל 1-11 ספרות.";
+      if (mobile && !/^\d{1,15}$/.test(mobile)) next.contactMobile = "מספר הנייד חייב להכיל 1-15 ספרות.";
+    }
     if (!isValidEmail(input.contactEmail ?? "")) next.contactEmail = "כתובת האימייל של איש הקשר אינה תקינה.";
-    if (!/^\d{1,15}$/.test(input.contactMobile ?? "")) next.contactMobile = "מספר הנייד חייב להכיל 1-15 ספרות.";
     return next;
   }
 
@@ -94,15 +94,6 @@ export function EmployerForm({
           ? await onCreate(normalized)
           : await alphaApi.createEmployer(organizationId!, normalized);
 
-      if (!onCreate && organizationId) {
-        await employerInterfaceApi.updateEmployerProfile(organizationId, saved.id, {
-          contactFirstName: normalized.contactFirstName ?? "",
-          contactLastName: normalized.contactLastName ?? "",
-          contactPhone: normalized.contactPhone ?? "",
-          contactEmail: normalized.contactEmail ?? "",
-          contactMobile: normalized.contactMobile ?? "",
-        });
-      }
 
       toast.success(employer ? "פרטי המעסיק נשמרו בהצלחה" : "המעסיק הוקם בהצלחה");
       if (onCreated) onCreated(saved);
@@ -123,9 +114,10 @@ export function EmployerForm({
       <div className="grid two-cols">
         <Field label="שם פרטי איש קשר *" error={errors.contactFirstName}><input disabled={!editable} maxLength={20} value={form.contactFirstName ?? ""} onChange={(event) => update("contactFirstName", event.target.value)} /></Field>
         <Field label="שם משפחה איש קשר *" error={errors.contactLastName}><input disabled={!editable} maxLength={20} value={form.contactLastName ?? ""} onChange={(event) => update("contactLastName", event.target.value)} /></Field>
-        <Field label="טלפון איש קשר *" error={errors.contactPhone}><input disabled={!editable} inputMode="numeric" maxLength={11} value={form.contactPhone ?? ""} onChange={(event) => update("contactPhone", event.target.value.replace(/\D/g, "").slice(0, 11))} /></Field>
-        <Field label="נייד איש קשר *" error={errors.contactMobile}><input disabled={!editable} inputMode="numeric" maxLength={15} value={form.contactMobile ?? ""} onChange={(event) => update("contactMobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
+        <Field label="טלפון איש קשר" error={errors.contactPhone}><input disabled={!editable} inputMode="numeric" maxLength={11} value={form.contactPhone ?? ""} onChange={(event) => update("contactPhone", event.target.value.replace(/\D/g, "").slice(0, 11))} /></Field>
+        <Field label="נייד איש קשר" error={errors.contactMobile}><input disabled={!editable} inputMode="numeric" maxLength={15} value={form.contactMobile ?? ""} onChange={(event) => update("contactMobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
       </div>
+      <small style={{ color: "var(--muted)", marginTop: -8 }}>יש להזין לפחות אחד מהשדות: טלפון או נייד.</small>
       <Field label="אימייל איש קשר *" error={errors.contactEmail}><input disabled={!editable} type="email" maxLength={50} value={form.contactEmail ?? ""} onChange={(event) => update("contactEmail", event.target.value)} /></Field>
       {employer ? <div className="field"><label>סטטוס</label><input disabled value={employer.status === 2 ? "פעיל" : "בתהליך הקמה"} /></div> : null}
       <div className="form-actions">{showBackLink ? <Link className="btn btn-secondary" href="/employers">חזרה</Link> : null}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employer ? "שמירת שינויים" : createLabel}</button> : null}</div>
