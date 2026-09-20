@@ -6,9 +6,9 @@ import { useParams, useRouter } from "next/navigation";
 import { Building2, CreditCard, Landmark, Save, Settings2, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
 import type {
   Employer,
   EntitlementSnapshot,
@@ -90,7 +90,7 @@ export default function OrganizationProfilePage() {
     {tab === "general" ? <GeneralTab profile={profile} onSaved={async () => { await load(); }} /> : null}
     {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} canCreate={Boolean(profile.canManageOrganization && entitlements && entitlements.employers.current < entitlements.employers.maximum)} entitlements={entitlements} /> : null}
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
-    {tab === "billing" ? <BillingTab organizationId={id} profile={profile} onSaved={async () => { await load(); }} /> : null}
+    {tab === "billing" ? <AlphaBillingAccountForm organizationId={id} canManage={profile.canManageOrganization} /> : null}
     {tab === "subscription" && subscription && entitlements ? <SubscriptionTab subscription={subscription} entitlements={entitlements} /> : null}
     {tab === "employer-billing" ? <EmployerBillingTab organizationId={id} items={employerBilling} canManage={profile.canManageOrganization} onChanged={setEmployerBilling} /> : null}
   </AppShell>;
@@ -166,46 +166,6 @@ function UsersTab({ organizationId, members, canManage }: { organizationId: stri
       {members.map((item) => <tr key={item.userId}><td><b>{item.displayName}</b></td><td>{item.email}</td><td>{roleLabel(item.role)}</td><td>{item.employerAccessMode === 1 ? "כל המעסיקים" : "מעסיקים נבחרים"}</td></tr>)}
     </tbody></table></div>}
     <div className="notice notice-info" style={{ marginTop: 18 }}>Invitations למשתמשים חדשים יתווספו בשלב עתידי. כרגע ניהול ההרשאות עובד מול משתמשים קיימים במערכת.</div>
-  </section>;
-}
-
-function BillingTab({ organizationId, profile, onSaved }: { organizationId: string; profile: OrganizationProfileCenter; onSaved: () => Promise<void> }) {
-  const platformAdmin = Boolean(getSession()?.platformAdmin);
-  const [form, setForm] = useState(profile.billing);
-  const [saving, setSaving] = useState(false);
-
-  async function save(event: React.FormEvent) {
-    event.preventDefault();
-    if (!profile.canManageOrganization) return;
-    setSaving(true);
-    try {
-      await alphaApi.updateOrganizationBilling(organizationId, {
-        ...form,
-        billingStatus: platformAdmin ? form.status : undefined,
-      });
-      await onSaved();
-      toast.success("פרטי ה-Billing נשמרו");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת פרטי ה-Billing נכשלה");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return <section className="card profile-card">
-    <div className="card-head"><div><h2>Billing Account ארגוני</h2><span style={{ color: "var(--muted)" }}>פרטי חשבונית ואיש קשר לחיוב הארגון.</span></div></div>
-    {!profile.canManageOrganization ? <div className="notice notice-info" style={{ marginBottom: 18 }}>Billing מוצג לקריאה בלבד.</div> : null}
-    <form className="form" onSubmit={save}>
-      <div className="grid two-cols">
-        <div className="field"><label>שם לחשבונית</label><input disabled={!profile.canManageOrganization} maxLength={200} value={form.invoiceName} onChange={(e) => setForm({ ...form, invoiceName: e.target.value })} /></div>
-        <div className="field"><label>ח.פ./עוסק לחשבונית</label><input disabled={!profile.canManageOrganization} maxLength={30} value={form.invoiceRegistrationNumber} onChange={(e) => setForm({ ...form, invoiceRegistrationNumber: e.target.value })} /></div>
-        <div className="field"><label>אימייל לחשבוניות</label><input disabled={!profile.canManageOrganization} type="email" maxLength={320} value={form.invoiceEmail} onChange={(e) => setForm({ ...form, invoiceEmail: e.target.value })} /></div>
-        <div className="field"><label>איש קשר Billing</label><input disabled={!profile.canManageOrganization} maxLength={150} value={form.billingContactName} onChange={(e) => setForm({ ...form, billingContactName: e.target.value })} /></div>
-        <div className="field"><label>טלפון Billing</label><input disabled={!profile.canManageOrganization} maxLength={20} value={form.billingContactPhone} onChange={(e) => setForm({ ...form, billingContactPhone: e.target.value.replace(/\D/g, "") })} /></div>
-        <div className="field"><label>סטטוס תשלום</label><select disabled={!platformAdmin} value={form.status} onChange={(e) => setForm({ ...form, status: Number(e.target.value) as typeof form.status })}><option value={1}>לא הוגדר</option><option value={2}>פעיל</option><option value={3}>חוב פתוח</option><option value={4}>מושהה</option></select></div>
-      </div>
-      {profile.canManageOrganization ? <div className="form-actions"><span /><button className="btn btn-primary" disabled={saving} type="submit"><Save size={17} />{saving ? "שומר..." : "שמירת Billing"}</button></div> : null}
-    </form>
   </section>;
 }
 
