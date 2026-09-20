@@ -267,7 +267,10 @@ export type AccessEmployer = {
   role: EmployerRole;
 };
 
-export type EmployerOption = AccessEmployer & {
+export type EmployerOption = {
+  id: string;
+  legalName: string;
+  registrationNumber: string;
   assigned: boolean;
 };
 
