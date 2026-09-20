@@ -10,6 +10,7 @@ import { OtpInput } from "@/components/otp-input";
 import { Field, type FieldErrors } from "@/components/form-feedback";
 import { isIsraeliId, isValidEmail } from "@/lib/validation";
 import { setSession } from "@/lib/session";
+import { alphaApi } from "@/lib/api";
 
 type Challenge = { challengeId: string };
 
@@ -106,7 +107,8 @@ export default function RegisterPage() {
       const result = await response.json() as { accessToken: string; userId: string; platformAdmin: boolean; displayName: string };
       setSession({ mode: "oidc", ...result });
       toast.success("ההרשמה הושלמה בהצלחה");
-      router.push("/dashboard");
+      const onboarding = await alphaApi.onboardingStatus();
+      router.replace(onboarding.needsOnboarding ? "/onboarding" : "/dashboard");
     } catch {
       toast.error("לא ניתן להשלים את ההרשמה כרגע.");
     } finally {
