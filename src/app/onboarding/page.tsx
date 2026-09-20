@@ -57,7 +57,7 @@ export default function OnboardingPage() {
             <div className="profile-avatar"><Building2 /></div>
             <div>
               <h1 style={{ margin: 0 }}>בואו נגדיר את העסק שלכם</h1>
-              <p style={{ marginBottom: 0 }}>הזינו את פרטי המעסיק כדי להתחיל לעבוד במערכת.</p>
+              <p style={{ marginBottom: 0 }}>הזינו את פרטי המעסיק. בסיום העסק ייבחר אוטומטית ותעברו לדף הבית.</p>
             </div>
           </div>
           {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
