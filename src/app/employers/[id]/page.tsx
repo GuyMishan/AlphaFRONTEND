@@ -68,6 +68,10 @@ export default function EmployerProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { organizationId } = useQueryContext();
   const [tab, setTab] = useState<TabKey>("general");
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (requestedTab && tabs.some((item) => item.key === requestedTab)) setTab(requestedTab as TabKey);
+  }, []);
   const [employer, setEmployer] = useState<Employer>();
   const [capabilities, setCapabilities] = useState<EmployerCapabilities>(EMPTY_CAPABILITIES);
   const [settings, setSettings] = useState<EmployerProfileCenterSettings>(EMPTY_SETTINGS);
