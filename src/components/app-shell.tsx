@@ -7,9 +7,10 @@ import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, LogOut, Menu, Sett
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
 import { UpgradeModal } from "./upgrade-modal";
+import { EmployerForm } from "./employer-form";
 import { alphaApi } from "@/lib/api";
-import { clearSession, getSession } from "@/lib/session";
-import type { Session } from "@/lib/types";
+import { clearSession, getSession, setEmployerSelection, setOrganizationSelection } from "@/lib/session";
+import type { Employer, EmployerInput, Session } from "@/lib/types";
 import { UPGRADE_DIALOG_EVENT, type UpgradeDialogDetail } from "@/lib/upgrade";
 
 const nav = [
@@ -54,6 +55,8 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pageConfig, setPageConfigState] = useState<ShellPageConfig>(initialConfig);
   const [upgradeDetail, setUpgradeDetail] = useState<UpgradeDialogDetail | null>(null);
+  const [onboardingRequired, setOnboardingRequired] = useState(false);
+  const [onboardingError, setOnboardingError] = useState("");
 
   const setPageConfig = useCallback((config: ShellPageConfig) => {
     setPageConfigState((current) => current.title === config.title && current.hideScopeController === config.hideScopeController ? current : config);
@@ -79,9 +82,10 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
           setSingleEmployerUser(false);
           setCanManageOrganization(false);
           setHasOrganizationScope(false);
-          router.replace("/onboarding");
+          setOnboardingRequired(true);
           return;
         }
+        setOnboardingRequired(false);
         setSingleEmployerUser(scope.employerCount === 1);
         setCanManageOrganization(scope.organizations.some((item) => item.canManageOrganization));
         setHasOrganizationScope(current.platformAdmin || scope.organizations.some((item) => item.hasOrganizationScope));
@@ -126,11 +130,39 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   }, []);
 
   useEffect(() => {
-    if (!mobileMenuOpen) return;
+    if (!mobileMenuOpen && !onboardingRequired) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previous; };
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, onboardingRequired]);
+
+  async function createBusiness(input: EmployerInput): Promise<Employer> {
+    setOnboardingError("");
+    try {
+      const result = await alphaApi.completeSelfServiceOnboarding(input);
+      setOrganizationSelection(result.organizationId);
+      setEmployerSelection(result.organizationId, result.employerId);
+      return result.employer;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "הקמת המעסיק נכשלה.";
+      setOnboardingError(message);
+      throw err;
+    }
+  }
+
+  async function completeOnboarding() {
+    setOnboardingRequired(false);
+    setOnboardingError("");
+    try {
+      const scope = await alphaApi.scope();
+      setSingleEmployerUser(scope.employerCount === 1);
+      setCanManageOrganization(scope.organizations.some((item) => item.canManageOrganization));
+      setHasOrganizationScope(Boolean(session?.platformAdmin) || scope.organizations.some((item) => item.hasOrganizationScope));
+    } finally {
+      router.replace("/dashboard");
+      router.refresh();
+    }
+  }
 
   function logout() {
     clearSession();
@@ -186,6 +218,27 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
           <main className="main">{children}</main>
         </div>
         <UpgradeModal detail={upgradeDetail} onClose={() => setUpgradeDetail(null)} />
+        {onboardingRequired ? (
+          <div className="onboarding-backdrop" role="presentation">
+            <section className="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+              <div className="onboarding-heading">
+                <div className="profile-avatar"><Building2 /></div>
+                <div>
+                  <h1 id="onboarding-title">בואו נגדיר את העסק שלכם</h1>
+                  <p>הזינו את פרטי המעסיק כדי להתחיל לעבוד במערכת. לא ניתן להמשיך לפני השלמת ההקמה.</p>
+                </div>
+              </div>
+              {onboardingError ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{onboardingError}</div> : null}
+              <EmployerForm
+                editable
+                onCreate={createBusiness}
+                onCreated={() => void completeOnboarding()}
+                showBackLink={false}
+                createLabel="שמירה והמשך"
+              />
+            </section>
+          </div>
+        ) : null}
       </div>
     </ShellContext.Provider>
   );
