@@ -1,6 +1,6 @@
 export function Brand() {
   return (
-    <div className="brand" aria-label="ALPHA">
+    <div className="brand" aria-label="ALPHA - תפעול פנסיוני">
       <span className="brand-logo" aria-hidden="true">
         <svg viewBox="0 0 48 48" role="img" focusable="false">
           <rect className="brand-logo-tile" x="1" y="1" width="46" height="46" rx="12" />
@@ -8,7 +8,10 @@ export function Brand() {
           <path className="brand-logo-symbol brand-logo-symbol-inner" d="M20.38 35.02 24 28.66l3.62 6.36a1.42 1.42 0 0 1-1.24 2.12h-4.76a1.42 1.42 0 0 1-1.24-2.12Z" />
         </svg>
       </span>
-      <span className="brand-wordmark">ALPHA</span>
+      <span className="brand-copy">
+        <span className="brand-wordmark">ALPHA</span>
+        <span className="brand-tagline">תפעול פנסיוני</span>
+      </span>
     </div>
   );
 }
