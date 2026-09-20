@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Building2, Plus, Search } from "lucide-react";
+import { ArrowLeft, Building2, Plus, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { VirtualizedTable } from "@/components/virtualized-table";
 import { alphaApi } from "@/lib/api";
@@ -20,12 +20,36 @@ export default function EmployersPage() {
   const [error, setError] = useState("");
 
   async function load(orgId: string, search = query) {
-    if (!orgId) { setEmployers([]); setLoading(false); return; }
     setLoading(true); setError("");
     try {
-      const [result, capabilities] = await Promise.all([alphaApi.employerSearch(orgId, search.trim(), 0, PAGE_SIZE), alphaApi.capabilities(orgId)]);
-      setEmployers(result.items);
-      setCanCreate(capabilities.canCreateEmployer);
+      const scope = await alphaApi.scope();
+      const resolvedOrgId = orgId || getOrganizationSelection() || scope.organizations[0]?.id || "";
+      if (resolvedOrgId !== organizationId) setOrganizationId(resolvedOrgId);
+
+      const selectedOrganization = scope.organizations.find((item) => item.id === resolvedOrgId);
+      const normalizedSearch = search.trim().toLowerCase();
+
+      if (selectedOrganization?.hasOrganizationScope) {
+        const [result, capabilities] = await Promise.all([
+          alphaApi.employerSearch(resolvedOrgId, search.trim(), 0, PAGE_SIZE),
+          alphaApi.capabilities(resolvedOrgId),
+        ]);
+        setEmployers(result.items);
+        setCanCreate(capabilities.canCreateEmployer);
+        return;
+      }
+
+      const accessibleEmployers = scope.organizations
+        .flatMap((organization) => organization.employers)
+        .filter((employer) => {
+          if (!normalizedSearch) return true;
+          return `${employer.legalName} ${employer.registrationNumber} ${employer.withholdingFileNumber}`
+            .toLowerCase()
+            .includes(normalizedSearch);
+        });
+
+      setEmployers(accessibleEmployers);
+      setCanCreate(false);
     } catch (err) { setError(err instanceof Error ? err.message : "טעינת המעסיקים נכשלה"); }
     finally { setLoading(false); }
   }
@@ -33,7 +57,7 @@ export default function EmployersPage() {
   useEffect(() => {
     const orgId = getOrganizationSelection() ?? "";
     setOrganizationId(orgId);
-    if (orgId) void load(orgId, ""); else setLoading(false);
+    void load(orgId, "");
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ organizationId: string }>).detail;
       setOrganizationId(detail.organizationId);
@@ -59,12 +83,13 @@ export default function EmployersPage() {
       {loading ? <div className="empty">טוען מעסיקים...</div> : employers.length ? <VirtualizedTable
         items={employers}
         rowKey={(employer) => employer.id}
-        columns={[{ key: "name", label: "שם המעסיק" }, { key: "registration", label: "ח.פ." }, { key: "withholding", label: "תיק ניכויים" }, { key: "status", label: "סטטוס" }]}
+        columns={[{ key: "name", label: "שם המעסיק" }, { key: "registration", label: "ח.פ." }, { key: "withholding", label: "תיק ניכויים" }, { key: "status", label: "סטטוס" }, { key: "actions", label: "פעולות", width: "170px" }]}
         renderCells={(employer) => [
-          <Link className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}><b>{employer.legalName}</b></Link>,
+          <b>{employer.legalName}</b>,
           employer.registrationNumber,
           employer.withholdingFileNumber,
           <span className={employer.status === 2 ? "badge badge-green" : "badge badge-orange"}>{employer.status === 2 ? "פעיל" : "בהקמה"}</span>,
+          <Link className="btn" href={`/employers/${employer.id}?organizationId=${employer.organizationId}`}>לכרטיס מעסיק <ArrowLeft size={16} /></Link>,
         ]}
       /> : <div className="empty"><Building2 size={35} /><div>לא נמצאו מעסיקים.</div></div>}
     </section>
