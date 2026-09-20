@@ -22,7 +22,7 @@ async function request<T>(path: string): Promise<T> {
     if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
   }
   const response = await fetch(`/api/backend${path}`, { headers, cache: "no-store" });
-  if (!response.ok) throw new Error(`שגיאת שרת (${response.status})`);
+  if (!response.ok) throw new Error(`אירעה שגיאה (${response.status})`);
   return response.json() as Promise<T>;
 }
 
