@@ -368,3 +368,50 @@ export type EntitlementSnapshot = {
   activeEmployees: EntitlementUsage;
   users: EntitlementUsage;
 };
+
+
+export type EmployerAddressSettings = {
+  city: string;
+  street: string;
+  houseNumber: string;
+  apartment: string;
+  postalCode: string;
+  postOfficeBox: string;
+};
+
+export type EmployerBillingMode = 1 | 2;
+export type EmployerBillingStatus = 1 | 2 | 3;
+export type DebitAuthorizationStatus = 1 | 2 | 3 | 4;
+
+export type EmployerProfileCenterSettings = {
+  address: EmployerAddressSettings;
+  billing: {
+    mode: EmployerBillingMode;
+    status: EmployerBillingStatus;
+  };
+  reporting: {
+    defaultSalaryPaymentDay: number | null;
+    defaultPaymentMethodCode: number | null;
+    defaultEmployerAccountType: number | null;
+    defaultReceiverAccountType: number | null;
+    reportingNotes: string;
+  };
+};
+
+export type EmployerPensionPaymentAccount = {
+  id: string;
+  organizationId: string;
+  employerId: string;
+  accountName: string;
+  bankCode: number;
+  branchCode: number;
+  accountNumber: string;
+  accountHolderName: string;
+  isDefault: boolean;
+  debitAuthorizationStatus: DebitAuthorizationStatus;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type EmployerPensionPaymentAccountInput = Omit<EmployerPensionPaymentAccount,
+  "id" | "organizationId" | "employerId" | "createdAt" | "updatedAt">;
