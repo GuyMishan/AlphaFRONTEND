@@ -84,12 +84,8 @@ export default function RegisterPage() {
     }
   }
 
-  async function verify(event: FormEvent) {
-    event.preventDefault();
-    if (!challenge || !/^\d{6}$/.test(code)) {
-      toast.error("הזינו קוד בן 6 ספרות.");
-      return;
-    }
+  async function verifyCode(codeToVerify = code) {
+    if (!challenge || !/^\d{6}$/.test(codeToVerify) || loading) return;
 
     setLoading(true);
     try {
@@ -120,6 +116,10 @@ export default function RegisterPage() {
 
   function verify(event: FormEvent) {
     event.preventDefault();
+    if (!/^\d{6}$/.test(code)) {
+      toast.error("הזינו קוד בן 6 ספרות.");
+      return;
+    }
     void verifyCode();
   }
 
