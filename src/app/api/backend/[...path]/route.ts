@@ -28,8 +28,8 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     });
   } catch {
     return NextResponse.json({
-      title: "Backend unavailable",
-      detail: `לא ניתן להתחבר ל־Alpha API בכתובת ${baseUrl}`,
+      title: "השירות אינו זמין",
+      detail: "לא ניתן להתחבר כרגע לשירות המערכת. נסו שוב בעוד מספר רגעים.",
     }, { status: 502 });
   }
 }
