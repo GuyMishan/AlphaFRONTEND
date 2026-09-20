@@ -47,12 +47,12 @@ export function OtpInput({ value, onChange, onComplete, disabled = false, autoFo
   }
 
   return (
-    <div className="otp-inputs" dir="ltr" aria-label="קוד אימות בן 6 ספרות">
+    <div className="otp-inputs otp-inputs-row" dir="ltr" aria-label="קוד אימות בן 6 ספרות">
       {digits.map((digit, index) => (
         <input
           key={index}
           ref={(element) => { refs.current[index] = element; }}
-          className="otp-digit"
+          className="otp-digit otp-digit-box"
           type="text"
           inputMode="numeric"
           autoComplete={index === 0 ? "one-time-code" : "off"}
