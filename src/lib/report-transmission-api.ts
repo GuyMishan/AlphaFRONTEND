@@ -34,7 +34,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     let message = `שגיאת שרת (${response.status})`;
     try {
       const problem = await response.json();
-      message = problem?.detail ?? problem?.error ?? problem?.title ?? problem?.transmission?.errorMessage ?? message;
+      message = problem?.error === "payment_account_required"
+        ? "יש לבחור חשבון תשלום פעיל לדיווח."
+        : problem?.error === "bank_mandate_required"
+          ? "לא ניתן לשלוח את הדיווח ללא הרשאה פעילה לחיוב חשבון הבנק שנבחר."
+          : problem?.detail ?? problem?.error ?? problem?.title ?? problem?.transmission?.errorMessage ?? message;
     } catch { /* empty */ }
     throw new Error(message);
   }

@@ -78,7 +78,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ? `הגעתם למגבלת ${limitNames[problem.limit ?? ""] ?? problem.limit ?? "המסלול"} במסלול הנוכחי (${problem.current ?? 0}/${problem.maximum ?? 0}).`
       : problem?.error === "feature_not_available"
         ? `האפשרות ${featureNames[problem.feature ?? ""] ?? problem.feature ?? ""} אינה זמינה במסלול הנוכחי.`
-        : problem?.detail ?? problem?.error ?? problem?.title ?? `שגיאת שרת (${response.status})`;
+        : problem?.error === "payment_account_required"
+          ? "יש לבחור חשבון תשלום פעיל לדיווח."
+          : problem?.error === "bank_mandate_required"
+            ? "לא ניתן לשלוח את הדיווח ללא הרשאה פעילה לחיוב חשבון הבנק שנבחר."
+            : problem?.detail ?? problem?.error ?? problem?.title ?? `שגיאת שרת (${response.status})`;
     throw new ApiError(response.status, message, problem);
   }
   if (response.status === 204) return undefined as T;
@@ -213,12 +217,14 @@ export const alphaApi = {
   createUser: (payload: { externalSubject: string; email: string; displayName: string }) =>
     request<{ id: string }>("/api/platform/users", { method: "POST", body: JSON.stringify(payload) }),
 
-  createManualReport: (organizationId: string, employerId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null; employmentIds: string[] }): Promise<ManualReportDraft> =>
+  createManualReport: (organizationId: string, employerId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null; employmentIds: string[]; paymentAccountId?: string }): Promise<ManualReportDraft> =>
     request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/`, { method: "POST", body: JSON.stringify(payload) }),
   manualReport: (organizationId: string, employerId: string, reportId: string): Promise<ManualReportDraft> =>
     request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}`),
   updateManualReportDetails: (organizationId: string, employerId: string, reportId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null }) =>
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/details`, { method: "PUT", body: JSON.stringify(payload) }),
+  updateManualReportPaymentAccount: (organizationId: string, employerId: string, reportId: string, paymentAccountId: string) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/payment-account`, { method: "PUT", body: JSON.stringify({ paymentAccountId }) }),
   syncManualReportEmployees: (organizationId: string, employerId: string, reportId: string, employmentIds: string[]) =>
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/selection`, { method: "PUT", body: JSON.stringify({ employmentIds }) }),
   manualReportEmployees: (organizationId: string, employerId: string, reportId: string, search = "", skip = 0, take = 100): Promise<PagedResult<ManualReportEmployeeSummary>> =>

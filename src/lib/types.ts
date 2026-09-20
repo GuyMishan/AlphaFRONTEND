@@ -174,6 +174,11 @@ export type ManualReportDraft = {
   status: string | number;
   reportKind?: string | number;
   sourceReportId?: string | null;
+  paymentAccountId?: string | null;
+  paymentBankId?: number | null;
+  paymentBranchId?: number | null;
+  paymentAccountNumberMasked?: string;
+  paymentMandateReference?: string;
   employeeCount: number;
 };
 
