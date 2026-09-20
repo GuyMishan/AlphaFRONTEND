@@ -47,6 +47,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   const router = useRouter();
   const [session, setLocalSession] = useState<Session | null>(null);
   const [singleEmployerUser, setSingleEmployerUser] = useState<boolean | null>(null);
+  const [canManageOrganization, setCanManageOrganization] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pageConfig, setPageConfigState] = useState<ShellPageConfig>(initialConfig);
 
@@ -64,27 +65,41 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     }
 
     setLocalSession(current);
-    resolveSingleEmployerScope()
-      .then((scope) => {
-        if (active) setSingleEmployerUser(Boolean(scope));
+    Promise.all([
+      resolveSingleEmployerScope(),
+      import("@/lib/api").then(({ alphaApi }) => alphaApi.organizations()).then(async (organizations) => {
+        const capabilities = await Promise.all(organizations.map((organization) => import("@/lib/api").then(({ alphaApi }) => alphaApi.capabilities(organization.id))));
+        return capabilities.some((item) => item.canManageOrganization);
+      }),
+    ])
+      .then(([scope, managesOrganization]) => {
+        if (!active) return;
+        setSingleEmployerUser(Boolean(scope));
+        setCanManageOrganization(managesOrganization);
       })
       .catch(() => {
-        if (active) setSingleEmployerUser(true);
+        if (!active) return;
+        setSingleEmployerUser(false);
+        setCanManageOrganization(false);
       });
 
     return () => { active = false; };
   }, [router]);
 
   useEffect(() => {
-    if (!session || singleEmployerUser === null) return;
+    if (!session || singleEmployerUser === null || canManageOrganization === null) return;
     if (pathname.startsWith("/admin") && !session.platformAdmin) {
       router.replace("/dashboard");
       return;
     }
-    if (singleEmployerUser === true && (pathname.startsWith("/employers") || pathname.startsWith("/access"))) {
+    if (pathname.startsWith("/access") && !canManageOrganization) {
+      router.replace("/dashboard");
+      return;
+    }
+    if (singleEmployerUser === true && pathname.startsWith("/employers")) {
       router.replace("/dashboard");
     }
-  }, [pathname, router, session, singleEmployerUser]);
+  }, [pathname, router, session, singleEmployerUser, canManageOrganization]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -102,7 +117,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     router.replace("/login");
   }
 
-  if (!session || singleEmployerUser === null) return null;
+  if (!session || singleEmployerUser === null || canManageOrganization === null) return null;
 
   const visibleNav = singleEmployerUser ? nav.filter((item) => item.href !== "/employers") : nav;
   const navigation = (
@@ -113,7 +128,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         ))}
         <div className="nav-divider" />
         {session.platformAdmin ? <Link href="/admin" className={pathname.startsWith("/admin") ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
-        {!singleEmployerUser ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />הרשאות</Link> : null}
+        {canManageOrganization ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />הרשאות</Link> : null}
         <Link href="/settings" className={pathname === "/settings" ? "active" : ""}><Settings size={18} />הגדרות</Link>
       </nav>
       <div className="sidebar-bottom nav">
