@@ -2,15 +2,19 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBrand } from "@/components/auth-brand";
+import { OtpInput } from "@/components/otp-input";
 import { Field, type FieldErrors } from "@/components/form-feedback";
 import { isIsraeliId, isValidEmail } from "@/lib/validation";
+import { setSession } from "@/lib/session";
 
 type Challenge = { challengeId: string };
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [nationalId, setNationalId] = useState("");
@@ -18,7 +22,6 @@ export default function RegisterPage() {
   const [code, setCode] = useState("");
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [created, setCreated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [nextSendAt, setNextSendAt] = useState(0);
 
@@ -93,7 +96,7 @@ export default function RegisterPage() {
       const response = await fetch("/api/backend/api/auth/register/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ challengeId: challenge.challengeId, code }),
+        body: JSON.stringify({ challengeId: challenge.challengeId, code: codeToVerify }),
         cache: "no-store",
       });
 
@@ -104,8 +107,10 @@ export default function RegisterPage() {
         return;
       }
 
-      setCreated(true);
-      toast.success("המשתמש נוצר בהצלחה");
+      const result = await response.json() as { accessToken: string; userId: string; platformAdmin: boolean; displayName: string };
+      setSession({ mode: "oidc", ...result });
+      toast.success("ההרשמה הושלמה בהצלחה");
+      router.push("/dashboard");
     } catch {
       toast.error("לא ניתן להשלים את ההרשמה כרגע.");
     } finally {
@@ -113,17 +118,16 @@ export default function RegisterPage() {
     }
   }
 
+  function verify(event: FormEvent) {
+    event.preventDefault();
+    void verifyCode();
+  }
+
   return <main className="auth-page"><AuthBrand /><section className="auth-form-wrap"><div className="auth-card">
     <h2>יצירת משתמש</h2>
-    <p>{challenge && !created ? "הזינו את קוד האימות בן 6 הספרות שנשלח לאימייל" : "הזינו את פרטי המשתמש החדש"}</p>
+    <p>{challenge ? "הזינו את קוד האימות בן 6 הספרות שנשלח לאימייל" : "הזינו את פרטי המשתמש החדש"}</p>
 
-    {created ? (
-      <div className="notice notice-info" style={{ textAlign: "center", padding: 28 }}>
-        <CheckCircle2 size={36} color="var(--teal)" />
-        <h3>המשתמש נוצר בהצלחה</h3>
-        <Link className="btn btn-primary" href="/login">להתחברות</Link>
-      </div>
-    ) : !challenge ? (
+    {!challenge ? (
       <form className="form" onSubmit={(event) => { event.preventDefault(); void requestCode(); }} noValidate>
         <Field label="שם מלא *" error={errors.displayName}><input aria-invalid={Boolean(errors.displayName)} id="name" maxLength={120} value={displayName} onChange={(e) => { setDisplayName(e.target.value); setErrors((current) => ({ ...current, displayName: undefined })); }} required /></Field>
         <Field label="תעודת זהות *" error={errors.nationalId}><input aria-invalid={Boolean(errors.nationalId)} id="national-id" inputMode="numeric" dir="ltr" maxLength={9} value={nationalId} onChange={(e) => { setNationalId(e.target.value.replace(/\D/g, "").slice(0, 9)); setErrors((current) => ({ ...current, nationalId: undefined })); }} required /></Field>
@@ -133,8 +137,8 @@ export default function RegisterPage() {
       </form>
     ) : (
       <form className="form" onSubmit={verify} noValidate>
-        <Field label="קוד אימות *"><input id="otp-code" type="text" inputMode="numeric" autoComplete="one-time-code" dir="ltr" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} required maxLength={6} /></Field>
-        <button className="btn btn-primary btn-lg wide" disabled={loading} type="submit">{loading ? "מאמת..." : "אימות ויצירת משתמש"}<ArrowLeft size={18} /></button>
+        <Field label="קוד אימות *"><OtpInput value={code} onChange={setCode} onComplete={(value) => void verifyCode(value)} disabled={loading} /></Field>
+        <button className="btn btn-primary btn-lg wide" disabled={loading} type="submit">{loading ? "מאמת..." : "אימות והרשמה"}<ArrowLeft size={18} /></button>
         <button className="btn wide" disabled={loading} type="button" onClick={() => void requestCode()}>שלחו קוד חדש</button>
         <button className="btn wide" disabled={loading} type="button" onClick={() => { setChallenge(null); setCode(""); }}>שינוי פרטי הרשמה</button>
       </form>
