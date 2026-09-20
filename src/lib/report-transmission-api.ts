@@ -38,7 +38,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         ? "יש לבחור חשבון תשלום פעיל לדיווח."
         : problem?.error === "bank_mandate_required"
           ? "לא ניתן לשלוח את הדיווח ללא הרשאה פעילה לחיוב חשבון הבנק שנבחר."
-          : problem?.detail ?? problem?.error ?? problem?.title ?? problem?.transmission?.errorMessage ?? message;
+          : problem?.error === "billing_account_required"
+            ? "לא הוגדר Billing Account עבור הגורם שמחויב בפועל."
+            : problem?.error === "billing_payment_method_not_active"
+              ? "אמצעי התשלום של Alpha אינו פעיל ולכן לא ניתן לשדר דיווחים."
+              : problem?.error === "billing_payment_method_reference_required"
+                ? "אמצעי התשלום מסומן כפעיל אך חסר token או mandate reference תקין."
+                : problem?.detail ?? problem?.error ?? problem?.title ?? problem?.transmission?.errorMessage ?? message;
     } catch { /* empty */ }
     throw new Error(message);
   }
