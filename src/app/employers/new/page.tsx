@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmployerForm } from "@/components/employer-form";
+import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
 import { getOrganizationSelection } from "@/lib/session";
+import { openUpgradeDialog } from "@/lib/upgrade";
+import type { EntitlementSnapshot } from "@/lib/types";
 
 export default function NewEmployerPage() {
   const [organizationId, setOrganizationId] = useState("");
   const [canCreateEmployer, setCanCreateEmployer] = useState(false);
-  const [limitReached, setLimitReached] = useState(false);
-  const [limitText, setLimitText] = useState("");
+  const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [scopeResolved, setScopeResolved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -33,9 +35,7 @@ export default function NewEmployerPage() {
         alphaApi.entitlements(orgId),
       ]);
       setCanCreateEmployer(capabilities.canCreateEmployer);
-      const reached = entitlements.employers.current >= entitlements.employers.maximum;
-      setLimitReached(reached);
-      setLimitText(`מסלול ${entitlements.plan.name}: ${entitlements.employers.current}/${entitlements.employers.maximum} מעסיקים`);
+      setEntitlements(entitlements);
     } catch (err) {
       setCanCreateEmployer(false);
       setError(err instanceof Error ? err.message : "טעינת ההרשאות נכשלה");
@@ -63,7 +63,7 @@ export default function NewEmployerPage() {
       : error ? <div className="notice notice-error">{error}</div>
       : !organizationId ? <div className="empty">בחרו ארגון כדי להתחיל בהקמת המעסיק.</div>
       : !canCreateEmployer ? <div className="notice notice-info">אין לך הרשאה להקים מעסיק חדש בארגון הזה.</div>
-      : limitReached ? <div className="notice notice-info"><b>הגעתם למגבלת המסלול</b><div>{limitText}</div></div>
+      : entitlements ? <><section className="card" style={{ marginBottom: 18 }}><div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.plan.name}</h3></div></div><PlanUsage label="מעסיקים" usage={entitlements.employers} /></section>{entitlements.employers.current >= entitlements.employers.maximum ? <div className="notice notice-info"><b>הגעתם למגבלת המעסיקים במסלול.</b><div style={{ marginTop: 10 }}><button className="btn btn-primary" type="button" onClick={() => openUpgradeDialog({ reason: "employers", planName: entitlements.plan.name, current: entitlements.employers.current, maximum: entitlements.employers.maximum })}>יצירת קשר לשדרוג</button></div></div> : <EmployerForm organizationId={organizationId} />}</>
       : <EmployerForm organizationId={organizationId} />}
   </AppShell>;
 }
