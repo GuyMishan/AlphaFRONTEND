@@ -24,6 +24,12 @@ type IntakeMode = Extract<ReportMode, "manual" | "excel">;
 const reportKindLabel: Record<ManualReportKind, string> = { 1: "דיווח שוטף", 2: "דיווח הפרשים", 3: "דיווח שלילי" };
 function kindLabel(value: string | number | undefined) { if (value === 2 || value === "2" || value === "Differences") return "הפרשים"; if (value === 3 || value === "3" || value === "Negative") return "שלילי"; return "שוטף"; }
 function formatMonth(value: string) { const [year, month] = value.slice(0, 7).split("-"); return month && year ? `${month}/${year}` : value; }
+function defaultSalaryDate(month: string, day: number | null) {
+  if (!day || !/^\d{4}-\d{2}$/.test(month)) return "";
+  const [year, monthNumber] = month.split("-").map(Number);
+  const lastDay = new Date(year, monthNumber, 0).getDate();
+  return `${month}-${String(Math.min(day, lastDay)).padStart(2, "0")}`;
+}
 function validationMessage(errors: string[]) {
   if (!errors.length) return "בדיקת הדיווח נכשלה.";
 
@@ -74,16 +80,20 @@ export default function NewReportPage() {
   async function loadScope(nextScope: { organizationId: string; employerId: string }) {
     setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId("");
     try {
-      const [employerItem, employeePage, capabilities] = await Promise.all([
+      const [employerItem, employeePage, capabilities, profileSettings] = await Promise.all([
         alphaApi.employer(nextScope.organizationId, nextScope.employerId),
         alphaApi.employeeSearch(nextScope.organizationId, nextScope.employerId, "", 0, 100),
         alphaApi.employerCapabilities(nextScope.organizationId, nextScope.employerId),
+        alphaApi.employerProfileCenterSettings(nextScope.organizationId, nextScope.employerId),
       ]);
       setEmployer(employerItem);
       setCanCreateReport(capabilities.canCreateReport);
       setCanTransmitReport(capabilities.canTransmitReport);
       setEmployees(employeePage.items);
       setSelectedIds(employeePage.items.filter((x) => x.status === 1).map((x) => x.id));
+      if (!salaryPaymentDate) {
+        setSalaryPaymentDate(defaultSalaryDate(month, profileSettings.reporting.defaultSalaryPaymentDay));
+      }
     } catch (err) { setError(err instanceof Error ? err.message : "טעינת הנתונים נכשלה"); }
     finally { setLoading(false); }
   }

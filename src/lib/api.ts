@@ -13,6 +13,12 @@ import type {
   EmployerAccessMode,
   EmployerCapabilities,
   EmployerInput,
+  EmployerAddressSettings,
+  EmployerBillingMode,
+  EmployerBillingStatus,
+  EmployerPensionPaymentAccount,
+  EmployerPensionPaymentAccountInput,
+  EmployerProfileCenterSettings,
   EmployerOption,
   EmployerRole,
   ManualProductInput,
@@ -127,6 +133,22 @@ export const alphaApi = {
   updateEmployer: (organizationId: string, employerId: string, payload: EmployerInput) => getSession()?.mode === "demo"
     ? Promise.resolve({ id: employerId, organizationId, ...payload, status: 2 } as Employer)
     : request<Employer>(`/api/organizations/${organizationId}/employers/${employerId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  employerProfileCenterSettings: (organizationId: string, employerId: string): Promise<EmployerProfileCenterSettings> =>
+    request<EmployerProfileCenterSettings>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/settings`),
+  updateEmployerAddress: (organizationId: string, employerId: string, payload: EmployerAddressSettings) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/address`, { method: "PUT", body: JSON.stringify(payload) }),
+  updateEmployerBilling: (organizationId: string, employerId: string, billingMode: EmployerBillingMode, billingStatus?: EmployerBillingStatus) =>
+    request<{ billingMode: EmployerBillingMode; billingStatus: EmployerBillingStatus }>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/billing`, { method: "PUT", body: JSON.stringify({ billingMode, billingStatus }) }),
+  updateEmployerReportingSettings: (organizationId: string, employerId: string, payload: EmployerProfileCenterSettings["reporting"]) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/reporting`, { method: "PUT", body: JSON.stringify(payload) }),
+  employerPensionPaymentAccounts: (organizationId: string, employerId: string): Promise<EmployerPensionPaymentAccount[]> =>
+    request<EmployerPensionPaymentAccount[]>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/pension-payment-accounts`),
+  createEmployerPensionPaymentAccount: (organizationId: string, employerId: string, payload: EmployerPensionPaymentAccountInput) =>
+    request<EmployerPensionPaymentAccount>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/pension-payment-accounts`, { method: "POST", body: JSON.stringify(payload) }),
+  updateEmployerPensionPaymentAccount: (organizationId: string, employerId: string, accountId: string, payload: EmployerPensionPaymentAccountInput) =>
+    request<EmployerPensionPaymentAccount>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/pension-payment-accounts/${accountId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  deleteEmployerPensionPaymentAccount: (organizationId: string, employerId: string, accountId: string) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/pension-payment-accounts/${accountId}`, { method: "DELETE" }),
   employees: (organizationId: string, employerId: string): Promise<Employee[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoEmployers.some((item) => item.id === employerId && item.organizationId === organizationId) ? demoEmployees : [])
     : request<Employee[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees`),
