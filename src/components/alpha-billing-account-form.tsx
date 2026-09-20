@@ -1,16 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, Landmark, Save } from "lucide-react";
+import { CreditCard, ExternalLink, Landmark, RefreshCw, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { alphaApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
 import type {
   AlphaBillingAccount,
   AlphaBillingAccountInput,
-  AlphaBillingProviderMetadataInput,
   BillingPaymentMethodStatus,
-  BillingPaymentMethodType,
 } from "@/lib/types";
 
 const EMPTY: AlphaBillingAccount = {
@@ -42,7 +39,6 @@ export function AlphaBillingAccountForm({
   employerId?: string;
   canManage: boolean;
 }) {
-  const platformAdmin = Boolean(getSession()?.platformAdmin);
   const [account, setAccount] = useState<AlphaBillingAccount>(EMPTY);
   const [details, setDetails] = useState<AlphaBillingAccountInput>({
     billingName: "",
@@ -51,19 +47,11 @@ export function AlphaBillingAccountForm({
     billingAddress: "",
     paymentMethodType: 1,
   });
-  const [provider, setProvider] = useState<AlphaBillingProviderMetadataInput>({
-    paymentMethodStatus: 1,
-    providerCustomerId: "",
-    providerPaymentMethodId: "",
-    cardBrand: "",
-    cardLast4: "",
-    cardExpiryMonth: null,
-    cardExpiryYear: null,
-    bankDebitMandateReference: "",
-  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [savingProvider, setSavingProvider] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -79,16 +67,7 @@ export function AlphaBillingAccountForm({
         billingAddress: value.billingAddress,
         paymentMethodType: value.paymentMethodType,
       });
-      setProvider({
-        paymentMethodStatus: value.paymentMethodStatus,
-        providerCustomerId: value.providerCustomerId,
-        providerPaymentMethodId: value.providerPaymentMethodId,
-        cardBrand: value.cardBrand,
-        cardLast4: value.cardLast4,
-        cardExpiryMonth: value.cardExpiryMonth,
-        cardExpiryYear: value.cardExpiryYear,
-        bankDebitMandateReference: value.bankDebitMandateReference,
-      });
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "טעינת Billing Account נכשלה");
     } finally {
@@ -115,25 +94,58 @@ export function AlphaBillingAccountForm({
     }
   }
 
-  async function saveProviderMetadata(event: React.FormEvent) {
-    event.preventDefault();
-    if (!platformAdmin || !account.configured) return;
-    setSavingProvider(true);
+  async function connectPaymentMethod() {
+    if (!canManage || !account.configured) return;
+    if (account.paymentMethodType !== 1) {
+      toast.info("חיבור Bank Debit אוטומטי עדיין לא זמין ב-flow הנוכחי.");
+      return;
+    }
+    setConnecting(true);
     try {
-      const sanitized: AlphaBillingProviderMetadataInput = account.paymentMethodType === 1
-        ? { ...provider, bankDebitMandateReference: "" }
-        : { ...provider, cardBrand: "", cardLast4: "", cardExpiryMonth: null, cardExpiryYear: null };
-      const value = employerId
-        ? await alphaApi.updateEmployerBillingProviderMetadata(organizationId, employerId, sanitized)
-        : await alphaApi.updateOrganizationBillingProviderMetadata(organizationId, sanitized);
-      setAccount(value);
-      toast.success("Metadata של אמצעי התשלום עודכן");
+      const returnPath = window.location.pathname + window.location.search;
+      const setup = employerId
+        ? await alphaApi.startEmployerPaymentSetup(organizationId, employerId, returnPath)
+        : await alphaApi.startOrganizationPaymentSetup(organizationId, returnPath);
+      window.location.assign(setup.redirectUrl);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "עדכון metadata נכשל");
-    } finally {
-      setSavingProvider(false);
+      toast.error(err instanceof Error ? err.message : "פתיחת דף הסליקה נכשלה");
+      setConnecting(false);
     }
   }
+
+  async function syncPaymentMethod() {
+    if (!account.configured) return;
+    setSyncing(true);
+    try {
+      if (employerId) await alphaApi.syncEmployerPaymentMethod(organizationId, employerId);
+      else await alphaApi.syncOrganizationPaymentMethod(organizationId);
+      await load();
+      toast.success("סטטוס אמצעי התשלום סונכרן");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "סנכרון אמצעי התשלום נכשל");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function cancelPaymentMethod() {
+    if (!canManage || !account.providerPaymentMethodId) return;
+    if (!window.confirm("לבטל את אמצעי התשלום השמור אצל ספק הסליקה?")) return;
+    setCancelling(true);
+    try {
+      if (employerId) await alphaApi.cancelEmployerPaymentMethod(organizationId, employerId);
+      else await alphaApi.cancelOrganizationPaymentMethod(organizationId);
+      await load();
+      toast.success("אמצעי התשלום בוטל");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "ביטול אמצעי התשלום נכשל");
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  const cardConnected = account.paymentMethodType === 1 && Boolean(account.providerPaymentMethodId);
+  const bankConnected = account.paymentMethodType === 2 && Boolean(account.bankDebitMandateReference);
 
   if (loading) return <div className="empty">טוען Billing Account...</div>;
 
@@ -163,47 +175,38 @@ export function AlphaBillingAccountForm({
           <label>אמצעי תשלום</label>
           <div className="grid two-cols">
             <button type="button" disabled={!canManage} className={`choice-card${details.paymentMethodType === 1 ? " selected" : ""}`} onClick={() => setDetails({ ...details, paymentMethodType: 1 })}>
-              <CreditCard size={24} /><b>כרטיס אשראי</b><p>נשמרים רק token ו־metadata. לא נשמרים מספר כרטיס או CVV.</p>
+              <CreditCard size={24} /><b>כרטיס אשראי</b><p>הפרטים מוזנים רק בדף המאובטח של PayPlus. Alpha שומרת token ו־metadata בלבד.</p>
             </button>
             <button type="button" disabled={!canManage} className={`choice-card${details.paymentMethodType === 2 ? " selected" : ""}`} onClick={() => setDetails({ ...details, paymentMethodType: 2 })}>
-              <Landmark size={24} /><b>הרשאה לחיוב חשבון</b><p>נשמר רק mandate/reference מספק התשלום.</p>
+              <Landmark size={24} /><b>הרשאה לחיוב חשבון</b><p>נשמר רק mandate/reference מספק התשלום, ללא פרטי בנק רגישים.</p>
             </button>
           </div>
         </div>
 
         {account.configured ? <div className="notice notice-info">
           {account.paymentMethodType === 1
-            ? account.cardLast4
-              ? <>כרטיס: {account.cardBrand || "Card"} · •••• {account.cardLast4}{account.cardExpiryMonth && account.cardExpiryYear ? ` · ${String(account.cardExpiryMonth).padStart(2, "0")}/${account.cardExpiryYear}` : ""}</>
-              : "עדיין לא חובר token של כרטיס מספק התשלום."
-            : account.bankDebitMandateReference
-              ? <>Mandate reference: {account.bankDebitMandateReference}</>
-              : "עדיין לא חובר mandate של חיוב חשבון מספק התשלום."}
+            ? cardConnected
+              ? <>כרטיס מחובר דרך PayPlus: {account.cardBrand || "Card"} · •••• {account.cardLast4 || "----"}{account.cardExpiryMonth && account.cardExpiryYear ? ` · ${String(account.cardExpiryMonth).padStart(2, "0")}/${account.cardExpiryYear}` : ""}</>
+              : account.paymentMethodStatus === 2 ? "ממתין להשלמת החיבור אצל PayPlus." : "עדיין לא חובר כרטיס דרך PayPlus."
+            : bankConnected
+              ? <>Bank Debit מחובר · reference: {account.bankDebitMandateReference}</>
+              : "Bank Debit עדיין לא חובר לספק התשלום."}
         </div> : null}
 
         {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת Billing Account"}</button></div> : null}
       </form>
     </section>
 
-    {platformAdmin && account.configured ? <section className="card profile-card">
-      <div className="card-head"><div><h2>Provider metadata</h2><span style={{ color: "var(--muted)" }}>ניהול metadata בטוח בלבד. אין שדות למספר כרטיס מלא או CVV.</span></div></div>
-      <form className="form" onSubmit={saveProviderMetadata}>
-        <div className="grid two-cols">
-          <div className="field"><label>סטטוס</label><select value={provider.paymentMethodStatus} onChange={(e) => setProvider({ ...provider, paymentMethodStatus: Number(e.target.value) as BillingPaymentMethodStatus })}><option value={1}>לא הוגדר</option><option value={2}>ממתין</option><option value={3}>פעיל</option><option value={4}>נכשל</option><option value={5}>מושהה</option><option value={6}>בוטל</option></select></div>
-          <div className="field"><label>Provider Customer ID</label><input maxLength={200} value={provider.providerCustomerId} onChange={(e) => setProvider({ ...provider, providerCustomerId: e.target.value })} /></div>
-          <div className="field"><label>Provider Payment Method ID</label><input maxLength={200} value={provider.providerPaymentMethodId} onChange={(e) => setProvider({ ...provider, providerPaymentMethodId: e.target.value })} /></div>
-          {account.paymentMethodType === 1 ? <>
-            <div className="field"><label>מותג כרטיס</label><input maxLength={40} value={provider.cardBrand} onChange={(e) => setProvider({ ...provider, cardBrand: e.target.value })} /></div>
-            <div className="field"><label>4 ספרות אחרונות</label><input inputMode="numeric" maxLength={4} value={provider.cardLast4} onChange={(e) => setProvider({ ...provider, cardLast4: e.target.value.replace(/\D/g, "").slice(0, 4) })} /></div>
-            <div className="field"><label>חודש תוקף</label><input type="number" min={1} max={12} value={provider.cardExpiryMonth ?? ""} onChange={(e) => setProvider({ ...provider, cardExpiryMonth: e.target.value ? Number(e.target.value) : null })} /></div>
-            <div className="field"><label>שנת תוקף</label><input type="number" min={2026} max={2200} value={provider.cardExpiryYear ?? ""} onChange={(e) => setProvider({ ...provider, cardExpiryYear: e.target.value ? Number(e.target.value) : null })} /></div>
-          </> : <div className="field"><label>Bank Debit Mandate Reference</label><input maxLength={200} value={provider.bankDebitMandateReference} onChange={(e) => setProvider({ ...provider, bankDebitMandateReference: e.target.value })} /></div>}
-        </div>
-        <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={savingProvider}><Save size={17} />{savingProvider ? "שומר..." : "שמירת Provider metadata"}</button></div>
-      </form>
+    {account.configured ? <section className="card profile-card">
+      <div className="card-head"><div><h2>ספק סליקה</h2><span style={{ color: "var(--muted)" }}>PayPlus · tokenization מאובטח, ללא שמירת מספר כרטיס או CVV ב־Alpha.</span></div><span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>{billingStatusLabel(account.paymentMethodStatus)}</span></div>
+      {account.paymentMethodType === 1 ? <div className="form-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
+        {canManage ? <button className="btn btn-primary" type="button" disabled={connecting} onClick={() => void connectPaymentMethod()}><ExternalLink size={17} />{connecting ? "פותח..." : cardConnected ? "החלפת כרטיס" : "חיבור כרטיס מאובטח"}</button> : null}
+        {cardConnected ? <button className="btn btn-secondary" type="button" disabled={syncing} onClick={() => void syncPaymentMethod()}><RefreshCw size={17} />{syncing ? "מסנכרן..." : "רענון סטטוס"}</button> : null}
+        {canManage && cardConnected ? <button className="btn btn-danger" type="button" disabled={cancelling} onClick={() => void cancelPaymentMethod()}><Trash2 size={16} />{cancelling ? "מבטל..." : "ביטול אמצעי תשלום"}</button> : null}
+      </div> : <div className="notice notice-info">PayPlus תומך בתשתיות Bank Debit, אך חיבור mandate אוטומטי דורש הגדרת MASAV/מסוף ייעודית אצל הספק. Alpha לא אוספת כאן פרטי חשבון בנק של אמצעי החיוב.</div>}
     </section> : null}
 
-    <div className="notice notice-info">בשלב הזה Alpha שומרת את חשבון החיוב וה־metadata הבטוח בלבד. חיבור אמיתי לספק תשלום יתבצע בשלב הייעודי לכך.</div>
+    <div className="notice notice-info">החיוב מתבצע server-side דרך PayPlus באמצעות token. Alpha אינה מקבלת ואינה שומרת מספר כרטיס מלא או CVV.</div>
   </div>;
 }
 
