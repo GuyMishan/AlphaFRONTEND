@@ -186,8 +186,8 @@ function SubscriptionTab({ subscription, entitlements }: { subscription: Subscri
 function EmployerBillingTab({ organizationId, items, canManage, onChanged }: { organizationId: string; items: OrganizationEmployerBilling[]; canManage: boolean; onChanged: (items: OrganizationEmployerBilling[]) => void }) {
   async function update(item: OrganizationEmployerBilling, mode: 1 | 2) {
     try {
-      const result = await alphaApi.updateEmployerBilling(organizationId, item.employerId, mode);
-      onChanged(items.map((row) => row.employerId === item.employerId ? { ...row, billingMode: result.billingMode, billingStatus: result.billingStatus } : row));
+      await alphaApi.updateEmployerBilling(organizationId, item.employerId, mode);
+      onChanged(await alphaApi.organizationEmployerBilling(organizationId));
       toast.success("הגדרת החיוב של המעסיק עודכנה");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "עדכון החיוב נכשל");
