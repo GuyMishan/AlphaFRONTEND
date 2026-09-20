@@ -3,8 +3,9 @@
 .report-feedback-summary strong { font-size:24px; }
 .report-feedback-summary span { color:var(--muted); font-size:12px; }
 .report-feedback-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
-.report-feedback-filters button { border:1px solid var(--line); background:white; border-radius:999px; padding:8px 13px; cursor:pointer; color:var(--text); font:inherit; font-size:13px; }
-.report-feedback-filters button.active { background:var(--blue); color:white; border-color:var(--blue); }
+.report-feedback-filters button { border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:8px 13px; cursor:pointer; color:var(--text); font:inherit; font-size:13px; transition:background .15s,border-color .15s,color .15s; }
+.report-feedback-filters button:hover:not(:disabled):not(.active) { background:var(--blue-soft); border-color:var(--blue); color:var(--blue); }
+.report-feedback-filters button.active { background:var(--blue); color:#fff; border-color:var(--blue); }
 .report-feedback-filters button:disabled { opacity:.5; cursor:not-allowed; }
 .table-scroll { overflow-x:auto; }
 .report-feedback-table { width:100%; border-collapse:collapse; min-width:900px; }
