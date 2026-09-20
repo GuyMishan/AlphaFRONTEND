@@ -20,6 +20,8 @@ import type {
   Organization,
   OrganizationCapabilities,
   OrganizationRole,
+  OnboardingStatus,
+  SelfServiceOnboardingResult,
   PagedResult,
   PensionFundOption,
   PensionProductType,
@@ -71,6 +73,12 @@ function normalizePaged<T>(result: PagedResult<T> | T[], take: number): PagedRes
 
 export const alphaApi = {
   health: () => request<{ status: string; service: string }>("/health"),
+  onboardingStatus: (): Promise<OnboardingStatus> =>
+    getSession()?.mode === "demo"
+      ? Promise.resolve({ needsOnboarding: false, hasAccess: true })
+      : request<OnboardingStatus>("/api/onboarding/status"),
+  completeSelfServiceOnboarding: (payload: EmployerInput): Promise<SelfServiceOnboardingResult> =>
+    request<SelfServiceOnboardingResult>("/api/onboarding/self-service", { method: "POST", body: JSON.stringify(payload) }),
   organizations: (): Promise<Organization[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoOrganizations)
     : request<Organization[]>("/api/organizations/"),

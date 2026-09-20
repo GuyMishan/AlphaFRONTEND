@@ -279,6 +279,18 @@ export type PagedResult<T> = {
   hasMore: boolean;
 };
 
+export type OnboardingStatus = {
+  needsOnboarding: boolean;
+  hasAccess: boolean;
+};
+
+export type SelfServiceOnboardingResult = {
+  organizationId: string;
+  employerId: string;
+  employer: Employer;
+  employerRole: EmployerRole;
+};
+
 export type EmployerInput = Pick<Employer, "legalName" | "registrationNumber" | "withholdingFileNumber"> & {
   contactFirstName?: string;
   contactLastName?: string;
