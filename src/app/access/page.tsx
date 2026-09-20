@@ -8,7 +8,7 @@ import { ReferenceOptionSelect } from "@/components/reference-option-select";
 import { alphaApi } from "@/lib/api";
 import { getOrganizationSelection } from "@/lib/session";
 import { referenceOptionsApi, type ReferenceOption } from "@/lib/reference-options-api";
-import type { AccessEmployer, AccessUser, EmployerAccessMode, EmployerOption, EmployerRole, Organization, OrganizationRole, UserCandidate } from "@/lib/types";
+import type { AccessEmployer, AccessUser, EmployerAccessMode, EmployerOption, EmployerRole, EntitlementSnapshot, Organization, OrganizationRole, UserCandidate } from "@/lib/types";
 
 const PAGE_SIZE = 50;
 const employerRoleLabels: Record<EmployerRole, string> = {
@@ -44,6 +44,7 @@ export default function AccessPage() {
   const [newAccessMode, setNewAccessMode] = useState<EmployerAccessMode>(2);
   const [roleOptions, setRoleOptions] = useState<ReferenceOption[]>([]);
   const [accessModeOptions, setAccessModeOptions] = useState<ReferenceOption[]>([]);
+  const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
 
   useEffect(() => {
     alphaApi.organizations().then((items) => {
@@ -61,6 +62,7 @@ export default function AccessPage() {
 
   useEffect(() => {
     if (!organizationId) return;
+    void alphaApi.entitlements(organizationId).then(setEntitlements).catch(() => setEntitlements(null));
     const timer = window.setTimeout(() => {
       setLoading(true); setError("");
       alphaApi.accessUsers(organizationId, search.trim(), skip, PAGE_SIZE)
@@ -110,13 +112,14 @@ export default function AccessPage() {
 
   async function saveAccess() { if (!selected) return; setSaving(true); setError(""); try { await alphaApi.updateAccessUser(organizationId, selected.userId, { role, employerAccessMode: accessMode }); setUsers((items) => items.map((x) => x.userId === selected.userId ? { ...x, role, employerAccessMode: accessMode } : x)); setSelected({ ...selected, role, employerAccessMode: accessMode }); } catch (err) { setError(err instanceof Error ? err.message : "שמירת ההרשאות נכשלה"); } finally { setSaving(false); } }
   async function removeUser() { if (!selected || !window.confirm(`להסיר את ${selected.displayName} מהארגון?`)) return; try { await alphaApi.removeAccessUser(organizationId, selected.userId); setSelected(null); setUsers((items) => items.filter((x) => x.userId !== selected.userId)); } catch (err) { setError(err instanceof Error ? err.message : "הסרת המשתמש נכשלה"); } }
-  async function addUser() { if (!candidate) return; try { await alphaApi.addAccessUser(organizationId, { userId: candidate.id, role: newRole, employerAccessMode: newAccessMode }); setAdding(false); setCandidate(null); setCandidates([]); setCandidateSearch(""); setSkip(0); setSearch(""); } catch (err) { setError(err instanceof Error ? err.message : "הוספת המשתמש נכשלה"); } }
+  async function addUser() { if (!candidate) return; try { await alphaApi.addAccessUser(organizationId, { userId: candidate.id, role: newRole, employerAccessMode: newAccessMode }); setAdding(false); setCandidate(null); setCandidates([]); setCandidateSearch(""); setSkip(0); setSearch(""); setEntitlements(await alphaApi.entitlements(organizationId)); } catch (err) { setError(err instanceof Error ? err.message : "הוספת המשתמש נכשלה"); } }
   async function grantEmployer(item: EmployerOption) { if (!selected) return; try { await alphaApi.grantEmployerAccess(organizationId, selected.userId, item.id); setEmployerOptions((items) => items.map((x) => x.id === item.id ? { ...x, assigned: true } : x)); const result = await alphaApi.assignedEmployers(organizationId, selected.userId, assignedSearch, assignedSkip, PAGE_SIZE); setAssigned(result.items); setAssignedHasMore(result.hasMore); } catch (err) { setError(err instanceof Error ? err.message : "הקצאת המעסיק נכשלה"); } }
   async function updateEmployerRole(employerId: string, nextRole: EmployerRole) { if (!selected) return; try { await alphaApi.updateEmployerAccessRole(organizationId, selected.userId, employerId, nextRole); setAssigned((items) => items.map((x) => x.id === employerId ? { ...x, role: nextRole } : x)); } catch (err) { setError(err instanceof Error ? err.message : "עדכון תפקיד המעסיק נכשל"); } }
   async function revokeEmployer(employerId: string) { if (!selected) return; try { await alphaApi.revokeEmployerAccess(organizationId, selected.userId, employerId); setAssigned((items) => items.filter((x) => x.id !== employerId)); setEmployerOptions((items) => items.map((x) => x.id === employerId ? { ...x, assigned: false } : x)); } catch (err) { setError(err instanceof Error ? err.message : "הסרת המעסיק נכשלה"); } }
 
   return <AppShell title="משתמשים והרשאות">
-    <div className="page-head"><div><h1>משתמשים והרשאות</h1><p>ניהול גישה לפי ארגון ומעסיקים, עם חיפוש שרת ורשימות וירטואליות.</p></div><button className="btn btn-primary" onClick={() => setAdding((value) => !value)}><UserPlus size={18} />הוספת משתמש</button></div>
+    <div className="page-head"><div><h1>משתמשים והרשאות</h1><p>ניהול גישה לפי ארגון ומעסיקים, עם חיפוש שרת ורשימות וירטואליות.</p></div><button className="btn btn-primary" disabled={Boolean(entitlements && entitlements.users.current >= entitlements.users.maximum)} onClick={() => setAdding((value) => !value)}><UserPlus size={18} />הוספת משתמש</button></div>
+    {entitlements && entitlements.users.current >= entitlements.users.maximum ? <div className="notice notice-info" style={{ marginBottom: 18 }}><b>הגעתם למגבלת המשתמשים במסלול {entitlements.plan.name}</b><div>{entitlements.users.current}/{entitlements.users.maximum} משתמשים</div></div> : null}
     {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
 
     {adding ? <section className="card" style={{ marginBottom: 18 }}><h2 style={{ marginTop: 0 }}>הוספת משתמש לארגון</h2><div className="toolbar"><div className="search"><Search size={17} /><input value={candidateSearch} onChange={(e) => setCandidateSearch(e.target.value)} placeholder="לפחות 2 תווים בשם או באימייל" /></div></div>{candidates.length ? <VirtualizedTable items={candidates} maxHeight={260} rowHeight={52} rowKey={(item) => item.id} onRowClick={setCandidate} columns={[{ key: "name", label: "משתמש" }, { key: "email", label: "אימייל" }, { key: "selected", label: "" }]} renderCells={(item) => [<b>{item.displayName}</b>, item.email, candidate?.id === item.id ? <span className="badge badge-blue">נבחר</span> : null]} /> : null}{candidate ? <div className="grid two-cols" style={{ marginTop: 18 }}><div className="field"><label>תפקיד</label><ReferenceOptionSelect category="organization-role" value={newRole} onChange={(value) => setNewRole(Number(value) as OrganizationRole)} /></div><div className="field"><label>גישה למעסיקים</label><ReferenceOptionSelect category="employer-access-mode" value={newAccessMode} onChange={(value) => setNewAccessMode(Number(value) as EmployerAccessMode)} /></div><div className="form-actions"><button className="btn btn-primary" onClick={addUser} type="button"><Plus size={18} />הוספה לארגון</button></div></div> : null}</section> : null}

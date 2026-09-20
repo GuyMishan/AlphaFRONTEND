@@ -12,6 +12,8 @@ export default function NewEmployeePage() {
   const [employerId, setEmployerId] = useState("");
   const [employer, setEmployer] = useState<Employer>();
   const [canCreateEmployee, setCanCreateEmployee] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
+  const [limitText, setLimitText] = useState("");
   const [scopeResolved, setScopeResolved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,12 +33,16 @@ export default function NewEmployeePage() {
 
     setLoading(true);
     try {
-      const [company, capabilities] = await Promise.all([
+      const [company, capabilities, entitlements] = await Promise.all([
         alphaApi.employer(orgId, empId),
         alphaApi.employerCapabilities(orgId, empId),
+        alphaApi.entitlements(orgId),
       ]);
       setEmployer(company);
       setCanCreateEmployee(capabilities.canCreateEmployee);
+      const reached = entitlements.activeEmployees.current >= entitlements.activeEmployees.maximum;
+      setLimitReached(reached);
+      setLimitText(`מסלול ${entitlements.plan.name}: ${entitlements.activeEmployees.current}/${entitlements.activeEmployees.maximum} עובדים פעילים`);
     } catch (err) {
       setEmployer(undefined);
       setCanCreateEmployee(false);
@@ -66,7 +72,8 @@ export default function NewEmployeePage() {
     {!scopeResolved || loading ? <div className="empty">טוען הרשאות...</div>
       : error ? <div className="notice notice-error">{error}</div>
       : !organizationId || !employerId ? <div className="empty">בחרו מעסיק כדי להתחיל בהקמת העובד.</div>
-      : canCreateEmployee ? <EmployeeForm organizationId={organizationId} employerId={employerId} employer={employer} />
-      : <div className="notice notice-info">אין לך הרשאה להקים עובד אצל המעסיק הזה.</div>}
+      : !canCreateEmployee ? <div className="notice notice-info">אין לך הרשאה להקים עובד אצל המעסיק הזה.</div>
+      : limitReached ? <div className="notice notice-info"><b>הגעתם למגבלת המסלול</b><div>{limitText}</div></div>
+      : <EmployeeForm organizationId={organizationId} employerId={employerId} employer={employer} />}
   </AppShell>;
 }

@@ -4,6 +4,7 @@ import type {
   AccessUser,
   ApiProblem,
   Employee,
+  EntitlementSnapshot,
   EmployeeInput,
   EmployeePensionProduct,
   EmployeePensionProductInput,
@@ -53,7 +54,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     let problem: ApiProblem | undefined;
     try { problem = await response.json(); } catch { /* empty response */ }
-    const message = problem?.detail ?? problem?.error ?? problem?.title ?? `שגיאת שרת (${response.status})`;
+    const limitNames: Record<string, string> = { employers: "מעסיקים", active_employees: "עובדים פעילים", users: "משתמשים" };
+    const featureNames: Record<string, string> = { report_transmission: "שליחת דיווחים" };
+    const message = problem?.error === "plan_limit_reached"
+      ? `הגעתם למגבלת ${limitNames[problem.limit ?? ""] ?? problem.limit ?? "המסלול"} במסלול הנוכחי (${problem.current ?? 0}/${problem.maximum ?? 0}).`
+      : problem?.error === "feature_not_available"
+        ? `האפשרות ${featureNames[problem.feature ?? ""] ?? problem.feature ?? ""} אינה זמינה במסלול הנוכחי.`
+        : problem?.detail ?? problem?.error ?? problem?.title ?? `שגיאת שרת (${response.status})`;
     throw new ApiError(response.status, message, problem);
   }
   if (response.status === 204) return undefined as T;
@@ -84,6 +91,8 @@ export const alphaApi = {
     request<SelfServiceOnboardingResult>("/api/onboarding/self-service", { method: "POST", body: JSON.stringify(payload) }),
   subscription: (organizationId: string): Promise<SubscriptionSummary> =>
     request<SubscriptionSummary>(`/api/organizations/${organizationId}/subscription`),
+  entitlements: (organizationId: string): Promise<EntitlementSnapshot> =>
+    request<EntitlementSnapshot>(`/api/organizations/${organizationId}/entitlements`),
   platformPlans: (): Promise<Plan[]> =>
     request<Plan[]>("/api/platform/subscriptions/plans"),
   platformSubscriptions: (): Promise<PlatformSubscription[]> =>
