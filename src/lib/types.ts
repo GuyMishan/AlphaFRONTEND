@@ -392,7 +392,9 @@ export type EmployerProfileCenterSettings = {
   address: EmployerAddressSettings;
   billing: {
     mode: EmployerBillingMode;
+    modeOverridden: boolean;
     status: EmployerBillingStatus;
+    canChangeMode: boolean;
   };
   reporting: {
     defaultSalaryPaymentDay: number | null;
@@ -498,6 +500,11 @@ export type OrganizationEmployerBilling = {
   employerName: string;
   billingMode: EmployerBillingMode;
   billingStatus: EmployerBillingStatus;
+  billingModeOverridden: boolean;
+  billedThroughName: string;
+  billingSource: "Organization" | "Employer";
+  effectiveBillingConfigured: boolean;
+  effectivePaymentMethodStatus: BillingPaymentMethodStatus | null;
 };
 
 
@@ -543,4 +550,14 @@ export type AlphaBillingProviderMetadataInput = {
   cardExpiryMonth: number | null;
   cardExpiryYear: number | null;
   bankDebitMandateReference: string;
+};
+
+
+export type EmployerBillingResolution = {
+  employerId: string;
+  organizationId: string;
+  billingMode: EmployerBillingMode;
+  source: "Organization" | "Employer";
+  billedThroughName: string;
+  effectiveAccount: AlphaBillingAccount;
 };
