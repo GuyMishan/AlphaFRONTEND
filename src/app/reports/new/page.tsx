@@ -14,7 +14,7 @@ import { derivedReportsApi } from "@/lib/derived-reports-api";
 import { reportValidationApi } from "@/lib/report-validation-api";
 import { reportTransmissionApi } from "@/lib/report-transmission-api";
 import { getEmployerSelection } from "@/lib/session";
-import type { Employee, Employer, EmployerPaymentAccount, ManualReportKind, ReportMode, SourceManualReport } from "@/lib/types";
+import type { BillingGateStatus, Employee, Employer, EmployerPaymentAccount, ManualReportKind, ReportMode, SourceManualReport } from "@/lib/types";
 
 const manualSteps = ["פרטי הדיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
 const excelSteps = ["פרטי הדיווח", "העלאת קובץ שכר", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
@@ -30,6 +30,16 @@ function defaultSalaryDate(month: string, day: number | null) {
   const lastDay = new Date(year, monthNumber, 0).getDate();
   return `${month}-${String(Math.min(day, lastDay)).padStart(2, "0")}`;
 }
+function billingGateMessage(gate: BillingGateStatus) {
+  if (gate.error === "billing_account_required")
+    return "לא הוגדר Billing Account עבור הגורם שמחויב בפועל.";
+  if (gate.error === "billing_payment_method_not_active")
+    return "אמצעי התשלום של Alpha אינו פעיל ולכן לא ניתן לשדר דיווחים.";
+  if (gate.error === "billing_payment_method_reference_required")
+    return "אמצעי התשלום מסומן כפעיל אך חסר token או mandate reference תקין.";
+  return "Billing Account אינו מוכן לשידור.";
+}
+
 function validationMessage(errors: string[]) {
   if (!errors.length) return "בדיקת הדיווח נכשלה.";
 
@@ -74,20 +84,22 @@ export default function NewReportPage() {
   const [canTransmitReport, setCanTransmitReport] = useState(false);
   const [paymentAccounts, setPaymentAccounts] = useState<EmployerPaymentAccount[]>([]);
   const [selectedPaymentAccountId, setSelectedPaymentAccountId] = useState("");
+  const [billingGate, setBillingGate] = useState<BillingGateStatus | null>(null);
 
   const selectedSource = useMemo(() => sourceReports.find((report) => report.id === selectedSourceReportId) ?? null, [sourceReports, selectedSourceReportId]);
   const isExcel = reportKind === 1 && mode === "excel";
   const summaryStep = isExcel ? 5 : 4;
 
   async function loadScope(nextScope: { organizationId: string; employerId: string }) {
-    setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId("");
+    setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
     try {
-      const [employerItem, employeePage, capabilities, profileSettings, accountRows] = await Promise.all([
+      const [employerItem, employeePage, capabilities, profileSettings, accountRows, billingGateStatus] = await Promise.all([
         alphaApi.employer(nextScope.organizationId, nextScope.employerId),
         alphaApi.employeeSearch(nextScope.organizationId, nextScope.employerId, "", 0, 100),
         alphaApi.employerCapabilities(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerProfileCenterSettings(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerPaymentAccounts(nextScope.organizationId, nextScope.employerId),
+        alphaApi.employerBillingGate(nextScope.organizationId, nextScope.employerId),
       ]);
       setEmployer(employerItem);
       setCanCreateReport(capabilities.canCreateReport);
@@ -96,6 +108,7 @@ export default function NewReportPage() {
       setSelectedIds(employeePage.items.filter((x) => x.status === 1).map((x) => x.id));
       setPaymentAccounts(accountRows);
       setSelectedPaymentAccountId(accountRows.find((x) => x.isDefault)?.id ?? accountRows[0]?.id ?? "");
+      setBillingGate(billingGateStatus);
       if (!salaryPaymentDate) {
         setSalaryPaymentDate(defaultSalaryDate(month, profileSettings.reporting.defaultSalaryPaymentDay));
       }
@@ -130,6 +143,12 @@ export default function NewReportPage() {
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
   useEffect(() => { const handler = (event: Event) => { if (step !== 1) return; const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail; if (detail.employerId) void loadScope({ organizationId: detail.organizationId, employerId: detail.employerId }); }; window.addEventListener("alpha:scope-change", handler); return () => window.removeEventListener("alpha:scope-change", handler); }, [step]);
   useEffect(() => { if (reportKind === 1 || !scope) return; setMode("manual"); setManualReportId(""); setSourceSearch(""); setSentExternalId(""); void loadSources(true, ""); }, [reportKind, scope?.organizationId, scope?.employerId]);
+  useEffect(() => {
+    if (!scope || step !== summaryStep) return;
+    alphaApi.employerBillingGate(scope.organizationId, scope.employerId)
+      .then(setBillingGate)
+      .catch(() => setBillingGate(null));
+  }, [step, summaryStep, scope?.organizationId, scope?.employerId]);
 
   function chooseSource(report: SourceManualReport) { setSelectedSourceReportId(report.id); setMonth(report.reportingMonth.slice(0, 7)); setSalaryPaymentDate(report.salaryPaymentDate?.slice(0, 10) ?? ""); setError(""); setSentExternalId(""); }
   function chooseKind(kind: ManualReportKind) { setReportKind(kind); setManualReportId(""); setSelectedSourceReportId(""); setFileName(""); setExcelIntake(null); setError(""); setSentExternalId(""); if (kind !== 1) setMode("manual"); }
@@ -222,6 +241,9 @@ export default function NewReportPage() {
     if (!scope || !manualReportId || sending || sentExternalId || !canTransmitReport) return;
     setSending(true);
     try {
+      const freshBillingGate = await alphaApi.employerBillingGate(scope.organizationId, scope.employerId);
+      setBillingGate(freshBillingGate);
+      if (!freshBillingGate.canTransmit) throw new Error(billingGateMessage(freshBillingGate));
       const validation = await reportValidationApi.commit(scope.organizationId, scope.employerId, manualReportId, "final");
       if (!validation.isValid) throw new Error(validationMessage(validation.errors));
       const result = await reportTransmissionApi.send(scope.organizationId, scope.employerId, manualReportId);
@@ -240,8 +262,12 @@ export default function NewReportPage() {
     {step === 2 && isExcel && scope ? <ExcelEmployeeIntake organizationId={scope.organizationId} employerId={scope.employerId} reportingMonth={month} onChange={(result) => { setExcelIntake(result); setFileName(result?.fileName ?? ""); setError(""); }} /> : null}
     {((!isExcel && step === 2) || (isExcel && step === 3)) && manualReportId && scope ? <ManualReportData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} month={month} employees={employees} selectedIds={selectedIds} setSelectedIds={setSelectedIds} /> : null}
     {((!isExcel && step === 3) || (isExcel && step === 4)) && manualReportId && scope ? <ManualDepositData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} /> : null}
-    {step === summaryStep ? <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} paymentAccount={paymentAccounts.find((x) => x.id === selectedPaymentAccountId) ?? null} sentExternalId={sentExternalId} /> : null}
-    <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={!canContinue || advancing || !canCreateReport} onClick={() => void next()}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div>
+    {step === summaryStep ? <>
+      <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} paymentAccount={paymentAccounts.find((x) => x.id === selectedPaymentAccountId) ?? null} sentExternalId={sentExternalId} />
+      {billingGate && !billingGate.canTransmit ? <div className="notice notice-error" style={{ marginTop: 18 }}><b>לא ניתן לשדר כרגע</b><div>{billingGateMessage(billingGate)}</div>{billingGate.billedThroughName ? <div style={{ marginTop: 6 }}>החיוב מתבצע דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
+      {billingGate?.canTransmit ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
+    </> : null}
+    <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={!canContinue || advancing || !canCreateReport} onClick={() => void next()}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport || billingGate?.canTransmit === false} onClick={() => void sendReport()}><Send size={17} />{sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div>
   </section>}</div></AppShell>;
 }
 
