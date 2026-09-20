@@ -196,8 +196,8 @@ function EmployerBillingTab({ organizationId, items, canManage, onChanged }: { o
 
   return <section className="card">
     <div className="card-head"><div><h2>הגדרות חיוב למעסיקים</h2><span style={{ color: "var(--muted)" }}>קובעים אם כל מעסיק מחויב ישירות או יורש את Billing הארגוני.</span></div></div>
-    {items.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>מעסיק</th><th>אופן חיוב</th><th>סטטוס</th></tr></thead><tbody>
-      {items.map((item) => <tr key={item.employerId}><td><b>{item.employerName}</b></td><td><select disabled={!canManage} value={item.billingMode} onChange={(e) => void update(item, Number(e.target.value) as 1 | 2)}><option value={1}>EmployerDirect</option><option value={2}>InheritOrganization</option></select></td><td>{item.billingStatus === 2 ? "פעיל" : item.billingStatus === 3 ? "מושהה" : "לא הוגדר"}</td></tr>)}
+    {items.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>מעסיק</th><th>אופן חיוב</th><th>מחויב דרך</th></tr></thead><tbody>
+      {items.map((item) => <tr key={item.employerId}><td><b>{item.employerName}</b></td><td><select disabled={!canManage} value={item.billingMode} onChange={(e) => void update(item, Number(e.target.value) as 1 | 2)}><option value={1}>חיוב עצמאי</option><option value={2}>חיוב דרך הארגון</option></select></td><td><b>{item.billedThroughName}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{item.effectiveBillingConfigured ? "Billing Account מוגדר" : "Billing Account לא הוגדר"}{item.billingModeOverridden ? " · Override" : " · ברירת מחדל"}</div></td></tr>)}
     </tbody></table></div>}
   </section>;
 }
