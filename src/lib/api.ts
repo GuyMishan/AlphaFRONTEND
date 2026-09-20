@@ -93,7 +93,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
           ? "יש לבחור חשבון תשלום פעיל לדיווח."
           : problem?.error === "bank_mandate_required"
             ? "לא ניתן לשלוח את הדיווח ללא הרשאה פעילה לחיוב חשבון הבנק שנבחר."
-            : problem?.detail ?? problem?.error ?? problem?.title ?? `שגיאת שרת (${response.status})`;
+            : problem?.detail ?? problem?.error ?? problem?.title ?? `אירעה שגיאה (${response.status})`;
     throw new ApiError(response.status, message, problem);
   }
   if (response.status === 204) return undefined as T;
