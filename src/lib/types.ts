@@ -561,3 +561,15 @@ export type EmployerBillingResolution = {
   billedThroughName: string;
   effectiveAccount: AlphaBillingAccount;
 };
+
+
+export type BillingGateStatus = {
+  canTransmit: boolean;
+  error: string | null;
+  billingMode: string | null;
+  source: "Organization" | "Employer" | null;
+  billedThroughName: string | null;
+  paymentMethodType: BillingPaymentMethodType | null;
+  paymentMethodStatus: BillingPaymentMethodStatus | null;
+  configured: boolean;
+};
