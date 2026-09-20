@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, FilePenLine, FileSpreadsheet, Info, Keyboard, Send } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { BillingGateModal } from "@/components/billing-gate-modal";
 import { ExcelEmployeeIntake, type ExcelEmployeeIntakeResult } from "@/components/excel-employee-intake";
 import { EmployerInterfaceXmlIntake } from "@/components/employer-interface-xml-intake";
 import { ManualReportData } from "@/components/manual-report-data";
@@ -30,15 +31,6 @@ function defaultSalaryDate(month: string, day: number | null) {
   const [year, monthNumber] = month.split("-").map(Number);
   const lastDay = new Date(year, monthNumber, 0).getDate();
   return `${month}-${String(Math.min(day, lastDay)).padStart(2, "0")}`;
-}
-function billingGateMessage(gate: BillingGateStatus) {
-  if (gate.error === "billing_account_required")
-    return "לא הוגדר Billing Account עבור הגורם שמחויב בפועל.";
-  if (gate.error === "billing_payment_method_not_active")
-    return "אמצעי התשלום של Alpha אינו פעיל ולכן לא ניתן לשדר דיווחים.";
-  if (gate.error === "billing_payment_method_reference_required")
-    return "אמצעי התשלום מסומן כפעיל אך חסר token או mandate reference תקין.";
-  return "Billing Account אינו מוכן לשידור.";
 }
 
 function validationMessage(errors: string[]) {
@@ -244,7 +236,7 @@ export default function NewReportPage() {
     try {
       const freshBillingGate = await alphaApi.employerBillingGate(scope.organizationId, scope.employerId);
       setBillingGate(freshBillingGate);
-      if (!freshBillingGate.canTransmit) throw new Error(billingGateMessage(freshBillingGate));
+      if (!freshBillingGate.canTransmit) return;
       const validation = await reportValidationApi.commit(scope.organizationId, scope.employerId, manualReportId, "final");
       if (!validation.isValid) throw new Error(validationMessage(validation.errors));
       const result = await reportTransmissionApi.send(scope.organizationId, scope.employerId, manualReportId);
@@ -266,11 +258,11 @@ export default function NewReportPage() {
     {((!isExcel && step === 3) || (isExcel && step === 4)) && manualReportId && scope ? <ManualDepositData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} /> : null}
     {step === summaryStep ? <>
       <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} paymentAccount={paymentAccounts.find((x) => x.id === selectedPaymentAccountId) ?? null} sentExternalId={sentExternalId} />
-      {billingGate && !billingGate.canTransmit ? <div className="notice notice-error" style={{ marginTop: 18 }}><b>לא ניתן לשדר כרגע</b><div>{billingGateMessage(billingGate)}</div>{billingGate.billedThroughName ? <div style={{ marginTop: 6 }}>החיוב מתבצע דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
+      
       {billingGate?.canTransmit ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
     </> : null}
     <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={!canContinue || advancing || !canCreateReport} onClick={() => void next()}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport || billingGate?.canTransmit === false} onClick={() => void sendReport()}><Send size={17} />{sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div>
-  </section>}</div></AppShell>;
+  </section>}</div>{scope && billingGate && !billingGate.canTransmit ? <BillingGateModal gate={billingGate} organizationId={scope.organizationId} employerId={scope.employerId} /> : null}</AppShell>;
 }
 
 function ReportTypeBanner({ reportKind, source, month }: { reportKind: ManualReportKind; source: SourceManualReport | null; month: string }) { return <div className="notice" style={{ marginBottom: 18, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}><b>סוג הדיווח: {reportKindLabel[reportKind]}</b><span>· חודש {formatMonth(month)}</span>{reportKind !== 1 && source ? <span>· מתקן דיווח מחודש {formatMonth(source.reportingMonth)}</span> : null}</div>; }
