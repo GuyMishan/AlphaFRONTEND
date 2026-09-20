@@ -59,7 +59,7 @@ export function EmployerForm({
     const next: FieldErrors = {};
     if (input.legalName.trim().length < 2) next.legalName = "שם משפטי מלא הוא שדה חובה ולפחות 2 תווים.";
     if (!/^\d{5,15}$/.test(input.registrationNumber.trim())) next.registrationNumber = "מספר חברה / עוסק חייב להכיל 5-15 ספרות.";
-    if (!/^\d{5,9}$/.test(input.withholdingFileNumber.trim())) next.withholdingFileNumber = "מספר תיק ניכויים חייב להכיל 5-9 ספרות.";
+    if (!/^\d{5,9}$/.test(input.withholdingFileNumber.trim())) next.withholdingFileNumber = "מספר תיק ניכויים חייב להכיל 5-9 ספרות. במידה ואין, יש להזין 900000000.";
     if (!(input.contactFirstName ?? "").trim()) next.contactFirstName = "שם פרטי של איש הקשר הוא שדה חובה.";
     if (!(input.contactLastName ?? "").trim()) next.contactLastName = "שם משפחה של איש הקשר הוא שדה חובה.";
     if (!/^\d{1,11}$/.test(input.contactPhone ?? "")) next.contactPhone = "טלפון איש הקשר חייב להכיל 1-11 ספרות.";
@@ -118,7 +118,7 @@ export function EmployerForm({
       <Field label="שם משפטי מלא *" error={errors.legalName}><input aria-invalid={Boolean(errors.legalName)} required minLength={2} maxLength={200} disabled={!editable} value={form.legalName} onChange={(event) => update("legalName", event.target.value)} /></Field>
       <div className="grid two-cols">
         <Field label="מספר חברה / עוסק *" error={errors.registrationNumber}><input aria-invalid={Boolean(errors.registrationNumber)} required disabled={!editable} inputMode="numeric" maxLength={15} value={form.registrationNumber} onChange={(event) => update("registrationNumber", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
-        <Field label="מספר תיק ניכויים *" error={errors.withholdingFileNumber}><input aria-invalid={Boolean(errors.withholdingFileNumber)} required disabled={!editable} inputMode="numeric" maxLength={9} value={form.withholdingFileNumber} onChange={(event) => update("withholdingFileNumber", event.target.value.replace(/\D/g, "").slice(0, 9))} /></Field>
+        <Field label="מספר תיק ניכויים * (במידה ואין, יש להזין 900000000)" error={errors.withholdingFileNumber}><input aria-invalid={Boolean(errors.withholdingFileNumber)} required disabled={!editable} inputMode="numeric" maxLength={9} value={form.withholdingFileNumber} onChange={(event) => update("withholdingFileNumber", event.target.value.replace(/\D/g, "").slice(0, 9))} /></Field>
       </div>
       <div className="grid two-cols">
         <Field label="שם פרטי איש קשר *" error={errors.contactFirstName}><input disabled={!editable} maxLength={20} value={form.contactFirstName ?? ""} onChange={(event) => update("contactFirstName", event.target.value)} /></Field>
