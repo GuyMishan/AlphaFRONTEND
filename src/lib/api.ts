@@ -16,8 +16,13 @@ import type {
   EmployerAddressSettings,
   EmployerBillingMode,
   EmployerBillingStatus,
-  EmployerPensionPaymentAccount,
-  EmployerPensionPaymentAccountInput,
+  EmployerPaymentAccount,
+  EmployerPaymentAccountEdit,
+  EmployerPaymentAccountInput,
+  BankDebitMandate,
+  BankDebitMandateStatus,
+  BankOption,
+  BankBranchOption,
   EmployerProfileCenterSettings,
   EmployerOption,
   EmployerRole,
@@ -161,14 +166,26 @@ export const alphaApi = {
     request<{ billingMode: EmployerBillingMode; billingStatus: EmployerBillingStatus }>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/billing`, { method: "PUT", body: JSON.stringify({ billingMode, billingStatus }) }),
   updateEmployerReportingSettings: (organizationId: string, employerId: string, payload: EmployerProfileCenterSettings["reporting"]) =>
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/reporting`, { method: "PUT", body: JSON.stringify(payload) }),
-  employerPensionPaymentAccounts: (organizationId: string, employerId: string): Promise<EmployerPensionPaymentAccount[]> =>
-    request<EmployerPensionPaymentAccount[]>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/pension-payment-accounts`),
-  createEmployerPensionPaymentAccount: (organizationId: string, employerId: string, payload: EmployerPensionPaymentAccountInput) =>
-    request<EmployerPensionPaymentAccount>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/pension-payment-accounts`, { method: "POST", body: JSON.stringify(payload) }),
-  updateEmployerPensionPaymentAccount: (organizationId: string, employerId: string, accountId: string, payload: EmployerPensionPaymentAccountInput) =>
-    request<EmployerPensionPaymentAccount>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/pension-payment-accounts/${accountId}`, { method: "PUT", body: JSON.stringify(payload) }),
-  deleteEmployerPensionPaymentAccount: (organizationId: string, employerId: string, accountId: string) =>
-    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/pension-payment-accounts/${accountId}`, { method: "DELETE" }),
+  employerPaymentAccounts: (organizationId: string, employerId: string): Promise<EmployerPaymentAccount[]> =>
+    request<EmployerPaymentAccount[]>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/`),
+  employerPaymentAccount: (organizationId: string, employerId: string, accountId: string): Promise<EmployerPaymentAccountEdit> =>
+    request<EmployerPaymentAccountEdit>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/${accountId}`),
+  createEmployerPaymentAccount: (organizationId: string, employerId: string, payload: EmployerPaymentAccountInput) =>
+    request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/`, { method: "POST", body: JSON.stringify(payload) }),
+  updateEmployerPaymentAccount: (organizationId: string, employerId: string, accountId: string, payload: EmployerPaymentAccountInput) =>
+    request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/${accountId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  setDefaultEmployerPaymentAccount: (organizationId: string, employerId: string, accountId: string) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/${accountId}/set-default`, { method: "POST" }),
+  deactivateEmployerPaymentAccount: (organizationId: string, employerId: string, accountId: string) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/${accountId}`, { method: "DELETE" }),
+  updateEmployerPaymentMandate: (organizationId: string, employerId: string, accountId: string, payload: {
+    status: BankDebitMandateStatus; externalMandateId?: string; approvedAt?: string | null; cancelledAt?: string | null; documentId?: string;
+  }): Promise<BankDebitMandate> =>
+    request<BankDebitMandate>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/${accountId}/mandate`, { method: "PUT", body: JSON.stringify(payload) }),
+  banks: (search = "", take = 100): Promise<BankOption[]> =>
+    request<BankOption[]>(`/api/reference-data/banks${qs({ search, take })}`),
+  bankBranches: (bankCode: number, search = "", take = 200): Promise<BankBranchOption[]> =>
+    request<BankBranchOption[]>(`/api/reference-data/bank-branches${qs({ bankCode, search, take })}`),
   employees: (organizationId: string, employerId: string): Promise<Employee[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoEmployers.some((item) => item.id === employerId && item.organizationId === organizationId) ? demoEmployees : [])
     : request<Employee[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees`),
