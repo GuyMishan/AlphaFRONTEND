@@ -573,3 +573,43 @@ export type BillingGateStatus = {
   paymentMethodStatus: BillingPaymentMethodStatus | null;
   configured: boolean;
 };
+
+
+export type UserInvitationStatus = 1 | 2 | 3 | 4;
+
+export type UserInvitation = {
+  id: string;
+  email: string;
+  organizationId: string;
+  employerId: string | null;
+  employerName: string | null;
+  organizationRole: OrganizationRole | null;
+  employerRole: EmployerRole | null;
+  status: UserInvitationStatus;
+  expiresAt: string;
+  createdBy: string;
+  acceptedAt: string | null;
+  acceptedByUserId: string | null;
+  createdAt: string;
+};
+
+export type PublicInvitation = {
+  email: string;
+  organizationId: string;
+  organizationName: string;
+  employerId: string | null;
+  employerName: string | null;
+  organizationRole: OrganizationRole | null;
+  employerRole: EmployerRole | null;
+  status: UserInvitationStatus;
+  expiresAt: string;
+  usable: boolean;
+};
+
+export type CreateInvitationInput = {
+  email: string;
+  employerId?: string | null;
+  organizationRole?: OrganizationRole | null;
+  employerRole?: EmployerRole | null;
+  expiresInDays?: number;
+};
