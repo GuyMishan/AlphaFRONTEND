@@ -214,6 +214,7 @@ export function ScopeController() {
     : allEmployers.map((item) => item.employer);
 
   const showEmployerSelector =
+    pathname !== "/employers" &&
     (level !== "organization" || !hasAnyOrganizationScope) &&
     employerOptions.length > 1;
 
