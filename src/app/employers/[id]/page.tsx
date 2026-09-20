@@ -16,6 +16,7 @@ import type {
   Employee,
   Employer,
   EmployerAddressSettings,
+  EmployerBillingResolution,
   EmployerCapabilities,
   EmployerPaymentAccount,
   EmployerPaymentAccountInput,
@@ -44,7 +45,7 @@ const EMPTY_CAPABILITIES: EmployerCapabilities = {
 
 const EMPTY_SETTINGS: EmployerProfileCenterSettings = {
   address: { city: "", street: "", houseNumber: "", apartment: "", postalCode: "", postOfficeBox: "" },
-  billing: { mode: 1, status: 1 },
+  billing: { mode: 1, modeOverridden: false, status: 1, canChangeMode: false },
   reporting: {
     defaultSalaryPaymentDay: null,
     defaultPaymentMethodCode: null,
@@ -142,10 +143,12 @@ export default function EmployerProfilePage() {
       setAccounts={setAccounts}
     /> : null}
 
-    {tab === "billing" ? <AlphaBillingAccountForm
+    {tab === "billing" ? <EmployerBillingInheritanceTab
       organizationId={organizationId}
-      employerId={employer.id}
-      canManage={capabilities.canManageEmployer}
+      employer={employer}
+      canManageEmployer={capabilities.canManageEmployer}
+      billing={settings.billing}
+      onModeSaved={(billing) => setSettings((current) => ({ ...current, billing }))}
     /> : null}
 
     {tab === "reporting" ? <ReportingTab
@@ -432,6 +435,96 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
         <div className="form-actions"><button className="btn btn-secondary" type="button" onClick={resetForm}>ניקוי</button><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירה"}</button></div>
       </form>
     </section> : <div className="notice notice-info">לפי ההרשאה שלך ניתן לצפות בחשבונות ובסטטוס ההרשאה בלבד.</div>}
+  </div>;
+}
+
+function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmployer, billing, onModeSaved }: {
+  organizationId: string;
+  employer: Employer;
+  canManageEmployer: boolean;
+  billing: EmployerProfileCenterSettings["billing"];
+  onModeSaved: (value: EmployerProfileCenterSettings["billing"]) => void;
+}) {
+  const [resolution, setResolution] = useState<EmployerBillingResolution | null>(null);
+  const [mode, setMode] = useState(billing.mode);
+  const [savingMode, setSavingMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  async function loadResolution() {
+    setLoading(true);
+    try {
+      const value = await alphaApi.employerBillingResolution(organizationId, employer.id);
+      setResolution(value);
+      setMode(value.billingMode);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "טעינת הגדרת החיוב נכשלה");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void loadResolution(); }, [organizationId, employer.id]);
+
+  async function saveMode(nextMode: 1 | 2) {
+    if (!billing.canChangeMode) return;
+    setSavingMode(true);
+    try {
+      const result = await alphaApi.updateEmployerBilling(organizationId, employer.id, nextMode);
+      const nextBilling = { ...billing, mode: result.billingMode, modeOverridden: true };
+      onModeSaved(nextBilling);
+      setMode(result.billingMode);
+      await loadResolution();
+      toast.success("אופן החיוב של המעסיק עודכן");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "עדכון אופן החיוב נכשל");
+    } finally {
+      setSavingMode(false);
+    }
+  }
+
+  if (loading || !resolution) return <div className="empty">טוען הגדרות חיוב...</div>;
+
+  return <div className="employer-profile-stack">
+    <section className="card">
+      <div className="card-head">
+        <div><h2>אופן חיוב Alpha</h2><span style={{ color: "var(--muted)" }}>קובע מי מחויב עבור השימוש של {employer.legalName} במערכת.</span></div>
+        {billing.modeOverridden ? <span className="badge badge-blue">Override</span> : <span className="badge badge-gray">ברירת מחדל</span>}
+      </div>
+
+      <div className="grid two-cols">
+        <button
+          type="button"
+          disabled={!billing.canChangeMode || savingMode}
+          className={`choice-card${mode === 2 ? " selected" : ""}`}
+          onClick={() => void saveMode(2)}
+        >
+          <Building2 size={24} />
+          <b>חיוב דרך הארגון</b>
+          <p>המעסיק משתמש ב־Billing Account של הארגון.</p>
+        </button>
+        <button
+          type="button"
+          disabled={!billing.canChangeMode || savingMode}
+          className={`choice-card${mode === 1 ? " selected" : ""}`}
+          onClick={() => void saveMode(1)}
+        >
+          <CreditCard size={24} />
+          <b>חיוב עצמאי</b>
+          <p>המעסיק משתמש ב־Billing Account נפרד משלו.</p>
+        </button>
+      </div>
+
+      {!billing.canChangeMode ? <div className="notice notice-info" style={{ marginTop: 18 }}>רק Organization Admin יכול לשנות את אופן החיוב.</div> : null}
+
+      <div className="notice notice-info" style={{ marginTop: 18 }}>
+        <b>מחויב דרך: {resolution.billedThroughName}</b>
+        <div>{resolution.source === "Organization" ? "Billing Account ארגוני" : "Billing Account עצמאי של המעסיק"} · {resolution.effectiveAccount.configured ? "מוגדר" : "עדיין לא הוגדר"}</div>
+      </div>
+    </section>
+
+    {resolution.source === "Organization"
+      ? <AlphaBillingAccountForm organizationId={organizationId} canManage={false} />
+      : <AlphaBillingAccountForm organizationId={organizationId} employerId={employer.id} canManage={canManageEmployer} />}
   </div>;
 }
 

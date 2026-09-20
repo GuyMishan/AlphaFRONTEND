@@ -18,6 +18,7 @@ import type {
   EmployerInput,
   EmployerAddressSettings,
   EmployerBillingMode,
+  EmployerBillingResolution,
   EmployerBillingStatus,
   EmployerPaymentAccount,
   EmployerPaymentAccountEdit,
@@ -173,6 +174,8 @@ export const alphaApi = {
     : request<Employer>(`/api/organizations/${organizationId}/employers/${employerId}`, { method: "PUT", body: JSON.stringify(payload) }),
   employerBillingAccount: (organizationId: string, employerId: string): Promise<AlphaBillingAccount> =>
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/`),
+  employerBillingResolution: (organizationId: string, employerId: string): Promise<EmployerBillingResolution> =>
+    request<EmployerBillingResolution>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/resolution`),
   saveEmployerBillingAccount: (organizationId: string, employerId: string, payload: AlphaBillingAccountInput): Promise<AlphaBillingAccount> =>
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/`, { method: "PUT", body: JSON.stringify(payload) }),
   updateEmployerBillingProviderMetadata: (organizationId: string, employerId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
