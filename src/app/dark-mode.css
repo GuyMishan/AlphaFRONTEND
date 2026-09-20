@@ -1,5 +1,8 @@
 html[data-theme="dark"] {
   --navy: #0b1624;
+  --brand-tile: #ffffff;
+  --brand-symbol: #0b1624;
+  --brand-text: #ffffff;
   --navy-2: #132235;
   --blue: #6ea2ff;
   --blue-soft: #172a46;
@@ -92,4 +95,16 @@ html[data-theme="dark"] .auth-form-wrap { background: var(--bg); }
 @media (max-width: 760px) {
   .appearance-options { grid-template-columns: 1fr; }
   .appearance-option { min-height: 86px; }
+}
+
+
+html[data-theme="dark"] .sidebar .brand,
+html[data-theme="dark"] .mobile-sidebar .brand,
+html[data-theme="dark"] .auth-brand .brand {
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .brand-logo {
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,.26));
 }
