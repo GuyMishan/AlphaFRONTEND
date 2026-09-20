@@ -165,7 +165,7 @@ function UsersTab({ organizationId, members, canManage }: { organizationId: stri
     {members.length === 0 ? <div className="empty">אין משתמשים פעילים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>משתמש</th><th>אימייל</th><th>Role</th><th>גישה למעסיקים</th></tr></thead><tbody>
       {members.map((item) => <tr key={item.userId}><td><b>{item.displayName}</b></td><td>{item.email}</td><td>{roleLabel(item.role)}</td><td>{item.employerAccessMode === 1 ? "כל המעסיקים" : "מעסיקים נבחרים"}</td></tr>)}
     </tbody></table></div>}
-    <div className="notice notice-info" style={{ marginTop: 18 }}>Invitations למשתמשים חדשים יתווספו בשלב עתידי. כרגע ניהול ההרשאות עובד מול משתמשים קיימים במערכת.</div>
+    <div className="notice notice-info" style={{ marginTop: 18 }}>משתמש חדש מצטרף דרך הזמנה במייל, הרשמה ואימות OTP. ההרשאות נוצרות רק לאחר השלמת האימות.</div>
   </section>;
 }
 
