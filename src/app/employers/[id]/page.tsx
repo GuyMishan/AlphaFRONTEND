@@ -6,9 +6,9 @@ import { useParams } from "next/navigation";
 import { Building2, CreditCard, FileSliders, Plus, Save, Trash2, Users, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
 import { EmployerForm } from "@/components/employer-form";
 import { alphaApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
 import type {
   BankDebitMandateStatus,
   BankBranchOption,
@@ -16,8 +16,6 @@ import type {
   Employee,
   Employer,
   EmployerAddressSettings,
-  EmployerBillingMode,
-  EmployerBillingStatus,
   EmployerCapabilities,
   EmployerPaymentAccount,
   EmployerPaymentAccountInput,
@@ -144,12 +142,10 @@ export default function EmployerProfilePage() {
       setAccounts={setAccounts}
     /> : null}
 
-    {tab === "billing" ? <BillingTab
+    {tab === "billing" ? <AlphaBillingAccountForm
       organizationId={organizationId}
       employerId={employer.id}
       canManage={capabilities.canManageEmployer}
-      value={settings.billing}
-      onSaved={(billing) => setSettings((current) => ({ ...current, billing }))}
     /> : null}
 
     {tab === "reporting" ? <ReportingTab
@@ -437,44 +433,6 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
       </form>
     </section> : <div className="notice notice-info">לפי ההרשאה שלך ניתן לצפות בחשבונות ובסטטוס ההרשאה בלבד.</div>}
   </div>;
-}
-
-function BillingTab({ organizationId, employerId, canManage, value, onSaved }: {
-  organizationId: string;
-  employerId: string;
-  canManage: boolean;
-  value: EmployerProfileCenterSettings["billing"];
-  onSaved: (value: EmployerProfileCenterSettings["billing"]) => void;
-}) {
-  const platformAdmin = Boolean(getSession()?.platformAdmin);
-  const [mode, setMode] = useState<EmployerBillingMode>(value.mode);
-  const [status, setStatus] = useState<EmployerBillingStatus>(value.status);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => { setMode(value.mode); setStatus(value.status); }, [value]);
-
-  async function save() {
-    setSaving(true);
-    try {
-      const result = await alphaApi.updateEmployerBilling(organizationId, employerId, mode, platformAdmin ? status : undefined);
-      onSaved({ mode: result.billingMode, status: result.billingStatus });
-      toast.success("הגדרות החיוב נשמרו");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת הגדרות החיוב נכשלה");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return <section className="card profile-card">
-    <div className="card-head"><div><h2>חיוב Alpha</h2><span style={{ color: "var(--muted)" }}>מגדיר האם המעסיק מחויב ישירות או יורש את הגדרות הארגון.</span></div></div>
-    {!canManage ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הגדרות החיוב מוצגות לקריאה בלבד לפי ההרשאה שלך.</div> : null}
-    <div className="form">
-      <div className="field"><label>אופן חיוב</label><select disabled={!canManage} value={mode} onChange={(e) => setMode(Number(e.target.value) as EmployerBillingMode)}><option value={1}>EmployerDirect — חיוב ישיר של המעסיק</option><option value={2}>InheritOrganization — ירושה מהארגון</option></select></div>
-      <div className="field"><label>סטטוס Billing</label><select disabled={!platformAdmin} value={status} onChange={(e) => setStatus(Number(e.target.value) as EmployerBillingStatus)}><option value={1}>לא הוגדר</option><option value={2}>פעיל</option><option value={3}>מושהה</option></select><small>{platformAdmin ? "Platform Admin יכול לעדכן את הסטטוס." : "הסטטוס מנוהל ברמת המערכת ומוצג כאן לקריאה."}</small></div>
-      {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="button" disabled={saving} onClick={() => void save()}><Save size={17} />{saving ? "שומר..." : "שמירת הגדרות"}</button></div> : null}
-    </div>
-  </section>;
 }
 
 function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
