@@ -113,7 +113,7 @@ export default function ReportsPage() {
     void load(scope, value);
   }
 
-  return <AppShell title="דיווחים">
+  return <AppShell title="דיווחים ומשובים">
     <div className="page-head">
       <div><h1>דיווחים ומשובים</h1><p>מעקב אחרי כל הדיווחים, סטטוס השידור והמשוב שהתקבל.</p></div>
       <div style={{ display: "flex", gap: 8 }}>
