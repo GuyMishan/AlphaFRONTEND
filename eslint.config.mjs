@@ -1,12 +1,11 @@
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
 
-const compat = new FlatCompat({ baseDirectory: dirname(fileURLToPath(import.meta.url)) });
-
-const config = [
-  { ignores: [".next/**", "node_modules/**", "next-env.d.ts"] },
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+export default defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  globalIgnores([".next/**", "node_modules/**", "next-env.d.ts"]),
   {
     files: [
       "src/app/access/page.tsx",
@@ -14,9 +13,6 @@ const config = [
       "src/app/employers/page.tsx",
       "src/components/manual-deposit-data.tsx",
     ],
-    // Cell renderers return ReactNode arrays which are immediately wrapped in keyed <td> elements.
     rules: { "react/jsx-key": "off" },
   },
-];
-
-export default config;
+]);
