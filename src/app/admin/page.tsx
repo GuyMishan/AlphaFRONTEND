@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
-import { getSession } from "@/lib/session";
 import { Eye, Play, RefreshCw, X } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
+import { alphaApi } from "@/lib/api";
+import { getSession } from "@/lib/session";
+import type { Plan, PlatformSubscription } from "@/lib/types";
 
 type RunSummary = {
   id: string;
@@ -52,7 +54,7 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "טרם הורץ";
+  if (!value) return "ללא תאריך סיום";
   return new Intl.DateTimeFormat("he-IL", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
 
@@ -60,25 +62,38 @@ function statusLabel(status?: string) {
   if (status === "Success") return "הושלם בהצלחה";
   if (status === "Failed") return "נכשל";
   if (status === "Running") return "רץ כעת";
+  if (status === "Active") return "פעיל";
   return status ?? "-";
 }
 
 export default function AdminPage() {
   const router = useRouter();
+  const [tab, setTab] = useState<"interfaces" | "subscriptions">("interfaces");
   const [rows, setRows] = useState<IntegrationRow[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [subscriptions, setSubscriptions] = useState<PlatformSubscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<string | null>(null);
+  const [savingOrganizationId, setSavingOrganizationId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [historyKey, setHistoryKey] = useState<string | null>(null);
   const [history, setHistory] = useState<RunDetail[]>([]);
   const [selectedRun, setSelectedRun] = useState<RunDetail | null>(null);
 
   async function load() {
+    setLoading(true);
     setError("");
     try {
-      setRows(await adminRequest<IntegrationRow[]>("/api/platform/reference-data/interfaces"));
+      const [interfaceRows, planRows, subscriptionRows] = await Promise.all([
+        adminRequest<IntegrationRow[]>("/api/platform/reference-data/interfaces"),
+        alphaApi.platformPlans(),
+        alphaApi.platformSubscriptions(),
+      ]);
+      setRows(interfaceRows);
+      setPlans(planRows);
+      setSubscriptions(subscriptionRows);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "טעינת הממשקים נכשלה");
+      setError(err instanceof Error ? err.message : "טעינת מסך האדמין נכשלה");
     } finally {
       setLoading(false);
     }
@@ -102,7 +117,6 @@ export default function AdminPage() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "הרצת הממשק נכשלה");
-      await load();
     } finally {
       setRunning(null);
     }
@@ -119,60 +133,99 @@ export default function AdminPage() {
     }
   }
 
+  async function changePlan(organizationId: string, planId: string) {
+    setSavingOrganizationId(organizationId);
+    setError("");
+    try {
+      await alphaApi.changePlatformSubscriptionPlan(organizationId, planId);
+      setSubscriptions(await alphaApi.platformSubscriptions());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שינוי המסלול נכשל");
+    } finally {
+      setSavingOrganizationId(null);
+    }
+  }
+
   return <AppShell title="מסך אדמין" hideScopeController>
     <div className="page-head">
-      <div><h1>מסך אדמין</h1><p>ניהול והפעלה ידנית של ממשקי נתוני המערכת</p></div>
+      <div><h1>מסך אדמין</h1><p>ניהול ממשקי המערכת ומסלולי הלקוחות</p></div>
       <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={loading || Boolean(running)}><RefreshCw size={16} />רענון</button>
     </div>
 
     <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
-      <button type="button" className="btn btn-primary">ממשקים</button>
+      <button type="button" className={`btn ${tab === "interfaces" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("interfaces")}>ממשקים</button>
+      <button type="button" className={`btn ${tab === "subscriptions" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("subscriptions")}>מסלולים ומנויים</button>
     </div>
 
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
-    <section className="card" style={{ overflow: "hidden" }}>
+    {tab === "interfaces" ? <section className="card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
         <p style={{ margin: "5px 0 0", color: "#64748b" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>
       </div>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
-          <thead><tr>
-            {['ממשק','הרצה אחרונה','סטטוס','נקלטו','חדשות','עודכנו','הושבתו','פעולות'].map((x) => <th key={x} style={{ textAlign: "right", padding: 12, borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap" }}>{x}</th>)}
-          </tr></thead>
+          <thead><tr>{["ממשק","הרצה אחרונה","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","פעולות"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
           <tbody>
             {loading ? <tr><td colSpan={8} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : rows.map((row) => <tr key={row.key}>
-              <td style={{ padding: 12, borderBottom: "1px solid #eef2f6" }}><b>{row.name}</b><div style={{ color: "#64748b", fontSize: 12 }}>{row.key}</div></td>
-              <td style={{ padding: 12, borderBottom: "1px solid #eef2f6", whiteSpace: "nowrap" }}>{formatDate(row.lastRun?.finishedAt ?? row.lastRun?.startedAt)}</td>
-              <td style={{ padding: 12, borderBottom: "1px solid #eef2f6" }}>{statusLabel(row.lastRun?.status)}</td>
-              <td style={{ padding: 12, borderBottom: "1px solid #eef2f6" }}>{row.lastRun?.recordsReceived ?? '-'}</td>
-              <td style={{ padding: 12, borderBottom: "1px solid #eef2f6" }}>{row.lastRun?.recordsInserted ?? '-'}</td>
-              <td style={{ padding: 12, borderBottom: "1px solid #eef2f6" }}>{row.lastRun?.recordsUpdated ?? '-'}</td>
-              <td style={{ padding: 12, borderBottom: "1px solid #eef2f6" }}>{row.lastRun?.recordsDeactivated ?? '-'}</td>
-              <td style={{ padding: 12, borderBottom: "1px solid #eef2f6" }}>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button className="btn btn-primary" type="button" disabled={Boolean(running)} onClick={() => void runInterface(row.key)}><Play size={15} />{running === row.key ? "מריץ..." : "הרץ עכשיו"}</button>
-                  <button className="btn btn-secondary" type="button" onClick={() => void openHistory(row.key)}><Eye size={15} />דוחות הרצה</button>
-                </div>
-              </td>
+              <td style={cellStyle}><b>{row.name}</b><div style={{ color: "#64748b", fontSize: 12 }}>{row.key}</div></td>
+              <td style={cellStyle}>{formatDate(row.lastRun?.finishedAt ?? row.lastRun?.startedAt)}</td>
+              <td style={cellStyle}>{statusLabel(row.lastRun?.status)}</td>
+              <td style={cellStyle}>{row.lastRun?.recordsReceived ?? "-"}</td>
+              <td style={cellStyle}>{row.lastRun?.recordsInserted ?? "-"}</td>
+              <td style={cellStyle}>{row.lastRun?.recordsUpdated ?? "-"}</td>
+              <td style={cellStyle}>{row.lastRun?.recordsDeactivated ?? "-"}</td>
+              <td style={cellStyle}><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="btn btn-primary" type="button" disabled={Boolean(running)} onClick={() => void runInterface(row.key)}><Play size={15} />{running === row.key ? "מריץ..." : "הרץ עכשיו"}</button>
+                <button className="btn btn-secondary" type="button" onClick={() => void openHistory(row.key)}><Eye size={15} />דוחות הרצה</button>
+              </div></td>
             </tr>)}
           </tbody>
         </table>
       </div>
-    </section>
+    </section> : <section className="card" style={{ overflow: "hidden" }}>
+      <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
+        <h2 style={{ margin: 0, fontSize: 18 }}>Subscriptions</h2>
+        <p style={{ margin: "5px 0 0", color: "#64748b" }}>כאן מוגדר מסלול השימוש בלבד. גבייה ותשלומים אינם חלק מהשלב הזה.</p>
+      </div>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+          <thead><tr>{["ארגון","מסלול","סטטוס","מעסיקים","עובדים","משתמשים","התחלה","תוקף"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
+          <tbody>
+            {loading ? <tr><td colSpan={8} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : subscriptions.map((item) => <tr key={item.subscriptionId}>
+              <td style={cellStyle}><b>{item.organizationName}</b></td>
+              <td style={cellStyle}>
+                <select
+                  value={item.planId}
+                  disabled={savingOrganizationId === item.organizationId}
+                  onChange={(event) => void changePlan(item.organizationId, event.target.value)}
+                >
+                  {plans.filter((plan) => plan.isActive || plan.id === item.planId).map((plan) => <option key={plan.id} value={plan.id}>{plan.name} ({plan.code})</option>)}
+                </select>
+              </td>
+              <td style={cellStyle}>{statusLabel(String(item.status))}</td>
+              <td style={cellStyle}>{item.maxEmployers}</td>
+              <td style={cellStyle}>{item.maxEmployees}</td>
+              <td style={cellStyle}>{item.maxUsers}</td>
+              <td style={cellStyle}>{formatDate(item.startedAt)}</td>
+              <td style={cellStyle}>{item.expiresAt ? formatDate(item.expiresAt) : "ללא הגבלה"}</td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </section>}
 
     {historyKey ? <div style={backdropStyle} onClick={() => setHistoryKey(null)}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
         <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוחות הרצה</h2><div style={{ color: "#64748b", marginTop: 4 }}>{rows.find((x) => x.key === historyKey)?.name}</div></div><button className="btn btn-secondary" onClick={() => setHistoryKey(null)}><X size={17} /></button></div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", minWidth: 720, borderCollapse: "collapse" }}><thead><tr>{['תאריך','סטטוס','נקלטו','חדשות','עודכנו','הושבתו','דוח'].map((x) => <th key={x} style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #e5e7eb" }}>{x}</th>)}</tr></thead>
-            <tbody>{history.length === 0 ? <tr><td colSpan={7} style={{ padding: 20, textAlign: "center" }}>אין עדיין הרצות</td></tr> : history.map((run) => <tr key={run.id}>
-              <td style={cellStyle}>{formatDate(run.startedAt)}</td><td style={cellStyle}>{statusLabel(run.status)}</td><td style={cellStyle}>{run.recordsReceived}</td><td style={cellStyle}>{run.recordsInserted}</td><td style={cellStyle}>{run.recordsUpdated}</td><td style={cellStyle}>{run.recordsDeactivated}</td>
-              <td style={cellStyle}><button className="btn btn-secondary" onClick={() => setSelectedRun(run)}>פתח</button></td>
-            </tr>)}</tbody>
-          </table>
-        </div>
+        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", minWidth: 720, borderCollapse: "collapse" }}>
+          <thead><tr>{["תאריך","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","דוח"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
+          <tbody>{history.length === 0 ? <tr><td colSpan={7} style={{ padding: 20, textAlign: "center" }}>אין עדיין הרצות</td></tr> : history.map((run) => <tr key={run.id}>
+            <td style={cellStyle}>{formatDate(run.startedAt)}</td><td style={cellStyle}>{statusLabel(run.status)}</td><td style={cellStyle}>{run.recordsReceived}</td><td style={cellStyle}>{run.recordsInserted}</td><td style={cellStyle}>{run.recordsUpdated}</td><td style={cellStyle}>{run.recordsDeactivated}</td>
+            <td style={cellStyle}><button className="btn btn-secondary" onClick={() => setSelectedRun(run)}>פתח</button></td>
+          </tr>)}</tbody>
+        </table></div>
       </div>
     </div> : null}
 
@@ -180,7 +233,7 @@ export default function AdminPage() {
       <div style={{ ...modalStyle, maxWidth: 650 }} onClick={(e) => e.stopPropagation()}>
         <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוח הרצה</h2><div style={{ color: "#64748b", marginTop: 4 }}>{selectedRun.integrationName}</div></div><button className="btn btn-secondary" onClick={() => setSelectedRun(null)}><X size={17} /></button></div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 16 }}>
-          {[['סטטוס',statusLabel(selectedRun.status)],['התחלה',formatDate(selectedRun.startedAt)],['סיום',formatDate(selectedRun.finishedAt)],['נקלטו',selectedRun.recordsReceived],['חדשות',selectedRun.recordsInserted],['עודכנו',selectedRun.recordsUpdated],['הושבתו',selectedRun.recordsDeactivated]].map(([label,value]) => <div key={String(label)} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 10 }}><div style={{ color: "#64748b", fontSize: 12 }}>{label}</div><b>{value}</b></div>)}
+          {[["סטטוס",statusLabel(selectedRun.status)],["התחלה",formatDate(selectedRun.startedAt)],["סיום",formatDate(selectedRun.finishedAt)],["נקלטו",selectedRun.recordsReceived],["חדשות",selectedRun.recordsInserted],["עודכנו",selectedRun.recordsUpdated],["הושבתו",selectedRun.recordsDeactivated]].map(([label,value]) => <div key={String(label)} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 10 }}><div style={{ color: "#64748b", fontSize: 12 }}>{label}</div><b>{value}</b></div>)}
         </div>
         {selectedRun.errorMessage ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{selectedRun.errorMessage}</div> : null}
         <h3 style={{ marginBottom: 8 }}>פרטי מקור</h3>
@@ -190,6 +243,7 @@ export default function AdminPage() {
   </AppShell>;
 }
 
+const thStyle: React.CSSProperties = { textAlign: "right", padding: 12, borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap" };
 const backdropStyle: React.CSSProperties = { position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
 const modalStyle: React.CSSProperties = { width: "min(950px, 96vw)", maxHeight: "88vh", overflow: "auto", background: "white", borderRadius: 16, padding: 20, boxShadow: "0 24px 70px rgba(15,23,42,.25)" };
 const modalHeaderStyle: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 };

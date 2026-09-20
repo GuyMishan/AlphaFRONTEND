@@ -310,3 +310,44 @@ export type EmployeeInput = Pick<Employee, "nationalId" | "firstName" | "lastNam
   postalCode: string;
   postOfficeBox: string;
 };
+
+
+export type Plan = {
+  id: string;
+  code: string;
+  name: string;
+  maxEmployers: number;
+  maxEmployees: number;
+  maxUsers: number;
+  isActive: boolean;
+};
+
+export type SubscriptionSummary = {
+  id: string;
+  organizationId: string;
+  planId: string;
+  status: number | string;
+  startedAt: string;
+  expiresAt: string | null;
+  code: string;
+  name: string;
+  maxEmployers: number;
+  maxEmployees: number;
+  maxUsers: number;
+  isActive: boolean;
+};
+
+export type PlatformSubscription = {
+  organizationId: string;
+  organizationName: string;
+  subscriptionId: string;
+  status: number | string;
+  startedAt: string;
+  expiresAt: string | null;
+  planId: string;
+  code: string;
+  name: string;
+  maxEmployers: number;
+  maxEmployees: number;
+  maxUsers: number;
+};
