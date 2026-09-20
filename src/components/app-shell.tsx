@@ -6,10 +6,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, LogOut, Menu, Settings, ShieldCheck, Users, X } from "lucide-react";
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
+import { UpgradeModal } from "./upgrade-modal";
 import { resolveSingleEmployerScope } from "@/lib/access-scope";
 import { alphaApi } from "@/lib/api";
 import { clearSession, getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
+import { UPGRADE_DIALOG_EVENT, type UpgradeDialogDetail } from "@/lib/upgrade";
 
 const nav = [
   { href: "/dashboard", label: "דף הבית", icon: Gauge },
@@ -51,6 +53,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   const [canManageOrganization, setCanManageOrganization] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pageConfig, setPageConfigState] = useState<ShellPageConfig>(initialConfig);
+  const [upgradeDetail, setUpgradeDetail] = useState<UpgradeDialogDetail | null>(null);
 
   const setPageConfig = useCallback((config: ShellPageConfig) => {
     setPageConfigState((current) => current.title === config.title && current.hideScopeController === config.hideScopeController ? current : config);
@@ -114,6 +117,12 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   }, [pathname]);
 
   useEffect(() => {
+    const handler = (event: Event) => setUpgradeDetail((event as CustomEvent<UpgradeDialogDetail>).detail);
+    window.addEventListener(UPGRADE_DIALOG_EVENT, handler);
+    return () => window.removeEventListener(UPGRADE_DIALOG_EVENT, handler);
+  }, []);
+
+  useEffect(() => {
     if (!mobileMenuOpen) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -173,6 +182,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
           {pageConfig.hideScopeController ? null : <ScopeController singleEmployerUser={singleEmployerUser} />}
           <main className="main">{children}</main>
         </div>
+        <UpgradeModal detail={upgradeDetail} onClose={() => setUpgradeDetail(null)} />
       </div>
     </ShellContext.Provider>
   );
