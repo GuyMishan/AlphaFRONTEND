@@ -346,7 +346,7 @@ export default function DashboardPage() {
         {quickActions}
       </section>
     ) : (
-      <section className="grid content-grid" style={{ gridTemplateColumns: "1fr" }}>{quickActions}</section>
+      <section className="grid content-grid employer-quick-actions-wrap">{quickActions}</section>
     )}
   </AppShell>;
 }
