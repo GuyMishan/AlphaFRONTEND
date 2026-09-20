@@ -620,6 +620,7 @@ export type ScopeEmployer = {
   organizationId: string;
   legalName: string;
   registrationNumber: string;
+  withholdingFileNumber: string;
   status: number;
 };
 
