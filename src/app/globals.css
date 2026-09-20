@@ -114,9 +114,11 @@ a { color: inherit; text-decoration: none; }
 .quick-actions { display: grid; gap: 10px; }
 .quick-action { display: flex; text-align: right; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 11px; padding: 14px; background: white; cursor: pointer; }
 .quick-action:hover { border-color: #afc7e9; }
-.quick-action-icon { width: 39px; height: 39px; display: grid; place-items: center; border-radius: 9px; background: var(--blue-soft); color: var(--blue); }
+.quick-action-icon { width: 39px; height: 39px; flex: 0 0 39px; display: grid; place-items: center; line-height: 0; border-radius: 9px; background: var(--blue-soft); color: var(--blue); }
+.quick-action-icon svg { display: block; }
 .quick-action b, .quick-action span { display: block; }
 .quick-action span { font-size: 13px; color: var(--muted); }
+.employer-quick-actions-wrap { grid-template-columns: minmax(0, 560px); justify-content: start; }
 
 .wizard { max-width: 1120px; margin: auto; }
 .steps { display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 25px; }
