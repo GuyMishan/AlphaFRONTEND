@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -11,6 +11,7 @@ import { Field, type FieldErrors } from "@/components/form-feedback";
 import { isIsraeliId, isValidEmail } from "@/lib/validation";
 import { setSession } from "@/lib/session";
 import { alphaApi } from "@/lib/api";
+import type { PublicInvitation } from "@/lib/types";
 
 type Challenge = { challengeId: string };
 
@@ -25,6 +26,27 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
   const [nextSendAt, setNextSendAt] = useState(0);
+  const [invitationToken, setInvitationToken] = useState("");
+  const [invitation, setInvitation] = useState<PublicInvitation | null>(null);
+  const [invitationLoading, setInvitationLoading] = useState(false);
+
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("invitation")?.trim() ?? "";
+    if (!token) return;
+    setInvitationToken(token);
+    setInvitationLoading(true);
+    alphaApi.publicInvitation(token)
+      .then((value) => {
+        if (!value.usable) {
+          toast.error("ההזמנה אינה פעילה יותר.");
+          return;
+        }
+        setInvitation(value);
+        setEmail(value.email);
+      })
+      .catch(() => toast.error("ההזמנה לא נמצאה או שאינה זמינה יותר."))
+      .finally(() => setInvitationLoading(false));
+  }, []);
 
   function validateDetails() {
     const next: FieldErrors = {};
@@ -62,6 +84,7 @@ export default function RegisterPage() {
           email: email.trim().toLowerCase(),
           nationalId: nationalId.trim(),
           phone: phone.trim(),
+          invitationToken: invitationToken || undefined,
         }),
         cache: "no-store",
       });
@@ -107,8 +130,12 @@ export default function RegisterPage() {
       const result = await response.json() as { accessToken: string; userId: string; platformAdmin: boolean; displayName: string };
       setSession({ mode: "oidc", ...result });
       toast.success("ההרשמה הושלמה בהצלחה");
-      const onboarding = await alphaApi.onboardingStatus();
-      router.replace(onboarding.needsOnboarding ? "/onboarding" : "/dashboard");
+      if (invitationToken) {
+        router.replace("/dashboard");
+      } else {
+        const onboarding = await alphaApi.onboardingStatus();
+        router.replace(onboarding.needsOnboarding ? "/onboarding" : "/dashboard");
+      }
     } catch {
       toast.error("לא ניתן להשלים את ההרשמה כרגע.");
     } finally {
@@ -126,16 +153,17 @@ export default function RegisterPage() {
   }
 
   return <main className="auth-page"><AuthBrand /><section className="auth-form-wrap"><div className="auth-card">
-    <h2>יצירת משתמש</h2>
-    <p>{challenge ? "הזינו את קוד האימות בן 6 הספרות שנשלח לאימייל" : "הזינו את פרטי המשתמש החדש"}</p>
+    <h2>{invitation ? `הצטרפות ל־${invitation.organizationName}` : "יצירת משתמש"}</h2>
+    <p>{challenge ? "הזינו את קוד האימות בן 6 הספרות שנשלח לאימייל" : invitation ? "השלימו את הפרטים. האימייל מקובע להזמנה שקיבלתם." : "הזינו את פרטי המשתמש החדש"}</p>
+    {invitationLoading ? <div className="notice notice-info" style={{ marginBottom: 16 }}>בודק את ההזמנה...</div> : null}
 
     {!challenge ? (
       <form className="form" onSubmit={(event) => { event.preventDefault(); void requestCode(); }} noValidate>
         <Field label="שם מלא *" error={errors.displayName}><input aria-invalid={Boolean(errors.displayName)} id="name" maxLength={120} value={displayName} onChange={(e) => { setDisplayName(e.target.value); setErrors((current) => ({ ...current, displayName: undefined })); }} required /></Field>
         <Field label="תעודת זהות *" error={errors.nationalId}><input aria-invalid={Boolean(errors.nationalId)} id="national-id" inputMode="numeric" dir="ltr" maxLength={9} value={nationalId} onChange={(e) => { setNationalId(e.target.value.replace(/\D/g, "").slice(0, 9)); setErrors((current) => ({ ...current, nationalId: undefined })); }} required /></Field>
         <Field label="מספר טלפון *" error={errors.phone}><input aria-invalid={Boolean(errors.phone)} id="phone" type="tel" inputMode="tel" dir="ltr" maxLength={10} value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setErrors((current) => ({ ...current, phone: undefined })); }} required /></Field>
-        <Field label="אימייל *" error={errors.email}><input aria-invalid={Boolean(errors.email)} id="email" type="email" maxLength={254} dir="ltr" value={email} onChange={(e) => { setEmail(e.target.value); setErrors((current) => ({ ...current, email: undefined })); }} required /></Field>
-        <button className="btn btn-primary btn-lg wide" disabled={loading} type="submit">{loading ? "שולח..." : "שלחו לי קוד אימות"}<ArrowLeft size={18} /></button>
+        <Field label="אימייל *" error={errors.email}><input aria-invalid={Boolean(errors.email)} id="email" type="email" maxLength={254} dir="ltr" value={email} disabled={Boolean(invitation)} onChange={(e) => { setEmail(e.target.value); setErrors((current) => ({ ...current, email: undefined })); }} required /></Field>
+        <button className="btn btn-primary btn-lg wide" disabled={loading || invitationLoading || Boolean(invitationToken && !invitation)} type="submit">{loading ? "שולח..." : "שלחו לי קוד אימות"}<ArrowLeft size={18} /></button>
       </form>
     ) : (
       <form className="form" onSubmit={verify} noValidate>
