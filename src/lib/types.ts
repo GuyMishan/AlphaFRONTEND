@@ -499,3 +499,48 @@ export type OrganizationEmployerBilling = {
   billingMode: EmployerBillingMode;
   billingStatus: EmployerBillingStatus;
 };
+
+
+export type BillingPaymentMethodType = 1 | 2;
+export type BillingPaymentMethodStatus = 1 | 2 | 3 | 4 | 5 | 6;
+
+export type AlphaBillingAccount = {
+  id: string | null;
+  organizationId: string | null;
+  employerId: string | null;
+  billingName: string;
+  taxId: string;
+  invoiceEmail: string;
+  billingAddress: string;
+  paymentMethodType: BillingPaymentMethodType;
+  paymentMethodStatus: BillingPaymentMethodStatus;
+  providerCustomerId: string;
+  providerPaymentMethodId: string;
+  cardBrand: string;
+  cardLast4: string;
+  cardExpiryMonth: number | null;
+  cardExpiryYear: number | null;
+  bankDebitMandateReference: string;
+  configured: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type AlphaBillingAccountInput = {
+  billingName: string;
+  taxId: string;
+  invoiceEmail: string;
+  billingAddress: string;
+  paymentMethodType: BillingPaymentMethodType;
+};
+
+export type AlphaBillingProviderMetadataInput = {
+  paymentMethodStatus: BillingPaymentMethodStatus;
+  providerCustomerId: string;
+  providerPaymentMethodId: string;
+  cardBrand: string;
+  cardLast4: string;
+  cardExpiryMonth: number | null;
+  cardExpiryYear: number | null;
+  bankDebitMandateReference: string;
+};
