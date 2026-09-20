@@ -402,5 +402,6 @@ td { font-size: 14px; }
 
 
 .auth-brand .brand-tagline { font-size: 14px; color: rgba(255,255,255,.82); }
-.auth-brand .brand-logo-symbol { fill: #ffffff; }
-.auth-brand .brand-logo-symbol-inner { fill: #4ea5ff; }
+.auth-brand .brand-logo-tile { fill: #ffffff; }
+.auth-brand .brand-logo-symbol,
+.auth-brand .brand-logo-symbol-inner { fill: #173d65; }
