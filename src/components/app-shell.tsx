@@ -16,7 +16,7 @@ import { UPGRADE_DIALOG_EVENT, type UpgradeDialogDetail } from "@/lib/upgrade";
 const nav = [
   { href: "/dashboard", label: "דף הבית", icon: Gauge },
   { href: "/reports/new", label: "דיווח חדש", icon: FilePlus2 },
-  { href: "/reports", label: "דיווחים", icon: FileClock },
+  { href: "/reports", label: "דיווחים ומשובים", icon: FileClock },
   { href: "/employees", label: "עובדים", icon: Users },
   { href: "/employers", label: "מעסיקים", icon: Building2 },
 ];
