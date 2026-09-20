@@ -20,7 +20,7 @@ import "./dark-mode.css";
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo" });
 
 export const metadata: Metadata = {
-  title: "Alpha | תפעול פנסיוני",
+  title: "Alpha - תפעול פנסיוני",
   description: "מערכת תפעול ודיווח פנסיוני למעסיקים",
 };
 
