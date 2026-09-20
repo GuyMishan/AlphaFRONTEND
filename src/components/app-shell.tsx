@@ -67,14 +67,21 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
 
     setLocalSession(current);
     Promise.all([
+      alphaApi.onboardingStatus(),
       resolveSingleEmployerScope(),
       alphaApi.organizations().then(async (organizations) => {
         const capabilities = await Promise.all(organizations.map((organization) => alphaApi.capabilities(organization.id)));
         return capabilities.some((item) => item.canManageOrganization);
       }),
     ])
-      .then(([scope, managesOrganization]) => {
+      .then(([onboarding, scope, managesOrganization]) => {
         if (!active) return;
+        if (onboarding.needsOnboarding) {
+          setSingleEmployerUser(false);
+          setCanManageOrganization(false);
+          router.replace("/onboarding");
+          return;
+        }
         setSingleEmployerUser(Boolean(scope));
         setCanManageOrganization(managesOrganization);
       })
