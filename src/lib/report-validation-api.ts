@@ -36,7 +36,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
-    let message = `שגיאת שרת (${response.status})`;
+    let message = `אירעה שגיאה (${response.status})`;
     try {
       const problem = await response.json();
       message = problem?.detail ?? problem?.error ?? problem?.title ?? message;
