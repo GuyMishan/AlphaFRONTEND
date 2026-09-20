@@ -10,8 +10,7 @@ import { Field, type FieldErrors } from "@/components/form-feedback";
 import { setSession } from "@/lib/session";
 import { isIsraeliId } from "@/lib/validation";
 
-type Channel = "sms" | "email";
-type Challenge = { challengeId: string; channel: Channel };
+type Challenge = { challengeId: string };
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,7 +22,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [nextSendAt, setNextSendAt] = useState(0);
 
-  async function requestCode(channel: Channel) {
+  async function requestCode() {
     const next: FieldErrors = {};
     if (!isIsraeliId(nationalId)) next.nationalId = "תעודת הזהות אינה תקינה.";
     if (!/^05\d{8}$/.test(phone)) next.phone = "מספר הטלפון חייב להיות מספר נייד ישראלי בן 10 ספרות.";
@@ -34,7 +33,7 @@ export default function LoginPage() {
     try {
       const response = await fetch("/api/backend/api/auth/otp/request", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nationalId, phone, channel }), cache: "no-store",
+        body: JSON.stringify({ nationalId, phone, channel: "email" }), cache: "no-store",
       });
       if (!response.ok) {
         toast.error(response.status === 401 ? "תעודת הזהות או מספר הטלפון אינם תואמים" : response.status === 429 ? "ניתן לבקש קוד חדש בעוד דקה." : "לא ניתן לשלוח קוד כרגע. נסו שוב מאוחר יותר.");
@@ -44,7 +43,7 @@ export default function LoginPage() {
       setChallenge(result);
       setCode("");
       setNextSendAt(Date.now() + 60_000);
-      toast.success(channel === "sms" ? "קוד נשלח בהודעת SMS" : "קוד נשלח לדוא״ל הרשום");
+      toast.success("קוד נשלח לדוא״ל הרשום");
     } catch { toast.error("לא ניתן לשלוח קוד כרגע. נסו שוב מאוחר יותר."); }
     finally { setLoading(false); }
   }
@@ -68,17 +67,15 @@ export default function LoginPage() {
   }
 
   return <main className="auth-page"><AuthBrand /><section className="auth-form-wrap"><div className="auth-card">
-    <h2>כניסה למערכת</h2><p>{challenge ? `הזינו את הקוד בן 6 הספרות שנשלח ${challenge.channel === "sms" ? "לטלפון" : "לדוא״ל הרשום"}` : "התחברו כדי להמשיך לסביבת העבודה שלכם"}</p>
-    {!challenge ? <form className="form" onSubmit={(event) => { event.preventDefault(); void requestCode("sms"); }} noValidate>
+    <h2>כניסה למערכת</h2><p>{challenge ? "הזינו את הקוד בן 6 הספרות שנשלח לדוא״ל הרשום" : "התחברו כדי להמשיך לסביבת העבודה שלכם"}</p>
+    {!challenge ? <form className="form" onSubmit={(event) => { event.preventDefault(); void requestCode(); }} noValidate>
       <Field label="תעודת זהות *" error={errors.nationalId}><input aria-invalid={Boolean(errors.nationalId)} id="national-id" inputMode="numeric" autoComplete="username" dir="ltr" value={nationalId} onChange={(e) => { setNationalId(e.target.value.replace(/\D/g, "").slice(0, 9)); setErrors((current) => ({ ...current, nationalId: undefined })); }} required maxLength={9} /></Field>
       <Field label="מספר טלפון *" error={errors.phone}><input aria-invalid={Boolean(errors.phone)} id="phone" type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setErrors((current) => ({ ...current, phone: undefined })); }} required maxLength={10} /></Field>
-      <button className="btn btn-primary btn-lg wide" disabled={loading} type="submit">{loading ? "שולח..." : "שלחו לי קוד ב-SMS"}<ArrowLeft size={18} /></button>
-      <button className="btn wide" disabled={loading} type="button" onClick={() => void requestCode("email")}>שלחו לי קוד בדוא״ל</button>
+      <button className="btn btn-primary btn-lg wide" disabled={loading} type="submit">{loading ? "שולח..." : "שלחו לי קוד בדוא״ל"}<ArrowLeft size={18} /></button>
     </form> : <form className="form" onSubmit={verify} noValidate>
       <Field label="קוד אימות *"><input id="otp-code" type="text" inputMode="numeric" autoComplete="one-time-code" dir="ltr" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} required maxLength={6} /></Field>
       <button className="btn btn-primary btn-lg wide" disabled={loading} type="submit">{loading ? "מאמת..." : "אימות וכניסה"}<ArrowLeft size={18} /></button>
-      <button className="btn wide" disabled={loading} type="button" onClick={() => void requestCode(challenge.channel)}>שלחו קוד חדש</button>
-      <button className="btn wide" disabled={loading} type="button" onClick={() => void requestCode(challenge.channel === "sms" ? "email" : "sms")}>{challenge.channel === "sms" ? "שלחו לי בדוא״ל" : "שלחו לי ב-SMS"}</button>
+      <button className="btn wide" disabled={loading} type="button" onClick={() => void requestCode()}>שלחו קוד חדש</button>
       <button className="btn wide" type="button" onClick={() => { setChallenge(null); setCode(""); }}>שינוי פרטי כניסה</button>
     </form>}
     <div className="auth-footer">צריכים ליצור משתמש? <Link href="/register">להרשמה</Link></div>
