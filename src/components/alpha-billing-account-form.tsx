@@ -127,7 +127,6 @@ export function AlphaBillingAccountForm({
   }
 
   async function syncPaymentMethod() {
-    if (!account.configured) return;
     setSyncing(true);
     try {
       if (employerId) await alphaApi.syncEmployerPaymentMethod(organizationId, employerId);
