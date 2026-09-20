@@ -27,6 +27,7 @@ import type {
   BankDebitMandateStatus,
   BankOption,
   BankBranchOption,
+  BillingGateStatus,
   EmployerProfileCenterSettings,
   EmployerOption,
   EmployerRole,
@@ -176,6 +177,8 @@ export const alphaApi = {
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/`),
   employerBillingResolution: (organizationId: string, employerId: string): Promise<EmployerBillingResolution> =>
     request<EmployerBillingResolution>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/resolution`),
+  employerBillingGate: (organizationId: string, employerId: string): Promise<BillingGateStatus> =>
+    request<BillingGateStatus>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/gate`),
   saveEmployerBillingAccount: (organizationId: string, employerId: string, payload: AlphaBillingAccountInput): Promise<AlphaBillingAccount> =>
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/`, { method: "PUT", body: JSON.stringify(payload) }),
   updateEmployerBillingProviderMetadata: (organizationId: string, employerId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
