@@ -115,7 +115,9 @@ export function AlphaBillingAccountForm({
     }
     setConnecting(true);
     try {
-      const returnPath = window.location.pathname + window.location.search;
+      const url = new URL(window.location.href);
+      url.searchParams.delete("payment");
+      const returnPath = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "");
       const setup = employerId
         ? await alphaApi.startEmployerPaymentSetup(organizationId, employerId, returnPath)
         : await alphaApi.startOrganizationPaymentSetup(organizationId, returnPath);
