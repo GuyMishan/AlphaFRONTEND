@@ -639,3 +639,19 @@ export type GlobalScopeContext = {
   organizationCount: number;
   employerCount: number;
 };
+
+
+export type PaymentMethodSetupResult = {
+  provider: string;
+  setupRequestId: string;
+  redirectUrl: string;
+};
+
+export type PaymentMethodSyncResult = {
+  provider: string;
+  status: BillingPaymentMethodStatus;
+  cardBrand: string;
+  cardLast4: string;
+  cardExpiryMonth: number | null;
+  cardExpiryYear: number | null;
+};
