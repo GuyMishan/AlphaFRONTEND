@@ -9,7 +9,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
   const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
-    let message = `שגיאת שרת (${response.status})`;
+    let message = `אירעה שגיאה (${response.status})`;
     try {
       const problem = await response.json();
       message = problem?.error === "payment_account_required"
