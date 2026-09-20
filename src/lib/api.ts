@@ -12,6 +12,7 @@ import type {
   EmployerCapabilities,
   EmployerInput,
   EmployerOption,
+  EmployerRole,
   ManualProductInput,
   ManualReportDraft,
   ManualReportEmployeeDetail,
@@ -83,10 +84,10 @@ export const alphaApi = {
     ? Promise.resolve(demoEmployers.find((item) => item.id === employerId && item.organizationId === organizationId)!)
     : request<Employer>(`/api/organizations/${organizationId}/employers/${employerId}`),
   capabilities: (organizationId: string): Promise<OrganizationCapabilities> => getSession()?.mode === "demo"
-    ? Promise.resolve({ canCreateEmployer: true })
+    ? Promise.resolve({ canManageOrganization: true, canCreateEmployer: true })
     : request<OrganizationCapabilities>(`/api/organizations/${organizationId}/capabilities`),
   employerCapabilities: (organizationId: string, employerId: string): Promise<EmployerCapabilities> => getSession()?.mode === "demo"
-    ? Promise.resolve({ canEditEmployer: true, canCreateEmployee: true, canEditEmployee: true })
+    ? Promise.resolve({ canManageEmployer: true, canEditEmployer: true, canCreateEmployee: true, canEditEmployee: true, canCreateReport: true, canTransmitReport: true })
     : request<EmployerCapabilities>(`/api/organizations/${organizationId}/employers/${employerId}/capabilities`),
   createEmployer: (organizationId: string, payload: EmployerInput) => getSession()?.mode === "demo"
     ? Promise.resolve({ id: crypto.randomUUID(), organizationId, ...payload, status: 1 } as Employer)
@@ -152,6 +153,8 @@ export const alphaApi = {
     getSession()?.mode === "demo" ? Promise.resolve([]) : request<EmployerOption[]>(`/api/organizations/${organizationId}/access/employer-options${qs({ userId, search, take })}`),
   grantEmployerAccess: (organizationId: string, userId: string, employerId: string) =>
     getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}/employers/${employerId}`, { method: "POST" }),
+  updateEmployerAccessRole: (organizationId: string, userId: string, employerId: string, role: EmployerRole) =>
+    getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}/employers/${employerId}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
   revokeEmployerAccess: (organizationId: string, userId: string, employerId: string) =>
     getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}/employers/${employerId}`, { method: "DELETE" }),
 };
