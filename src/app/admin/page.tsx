@@ -43,7 +43,7 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
-    let message = `שגיאת שרת (${response.status})`;
+    let message = `אירעה שגיאה (${response.status})`;
     try {
       const body = await response.json();
       message = body.errorMessage ?? body.error ?? body.detail ?? body.title ?? message;
