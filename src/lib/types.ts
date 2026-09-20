@@ -381,7 +381,7 @@ export type EmployerAddressSettings = {
 
 export type EmployerBillingMode = 1 | 2;
 export type EmployerBillingStatus = 1 | 2 | 3;
-export type DebitAuthorizationStatus = 1 | 2 | 3 | 4;
+export type BankDebitMandateStatus = 1 | 2 | 3 | 4 | 5;
 
 export type EmployerProfileCenterSettings = {
   address: EmployerAddressSettings;
@@ -398,24 +398,57 @@ export type EmployerProfileCenterSettings = {
   };
 };
 
-export type EmployerPensionPaymentAccount = {
+export type BankDebitMandate = {
+  id: string;
+  employerPaymentAccountId: string;
+  status: BankDebitMandateStatus;
+  externalMandateId: string;
+  approvedAt: string | null;
+  cancelledAt: string | null;
+  documentId: string;
+  isActive: boolean;
+};
+
+export type EmployerPaymentAccount = {
   id: string;
   organizationId: string;
   employerId: string;
-  accountName: string;
-  bankCode: number;
-  branchCode: number;
-  accountNumber: string;
+  bankId: number;
+  branchId: number;
+  maskedAccountNumber: string;
   accountHolderName: string;
+  maskedAccountHolderId: string;
   isDefault: boolean;
-  debitAuthorizationStatus: DebitAuthorizationStatus;
-  createdAt?: string;
-  updatedAt?: string;
+  isActive: boolean;
+  mandate: BankDebitMandate | null;
+  mandateIsActive: boolean;
 };
 
-export type EmployerPensionPaymentAccountInput = Omit<EmployerPensionPaymentAccount,
-  "id" | "organizationId" | "employerId" | "createdAt" | "updatedAt">;
+export type EmployerPaymentAccountEdit = Omit<EmployerPaymentAccount, "maskedAccountNumber" | "maskedAccountHolderId" | "mandateIsActive"> & {
+  accountNumber: string;
+  accountHolderId: string;
+};
 
+export type EmployerPaymentAccountInput = {
+  bankId: number;
+  branchId: number;
+  accountNumber: string;
+  accountHolderName: string;
+  accountHolderId: string;
+  isDefault: boolean;
+};
+
+export type BankOption = {
+  bankCode: number;
+  bankName: string;
+};
+
+export type BankBranchOption = {
+  branchCode: number;
+  branchName: string;
+  branchAddress: string;
+  city: string;
+};
 
 export type OrganizationBillingStatus = 1 | 2 | 3 | 4;
 
