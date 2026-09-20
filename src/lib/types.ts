@@ -227,16 +227,21 @@ export type ApiProblem = {
 };
 
 export type OrganizationCapabilities = {
+  canManageOrganization: boolean;
   canCreateEmployer: boolean;
 };
 
 export type EmployerCapabilities = {
+  canManageEmployer: boolean;
   canEditEmployer: boolean;
   canCreateEmployee: boolean;
   canEditEmployee: boolean;
+  canCreateReport: boolean;
+  canTransmitReport: boolean;
 };
 
 export type OrganizationRole = 1 | 2 | 3 | 4;
+export type EmployerRole = 1 | 2 | 3 | 4;
 export type EmployerAccessMode = 1 | 2;
 
 export type AccessUser = {
@@ -259,6 +264,7 @@ export type AccessEmployer = {
   id: string;
   legalName: string;
   registrationNumber: string;
+  role: EmployerRole;
 };
 
 export type EmployerOption = AccessEmployer & {
