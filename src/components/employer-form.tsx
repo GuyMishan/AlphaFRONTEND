@@ -11,7 +11,23 @@ import type { Employer, EmployerInput } from "@/lib/types";
 import { isValidEmail } from "@/lib/validation";
 import { Field, type FieldErrors } from "@/components/form-feedback";
 
-export function EmployerForm({ organizationId, employer, editable = true }: { organizationId: string; employer?: Employer; editable?: boolean }) {
+export function EmployerForm({
+  organizationId,
+  employer,
+  editable = true,
+  onCreate,
+  onCreated,
+  showBackLink = true,
+  createLabel = "הקמת מעסיק",
+}: {
+  organizationId?: string;
+  employer?: Employer;
+  editable?: boolean;
+  onCreate?: (input: EmployerInput) => Promise<Employer>;
+  onCreated?: (employer: Employer) => void;
+  showBackLink?: boolean;
+  createLabel?: string;
+}) {
   const router = useRouter();
   const [form, setForm] = useState<EmployerInput>({
     legalName: employer?.legalName ?? "",
@@ -28,7 +44,7 @@ export function EmployerForm({ organizationId, employer, editable = true }: { or
   const title = employer ? employer.legalName : "מעסיק חדש";
 
   useEffect(() => {
-    if (!employer) return;
+    if (!employer || !organizationId) return;
     employerInterfaceApi.employerProfile(organizationId, employer.id).then((profile) => {
       setForm((current) => ({ ...current, ...profile }));
     }).catch(() => { /* keep entity values if profile loading fails */ });
@@ -71,22 +87,32 @@ export function EmployerForm({ organizationId, employer, editable = true }: { or
     if (Object.values(nextErrors).some(Boolean)) { toast.error("יש לתקן את השדות המסומנים באדום."); return; }
     setSaving(true);
     try {
-      const saved = employer ? await alphaApi.updateEmployer(organizationId, employer.id, normalized) : await alphaApi.createEmployer(organizationId, normalized);
-      await employerInterfaceApi.updateEmployerProfile(organizationId, saved.id, {
-        contactFirstName: normalized.contactFirstName ?? "",
-        contactLastName: normalized.contactLastName ?? "",
-        contactPhone: normalized.contactPhone ?? "",
-        contactEmail: normalized.contactEmail ?? "",
-        contactMobile: normalized.contactMobile ?? "",
-      });
+      if (employer && !organizationId) throw new Error("חסר מזהה ארגון.");
+      const saved = employer
+        ? await alphaApi.updateEmployer(organizationId!, employer.id, normalized)
+        : onCreate
+          ? await onCreate(normalized)
+          : await alphaApi.createEmployer(organizationId!, normalized);
+
+      if (!onCreate && organizationId) {
+        await employerInterfaceApi.updateEmployerProfile(organizationId, saved.id, {
+          contactFirstName: normalized.contactFirstName ?? "",
+          contactLastName: normalized.contactLastName ?? "",
+          contactPhone: normalized.contactPhone ?? "",
+          contactEmail: normalized.contactEmail ?? "",
+          contactMobile: normalized.contactMobile ?? "",
+        });
+      }
+
       toast.success(employer ? "פרטי המעסיק נשמרו בהצלחה" : "המעסיק הוקם בהצלחה");
-      router.push(`/employers/${saved.id}?organizationId=${organizationId}`);
+      if (onCreated) onCreated(saved);
+      else router.push(`/employers/${saved.id}?organizationId=${organizationId}`);
     } catch (err) { toast.error(err instanceof Error ? err.message : "שמירת המעסיק נכשלה"); }
     finally { setSaving(false); }
   }
 
   return <div className="card profile-card">
-    <div className="profile-summary"><div className="profile-avatar"><Building2 /></div><div><h2 style={{ margin: 0 }}>{title}</h2><span style={{ color: "var(--muted)" }}>{employer ? editable ? "עריכת פרופיל מעסיק" : "צפייה בפרופיל מעסיק" : "הקמת מעסיק חדש בארגון"}</span></div></div>
+    <div className="profile-summary"><div className="profile-avatar"><Building2 /></div><div><h2 style={{ margin: 0 }}>{title}</h2><span style={{ color: "var(--muted)" }}>{employer ? editable ? "עריכת פרופיל מעסיק" : "צפייה בפרופיל מעסיק" : onCreate ? "הגדרת העסק שלכם" : "הקמת מעסיק חדש בארגון"}</span></div></div>
     {!editable && employer ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק הזה, ללא הרשאת עריכה.</div> : null}
     <form className="form" onSubmit={submit} noValidate>
       <Field label="שם משפטי מלא *" error={errors.legalName}><input aria-invalid={Boolean(errors.legalName)} required minLength={2} maxLength={200} disabled={!editable} value={form.legalName} onChange={(event) => update("legalName", event.target.value)} /></Field>
@@ -102,7 +128,7 @@ export function EmployerForm({ organizationId, employer, editable = true }: { or
       </div>
       <Field label="אימייל איש קשר *" error={errors.contactEmail}><input disabled={!editable} type="email" maxLength={50} value={form.contactEmail ?? ""} onChange={(event) => update("contactEmail", event.target.value)} /></Field>
       {employer ? <div className="field"><label>סטטוס</label><input disabled value={employer.status === 2 ? "פעיל" : "בתהליך הקמה"} /></div> : null}
-      <div className="form-actions"><Link className="btn btn-secondary" href="/employers">חזרה</Link>{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employer ? "שמירת שינויים" : "הקמת מעסיק"}</button> : null}</div>
+      <div className="form-actions">{showBackLink ? <Link className="btn btn-secondary" href="/employers">חזרה</Link> : null}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employer ? "שמירת שינויים" : createLabel}</button> : null}</div>
     </form>
   </div>;
 }
