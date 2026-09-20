@@ -1,6 +1,34 @@
 import { getSession } from "./session";
 import type { ManualReportKind } from "./types";
 
+
+export type EmployerInterfaceDocumentType =
+  | "CurrentReport"
+  | "NegativeReport"
+  | "SummaryFeedback"
+  | "AnnualSummaryFeedback";
+
+export type EmployerInterfaceUploadValidation = {
+  isValid: boolean;
+  documentType?: EmployerInterfaceDocumentType | string | null;
+  version?: string | null;
+  schemaFileName?: string | null;
+  issues: string[];
+  fileName?: string | null;
+  fileHash?: string | null;
+};
+
+export type EmployerInterfaceImportResult = {
+  reportId?: string | null;
+  feedbackId?: string | null;
+  documentType?: EmployerInterfaceDocumentType | string | null;
+  importedEmployees: number;
+  unmatchedRows: number;
+  validation: EmployerInterfaceUploadValidation;
+  fileName?: string | null;
+  fileHash?: string | null;
+};
+
 export type EmployerInterfaceOption = {
   code: number;
   name: string;
@@ -84,11 +112,38 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+
+async function uploadEmployerInterface<T>(path: string, file: File): Promise<T> {
+  const session = getSession();
+  const headers = new Headers({ Accept: "application/json" });
+  if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
+  if (session?.mode === "development" && session.userId) {
+    headers.set("X-Alpha-User-Id", session.userId);
+    if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
+  }
+  const body = new FormData();
+  body.append("file", file);
+  const response = await fetch(`/api/backend${path}`, { method: "POST", headers, body, cache: "no-store" });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    const validationIssues = payload?.validation?.issues;
+    const message = payload?.detail ?? payload?.error ?? payload?.title
+      ?? (Array.isArray(validationIssues) && validationIssues.length ? validationIssues.join(" ") : null)
+      ?? `שגיאת שרת (${response.status})`;
+    throw new Error(message);
+  }
+  return payload as T;
+}
+
 function employerPath(organizationId: string, employerId: string) {
   return `/api/organizations/${organizationId}/employers/${employerId}/employer-interface`;
 }
 
 export const employerInterfaceApi = {
+  validateUpload: (organizationId: string, employerId: string, file: File) =>
+    uploadEmployerInterface<EmployerInterfaceUploadValidation>(`${employerPath(organizationId, employerId)}/validate`, file),
+  importUpload: (organizationId: string, employerId: string, file: File) =>
+    uploadEmployerInterface<EmployerInterfaceImportResult>(`${employerPath(organizationId, employerId)}/import`, file),
   options: (category: string, scope = "all") => {
     const params = new URLSearchParams({ category, scope });
     return request<EmployerInterfaceOption[]>(`/api/reference-data/employer-interface-006/options?${params}`);
