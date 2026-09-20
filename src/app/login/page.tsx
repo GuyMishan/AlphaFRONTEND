@@ -9,6 +9,7 @@ import { AuthBrand } from "@/components/auth-brand";
 import { OtpInput } from "@/components/otp-input";
 import { Field, type FieldErrors } from "@/components/form-feedback";
 import { setSession } from "@/lib/session";
+import { alphaApi } from "@/lib/api";
 import { isIsraeliId } from "@/lib/validation";
 
 type Challenge = { challengeId: string };
@@ -101,7 +102,8 @@ export default function LoginPage() {
       };
       setSession({ mode: "oidc", ...result });
       toast.success("התחברת בהצלחה");
-      router.push("/dashboard");
+      const onboarding = await alphaApi.onboardingStatus();
+      router.replace(onboarding.needsOnboarding ? "/onboarding" : "/dashboard");
     } catch {
       toast.error("לא ניתן להתחבר כרגע.");
     } finally {
