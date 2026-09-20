@@ -72,7 +72,7 @@ export default function EmployeesPage() {
     {error ? <div className="notice notice-error">{error}</div> : null}
     <section className="card">
       <div className="toolbar"><div className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div><span className="badge badge-blue">{employees.length} תוצאות</span></div>
-      {loading ? <div className="empty">טוען עובדים מה־Backend...</div> : employees.length ? <VirtualizedTable
+      {loading ? <div className="empty">טוען עובדים...</div> : employees.length ? <VirtualizedTable
         items={employees}
         rowKey={(employee) => employee.id}
         columns={[{ key: "name", label: "שם" }, { key: "nationalId", label: "תעודת זהות" }, { key: "employeeNumber", label: "מספר עובד" }, { key: "startDate", label: "תאריך התחלה" }, { key: "endDate", label: "תאריך סיום" }, { key: "status", label: "סטטוס" }]}
