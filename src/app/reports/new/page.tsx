@@ -91,7 +91,7 @@ export default function NewReportPage() {
   const summaryStep = isExcel ? 5 : 4;
 
   async function loadScope(nextScope: { organizationId: string; employerId: string }) {
-    setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId("");
+    setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
     try {
       const [employerItem, employeePage, capabilities, profileSettings, accountRows, billingGateStatus] = await Promise.all([
         alphaApi.employer(nextScope.organizationId, nextScope.employerId),
