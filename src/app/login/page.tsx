@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBrand } from "@/components/auth-brand";
+import { OtpInput } from "@/components/otp-input";
 import { Field, type FieldErrors } from "@/components/form-feedback";
 import { setSession } from "@/lib/session";
 import { isIsraeliId } from "@/lib/validation";
@@ -56,7 +57,7 @@ export default function LoginPage() {
     try {
       const response = await fetch("/api/backend/api/auth/otp/verify", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ challengeId: challenge.challengeId, code }), cache: "no-store",
+        body: JSON.stringify({ challengeId: challenge.challengeId, code: codeToVerify }), cache: "no-store",
       });
       if (!response.ok) { toast.error(response.status === 401 ? "הקוד שגוי, פג תוקף או נוצל. נסו שוב או בקשו קוד חדש." : "לא ניתן להתחבר כרגע."); return; }
       const result = await response.json() as { accessToken: string; userId: string; platformAdmin: boolean; displayName: string };
@@ -74,7 +75,7 @@ export default function LoginPage() {
       <Field label="מספר טלפון *" error={errors.phone}><input aria-invalid={Boolean(errors.phone)} id="phone" type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setErrors((current) => ({ ...current, phone: undefined })); }} required maxLength={10} /></Field>
       <button className="btn btn-primary btn-lg wide" disabled={loading} type="submit">{loading ? "שולח..." : "שלחו לי קוד בדוא״ל"}<ArrowLeft size={18} /></button>
     </form> : <form className="form" onSubmit={verify} noValidate>
-      <Field label="קוד אימות *"><input id="otp-code" type="text" inputMode="numeric" autoComplete="one-time-code" dir="ltr" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} required maxLength={6} /></Field>
+      <Field label="קוד אימות *"><OtpInput value={code} onChange={setCode} onComplete={(value) => void verifyCode(value)} disabled={loading} /></Field>
       <button className="btn btn-primary btn-lg wide" disabled={loading} type="submit">{loading ? "מאמת..." : "אימות וכניסה"}<ArrowLeft size={18} /></button>
       <button className="btn wide" disabled={loading} type="button" onClick={() => void requestCode()}>שלחו קוד חדש</button>
       <button className="btn wide" type="button" onClick={() => { setChallenge(null); setCode(""); }}>שינוי פרטי כניסה</button>
