@@ -1,4 +1,5 @@
 import { getSession } from "./session";
+import { openUpgradeDialog, upgradeDetailFromProblem } from "./upgrade";
 import type {
   AccessEmployer,
   AccessUser,
@@ -56,6 +57,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     try { problem = await response.json(); } catch { /* empty response */ }
     const limitNames: Record<string, string> = { employers: "מעסיקים", active_employees: "עובדים פעילים", users: "משתמשים" };
     const featureNames: Record<string, string> = { report_transmission: "שליחת דיווחים" };
+    const upgradeDetail = upgradeDetailFromProblem(problem);
+    if (upgradeDetail) openUpgradeDialog(upgradeDetail);
+
     const message = problem?.error === "plan_limit_reached"
       ? `הגעתם למגבלת ${limitNames[problem.limit ?? ""] ?? problem.limit ?? "המסלול"} במסלול הנוכחי (${problem.current ?? 0}/${problem.maximum ?? 0}).`
       : problem?.error === "feature_not_available"

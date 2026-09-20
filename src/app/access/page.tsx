@@ -5,8 +5,10 @@ import { Building2, Plus, Save, Search, ShieldCheck, Trash2, UserPlus } from "lu
 import { AppShell } from "@/components/app-shell";
 import { VirtualizedTable } from "@/components/virtualized-table";
 import { ReferenceOptionSelect } from "@/components/reference-option-select";
+import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
 import { getOrganizationSelection } from "@/lib/session";
+import { openUpgradeDialog } from "@/lib/upgrade";
 import { referenceOptionsApi, type ReferenceOption } from "@/lib/reference-options-api";
 import type { AccessEmployer, AccessUser, EmployerAccessMode, EmployerOption, EmployerRole, EntitlementSnapshot, Organization, OrganizationRole, UserCandidate } from "@/lib/types";
 
@@ -118,8 +120,15 @@ export default function AccessPage() {
   async function revokeEmployer(employerId: string) { if (!selected) return; try { await alphaApi.revokeEmployerAccess(organizationId, selected.userId, employerId); setAssigned((items) => items.filter((x) => x.id !== employerId)); setEmployerOptions((items) => items.map((x) => x.id === employerId ? { ...x, assigned: false } : x)); } catch (err) { setError(err instanceof Error ? err.message : "הסרת המעסיק נכשלה"); } }
 
   return <AppShell title="משתמשים והרשאות">
-    <div className="page-head"><div><h1>משתמשים והרשאות</h1><p>ניהול גישה לפי ארגון ומעסיקים, עם חיפוש שרת ורשימות וירטואליות.</p></div><button className="btn btn-primary" disabled={Boolean(entitlements && entitlements.users.current >= entitlements.users.maximum)} onClick={() => setAdding((value) => !value)}><UserPlus size={18} />הוספת משתמש</button></div>
-    {entitlements && entitlements.users.current >= entitlements.users.maximum ? <div className="notice notice-info" style={{ marginBottom: 18 }}><b>הגעתם למגבלת המשתמשים במסלול {entitlements.plan.name}</b><div>{entitlements.users.current}/{entitlements.users.maximum} משתמשים</div></div> : null}
+    <div className="page-head"><div><h1>משתמשים והרשאות</h1><p>ניהול גישה לפי ארגון ומעסיקים, עם חיפוש שרת ורשימות וירטואליות.</p></div><button className="btn btn-primary" onClick={() => {
+      if (entitlements && entitlements.users.current >= entitlements.users.maximum) {
+        openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum });
+        return;
+      }
+      setAdding((value) => !value);
+    }}><UserPlus size={18} />הוספת משתמש</button></div>
+    {entitlements ? <section className="card" style={{ marginBottom: 18 }}><div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.plan.name}</h3></div></div><PlanUsage label="משתמשים" usage={entitlements.users} /></section> : null}
+    {entitlements && entitlements.users.current >= entitlements.users.maximum ? <div className="notice notice-info" style={{ marginBottom: 18 }}><b>הגעתם למגבלת המשתמשים במסלול.</b><div style={{ marginTop: 10 }}><button className="btn btn-primary" type="button" onClick={() => openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum })}>יצירת קשר לשדרוג</button></div></div> : null}
     {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
 
     {adding ? <section className="card" style={{ marginBottom: 18 }}><h2 style={{ marginTop: 0 }}>הוספת משתמש לארגון</h2><div className="toolbar"><div className="search"><Search size={17} /><input value={candidateSearch} onChange={(e) => setCandidateSearch(e.target.value)} placeholder="לפחות 2 תווים בשם או באימייל" /></div></div>{candidates.length ? <VirtualizedTable items={candidates} maxHeight={260} rowHeight={52} rowKey={(item) => item.id} onRowClick={setCandidate} columns={[{ key: "name", label: "משתמש" }, { key: "email", label: "אימייל" }, { key: "selected", label: "" }]} renderCells={(item) => [<b>{item.displayName}</b>, item.email, candidate?.id === item.id ? <span className="badge badge-blue">נבחר</span> : null]} /> : null}{candidate ? <div className="grid two-cols" style={{ marginTop: 18 }}><div className="field"><label>תפקיד</label><ReferenceOptionSelect category="organization-role" value={newRole} onChange={(value) => setNewRole(Number(value) as OrganizationRole)} /></div><div className="field"><label>גישה למעסיקים</label><ReferenceOptionSelect category="employer-access-mode" value={newAccessMode} onChange={(value) => setNewAccessMode(Number(value) as EmployerAccessMode)} /></div><div className="form-actions"><button className="btn btn-primary" onClick={addUser} type="button"><Plus size={18} />הוספה לארגון</button></div></div> : null}</section> : null}

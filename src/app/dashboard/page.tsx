@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
 import { resolveSingleEmployerScope } from "@/lib/access-scope";
 import {
@@ -24,7 +25,7 @@ import {
   setEmployerSelection,
   setOrganizationSelection,
 } from "@/lib/session";
-import type { Employee, Employer, Organization } from "@/lib/types";
+import type { Employee, Employer, EntitlementSnapshot, Organization } from "@/lib/types";
 
 type DashboardMode = "admin" | "organization" | "employer";
 
@@ -72,12 +73,17 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
 
   const selectedEmployer = employers.find((item) => item.id === employerId) ?? null;
   const selectedOrganization = organizations.find((item) => item.id === organizationId) ?? null;
 
   async function loadEmployerDashboard(org: Organization, employer: Employer) {
-    const employees = await safeEmployees(org.id, employer.id);
+    const [employees, planUsage] = await Promise.all([
+      safeEmployees(org.id, employer.id),
+      alphaApi.entitlements(org.id),
+    ]);
+    setEntitlements(planUsage);
     setStats({
       organizations: 1,
       employers: 1,
@@ -95,8 +101,12 @@ export default function DashboardPage() {
       return;
     }
 
-    const allEmployers = await alphaApi.employers(orgId);
+    const [allEmployers, planUsage] = await Promise.all([
+      alphaApi.employers(orgId),
+      alphaApi.entitlements(orgId),
+    ]);
     setEmployers(allEmployers);
+    setEntitlements(planUsage);
 
     const saved = getEmployerSelection();
     const selected = saved?.organizationId === orgId && allEmployers.some((item) => item.id === saved.employerId)
@@ -151,6 +161,7 @@ export default function DashboardPage() {
         setOrganizations(accessibleOrganizations);
 
         if (session?.platformAdmin) {
+          setEntitlements(null);
           setMode("admin");
           await loadAdminDashboard(accessibleOrganizations);
           return;
@@ -257,6 +268,15 @@ export default function DashboardPage() {
     </div>
 
     {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
+
+    {mode !== "admin" && entitlements ? <section className="card" style={{ marginBottom: 18 }}>
+      <div className="card-head"><div><h2>מסלול {entitlements.plan.name}</h2><span style={{ color: "var(--muted)" }}>השימוש הנוכחי מול מכסת המסלול</span></div></div>
+      <div className="grid stats">
+        <PlanUsage label="מעסיקים" usage={entitlements.employers} />
+        <PlanUsage label="עובדים פעילים" usage={entitlements.activeEmployees} />
+        <PlanUsage label="משתמשים" usage={entitlements.users} />
+      </div>
+    </section> : null}
 
     <section className="grid stats">
       {mode === "admin" ? <StatCard label="ארגונים" value={loading ? "—" : stats.organizations} icon={<Building2 size={18} />} /> : null}

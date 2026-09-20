@@ -3,17 +3,18 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmployeeForm } from "@/components/employee-form";
+import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
 import { getEmployerSelection } from "@/lib/session";
-import type { Employer } from "@/lib/types";
+import { openUpgradeDialog } from "@/lib/upgrade";
+import type { Employer, EntitlementSnapshot } from "@/lib/types";
 
 export default function NewEmployeePage() {
   const [organizationId, setOrganizationId] = useState("");
   const [employerId, setEmployerId] = useState("");
   const [employer, setEmployer] = useState<Employer>();
   const [canCreateEmployee, setCanCreateEmployee] = useState(false);
-  const [limitReached, setLimitReached] = useState(false);
-  const [limitText, setLimitText] = useState("");
+  const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [scopeResolved, setScopeResolved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,9 +41,7 @@ export default function NewEmployeePage() {
       ]);
       setEmployer(company);
       setCanCreateEmployee(capabilities.canCreateEmployee);
-      const reached = entitlements.activeEmployees.current >= entitlements.activeEmployees.maximum;
-      setLimitReached(reached);
-      setLimitText(`מסלול ${entitlements.plan.name}: ${entitlements.activeEmployees.current}/${entitlements.activeEmployees.maximum} עובדים פעילים`);
+      setEntitlements(entitlements);
     } catch (err) {
       setEmployer(undefined);
       setCanCreateEmployee(false);
@@ -73,7 +72,7 @@ export default function NewEmployeePage() {
       : error ? <div className="notice notice-error">{error}</div>
       : !organizationId || !employerId ? <div className="empty">בחרו מעסיק כדי להתחיל בהקמת העובד.</div>
       : !canCreateEmployee ? <div className="notice notice-info">אין לך הרשאה להקים עובד אצל המעסיק הזה.</div>
-      : limitReached ? <div className="notice notice-info"><b>הגעתם למגבלת המסלול</b><div>{limitText}</div></div>
+      : entitlements ? <><section className="card" style={{ marginBottom: 18 }}><div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.plan.name}</h3></div></div><PlanUsage label="עובדים פעילים" usage={entitlements.activeEmployees} /></section>{entitlements.activeEmployees.current >= entitlements.activeEmployees.maximum ? <div className="notice notice-info"><b>הגעתם למגבלת העובדים הפעילים במסלול.</b><div style={{ marginTop: 10 }}><button className="btn btn-primary" type="button" onClick={() => openUpgradeDialog({ reason: "active_employees", planName: entitlements.plan.name, current: entitlements.activeEmployees.current, maximum: entitlements.activeEmployees.maximum })}>יצירת קשר לשדרוג</button></div></div> : <EmployeeForm organizationId={organizationId} employerId={employerId} employer={employer} />}</>
       : <EmployeeForm organizationId={organizationId} employerId={employerId} employer={employer} />}
   </AppShell>;
 }
