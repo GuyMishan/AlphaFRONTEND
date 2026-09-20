@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Building2, UserRound } from "lucide-react";
 import { alphaApi } from "@/lib/api";
@@ -12,7 +12,7 @@ import {
   setEmployerSelection,
   setOrganizationSelection,
 } from "@/lib/session";
-import type { Employee, Employer, Organization } from "@/lib/types";
+import type { Employee, GlobalScopeContext, ScopeEmployer, ScopeOrganization } from "@/lib/types";
 
 type ScopeLevel = "organization" | "employer" | "employee";
 
@@ -27,32 +27,35 @@ function emitScopeChange(detail: { organizationId: string; employerId?: string; 
   window.dispatchEvent(new CustomEvent("alpha:scope-change", { detail }));
 }
 
-export function ScopeController({ singleEmployerUser = false }: { singleEmployerUser?: boolean }) {
+export function ScopeController() {
   const pathname = usePathname();
   const router = useRouter();
   const level = requiredScope(pathname);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [employers, setEmployers] = useState<Employer[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [scope, setScope] = useState<GlobalScopeContext | null>(null);
   const [organizationId, setOrganizationId] = useState("");
   const [employerId, setEmployerId] = useState("");
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeeId, setEmployeeId] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const loadEmployers = useCallback(async (orgId: string) => {
-    const items = await alphaApi.employers(orgId);
-    setEmployers(items);
-    const saved = getEmployerSelection();
-    const nextId = saved?.organizationId === orgId && items.some((item) => item.id === saved.employerId)
-      ? saved.employerId
-      : items[0]?.id ?? "";
-    setEmployerId(nextId);
-    if (nextId) setEmployerSelection(orgId, nextId);
-    return nextId;
-  }, []);
+  const allEmployers = useMemo(() => {
+    if (!scope) return [] as Array<{ organization: ScopeOrganization; employer: ScopeEmployer }>;
+    return scope.organizations.flatMap((organization) =>
+      organization.employers.map((employer) => ({ organization, employer }))
+    );
+  }, [scope]);
 
-  const loadEmployees = useCallback(async (orgId: string, empId: string) => {
-    if (!empId) { setEmployees([]); setEmployeeId(""); return ""; }
+  const selectedOrganization = scope?.organizations.find((item) => item.id === organizationId) ?? null;
+  const selectedOrganizationHasScope = Boolean(selectedOrganization?.hasOrganizationScope);
+  const relevantOrganizations = scope?.organizations.filter((item) => item.hasOrganizationScope) ?? [];
+  const organizationEmployers = selectedOrganization?.employers ?? [];
+
+  async function loadEmployees(orgId: string, empId: string) {
+    if (!orgId || !empId) {
+      setEmployees([]);
+      setEmployeeId("");
+      return "";
+    }
     const items = await alphaApi.employees(orgId, empId);
     setEmployees(items);
     const saved = getEmployeeSelection();
@@ -60,79 +63,130 @@ export function ScopeController({ singleEmployerUser = false }: { singleEmployer
     setEmployeeId(nextId);
     if (nextId) setEmployeeSelection(nextId);
     return nextId;
-  }, []);
+  }
 
   useEffect(() => {
     let active = true;
+
     async function load() {
-      const previousOrganizationId = getOrganizationSelection() ?? "";
-      const previousEmployer = getEmployerSelection();
-      const previousEmployerId = previousEmployer?.organizationId === previousOrganizationId ? previousEmployer.employerId : "";
-      const previousEmployeeId = getEmployeeSelection() ?? "";
-
+      setLoading(true);
       try {
-        const orgItems = await alphaApi.organizations();
+        const context = await alphaApi.scope();
         if (!active) return;
-        setOrganizations(orgItems);
-        const savedOrg = getOrganizationSelection();
-        const orgId = savedOrg && orgItems.some((item) => item.id === savedOrg) ? savedOrg : orgItems[0]?.id ?? "";
-        setOrganizationId(orgId);
-        if (orgId) setOrganizationSelection(orgId);
+        setScope(context);
 
-        let empId = "";
-        let empEmployeeId = "";
-        if ((level !== "organization" || singleEmployerUser) && orgId) {
-          empId = await loadEmployers(orgId);
-          if (level === "employee" && empId) empEmployeeId = await loadEmployees(orgId, empId);
+        const savedOrg = getOrganizationSelection();
+        const savedEmployer = getEmployerSelection();
+
+        let orgId = savedOrg && context.organizations.some((item) => item.id === savedOrg)
+          ? savedOrg
+          : context.organizations[0]?.id ?? "";
+
+        let employerEntry: { organization: ScopeOrganization; employer: ScopeEmployer } | null = null;
+
+        if (level !== "organization") {
+          if (savedEmployer) {
+            employerEntry = context.organizations
+              .flatMap((organization) => organization.employers.map((employer) => ({ organization, employer })))
+              .find((item) => item.organization.id === savedEmployer.organizationId && item.employer.id === savedEmployer.employerId) ?? null;
+          }
+
+          if (!employerEntry) {
+            const preferredOrganization = context.organizations.find((item) => item.id === orgId);
+            const preferredEmployer = preferredOrganization?.employers[0];
+            if (preferredOrganization && preferredEmployer)
+              employerEntry = { organization: preferredOrganization, employer: preferredEmployer };
+            else
+              employerEntry = context.organizations
+                .flatMap((organization) => organization.employers.map((employer) => ({ organization, employer })))[0] ?? null;
+          }
+
+          if (employerEntry) {
+            orgId = employerEntry.organization.id;
+            setOrganizationSelection(orgId);
+            setEmployerSelection(orgId, employerEntry.employer.id);
+            setEmployerId(employerEntry.employer.id);
+          } else {
+            setEmployerId("");
+          }
+        } else {
+          setEmployerId("");
+          if (orgId) setOrganizationSelection(orgId);
         }
+
+        setOrganizationId(orgId);
+
+        let nextEmployeeId = "";
+        if (level === "employee" && employerEntry)
+          nextEmployeeId = await loadEmployees(orgId, employerEntry.employer.id);
 
         if (!active || !orgId) return;
-
-        const organizationChanged = orgId !== previousOrganizationId;
-        const employerChanged = (level !== "organization" || singleEmployerUser) && empId !== previousEmployerId;
-        const employeeChanged = level === "employee" && empEmployeeId !== previousEmployeeId;
-
-        if (organizationChanged || employerChanged || employeeChanged) {
-          emitScopeChange({
-            organizationId: orgId,
-            employerId: empId || undefined,
-            employeeId: empEmployeeId || undefined,
-          });
-        }
+        emitScopeChange({
+          organizationId: orgId,
+          employerId: employerEntry?.employer.id,
+          employeeId: nextEmployeeId || undefined,
+        });
       } finally {
         if (active) setLoading(false);
       }
     }
+
     void load();
     return () => { active = false; };
-  }, [level, singleEmployerUser, loadEmployers, loadEmployees]);
+  }, [level]);
 
   async function changeOrganization(value: string) {
+    if (!scope) return;
     setOrganizationId(value);
     setOrganizationSelection(value);
-    let nextEmployerId = "";
-    let nextEmployeeId = "";
-    if (level !== "organization") {
-      nextEmployerId = await loadEmployers(value);
-      if (level === "employee") nextEmployeeId = await loadEmployees(value, nextEmployerId);
-    }
-    if (level === "employee" && nextEmployeeId) {
-      router.replace(`/employees/${nextEmployeeId}`);
+
+    if (level === "organization") {
+      emitScopeChange({ organizationId: value });
       return;
     }
-    emitScopeChange({ organizationId: value, employerId: nextEmployerId || undefined });
+
+    const organization = scope.organizations.find((item) => item.id === value);
+    const nextEmployer = organization?.employers[0];
+    if (!nextEmployer) {
+      setEmployerId("");
+      emitScopeChange({ organizationId: value });
+      return;
+    }
+
+    setEmployerId(nextEmployer.id);
+    setEmployerSelection(value, nextEmployer.id);
+
+    if (level === "employee") {
+      const nextEmployeeId = await loadEmployees(value, nextEmployer.id);
+      if (nextEmployeeId) {
+        router.replace(`/employees/${nextEmployeeId}`);
+        return;
+      }
+    }
+
+    emitScopeChange({ organizationId: value, employerId: nextEmployer.id });
   }
 
   async function changeEmployer(value: string) {
+    if (!scope) return;
+
+    const entry = allEmployers.find((item) => item.employer.id === value);
+    if (!entry) return;
+
+    setOrganizationId(entry.organization.id);
+    setOrganizationSelection(entry.organization.id);
     setEmployerId(value);
-    setEmployerSelection(organizationId, value);
-    let nextEmployeeId = "";
-    if (level === "employee") nextEmployeeId = await loadEmployees(organizationId, value);
-    if (level === "employee" && nextEmployeeId) {
-      router.replace(`/employees/${nextEmployeeId}`);
-      return;
+    setEmployerSelection(entry.organization.id, value);
+
+    if (level === "employee") {
+      const nextEmployeeId = await loadEmployees(entry.organization.id, value);
+      if (nextEmployeeId) {
+        router.replace(`/employees/${nextEmployeeId}`);
+        return;
+      }
     }
-    emitScopeChange({ organizationId, employerId: value });
+
+    emitScopeChange({ organizationId: entry.organization.id, employerId: value });
   }
 
   function changeEmployee(value: string) {
@@ -145,30 +199,51 @@ export function ScopeController({ singleEmployerUser = false }: { singleEmployer
     emitScopeChange({ organizationId, employerId, employeeId: value });
   }
 
-  const organization = organizations.find((item) => item.id === organizationId);
-  const employer = employers.find((item) => item.id === employerId);
+  if (!scope || loading) return null;
 
-  const showEmployer = level !== "organization" && !singleEmployerUser;
-  const showEmployee = level === "employee";
-  if (singleEmployerUser && !showEmployee) return null;
+  const hasAnyOrganizationScope = scope.organizations.some((item) => item.hasOrganizationScope);
+  const showOrganizationSelector =
+    hasAnyOrganizationScope &&
+    relevantOrganizations.length > 1 &&
+    (level === "organization" || selectedOrganizationHasScope);
 
-  return (
-    <div className="scopebar" aria-label="בחירת הקשר עבודה">
-      <div className="scope-selects">
-        {!singleEmployerUser ? organizations.length > 1 ? (
-          <label><span>ארגון</span><div><Building2 size={16} /><select value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>{organizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div></label>
-        ) : organization ? (
-          <label><span>ארגון</span><div><Building2 size={16} /><span>{organization.name}</span></div></label>
-        ) : null : null}
+  const employerOptions = selectedOrganizationHasScope
+    ? organizationEmployers
+    : allEmployers.map((item) => item.employer);
 
-        {showEmployer ? employers.length > 1 ? (
-          <label><span>מעסיק</span><div><Building2 size={16} /><select value={employerId} disabled={loading || !organizationId} onChange={(event) => void changeEmployer(event.target.value)}>{employers.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)}</select></div></label>
-        ) : employer ? (
-          <label><span>מעסיק</span><div><Building2 size={16} /><span>{employer.legalName}</span></div></label>
-        ) : null : null}
+  const showEmployerSelector =
+    level !== "organization" &&
+    employerOptions.length > 1;
 
-        {showEmployee ? <label><span>עובד</span><div><UserRound size={16} /><select value={employeeId} disabled={loading || !employerId} onChange={(event) => changeEmployee(event.target.value)}>{employees.map((item) => <option key={item.id} value={item.id}>{item.firstName} {item.lastName}</option>)}</select></div></label> : null}
-      </div>
+  const showEmployeeSelector = level === "employee" && employees.length > 1;
+
+  if (!showOrganizationSelector && !showEmployerSelector && !showEmployeeSelector)
+    return null;
+
+  return <div className="scopebar" aria-label="בחירת הקשר עבודה">
+    <div className="scope-selects">
+      {showOrganizationSelector ? <label>
+        <span>ארגון</span>
+        <div><Building2 size={16} /><select value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>
+          {relevantOrganizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select></div>
+      </label> : null}
+
+      {showEmployerSelector ? <label>
+        <span>מעסיק</span>
+        <div><Building2 size={16} /><select value={employerId} disabled={loading} onChange={(event) => void changeEmployer(event.target.value)}>
+          {selectedOrganizationHasScope
+            ? employerOptions.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)
+            : allEmployers.map((item) => <option key={item.employer.id} value={item.employer.id}>{item.employer.legalName}{scope.organizations.length > 1 ? ` · ${item.organization.name}` : ""}</option>)}
+        </select></div>
+      </label> : null}
+
+      {showEmployeeSelector ? <label>
+        <span>עובד</span>
+        <div><UserRound size={16} /><select value={employeeId} disabled={loading || !employerId} onChange={(event) => changeEmployee(event.target.value)}>
+          {employees.map((item) => <option key={item.id} value={item.id}>{item.firstName} {item.lastName}</option>)}
+        </select></div>
+      </label> : null}
     </div>
-  );
+  </div>;
 }
