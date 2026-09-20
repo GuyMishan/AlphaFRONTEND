@@ -33,6 +33,10 @@ export default function OrganizationProfilePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [tab, setTab] = useState<TabKey>("general");
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (requestedTab && tabs.some((item) => item.key === requestedTab)) setTab(requestedTab as TabKey);
+  }, []);
   const [profile, setProfile] = useState<OrganizationProfileCenter | null>(null);
   const [employers, setEmployers] = useState<Employer[]>([]);
   const [members, setMembers] = useState<OrganizationMemberSummary[]>([]);
