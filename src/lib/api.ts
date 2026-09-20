@@ -28,6 +28,7 @@ import type {
   BankOption,
   BankBranchOption,
   BillingGateStatus,
+  GlobalScopeContext,
   CreateInvitationInput,
   PublicInvitation,
   UserInvitation,
@@ -112,6 +113,8 @@ function normalizePaged<T>(result: PagedResult<T> | T[], take: number): PagedRes
 }
 
 export const alphaApi = {
+  scope: (): Promise<GlobalScopeContext> =>
+    request<GlobalScopeContext>("/api/scope"),
   health: () => request<{ status: string; service: string }>("/health"),
   onboardingStatus: (): Promise<OnboardingStatus> =>
     getSession()?.mode === "demo"
