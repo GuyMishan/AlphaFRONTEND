@@ -7,6 +7,7 @@ import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, LogOut, Menu, Sett
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
 import { resolveSingleEmployerScope } from "@/lib/access-scope";
+import { alphaApi } from "@/lib/api";
 import { clearSession, getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
@@ -67,8 +68,8 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     setLocalSession(current);
     Promise.all([
       resolveSingleEmployerScope(),
-      import("@/lib/api").then(({ alphaApi }) => alphaApi.organizations()).then(async (organizations) => {
-        const capabilities = await Promise.all(organizations.map((organization) => import("@/lib/api").then(({ alphaApi }) => alphaApi.capabilities(organization.id))));
+      alphaApi.organizations().then(async (organizations) => {
+        const capabilities = await Promise.all(organizations.map((organization) => alphaApi.capabilities(organization.id)));
         return capabilities.some((item) => item.canManageOrganization);
       }),
     ])
