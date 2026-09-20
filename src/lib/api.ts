@@ -28,6 +28,7 @@ import type {
   BankOption,
   BankBranchOption,
   BillingGateStatus,
+  GlobalScopeContext,
   CreateInvitationInput,
   PublicInvitation,
   UserInvitation,
@@ -112,6 +113,18 @@ function normalizePaged<T>(result: PagedResult<T> | T[], take: number): PagedRes
 }
 
 export const alphaApi = {
+  scope: (): Promise<GlobalScopeContext> => getSession()?.mode === "demo"
+    ? Promise.resolve({
+        organizations: demoOrganizations.map((organization) => ({
+          ...organization,
+          hasOrganizationScope: true,
+          canManageOrganization: true,
+          employers: demoEmployers.filter((employer) => employer.organizationId === organization.id),
+        })),
+        organizationCount: demoOrganizations.length,
+        employerCount: demoEmployers.length,
+      })
+    : request<GlobalScopeContext>("/api/scope"),
   health: () => request<{ status: string; service: string }>("/health"),
   onboardingStatus: (): Promise<OnboardingStatus> =>
     getSession()?.mode === "demo"

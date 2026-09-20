@@ -17,7 +17,6 @@ import {
 import { AppShell } from "@/components/app-shell";
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
-import { resolveSingleEmployerScope } from "@/lib/access-scope";
 import {
   getEmployerSelection,
   getOrganizationSelection,
@@ -74,6 +73,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
+  const [hasOrganizationScope, setHasOrganizationScope] = useState(false);
 
   const selectedEmployer = employers.find((item) => item.id === employerId) ?? null;
   const selectedOrganization = organizations.find((item) => item.id === organizationId) ?? null;
@@ -156,34 +156,54 @@ export default function DashboardPage() {
       setError("");
       try {
         const session = getSession();
-        const accessibleOrganizations = await alphaApi.organizations();
+        const scopeContext = await alphaApi.scope();
+        const accessibleOrganizations = scopeContext.organizations;
         if (!active) return;
         setOrganizations(accessibleOrganizations);
 
         if (session?.platformAdmin) {
+          setHasOrganizationScope(true);
           setEntitlements(null);
           setMode("admin");
           await loadAdminDashboard(accessibleOrganizations);
           return;
         }
 
-        const scoped = await resolveSingleEmployerScope();
-        if (!active) return;
-        if (scoped) {
+        const hasOrgScope = scopeContext.organizations.some((item) => item.hasOrganizationScope);
+        setHasOrganizationScope(hasOrgScope);
+
+        if (!hasOrgScope) {
+          const employerEntries = scopeContext.organizations.flatMap((organization) =>
+            organization.employers.map((employer) => ({ organization, employer }))
+          );
+          const saved = getEmployerSelection();
+          const selected = employerEntries.find((item) =>
+            saved?.organizationId === item.organization.id && saved?.employerId === item.employer.id
+          ) ?? employerEntries[0];
+
+          if (!selected) {
+            setMode("employer");
+            setEmployers([]);
+            setStats(EMPTY_STATS);
+            return;
+          }
+
           setMode("employer");
-          setOrganizationId(scoped.organization.id);
-          setOrganizations([scoped.organization]);
-          setEmployers([scoped.employer]);
-          setEmployerId(scoped.employer.id);
-          await loadEmployerDashboard(scoped.organization, scoped.employer);
+          setOrganizationId(selected.organization.id);
+          setEmployerId(selected.employer.id);
+          setEmployers(employerEntries.map((item) => item.employer));
+          setOrganizationSelection(selected.organization.id);
+          setEmployerSelection(selected.organization.id, selected.employer.id);
+          await loadEmployerDashboard(selected.organization, selected.employer);
           return;
         }
 
         setMode("organization");
         const savedOrgId = getOrganizationSelection();
-        const orgId = accessibleOrganizations.some((item) => item.id === savedOrgId)
+        const organizationScoped = accessibleOrganizations.filter((item) => item.hasOrganizationScope);
+        const orgId = organizationScoped.some((item) => item.id === savedOrgId)
           ? savedOrgId!
-          : accessibleOrganizations[0]?.id ?? "";
+          : organizationScoped[0]?.id ?? "";
         setOrganizationId(orgId);
         if (orgId) setOrganizationSelection(orgId);
         await loadOrganizationDashboard(orgId);
@@ -212,17 +232,41 @@ export default function DashboardPage() {
   }, [query, organizationId, mode]);
 
   useEffect(() => {
-    if (mode !== "organization") return;
+    if (mode === "admin") return;
     const handler = (event: Event) => {
-      const detail = (event as CustomEvent<{ organizationId: string }>).detail;
-      setOrganizationId(detail.organizationId);
-      setOrganizationSelection(detail.organizationId);
+      const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail;
       setQuery("");
-      setEmployerId("");
       setLoading(true);
       setError("");
-      void loadOrganizationDashboard(detail.organizationId)
-        .catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגון נכשלה"))
+
+      if (mode === "organization") {
+        setOrganizationId(detail.organizationId);
+        setOrganizationSelection(detail.organizationId);
+        setEmployerId("");
+        void loadOrganizationDashboard(detail.organizationId)
+          .catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגון נכשלה"))
+          .finally(() => setLoading(false));
+        return;
+      }
+
+      if (!detail.employerId) {
+        setLoading(false);
+        return;
+      }
+
+      void (async () => {
+        const [organization, employer] = await Promise.all([
+          alphaApi.organizations().then((items) => items.find((item) => item.id === detail.organizationId) ?? null),
+          alphaApi.employer(detail.organizationId, detail.employerId!),
+        ]);
+        if (!organization) throw new Error("הארגון שנבחר אינו זמין.");
+        setOrganizationId(detail.organizationId);
+        setEmployerId(detail.employerId!);
+        setEmployerSelection(detail.organizationId, detail.employerId!);
+        setEmployers((items) => items.some((item) => item.id === employer.id) ? items : [...items, employer]);
+        await loadEmployerDashboard(organization, employer);
+      })()
+        .catch((err) => setError(err instanceof Error ? err.message : "טעינת המעסיק נכשלה"))
         .finally(() => setLoading(false));
     };
     window.addEventListener("alpha:scope-change", handler);
@@ -257,8 +301,8 @@ export default function DashboardPage() {
       <Link className="quick-action" href="/reports/new"><span className="quick-action-icon"><FilePlus2 size={19} /></span><span><b>דיווח חודשי חדש</b><span>יצירת דיווח חדש</span></span><ArrowLeft size={17} /></Link>
       <Link className="quick-action" href="/reports/new?mode=correction"><span className="quick-action-icon"><FilePenLine size={19} /></span><span><b>תיקון דיווח</b><span>תיקון או דיווח הפרשים</span></span><ArrowLeft size={17} /></Link>
       <Link className="quick-action" href="/employees"><span className="quick-action-icon"><Users size={19} /></span><span><b>רשימת עובדים</b><span>צפייה וניהול עובדים</span></span><ArrowLeft size={17} /></Link>
-      {mode === "organization" && organizationId ? <Link className="quick-action" href={`/organizations/${organizationId}`}><span className="quick-action-icon"><Building2 size={19} /></span><span><b>פרופיל ארגון</b><span>פרטים, מנוי, Billing והרשאות</span></span><ArrowLeft size={17} /></Link> : null}
-      {mode === "organization" ? <Link className="quick-action" href="/access"><span className="quick-action-icon"><UserCog size={19} /></span><span><b>הרשאות משתמשים</b><span>ניהול גישה בארגון</span></span><ArrowLeft size={17} /></Link> : null}
+      {mode === "organization" && hasOrganizationScope && organizationId ? <Link className="quick-action" href={`/organizations/${organizationId}`}><span className="quick-action-icon"><Building2 size={19} /></span><span><b>פרופיל ארגון</b><span>פרטים, מנוי, Billing והרשאות</span></span><ArrowLeft size={17} /></Link> : null}
+      {mode === "organization" && hasOrganizationScope ? <Link className="quick-action" href="/access"><span className="quick-action-icon"><UserCog size={19} /></span><span><b>הרשאות משתמשים</b><span>ניהול גישה בארגון</span></span><ArrowLeft size={17} /></Link> : null}
     </div></aside>
   );
 

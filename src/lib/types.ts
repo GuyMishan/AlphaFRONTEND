@@ -613,3 +613,29 @@ export type CreateInvitationInput = {
   employerRole?: EmployerRole | null;
   expiresInDays?: number;
 };
+
+
+export type ScopeEmployer = {
+  id: string;
+  organizationId: string;
+  legalName: string;
+  registrationNumber: string;
+  withholdingFileNumber: string;
+  status: number;
+};
+
+export type ScopeOrganization = {
+  id: string;
+  name: string;
+  type: number;
+  status: number;
+  hasOrganizationScope: boolean;
+  canManageOrganization: boolean;
+  employers: ScopeEmployer[];
+};
+
+export type GlobalScopeContext = {
+  organizations: ScopeOrganization[];
+  organizationCount: number;
+  employerCount: number;
+};

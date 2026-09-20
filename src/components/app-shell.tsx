@@ -7,7 +7,6 @@ import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, LogOut, Menu, Sett
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
 import { UpgradeModal } from "./upgrade-modal";
-import { resolveSingleEmployerScope } from "@/lib/access-scope";
 import { alphaApi } from "@/lib/api";
 import { clearSession, getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
@@ -51,6 +50,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   const [session, setLocalSession] = useState<Session | null>(null);
   const [singleEmployerUser, setSingleEmployerUser] = useState<boolean | null>(null);
   const [canManageOrganization, setCanManageOrganization] = useState<boolean | null>(null);
+  const [hasOrganizationScope, setHasOrganizationScope] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pageConfig, setPageConfigState] = useState<ShellPageConfig>(initialConfig);
   const [upgradeDetail, setUpgradeDetail] = useState<UpgradeDialogDetail | null>(null);
@@ -71,34 +71,33 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     setLocalSession(current);
     Promise.all([
       alphaApi.onboardingStatus(),
-      resolveSingleEmployerScope(),
-      alphaApi.organizations().then(async (organizations) => {
-        const capabilities = await Promise.all(organizations.map((organization) => alphaApi.capabilities(organization.id)));
-        return capabilities.some((item) => item.canManageOrganization);
-      }),
+      alphaApi.scope(),
     ])
-      .then(([onboarding, scope, managesOrganization]) => {
+      .then(([onboarding, scope]) => {
         if (!active) return;
         if (onboarding.needsOnboarding) {
           setSingleEmployerUser(false);
           setCanManageOrganization(false);
+          setHasOrganizationScope(false);
           router.replace("/onboarding");
           return;
         }
-        setSingleEmployerUser(Boolean(scope));
-        setCanManageOrganization(managesOrganization);
+        setSingleEmployerUser(scope.employerCount === 1);
+        setCanManageOrganization(scope.organizations.some((item) => item.canManageOrganization));
+        setHasOrganizationScope(current.platformAdmin || scope.organizations.some((item) => item.hasOrganizationScope));
       })
       .catch(() => {
         if (!active) return;
         setSingleEmployerUser(false);
         setCanManageOrganization(false);
+        setHasOrganizationScope(false);
       });
 
     return () => { active = false; };
   }, [router]);
 
   useEffect(() => {
-    if (!session || singleEmployerUser === null || canManageOrganization === null) return;
+    if (!session || singleEmployerUser === null || canManageOrganization === null || hasOrganizationScope === null) return;
     if (pathname.startsWith("/admin") && !session.platformAdmin) {
       router.replace("/dashboard");
       return;
@@ -107,10 +106,14 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
       router.replace("/dashboard");
       return;
     }
-    if (singleEmployerUser === true && pathname.startsWith("/employers")) {
+    if (pathname.startsWith("/organizations/") && !hasOrganizationScope) {
+      router.replace("/dashboard");
+      return;
+    }
+    if (singleEmployerUser === true && pathname === "/employers") {
       router.replace("/dashboard");
     }
-  }, [pathname, router, session, singleEmployerUser, canManageOrganization]);
+  }, [pathname, router, session, singleEmployerUser, canManageOrganization, hasOrganizationScope]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -134,7 +137,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     router.replace("/login");
   }
 
-  if (!session || singleEmployerUser === null || canManageOrganization === null) return null;
+  if (!session || singleEmployerUser === null || canManageOrganization === null || hasOrganizationScope === null) return null;
 
   const visibleNav = singleEmployerUser ? nav.filter((item) => item.href !== "/employers") : nav;
   const navigation = (
@@ -179,7 +182,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
             </div>
             <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className={`dot${session.mode === "demo" ? "" : " online"}`} />{session.mode === "demo" ? "מצב הדגמה" : "חיבור API פעיל"}</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
           </header>
-          {pageConfig.hideScopeController ? null : <ScopeController singleEmployerUser={singleEmployerUser} />}
+          {pageConfig.hideScopeController ? null : <ScopeController />}
           <main className="main">{children}</main>
         </div>
         <UpgradeModal detail={upgradeDetail} onClose={() => setUpgradeDetail(null)} />
