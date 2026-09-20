@@ -415,3 +415,49 @@ export type EmployerPensionPaymentAccount = {
 
 export type EmployerPensionPaymentAccountInput = Omit<EmployerPensionPaymentAccount,
   "id" | "organizationId" | "employerId" | "createdAt" | "updatedAt">;
+
+
+export type OrganizationBillingStatus = 1 | 2 | 3 | 4;
+
+export type OrganizationProfileCenter = {
+  id: string;
+  name: string;
+  type: number;
+  status: number;
+  canManageOrganization: boolean;
+  general: {
+    registrationNumber: string;
+    city: string;
+    street: string;
+    houseNumber: string;
+    apartment: string;
+    postalCode: string;
+    postOfficeBox: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+  };
+  billing: {
+    status: OrganizationBillingStatus;
+    invoiceName: string;
+    invoiceRegistrationNumber: string;
+    invoiceEmail: string;
+    billingContactName: string;
+    billingContactPhone: string;
+  };
+};
+
+export type OrganizationMemberSummary = {
+  userId: string;
+  displayName: string;
+  email: string;
+  role: OrganizationRole;
+  employerAccessMode: EmployerAccessMode;
+};
+
+export type OrganizationEmployerBilling = {
+  employerId: string;
+  employerName: string;
+  billingMode: EmployerBillingMode;
+  billingStatus: EmployerBillingStatus;
+};
