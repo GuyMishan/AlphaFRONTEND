@@ -101,7 +101,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
-    let message = `שגיאת שרת (${response.status})`;
+    let message = `אירעה שגיאה (${response.status})`;
     try {
       const problem = await response.json();
       message = problem?.detail ?? problem?.error ?? problem?.title ?? message;
@@ -129,7 +129,7 @@ async function uploadEmployerInterface<T>(path: string, file: File): Promise<T> 
     const validationIssues = payload?.validation?.issues;
     const message = payload?.detail ?? payload?.error ?? payload?.title
       ?? (Array.isArray(validationIssues) && validationIssues.length ? validationIssues.join(" ") : null)
-      ?? `שגיאת שרת (${response.status})`;
+      ?? `אירעה שגיאה (${response.status})`;
     throw new Error(message);
   }
   return payload as T;
