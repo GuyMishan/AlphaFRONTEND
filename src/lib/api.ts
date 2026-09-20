@@ -26,6 +26,9 @@ import type {
   ManualReportEmployeeDetail,
   ManualReportEmployeeSummary,
   Organization,
+  OrganizationProfileCenter,
+  OrganizationMemberSummary,
+  OrganizationEmployerBilling,
   OrganizationCapabilities,
   OrganizationRole,
   OnboardingStatus,
@@ -112,6 +115,23 @@ export const alphaApi = {
   organizations: (): Promise<Organization[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoOrganizations)
     : request<Organization[]>("/api/organizations/"),
+  organization: (organizationId: string): Promise<Organization> =>
+    request<Organization>(`/api/organizations/${organizationId}`),
+  organizationProfile: (organizationId: string): Promise<OrganizationProfileCenter> =>
+    request<OrganizationProfileCenter>(`/api/organizations/${organizationId}/profile-center/`),
+  updateOrganizationGeneral: (organizationId: string, payload: {
+    name: string; type: number; registrationNumber: string; city: string; street: string;
+    houseNumber: string; apartment: string; postalCode: string; postOfficeBox: string;
+    contactName: string; contactEmail: string; contactPhone: string;
+  }) => request<void>(`/api/organizations/${organizationId}/profile-center/general`, { method: "PUT", body: JSON.stringify(payload) }),
+  updateOrganizationBilling: (organizationId: string, payload: {
+    invoiceName: string; invoiceRegistrationNumber: string; invoiceEmail: string;
+    billingContactName: string; billingContactPhone: string; billingStatus?: number;
+  }) => request<void>(`/api/organizations/${organizationId}/profile-center/billing`, { method: "PUT", body: JSON.stringify(payload) }),
+  organizationMembers: (organizationId: string): Promise<OrganizationMemberSummary[]> =>
+    request<OrganizationMemberSummary[]>(`/api/organizations/${organizationId}/profile-center/members`),
+  organizationEmployerBilling: (organizationId: string): Promise<OrganizationEmployerBilling[]> =>
+    request<OrganizationEmployerBilling[]>(`/api/organizations/${organizationId}/profile-center/employer-billing`),
   employers: (organizationId: string): Promise<Employer[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoEmployers.filter((item) => item.organizationId === organizationId))
     : request<Employer[]>(`/api/organizations/${organizationId}/employers/`),
