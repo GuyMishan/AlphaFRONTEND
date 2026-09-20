@@ -2,6 +2,9 @@ import { getSession } from "./session";
 import { openUpgradeDialog, upgradeDetailFromProblem } from "./upgrade";
 import type {
   AccessEmployer,
+  AlphaBillingAccount,
+  AlphaBillingAccountInput,
+  AlphaBillingProviderMetadataInput,
   AccessUser,
   ApiProblem,
   Employee,
@@ -128,6 +131,12 @@ export const alphaApi = {
     request<Organization>(`/api/organizations/${organizationId}`),
   organizationProfile: (organizationId: string): Promise<OrganizationProfileCenter> =>
     request<OrganizationProfileCenter>(`/api/organizations/${organizationId}/profile-center/`),
+  organizationBillingAccount: (organizationId: string): Promise<AlphaBillingAccount> =>
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account/`),
+  saveOrganizationBillingAccount: (organizationId: string, payload: AlphaBillingAccountInput): Promise<AlphaBillingAccount> =>
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account/`, { method: "PUT", body: JSON.stringify(payload) }),
+  updateOrganizationBillingProviderMetadata: (organizationId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account/provider-metadata`, { method: "PUT", body: JSON.stringify(payload) }),
   updateOrganizationGeneral: (organizationId: string, payload: {
     name: string; type: number; registrationNumber: string; city: string; street: string;
     houseNumber: string; apartment: string; postalCode: string; postOfficeBox: string;
@@ -162,6 +171,12 @@ export const alphaApi = {
   updateEmployer: (organizationId: string, employerId: string, payload: EmployerInput) => getSession()?.mode === "demo"
     ? Promise.resolve({ id: employerId, organizationId, ...payload, status: 2 } as Employer)
     : request<Employer>(`/api/organizations/${organizationId}/employers/${employerId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  employerBillingAccount: (organizationId: string, employerId: string): Promise<AlphaBillingAccount> =>
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/`),
+  saveEmployerBillingAccount: (organizationId: string, employerId: string, payload: AlphaBillingAccountInput): Promise<AlphaBillingAccount> =>
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/`, { method: "PUT", body: JSON.stringify(payload) }),
+  updateEmployerBillingProviderMetadata: (organizationId: string, employerId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/provider-metadata`, { method: "PUT", body: JSON.stringify(payload) }),
   employerProfileCenterSettings: (organizationId: string, employerId: string): Promise<EmployerProfileCenterSettings> =>
     request<EmployerProfileCenterSettings>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/settings`),
   updateEmployerAddress: (organizationId: string, employerId: string, payload: EmployerAddressSettings) =>
