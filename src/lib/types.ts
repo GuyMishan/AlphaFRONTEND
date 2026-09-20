@@ -224,6 +224,10 @@ export type ApiProblem = {
   detail?: string;
   error?: string;
   status?: number;
+  limit?: string;
+  current?: number;
+  maximum?: number;
+  feature?: string;
 };
 
 export type OrganizationCapabilities = {
@@ -350,4 +354,17 @@ export type PlatformSubscription = {
   maxEmployers: number;
   maxEmployees: number;
   maxUsers: number;
+};
+
+
+export type EntitlementUsage = {
+  current: number;
+  maximum: number;
+};
+
+export type EntitlementSnapshot = {
+  plan: { id: string; code: string; name: string };
+  employers: EntitlementUsage;
+  activeEmployees: EntitlementUsage;
+  users: EntitlementUsage;
 };
