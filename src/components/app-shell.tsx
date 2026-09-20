@@ -50,6 +50,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   const router = useRouter();
   const [session, setLocalSession] = useState<Session | null>(null);
   const [singleEmployerUser, setSingleEmployerUser] = useState<boolean | null>(null);
+  const [singleEmployerTarget, setSingleEmployerTarget] = useState<{ organizationId: string; employerId: string } | null>(null);
   const [canManageOrganization, setCanManageOrganization] = useState<boolean | null>(null);
   const [hasOrganizationScope, setHasOrganizationScope] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -80,19 +81,25 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         if (!active) return;
         if (onboarding.needsOnboarding) {
           setSingleEmployerUser(false);
+          setSingleEmployerTarget(null);
           setCanManageOrganization(false);
           setHasOrganizationScope(false);
           setOnboardingRequired(true);
           return;
         }
         setOnboardingRequired(false);
-        setSingleEmployerUser(scope.employerCount === 1);
+        const accessibleEmployers = scope.organizations.flatMap((organization) =>
+          organization.employers.map((employer) => ({ organizationId: organization.id, employerId: employer.id }))
+        );
+        setSingleEmployerUser(accessibleEmployers.length === 1);
+        setSingleEmployerTarget(accessibleEmployers.length === 1 ? accessibleEmployers[0] : null);
         setCanManageOrganization(scope.organizations.some((item) => item.canManageOrganization));
         setHasOrganizationScope(current.platformAdmin || scope.organizations.some((item) => item.hasOrganizationScope));
       })
       .catch(() => {
         if (!active) return;
         setSingleEmployerUser(false);
+        setSingleEmployerTarget(null);
         setCanManageOrganization(false);
         setHasOrganizationScope(false);
       });
@@ -114,10 +121,10 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
       router.replace("/dashboard");
       return;
     }
-    if (singleEmployerUser === true && pathname === "/employers") {
-      router.replace("/dashboard");
+    if (singleEmployerUser === true && singleEmployerTarget && pathname === "/employers") {
+      router.replace(`/employers/${singleEmployerTarget.employerId}?organizationId=${singleEmployerTarget.organizationId}`);
     }
-  }, [pathname, router, session, singleEmployerUser, canManageOrganization, hasOrganizationScope]);
+  }, [pathname, router, session, singleEmployerUser, singleEmployerTarget, canManageOrganization, hasOrganizationScope]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -155,7 +162,11 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     setOnboardingError("");
     try {
       const scope = await alphaApi.scope();
-      setSingleEmployerUser(scope.employerCount === 1);
+      const accessibleEmployers = scope.organizations.flatMap((organization) =>
+        organization.employers.map((employer) => ({ organizationId: organization.id, employerId: employer.id }))
+      );
+      setSingleEmployerUser(accessibleEmployers.length === 1);
+      setSingleEmployerTarget(accessibleEmployers.length === 1 ? accessibleEmployers[0] : null);
       setCanManageOrganization(scope.organizations.some((item) => item.canManageOrganization));
       setHasOrganizationScope(Boolean(session?.platformAdmin) || scope.organizations.some((item) => item.hasOrganizationScope));
     } finally {
@@ -171,12 +182,19 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
 
   if (!session || singleEmployerUser === null || canManageOrganization === null || hasOrganizationScope === null) return null;
 
-  const visibleNav = singleEmployerUser ? nav.filter((item) => item.href !== "/employers") : nav;
+  const visibleNav = nav.map((item) => {
+    if (item.href !== "/employers" || !singleEmployerUser || !singleEmployerTarget) return item;
+    return {
+      ...item,
+      href: `/employers/${singleEmployerTarget.employerId}?organizationId=${singleEmployerTarget.organizationId}`,
+      label: "המעסיק שלי",
+    };
+  });
   const navigation = (
     <>
       <nav className="nav" aria-label="ניווט ראשי">
         {visibleNav.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} className={pathname === href ? "active" : ""}><Icon size={18} />{label}</Link>
+          <Link key={href} href={href} className={href.startsWith("/employers/") ? (pathname.startsWith("/employers/") ? "active" : "") : (pathname === href ? "active" : "")}><Icon size={18} />{label}</Link>
         ))}
         <div className="nav-divider" />
         {session.platformAdmin ? <Link href="/admin" className={pathname.startsWith("/admin") ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
