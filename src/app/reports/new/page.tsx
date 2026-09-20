@@ -64,6 +64,8 @@ export default function NewReportPage() {
   const [sourceHasMore, setSourceHasMore] = useState(false);
   const [loadingSources, setLoadingSources] = useState(false);
   const [selectedSourceReportId, setSelectedSourceReportId] = useState("");
+  const [canCreateReport, setCanCreateReport] = useState(false);
+  const [canTransmitReport, setCanTransmitReport] = useState(false);
 
   const selectedSource = useMemo(() => sourceReports.find((report) => report.id === selectedSourceReportId) ?? null, [sourceReports, selectedSourceReportId]);
   const isExcel = reportKind === 1 && mode === "excel";
@@ -72,11 +74,14 @@ export default function NewReportPage() {
   async function loadScope(nextScope: { organizationId: string; employerId: string }) {
     setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId("");
     try {
-      const [employerItem, employeePage] = await Promise.all([
+      const [employerItem, employeePage, capabilities] = await Promise.all([
         alphaApi.employer(nextScope.organizationId, nextScope.employerId),
         alphaApi.employeeSearch(nextScope.organizationId, nextScope.employerId, "", 0, 100),
+        alphaApi.employerCapabilities(nextScope.organizationId, nextScope.employerId),
       ]);
       setEmployer(employerItem);
+      setCanCreateReport(capabilities.canCreateReport);
+      setCanTransmitReport(capabilities.canTransmitReport);
       setEmployees(employeePage.items);
       setSelectedIds(employeePage.items.filter((x) => x.status === 1).map((x) => x.id));
     } catch (err) { setError(err instanceof Error ? err.message : "טעינת הנתונים נכשלה"); }
@@ -163,7 +168,7 @@ export default function NewReportPage() {
   }
 
   async function next() {
-    if (step >= summaryStep || !scope || !employer) return;
+    if (step >= summaryStep || !scope || !employer || !canCreateReport) return;
     setError(""); setAdvancing(true);
     try {
       if (step === 1) {
@@ -195,7 +200,7 @@ export default function NewReportPage() {
   }
 
   async function sendReport() {
-    if (!scope || !manualReportId || sending || sentExternalId) return;
+    if (!scope || !manualReportId || sending || sentExternalId || !canTransmitReport) return;
     setSending(true);
     try {
       const validation = await reportValidationApi.commit(scope.organizationId, scope.employerId, manualReportId, "final");
@@ -211,13 +216,13 @@ export default function NewReportPage() {
   }
 
   const steps = isExcel ? excelSteps : manualSteps;
-  return <AppShell title="דיווח חדש" hideScopeController={step > 1}><div className="wizard"><div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer && scope ? <><Link className="profile-link" href={`/employers/${employer.id}?organizationId=${scope.organizationId}`}>{employer.legalName}</Link>{` · ח.פ. ${employer.registrationNumber}`}</> : "יש לבחור מעסיק בבורר העליון"}</p></div></div><ReportTypeBanner reportKind={reportKind} source={selectedSource} month={month} /><div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>{error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}{loading ? <div className="card empty">טוען את המעסיק והעובדים מה־Backend...</div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : <section className="card">
+  return <AppShell title="דיווח חדש" hideScopeController={step > 1}><div className="wizard"><div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer && scope ? <><Link className="profile-link" href={`/employers/${employer.id}?organizationId=${scope.organizationId}`}>{employer.legalName}</Link>{` · ח.פ. ${employer.registrationNumber}`}</> : "יש לבחור מעסיק בבורר העליון"}</p></div></div><ReportTypeBanner reportKind={reportKind} source={selectedSource} month={month} /><div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>{error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}{!loading && employer && !canCreateReport ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק, אך אין לך הרשאה ליצור או לערוך דיווחים.</div> : null}{loading ? <div className="card empty">טוען את המעסיק והעובדים מה־Backend...</div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : <section className="card">
     {step === 1 ? <ReportDetails reportKind={reportKind} setReportKind={chooseKind} mode={mode} setMode={chooseMode} month={month} setMonth={setMonth} salaryPaymentDate={salaryPaymentDate} setSalaryPaymentDate={setSalaryPaymentDate} sourceReports={sourceReports} sourceSearch={sourceSearch} setSourceSearch={setSourceSearch} sourceHasMore={sourceHasMore} loadingSources={loadingSources} selectedSourceReportId={selectedSourceReportId} chooseSource={chooseSource} searchSources={() => void loadSources(true, sourceSearch)} loadMoreSources={() => void loadSources(false, sourceSearch)} /> : null}
     {step === 2 && isExcel && scope ? <ExcelEmployeeIntake organizationId={scope.organizationId} employerId={scope.employerId} reportingMonth={month} onChange={(result) => { setExcelIntake(result); setFileName(result?.fileName ?? ""); setError(""); }} /> : null}
     {((!isExcel && step === 2) || (isExcel && step === 3)) && manualReportId && scope ? <ManualReportData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} month={month} employees={employees} selectedIds={selectedIds} setSelectedIds={setSelectedIds} /> : null}
     {((!isExcel && step === 3) || (isExcel && step === 4)) && manualReportId && scope ? <ManualDepositData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} /> : null}
     {step === summaryStep ? <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} sentExternalId={sentExternalId} /> : null}
-    <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={!canContinue || advancing} onClick={() => void next()}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={sending || Boolean(sentExternalId) || !manualReportId} onClick={() => void sendReport()}><Send size={17} />{sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div>
+    <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={!canContinue || advancing || !canCreateReport} onClick={() => void next()}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div>
   </section>}</div></AppShell>;
 }
 
