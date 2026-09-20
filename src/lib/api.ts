@@ -31,6 +31,8 @@ import type {
   GlobalScopeContext,
   CreateInvitationInput,
   PublicInvitation,
+  PaymentMethodSetupResult,
+  PaymentMethodSyncResult,
   UserInvitation,
   EmployerProfileCenterSettings,
   EmployerOption,
@@ -155,6 +157,12 @@ export const alphaApi = {
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account/`, { method: "PUT", body: JSON.stringify(payload) }),
   updateOrganizationBillingProviderMetadata: (organizationId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account/provider-metadata`, { method: "PUT", body: JSON.stringify(payload) }),
+  startOrganizationPaymentSetup: (organizationId: string, returnPath: string): Promise<PaymentMethodSetupResult> =>
+    request<PaymentMethodSetupResult>(`/api/organizations/${organizationId}/billing-account/provider/setup`, { method: "POST", body: JSON.stringify({ returnPath }) }),
+  syncOrganizationPaymentMethod: (organizationId: string): Promise<PaymentMethodSyncResult> =>
+    request<PaymentMethodSyncResult>(`/api/organizations/${organizationId}/billing-account/provider/sync`, { method: "POST" }),
+  cancelOrganizationPaymentMethod: (organizationId: string) =>
+    request<void>(`/api/organizations/${organizationId}/billing-account/provider/cancel`, { method: "POST" }),
   updateOrganizationGeneral: (organizationId: string, payload: {
     name: string; type: number; registrationNumber: string; city: string; street: string;
     houseNumber: string; apartment: string; postalCode: string; postOfficeBox: string;
@@ -199,6 +207,12 @@ export const alphaApi = {
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/`, { method: "PUT", body: JSON.stringify(payload) }),
   updateEmployerBillingProviderMetadata: (organizationId: string, employerId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/provider-metadata`, { method: "PUT", body: JSON.stringify(payload) }),
+  startEmployerPaymentSetup: (organizationId: string, employerId: string, returnPath: string): Promise<PaymentMethodSetupResult> =>
+    request<PaymentMethodSetupResult>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/provider/setup`, { method: "POST", body: JSON.stringify({ returnPath }) }),
+  syncEmployerPaymentMethod: (organizationId: string, employerId: string): Promise<PaymentMethodSyncResult> =>
+    request<PaymentMethodSyncResult>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/provider/sync`, { method: "POST" }),
+  cancelEmployerPaymentMethod: (organizationId: string, employerId: string) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/provider/cancel`, { method: "POST" }),
   employerProfileCenterSettings: (organizationId: string, employerId: string): Promise<EmployerProfileCenterSettings> =>
     request<EmployerProfileCenterSettings>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/settings`),
   updateEmployerAddress: (organizationId: string, employerId: string, payload: EmployerAddressSettings) =>
