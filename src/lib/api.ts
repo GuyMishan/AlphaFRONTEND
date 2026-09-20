@@ -25,6 +25,9 @@ import type {
   PagedResult,
   PensionFundOption,
   PensionProductType,
+  Plan,
+  PlatformSubscription,
+  SubscriptionSummary,
   UserCandidate,
 } from "./types";
 import { demoEmployees, demoEmployers, demoOrganizations } from "./demo-data";
@@ -79,6 +82,14 @@ export const alphaApi = {
       : request<OnboardingStatus>("/api/onboarding/status"),
   completeSelfServiceOnboarding: (payload: EmployerInput): Promise<SelfServiceOnboardingResult> =>
     request<SelfServiceOnboardingResult>("/api/onboarding/self-service", { method: "POST", body: JSON.stringify(payload) }),
+  subscription: (organizationId: string): Promise<SubscriptionSummary> =>
+    request<SubscriptionSummary>(`/api/organizations/${organizationId}/subscription`),
+  platformPlans: (): Promise<Plan[]> =>
+    request<Plan[]>("/api/platform/subscriptions/plans"),
+  platformSubscriptions: (): Promise<PlatformSubscription[]> =>
+    request<PlatformSubscription[]>("/api/platform/subscriptions/"),
+  changePlatformSubscriptionPlan: (organizationId: string, planId: string): Promise<SubscriptionSummary> =>
+    request<SubscriptionSummary>(`/api/platform/subscriptions/${organizationId}/plan`, { method: "PUT", body: JSON.stringify({ planId }) }),
   organizations: (): Promise<Organization[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoOrganizations)
     : request<Organization[]>("/api/organizations/"),
