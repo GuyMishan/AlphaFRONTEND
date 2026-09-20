@@ -9,6 +9,8 @@ import { getOrganizationSelection } from "@/lib/session";
 export default function NewEmployerPage() {
   const [organizationId, setOrganizationId] = useState("");
   const [canCreateEmployer, setCanCreateEmployer] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
+  const [limitText, setLimitText] = useState("");
   const [scopeResolved, setScopeResolved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -26,8 +28,14 @@ export default function NewEmployerPage() {
 
     setLoading(true);
     try {
-      const capabilities = await alphaApi.capabilities(orgId);
+      const [capabilities, entitlements] = await Promise.all([
+        alphaApi.capabilities(orgId),
+        alphaApi.entitlements(orgId),
+      ]);
       setCanCreateEmployer(capabilities.canCreateEmployer);
+      const reached = entitlements.employers.current >= entitlements.employers.maximum;
+      setLimitReached(reached);
+      setLimitText(`מסלול ${entitlements.plan.name}: ${entitlements.employers.current}/${entitlements.employers.maximum} מעסיקים`);
     } catch (err) {
       setCanCreateEmployer(false);
       setError(err instanceof Error ? err.message : "טעינת ההרשאות נכשלה");
@@ -54,7 +62,8 @@ export default function NewEmployerPage() {
     {!scopeResolved || loading ? <div className="empty">טוען הרשאות...</div>
       : error ? <div className="notice notice-error">{error}</div>
       : !organizationId ? <div className="empty">בחרו ארגון כדי להתחיל בהקמת המעסיק.</div>
-      : canCreateEmployer ? <EmployerForm organizationId={organizationId} />
-      : <div className="notice notice-info">אין לך הרשאה להקים מעסיק חדש בארגון הזה.</div>}
+      : !canCreateEmployer ? <div className="notice notice-info">אין לך הרשאה להקים מעסיק חדש בארגון הזה.</div>
+      : limitReached ? <div className="notice notice-info"><b>הגעתם למגבלת המסלול</b><div>{limitText}</div></div>
+      : <EmployerForm organizationId={organizationId} />}
   </AppShell>;
 }
