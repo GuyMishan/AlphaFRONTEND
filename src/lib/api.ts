@@ -28,6 +28,9 @@ import type {
   BankOption,
   BankBranchOption,
   BillingGateStatus,
+  CreateInvitationInput,
+  PublicInvitation,
+  UserInvitation,
   EmployerProfileCenterSettings,
   EmployerOption,
   EmployerRole,
@@ -254,6 +257,15 @@ export const alphaApi = {
     request<ManualReportEmployeeDetail>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`),
   saveManualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string, monthlySalary: number, products: ManualProductInput[]) =>
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`, { method: "PUT", body: JSON.stringify({ monthlySalary, products }) }),
+
+  invitations: (organizationId: string): Promise<UserInvitation[]> =>
+    request<UserInvitation[]>(`/api/organizations/${organizationId}/invitations/`),
+  createInvitation: (organizationId: string, payload: CreateInvitationInput): Promise<UserInvitation> =>
+    request<UserInvitation>(`/api/organizations/${organizationId}/invitations/`, { method: "POST", body: JSON.stringify(payload) }),
+  cancelInvitation: (organizationId: string, invitationId: string) =>
+    request<void>(`/api/organizations/${organizationId}/invitations/${invitationId}/cancel`, { method: "POST" }),
+  publicInvitation: (token: string): Promise<PublicInvitation> =>
+    request<PublicInvitation>(`/api/invitations/${encodeURIComponent(token)}`),
 
   accessUsers: (organizationId: string, search = "", skip = 0, take = 30): Promise<PagedResult<AccessUser>> =>
     getSession()?.mode === "demo" ? Promise.resolve({ items: [], hasMore: false }) : request<PagedResult<AccessUser>>(`/api/organizations/${organizationId}/access/users${qs({ search, skip, take })}`),
