@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Building2, CreditCard, Landmark, Save, Settings2, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { AppTabs } from "@/components/app-tabs";
 import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
 import { OrganizationPensionPaymentAccount } from "@/components/organization-pension-payment-account";
 import { PlanUsage } from "@/components/plan-usage";
@@ -86,13 +87,7 @@ export default function OrganizationProfilePage() {
       <button className="btn btn-secondary" type="button" onClick={() => router.push("/dashboard")}>חזרה לדף הבית</button>
     </div>
 
-    <div className="profile-tabs" role="tablist" aria-label="פרופיל ארגון">
-      {tabs.map(({ key, label, icon: Icon }) => <button
-        key={key} type="button" role="tab" aria-selected={tab === key}
-        className={`profile-tab${tab === key ? " active" : ""}`}
-        onClick={() => setTab(key)}
-      ><Icon size={17} />{label}</button>)}
-    </div>
+    <AppTabs items={tabs} activeKey={tab} onChange={setTab} ariaLabel="פרופיל ארגון" />
 
     {tab === "general" ? <GeneralTab profile={profile} onSaved={async () => { await load(); }} /> : null}
     {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} canCreate={Boolean(profile.canManageOrganization && entitlements && entitlements.employers.current < entitlements.employers.maximum)} entitlements={entitlements} /> : null}
