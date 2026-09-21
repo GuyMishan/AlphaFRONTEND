@@ -168,24 +168,24 @@ export default function AdminPage() {
 
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
-    {tab === "interfaces" ? <section className="card" style={{ overflow: "hidden" }}>
+    {tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
         <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>
       </div>
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+        <table className="admin-interfaces-table" style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead><tr>{["ממשק","הרצה אחרונה","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","פעולות"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
           <tbody>
             {loading ? <tr><td colSpan={9} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : rows.map((row) => <tr key={row.key}>
-              <td style={cellStyle}><b>{row.name}</b><div style={{ color: "#64748b", fontSize: 12 }}>{row.key}</div></td>
+              <td style={cellStyle}><b>{row.name}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{row.key}</div></td>
               <td style={cellStyle}>{formatDate(row.lastRun?.finishedAt ?? row.lastRun?.startedAt)}</td>
               <td style={cellStyle}>{statusLabel(row.lastRun?.status)}</td>
               <td style={cellStyle}>{row.lastRun?.recordsReceived ?? "-"}</td>
               <td style={cellStyle}>{row.lastRun?.recordsInserted ?? "-"}</td>
               <td style={cellStyle}>{row.lastRun?.recordsUpdated ?? "-"}</td>
               <td style={cellStyle}>{row.lastRun?.recordsDeactivated ?? "-"}</td>
-              <td style={cellStyle}><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <td className="admin-actions-cell" style={cellStyle}><div className="admin-actions">
                 <button className="btn btn-primary" type="button" disabled={Boolean(running)} onClick={() => void runInterface(row.key)}><Play size={15} />{running === row.key ? "מריץ..." : "הרץ עכשיו"}</button>
                 <button className="btn btn-secondary" type="button" onClick={() => void openHistory(row.key)}><Eye size={15} />דוחות הרצה</button>
               </div></td>
@@ -193,13 +193,13 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
-    </section> : <section className="card" style={{ overflow: "hidden" }}>
+    </section> : <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>מסלולים ומנויים</h2>
-        <p style={{ margin: "5px 0 0", color: "#64748b" }}>כאן מוגדר מסלול השימוש בלבד. גבייה ותשלומים אינם חלק מהשלב הזה.</p>
+        <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>כאן מוגדר מסלול השימוש בלבד. גבייה ותשלומים אינם חלק מהשלב הזה.</p>
       </div>
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+        <table className="admin-subscriptions-table" style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead><tr>{["ארגון","מסלול","סטטוס","מעסיקים","עובדים","משתמשים","התחלה","תוקף","פעולות"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
           <tbody>
             {loading ? <tr><td colSpan={8} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : subscriptions.map((item) => <tr key={item.subscriptionId}>
@@ -220,7 +220,7 @@ export default function AdminPage() {
               <td style={cellStyle}>{item.maxUsers}</td>
               <td style={cellStyle}>{formatDate(item.startedAt)}</td>
               <td style={cellStyle}>{item.expiresAt ? formatDate(item.expiresAt) : "ללא הגבלה"}</td>
-              <td style={{ ...cellStyle, width: 120 }}>
+              <td className="admin-actions-cell" style={cellStyle}>
                 {editingOrganizationId === item.organizationId ? <div style={{ display: "flex", gap: 6 }}>
                   <button className="btn btn-primary" type="button" disabled={savingOrganizationId === item.organizationId} onClick={() => void changePlan(item.organizationId, draftPlanByOrganization[item.organizationId] ?? item.planId)}><Save size={15} />{savingOrganizationId === item.organizationId ? "שומר..." : "שמירה"}</button>
                   <button className="btn btn-secondary" type="button" disabled={savingOrganizationId === item.organizationId} onClick={() => { setEditingOrganizationId(null); setDraftPlanByOrganization((current) => { const next = { ...current }; delete next[item.organizationId]; return next; }); }}>ביטול</button>
@@ -234,7 +234,7 @@ export default function AdminPage() {
 
     {historyKey ? <div style={backdropStyle} onClick={() => setHistoryKey(null)}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-        <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוחות הרצה</h2><div style={{ color: "#64748b", marginTop: 4 }}>{rows.find((x) => x.key === historyKey)?.name}</div></div><button className="btn btn-secondary" onClick={() => setHistoryKey(null)}><X size={17} /></button></div>
+        <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוחות הרצה</h2><div style={{ color: "var(--muted)", marginTop: 4 }}>{rows.find((x) => x.key === historyKey)?.name}</div></div><button className="btn btn-secondary" onClick={() => setHistoryKey(null)}><X size={17} /></button></div>
         <div style={{ overflowX: "auto" }}><table className="admin-run-history-table" style={{ width: "100%", minWidth: 620, borderCollapse: "collapse" }}>
           <thead><tr>{["תאריך","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","דוח"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
           <tbody>{history.length === 0 ? <tr><td colSpan={7} style={{ padding: 20, textAlign: "center" }}>אין עדיין הרצות</td></tr> : history.map((run) => <tr key={run.id}>
@@ -247,9 +247,9 @@ export default function AdminPage() {
 
     {selectedRun ? <div style={backdropStyle} onClick={() => setSelectedRun(null)}>
       <div style={{ ...modalStyle, maxWidth: 650 }} onClick={(e) => e.stopPropagation()}>
-        <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוח הרצה</h2><div style={{ color: "#64748b", marginTop: 4 }}>{selectedRun.integrationName}</div></div><button className="btn btn-secondary" onClick={() => setSelectedRun(null)}><X size={17} /></button></div>
+        <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוח הרצה</h2><div style={{ color: "var(--muted)", marginTop: 4 }}>{selectedRun.integrationName}</div></div><button className="btn btn-secondary" onClick={() => setSelectedRun(null)}><X size={17} /></button></div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 16 }}>
-          {[["סטטוס",statusLabel(selectedRun.status)],["התחלה",formatDate(selectedRun.startedAt)],["סיום",formatDate(selectedRun.finishedAt)],["נקלטו",selectedRun.recordsReceived],["חדשות",selectedRun.recordsInserted],["עודכנו",selectedRun.recordsUpdated],["הושבתו",selectedRun.recordsDeactivated]].map(([label,value]) => <div key={String(label)} style={{ padding: 12, border: "1px solid var(--line)", borderRadius: 10 }}><div style={{ color: "#64748b", fontSize: 12 }}>{label}</div><b>{value}</b></div>)}
+          {[["סטטוס",statusLabel(selectedRun.status)],["התחלה",formatDate(selectedRun.startedAt)],["סיום",formatDate(selectedRun.finishedAt)],["נקלטו",selectedRun.recordsReceived],["חדשות",selectedRun.recordsInserted],["עודכנו",selectedRun.recordsUpdated],["הושבתו",selectedRun.recordsDeactivated]].map(([label,value]) => <div key={String(label)} style={{ padding: 12, border: "1px solid var(--line)", borderRadius: 10 }}><div style={{ color: "var(--muted)", fontSize: 12 }}>{label}</div><b>{value}</b></div>)}
         </div>
         {selectedRun.errorMessage ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{selectedRun.errorMessage}</div> : null}
         <h3 style={{ marginBottom: 8 }}>פרטי מקור</h3>
