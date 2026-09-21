@@ -1,5 +1,6 @@
 "use client";
 
+import { UiInput } from "@/components/ui-controls";
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -131,7 +132,7 @@ export default function LoginPage() {
           {!challenge ? (
             <form className="form" onSubmit={(event) => { event.preventDefault(); void requestCode(); }} noValidate>
               <Field label="תעודת זהות *" error={errors.nationalId}>
-                <input
+                <UiInput
                   aria-invalid={Boolean(errors.nationalId)}
                   id="national-id"
                   inputMode="numeric"
@@ -148,7 +149,7 @@ export default function LoginPage() {
               </Field>
 
               <Field label="מספר טלפון *" error={errors.phone}>
-                <input
+                <UiInput
                   aria-invalid={Boolean(errors.phone)}
                   id="phone"
                   type="tel"
