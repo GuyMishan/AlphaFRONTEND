@@ -153,3 +153,40 @@ html[data-theme="dark"] .admin-interfaces-table tbody tr:hover,
 html[data-theme="dark"] .admin-subscriptions-table tbody tr:hover {
   background: rgba(255,255,255,.025);
 }
+
+
+/* Tabs and billing surfaces in dark mode */
+html[data-theme="dark"] .app-tab:hover {
+  background: #1d2a3a;
+  color: var(--text);
+  border-color: #33475d;
+}
+html[data-theme="dark"] .app-tab.active,
+html[data-theme="dark"] .app-tab[aria-selected="true"] {
+  background: #172a46;
+  border-color: #31527d;
+  color: var(--blue);
+}
+html[data-theme="dark"] .billing-gate-choice-copy,
+html[data-theme="dark"] .billing-method-next,
+html[data-theme="dark"] .billing-method-next.card-method,
+html[data-theme="dark"] .billing-method-next.bank-method,
+html[data-theme="dark"] .billing-source-banner.organization,
+html[data-theme="dark"] .billing-owner-banner.organization,
+html[data-theme="dark"] .billing-source-banner.employer,
+html[data-theme="dark"] .billing-owner-banner.employer,
+html[data-theme="dark"] .compact-billing-summary > span,
+html[data-theme="dark"] .payment-account-card {
+  background: #111b28;
+  color: var(--text);
+  border-color: var(--line);
+}
+html[data-theme="dark"] .billing-method-next p,
+html[data-theme="dark"] .billing-gate-choice-copy,
+html[data-theme="dark"] .compact-billing-summary small {
+  color: var(--muted);
+}
+html[data-theme="dark"] .billing-source-icon {
+  background: #16202d;
+  border-color: var(--line);
+}
