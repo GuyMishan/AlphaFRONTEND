@@ -493,7 +493,6 @@ td { font-size: 14px; }
 .billing-method-next p { margin: 2px 0 0; color: var(--muted); line-height: 1.55; }
 
 /* Compact salary payment day picker */
-.compact-day-field { max-width: 220px; }
 .compact-day-picker { position: relative; }
 .compact-day-trigger {
   width: 100%;
@@ -546,4 +545,114 @@ td { font-size: 14px; }
 @media (max-width: 520px) {
   .employer-details-grid { grid-template-columns: 1fr; }
   .field-span-2 { grid-column: span 1; }
+}
+
+
+/* Horizontal employer payment/billing profile */
+.payment-horizontal-shell { max-width: 1180px; }
+.payment-horizontal-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.payment-source-column { display: grid; gap: 12px; }
+.compact-choice-card {
+  min-height: 0;
+  padding: 16px;
+}
+.compact-choice-card svg { margin-bottom: 10px; color: var(--blue); }
+.compact-choice-card b { font-size: 15px; }
+.compact-choice-card p { font-size: 13px; }
+.compact-choice-card:disabled { cursor: not-allowed; opacity: .48; box-shadow: none; }
+.option-hint {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-radius: 99px;
+  padding: 4px 8px;
+}
+.permission-hint { color: var(--muted); line-height: 1.45; }
+.payment-details-column {
+  min-width: 0;
+  border-right: 1px solid var(--line);
+  padding-right: 22px;
+}
+.payment-placeholder {
+  min-height: 230px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
+.payment-placeholder b { color: var(--text); }
+.account-context-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.account-context-head > div { display: grid; gap: 3px; }
+.account-context-head span,
+.account-context-head small { color: var(--muted); font-size: 12px; }
+.account-context-head strong { font-size: 18px; }
+.compact-account-details { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.compact-account-details > span { padding: 10px 11px; }
+.compact-payment-form { max-width: none; }
+.compact-payment-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.compact-payment-grid .field { min-width: 0; }
+.compact-payment-grid input,
+.compact-payment-grid select { min-width: 0; }
+.compact-billing-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.compact-billing-summary > span {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fafcff;
+}
+.compact-billing-summary b { font-size: 12px; }
+.compact-billing-summary small { color: var(--muted); font-size: 13px; }
+.billing-inline-form { display: grid; gap: 14px; }
+.billing-inline-panel,
+.billing-inline-secondary {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.billing-inline-secondary {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  margin-top: 6px;
+}
+.billing-inline-form .card-head { margin-bottom: 14px; }
+.billing-inline-form .billing-method-choices { gap: 12px; }
+.billing-inline-form .billing-method-card { min-height: 118px; padding: 15px; }
+
+/* Keep salary-day field aligned; only its opened menu is compact */
+.reporting-settings-card .compact-day-field { max-width: none; }
+.reporting-settings-card .compact-day-trigger { width: 100%; }
+.reporting-settings-card .compact-day-menu { width: 170px; max-height: 190px; }
+
+@media (max-width: 960px) {
+  .payment-horizontal-layout { grid-template-columns: 1fr; }
+  .payment-source-column { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .payment-details-column { border-right: 0; padding-right: 0; border-top: 1px solid var(--line); padding-top: 18px; }
+  .compact-payment-grid, .compact-account-details, .compact-billing-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .payment-source-column,
+  .compact-payment-grid,
+  .compact-account-details,
+  .compact-billing-summary { grid-template-columns: 1fr; }
 }
