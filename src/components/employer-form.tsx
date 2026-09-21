@@ -18,6 +18,7 @@ export function EmployerForm({
   onCreated,
   showBackLink = true,
   createLabel = "הקמת מעסיק",
+  embedded = false,
 }: {
   organizationId?: string;
   employer?: Employer;
@@ -26,6 +27,7 @@ export function EmployerForm({
   onCreated?: (employer: Employer) => void;
   showBackLink?: boolean;
   createLabel?: string;
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<EmployerInput>({
@@ -102,7 +104,7 @@ export function EmployerForm({
     finally { setSaving(false); }
   }
 
-  return <div className="card profile-card">
+  return <div className={embedded ? "employer-form-embedded" : "card profile-card"}>
     <div className="profile-summary"><div className="profile-avatar"><Building2 /></div><div><h2 style={{ margin: 0 }}>{title}</h2><span style={{ color: "var(--muted)" }}>{employer ? editable ? "עריכת פרופיל מעסיק" : "צפייה בפרופיל מעסיק" : onCreate ? "הגדרת העסק שלכם" : "הקמת מעסיק חדש בארגון"}</span></div></div>
     {!editable && employer ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק הזה, ללא הרשאת עריכה.</div> : null}
     <form className="form" onSubmit={submit} noValidate>
