@@ -76,6 +76,8 @@ export default function NewReportPage() {
   const [selectedSourceReportId, setSelectedSourceReportId] = useState("");
   const [canCreateReport, setCanCreateReport] = useState(false);
   const [canTransmitReport, setCanTransmitReport] = useState(false);
+  const [canManageEmployerBilling, setCanManageEmployerBilling] = useState(false);
+  const [canManageOrganizationBilling, setCanManageOrganizationBilling] = useState(false);
   const [paymentAccounts, setPaymentAccounts] = useState<EmployerPaymentAccount[]>([]);
   const [selectedPaymentAccountId, setSelectedPaymentAccountId] = useState("");
   const [billingGate, setBillingGate] = useState<BillingGateStatus | null>(null);
@@ -87,17 +89,21 @@ export default function NewReportPage() {
   async function loadScope(nextScope: { organizationId: string; employerId: string }) {
     setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
     try {
-      const [employerItem, employeePage, capabilities, profileSettings, accountRows, billingGateStatus] = await Promise.all([
+      const [employerItem, employeePage, capabilities, profileSettings, accountRows, billingGateStatus, globalScope] = await Promise.all([
         alphaApi.employer(nextScope.organizationId, nextScope.employerId),
         alphaApi.employeeSearch(nextScope.organizationId, nextScope.employerId, "", 0, 100),
         alphaApi.employerCapabilities(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerProfileCenterSettings(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerPaymentAccounts(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerBillingGate(nextScope.organizationId, nextScope.employerId),
+        alphaApi.scope(),
       ]);
       setEmployer(employerItem);
       setCanCreateReport(capabilities.canCreateReport);
       setCanTransmitReport(capabilities.canTransmitReport);
+      setCanManageEmployerBilling(capabilities.canManageEmployer);
+      const currentOrganization = globalScope.organizations.find((item) => item.id === nextScope.organizationId);
+      setCanManageOrganizationBilling(Boolean(currentOrganization?.hasOrganizationScope && currentOrganization?.canManageOrganization));
       setEmployees(employeePage.items);
       setSelectedIds(employeePage.items.filter((x) => x.status === 1).map((x) => x.id));
       setPaymentAccounts(accountRows);
@@ -263,7 +269,13 @@ export default function NewReportPage() {
       {billingGate?.canTransmit ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
     </> : null}
     <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={!canContinue || advancing || !canCreateReport} onClick={() => void next()}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport || billingGate?.canTransmit === false} onClick={() => void sendReport()}><Send size={17} />{sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div>
-  </section>}</div>{scope && billingGate && !billingGate.canTransmit ? <BillingGateModal gate={billingGate} organizationId={scope.organizationId} employerId={scope.employerId} /> : null}</AppShell>;
+  </section>}</div>{scope && billingGate && !billingGate.canTransmit ? <BillingGateModal
+    gate={billingGate}
+    organizationId={scope.organizationId}
+    employerId={scope.employerId}
+    canManageOrganizationBilling={canManageOrganizationBilling}
+    canManageEmployerBilling={canManageEmployerBilling}
+  /> : null}</AppShell>;
 }
 
 function ReportTypeBanner({ reportKind, source, month }: { reportKind: ManualReportKind; source: SourceManualReport | null; month: string }) { return <div className="notice" style={{ marginBottom: 18, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}><b>סוג הדיווח: {reportKindLabel[reportKind]}</b><span>· חודש {formatMonth(month)}</span>{reportKind !== 1 && source ? <span>· מתקן דיווח מחודש {formatMonth(source.reportingMonth)}</span> : null}</div>; }
