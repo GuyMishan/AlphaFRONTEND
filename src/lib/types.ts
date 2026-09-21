@@ -263,6 +263,20 @@ export type AccessUser = {
   isActive: boolean;
   role: OrganizationRole;
   employerAccessMode: EmployerAccessMode;
+  canCreateEmployer: boolean;
+  canEditEmployer: boolean;
+  canCreateEmployee: boolean;
+  canEditEmployee: boolean;
+};
+
+export type PlatformUser = {
+  id: string;
+  displayName: string;
+  email: string;
+  nationalId: string | null;
+  phone: string | null;
+  isPlatformAdmin: boolean;
+  isActive: boolean;
 };
 
 export type UserCandidate = {
@@ -351,6 +365,7 @@ export type SubscriptionSummary = {
 export type PlatformSubscription = {
   organizationId: string;
   organizationName: string;
+  organizationStatus: number | string;
   subscriptionId: string;
   status: number | string;
   startedAt: string;
