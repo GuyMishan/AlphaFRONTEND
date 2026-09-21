@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { Building2, CreditCard, FileSliders, Save, Users, WalletCards } from "lucide-react";
@@ -275,7 +274,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     setAccounts(await alphaApi.employerPaymentAccounts(organizationId, employerId));
   }
 
-  async function useOrganizationAccount() {
+  async function switchToOrganizationAccount() {
     if (!pensionPayment.canChangeMode) return;
     setSwitching(true);
     try {
@@ -291,7 +290,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     }
   }
 
-  async function useEmployerAccount() {
+  async function switchToEmployerAccount() {
     if (!pensionPayment.canChangeMode) return;
     setSwitching(true);
     try {
@@ -385,10 +384,10 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
       </div>
 
       {pensionPayment.canChangeMode ? <div className="grid two-cols" style={{ marginBottom: 18 }}>
-        <button type="button" disabled={switching} className={`choice-card${pensionPayment.mode === 2 ? " selected" : ""}`} onClick={() => void useOrganizationAccount()}>
+        <button type="button" disabled={switching} className={`choice-card${pensionPayment.mode === 2 ? " selected" : ""}`} onClick={() => void switchToOrganizationAccount()}>
           <Building2 size={24} /><b>שימוש בחשבון הארגון</b><p>ברירת המחדל. שינויים בחשבון הארגוני יחולו על דיווחים חדשים.</p>
         </button>
-        <button type="button" disabled={switching} className={`choice-card${pensionPayment.mode === 1 ? " selected" : ""}`} onClick={() => void useEmployerAccount()}>
+        <button type="button" disabled={switching} className={`choice-card${pensionPayment.mode === 1 ? " selected" : ""}`} onClick={() => void switchToEmployerAccount()}>
           <WalletCards size={24} /><b>חשבון עצמאי למעסיק</b><p>החרגה מהארגון ושימוש בחשבון ייעודי למעסיק הזה.</p>
         </button>
       </div> : null}
