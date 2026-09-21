@@ -1,5 +1,6 @@
 "use client";
 
+import { UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { getSession } from "@/lib/session";
 
@@ -36,11 +37,11 @@ export function SalaryLayerSelect({ value, disabled = false, onChange }: { value
   const hasValue = options.some((item) => String(item.code) === String(value));
 
   return <>
-    <select disabled={disabled || loading} value={value} onChange={(event) => onChange(event.target.value)}>
+    <UiSelect disabled={disabled || loading} value={value} onChange={(event) => onChange(event.target.value)}>
       <option value="">{loading ? "טוען רובדי שכר..." : "בחירת רובד שכר"}</option>
       {!hasValue && value ? <option value={value}>{value}</option> : null}
       {options.map((item) => <option key={item.code} value={String(item.code)}>{item.name} ({item.code})</option>)}
-    </select>
+    </UiSelect>
     {error ? <span className="field-error">{error}</span> : null}
   </>;
 }
