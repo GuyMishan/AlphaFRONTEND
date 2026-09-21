@@ -15,10 +15,10 @@
 .payment-panel h3 { margin: 0 0 8px; font-size: 14px; }
 .payment-modal .field { gap: 4px; }
 .payment-modal .field label { font-size: 12px; }
-.payment-modal .field input, .payment-modal .field select { min-height: 34px; padding: 6px 8px; border-radius: 8px; font-size: 13px; }
+.payment-modal .field input, .payment-modal .field select { min-height: var(--control-height-compact); padding: 6px 8px; border-radius: 8px; font-size: 13px; }
 .payment-provider-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(130px, .5fr) minmax(0, 1.15fr); gap: 8px; align-items: end; }
 .payment-provider-account { grid-column: auto; }
-.payment-amount { min-height: 34px; border-radius: 8px; background: #f5f7fa; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px; border: 1px solid var(--line); }
+.payment-amount { min-height: var(--control-height-compact); border-radius: 8px; background: #f5f7fa; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px; border: 1px solid var(--line); }
 .payment-amount span { color: var(--muted); font-size: 11px; }
 .payment-amount b { font-size: 13px; }
 .payment-input-icon { position: relative; }
@@ -26,7 +26,7 @@
 .payment-input-icon svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #4d545b; }
 .payment-method-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: end; }
 .payment-method { grid-column: auto; }
-.payment-upload { min-height: 34px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; background: white; cursor: pointer; color: #2980d9; padding: 0 9px; min-width: 0; font-size: 12px; }
+.payment-upload { min-height: var(--control-height-compact); display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; background: white; cursor: pointer; color: #2980d9; padding: 0 9px; min-width: 0; font-size: 12px; }
 .payment-upload span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .payment-error { margin-bottom: 8px; }
 .payment-modal-footer { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
@@ -57,7 +57,7 @@
   .payment-provider-account { grid-column: 1 / -1; }
   .payment-method-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
   .payment-method { grid-column: 1 / -1; }
-  .payment-upload { min-height: 34px; padding: 0 7px; font-size: 11px; }
+  .payment-upload { min-height: var(--control-height-compact); padding: 0 7px; font-size: 11px; }
   .payment-modal-footer { position: sticky; bottom: -14px; background: #f8fafc; padding: 9px 0 1px; margin-top: 6px; }
   .payment-modal-footer .btn { flex: 1; min-width: 0; }
 }
