@@ -205,7 +205,7 @@ export default function AdminPage() {
       </div>
       <div style={{ overflowX: "auto" }}>
         <table className="admin-subscriptions-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["ארגון","מסלול","סטטוס","מעסיקים","עובדים","משתמשים","התחלה","תוקף","פעולות"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
+          <thead><tr>{["ארגון","מסלול","סטטוס ארגון","מעסיקים","עובדים","משתמשים","התחלה","תוקף","פעולות"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
           <tbody>
             {loading ? <tr><td colSpan={8} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : subscriptions.map((item) => <tr key={item.subscriptionId}>
               <td style={cellStyle}><Link className="profile-link" href={`/organizations/${item.organizationId}`}><b>{item.organizationName}</b></Link></td>
