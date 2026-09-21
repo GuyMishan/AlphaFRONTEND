@@ -30,9 +30,9 @@ export function BillingGateModal({
     return () => { document.body.style.overflow = previous; };
   }, []);
 
-  const billingHref = gate.source === "Organization"
-    ? `/organizations/${organizationId}?tab=billing`
-    : `/employers/${employerId}?organizationId=${organizationId}&tab=billing`;
+  const billingHref = employerId
+    ? `/employers/${employerId}?organizationId=${organizationId}&tab=billing`
+    : `/organizations/${organizationId}?tab=billing`;
 
   return (
     <div className="billing-gate-backdrop" role="presentation">
