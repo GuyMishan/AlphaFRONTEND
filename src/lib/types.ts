@@ -114,6 +114,8 @@ export type ManualProductInput = {
 export type EmployeePensionContributionInput = {
   component: ContributionComponent;
   percentage: number;
+  amount?: number;
+  exemptPayments?: number;
 };
 
 export type EmployeePensionProductInput = {
