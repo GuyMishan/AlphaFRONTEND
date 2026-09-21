@@ -30,8 +30,8 @@ function toEditorProduct(item: EmployeePensionProductInput, index: number): Pens
     effectiveTo: item.effectiveTo ?? null,
     institutionalBody: item.institutionalBody ?? "",
     manufacturer: item.manufacturer ?? "",
-    employerContributions: item.employerContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0) })),
-    employeeContributions: item.employeeContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0) })),
+    employerContributions: item.employerContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0), amount: Number(entry.amount ?? 0), exemptPayments: Number(entry.exemptPayments ?? 0) })),
+    employeeContributions: item.employeeContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0), amount: Number(entry.amount ?? 0), exemptPayments: Number(entry.exemptPayments ?? 0) })),
   };
 }
 
@@ -57,8 +57,8 @@ function toEmployeeProduct(product: PensionEditorProduct): EmployeePensionProduc
     salaryAllocationType: Number(product.salaryAllocationType ?? 1) as SalaryAllocationType,
     salaryAllocationValue: product.salaryAllocationValue ?? null,
     allocationOrder: Number(product.allocationOrder ?? 0),
-    employerContributions: product.employerContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0) })),
-    employeeContributions: product.employeeContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0) })),
+    employerContributions: product.employerContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0), amount: Number(entry.amount ?? 0), exemptPayments: Number(entry.exemptPayments ?? 0) })),
+    employeeContributions: product.employeeContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0), amount: Number(entry.amount ?? 0), exemptPayments: Number(entry.exemptPayments ?? 0) })),
   };
 }
 
