@@ -732,3 +732,95 @@ td { font-size: 14px; }
 .employee-details-grid-status {
   max-width: none;
 }
+
+
+/* Reusable inline info tooltip */
+.field-label-with-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+}
+
+.info-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: help;
+  outline: none;
+  flex: 0 0 auto;
+}
+
+.info-tooltip:hover,
+.info-tooltip:focus-visible {
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.info-tooltip-bubble {
+  position: absolute;
+  z-index: 80;
+  right: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(50%);
+  width: max-content;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  white-space: normal;
+  box-shadow: 0 8px 22px rgba(16,38,64,.18);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .12s ease, visibility .12s ease;
+}
+
+.info-tooltip:hover .info-tooltip-bubble,
+.info-tooltip:focus-visible .info-tooltip-bubble {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Denser employer general card */
+.employer-general-card-compact {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.employer-general-card-compact .card-head {
+  margin-bottom: 10px;
+}
+
+.employer-general-card-compact .form {
+  gap: 10px;
+}
+
+.employer-general-card-compact .profile-form-section {
+  padding: 2px 0 12px;
+}
+
+.employer-general-card-compact .profile-form-section + .profile-form-section {
+  padding-top: 12px;
+}
+
+.employer-general-card-compact .profile-form-section h3 {
+  margin-bottom: 9px;
+}
+
+.employer-general-card-compact .employer-details-grid {
+  gap: 10px 12px;
+}
+
+.employer-general-card-compact .single-save-action {
+  margin-top: 12px;
+}
