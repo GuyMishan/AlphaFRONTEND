@@ -129,7 +129,7 @@ function GeneralTab({ profile, onSaved }: { profile: OrganizationProfileCenter; 
     <div className="card-head"><div><h2>פרטים כלליים</h2><span style={{ color: "var(--muted)" }}>פרטי החברה, כתובת ואיש קשר ארגוני.</span></div></div>
     {!profile.canManageOrganization ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הפרטים מוצגים לקריאה בלבד. רק Organization Admin יכול לעדכן אותם.</div> : null}
     <form className="form" onSubmit={save}>
-      <div className="grid two-cols">
+      <div className="grid organization-details-grid">
         <div className="field"><label>שם הארגון</label><UiInput disabled={!profile.canManageOrganization} required maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
         <div className="field"><label>סוג ארגון</label><UiSelect disabled={!profile.canManageOrganization} value={form.type} onChange={(e) => setForm({ ...form, type: Number(e.target.value) })}><option value={1}>מעסיק</option><option value={2}>משרד שכר</option><option value={3}>סוכנות ביטוח</option><option value={4}>ספק תפעול</option><option value={5}>קבוצת חברות</option></UiSelect></div>
         <div className="field"><label>מספר חברה / עוסק</label><UiInput disabled={!profile.canManageOrganization} maxLength={30} value={form.registrationNumber} onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })} /></div>
@@ -155,8 +155,8 @@ function EmployersTab({ organizationId, employers, canCreate, entitlements }: { 
       {canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}>מעסיק חדש</Link> : null}
     </div>
     {entitlements ? <div style={{ marginBottom: 18 }}><PlanUsage label="מעסיקים במסלול" usage={entitlements.employers} /></div> : null}
-    {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>מעסיק</th><th>מספר חברה</th><th>תיק ניכויים</th><th>סטטוס</th><th /></tr></thead><tbody>
-      {employers.map((item) => <tr key={item.id}><td><b>{item.legalName}</b></td><td>{item.registrationNumber}</td><td>{item.withholdingFileNumber}</td><td>{item.status === 2 ? "פעיל" : "בתהליך הקמה"}</td><td><Link className="profile-link" href={`/employers/${item.id}?organizationId=${organizationId}`}>לפרופיל</Link></td></tr>)}
+    {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>מעסיק</th><th>מספר חברה</th><th>תיק ניכויים</th><th>סטטוס</th></tr></thead><tbody>
+      {employers.map((item) => <tr key={item.id}><td><Link className="profile-link" href={`/employers/${item.id}?organizationId=${organizationId}`}>{item.legalName}</Link></td><td>{item.registrationNumber}</td><td>{item.withholdingFileNumber}</td><td>{item.status === 2 ? "פעיל" : "בתהליך הקמה"}</td></tr>)}
     </tbody></table></div>}
   </section>;
 }
