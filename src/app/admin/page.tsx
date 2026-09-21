@@ -1,5 +1,6 @@
 "use client";
 
+import { UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, Play, RefreshCw, X } from "lucide-react";
@@ -196,13 +197,13 @@ export default function AdminPage() {
             {loading ? <tr><td colSpan={8} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : subscriptions.map((item) => <tr key={item.subscriptionId}>
               <td style={cellStyle}><b>{item.organizationName}</b></td>
               <td style={cellStyle}>
-                <select
+                <UiSelect
                   value={item.planId}
                   disabled={savingOrganizationId === item.organizationId}
                   onChange={(event) => void changePlan(item.organizationId, event.target.value)}
                 >
                   {plans.filter((plan) => plan.isActive || plan.id === item.planId).map((plan) => <option key={plan.id} value={plan.id}>{plan.name} ({plan.code})</option>)}
-                </select>
+                </UiSelect>
               </td>
               <td style={cellStyle}>{statusLabel(String(item.status))}</td>
               <td style={cellStyle}>{item.maxEmployers}</td>
