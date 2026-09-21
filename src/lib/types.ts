@@ -386,6 +386,7 @@ export type EmployerAddressSettings = {
 
 export type EmployerBillingMode = 1 | 2;
 export type EmployerBillingStatus = 1 | 2 | 3;
+export type EmployerPensionPaymentMode = 1 | 2;
 export type BankDebitMandateStatus = 1 | 2 | 3 | 4 | 5;
 
 export type EmployerProfileCenterSettings = {
@@ -394,6 +395,11 @@ export type EmployerProfileCenterSettings = {
     mode: EmployerBillingMode;
     modeOverridden: boolean;
     status: EmployerBillingStatus;
+    canChangeMode: boolean;
+  };
+  pensionPayment: {
+    mode: EmployerPensionPaymentMode;
+    modeOverridden: boolean;
     canChangeMode: boolean;
   };
   reporting: {
@@ -419,7 +425,7 @@ export type BankDebitMandate = {
 export type EmployerPaymentAccount = {
   id: string;
   organizationId: string;
-  employerId: string;
+  employerId: string | null;
   bankId: number;
   branchId: number;
   maskedAccountNumber: string;
@@ -427,6 +433,7 @@ export type EmployerPaymentAccount = {
   maskedAccountHolderId: string;
   isDefault: boolean;
   isActive: boolean;
+  source?: "Organization" | "Employer";
   mandate: BankDebitMandate | null;
   mandateIsActive: boolean;
 };
@@ -654,4 +661,18 @@ export type PaymentMethodSyncResult = {
   cardLast4: string;
   cardExpiryMonth: number | null;
   cardExpiryYear: number | null;
+};
+
+
+export type PensionPaymentResolution = {
+  employerId: string;
+  organizationId: string;
+  mode: EmployerPensionPaymentMode;
+  source: "Organization" | "Employer";
+  inherited: boolean;
+  account: EmployerPaymentAccount | null;
+};
+
+export type OrganizationPaymentAccountResponse = {
+  account: EmployerPaymentAccount | null;
 };
