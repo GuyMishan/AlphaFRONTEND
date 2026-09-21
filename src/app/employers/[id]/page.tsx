@@ -23,7 +23,7 @@ import type {
   PensionPaymentResolution,
 } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
-import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
+import { UiChoiceCard, UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
 
 type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting";
 
@@ -455,10 +455,10 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
 
     <div className="payment-horizontal-layout">
       <aside className="payment-source-column">
-        <button
-          type="button"
+        <UiChoiceCard
+          compact
           disabled={!canManage || !organizationAccount}
-          className={`choice-card compact-choice-card${selectedMode === 2 ? " selected" : ""}`}
+          selected={selectedMode === 2}
           onClick={selectOrganizationMode}
           title={organizationAccount ? "קיים חשבון ארגוני זמין למעסיק הזה" : "לא קיים חשבון ארגוני זמין למעסיק הזה"}
         >
@@ -466,18 +466,18 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           <b>חשבון הארגון</b>
           <p>{organizationAccount ? "שימוש בחשבון הפנסיוני שמנוהל ברמת הארגון." : "לא קיים כרגע חשבון ארגוני זמין."}</p>
           {organizationAccount ? <span className="option-hint" title="קיים חשבון ארגוני זמין למעסיק הזה">ⓘ קיים חשבון ארגוני</span> : null}
-        </button>
+        </UiChoiceCard>
 
-        <button
-          type="button"
+        <UiChoiceCard
+          compact
           disabled={!canManage}
-          className={`choice-card compact-choice-card${selectedMode === 1 ? " selected" : ""}`}
+          selected={selectedMode === 1}
           onClick={() => void selectEmployerMode()}
         >
           <WalletCards size={22} />
           <b>חשבון המעסיק</b>
           <p>חשבון ייעודי למעסיק הזה בלבד.</p>
-        </button>
+        </UiChoiceCard>
       </aside>
 
       <div className="payment-details-column">
@@ -600,10 +600,10 @@ function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmpl
 
     <div className="payment-horizontal-layout">
       <aside className="payment-source-column">
-        <button
-          type="button"
+        <UiChoiceCard
+          compact
           disabled={!billing.canChangeMode || !organizationAvailable}
-          className={`choice-card compact-choice-card${selectedMode === 2 ? " selected" : ""}`}
+          selected={selectedMode === 2}
           onClick={() => setSelectedMode(2)}
           title={organizationAvailable ? "קיימים פרטי חיוב ארגוניים זמינים למעסיק הזה" : "לא קיימים פרטי חיוב ארגוניים זמינים"}
         >
@@ -611,12 +611,12 @@ function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmpl
           <b>חיוב דרך הארגון</b>
           <p>{organizationAvailable ? "שימוש בפרטי החיוב המרכזיים של הארגון." : "לא הוגדרו עדיין פרטי חיוב בארגון."}</p>
           {organizationAvailable ? <span className="option-hint" title="קיימים פרטי חיוב ארגוניים זמינים למעסיק הזה">ⓘ קיים חיוב ארגוני</span> : null}
-        </button>
+        </UiChoiceCard>
 
-        <button
-          type="button"
+        <UiChoiceCard
+          compact
           disabled={!billing.canChangeMode}
-          className={`choice-card compact-choice-card${selectedMode === 1 ? " selected" : ""}`}
+          selected={selectedMode === 1}
           onClick={() => setSelectedMode(1)}
         >
           <CreditCard size={22} />
