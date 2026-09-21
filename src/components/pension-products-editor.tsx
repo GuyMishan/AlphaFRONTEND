@@ -94,7 +94,8 @@ export function normalizePensionEditorProducts(monthlySalary: number, products: 
       const salary = allocation.resolved.get(index) ?? 0;
       const normalize = (item: PensionEditorContribution): PensionEditorContribution => ({
         ...item,
-        amount: item.amount === undefined ? undefined : roundMoney(salary * Number(item.percentage || 0) / 100),
+        amount: roundMoney(salary * Number(item.percentage || 0) / 100),
+        exemptPayments: roundMoney(Number(item.exemptPayments || 0)),
       });
       return {
         ...product,
@@ -133,8 +134,8 @@ export function createEmptyPensionEditorProduct(context: "employee" | "report", 
   const base: PensionEditorProduct = {
     productType: 1, policyNumber: "", fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", salary: 0,
     salaryAllocationType: 1, salaryAllocationValue: null, allocationOrder: order, reportingType: "1", salaryLayer: "1", section14: false,
-    section14Code: 3, section14StartDate: null, employerContributions: employerComponents.map(({ value }) => ({ component: value, percentage: 0, ...(context === "report" ? { amount: 0, exemptPayments: 0 } : {}) })),
-    employeeContributions: employerComponents.map(({ value }) => ({ component: value, percentage: 0, ...(context === "report" ? { amount: 0, exemptPayments: 0 } : {}) })),
+    section14Code: 3, section14StartDate: null, employerContributions: employerComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
+    employeeContributions: employeeComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
   };
   if (context === "employee") return { ...base, isActive: true, effectiveFrom: today(), effectiveTo: null, institutionalBody: "", manufacturer: "" };
   return { ...base, salaryMonth: month ? `${month.slice(0, 7)}-01` : today().slice(0, 7) + "-01" };
@@ -175,7 +176,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
       [party]: product[party].map((item) => {
         if (item.component !== component) return item;
         const safe = Math.max(0, Number.isFinite(value) ? value : 0);
-        if (key === "percentage") return { ...item, percentage: roundPercentage(safe), ...(context === "report" ? { amount: roundMoney(salary * safe / 100) } : {}) };
+        if (key === "percentage") return { ...item, percentage: roundPercentage(safe), amount: roundMoney(salary * safe / 100) };
         if (key === "amount") return { ...item, amount: roundMoney(safe), percentage: salary > 0 ? roundPercentage(safe / salary * 100) : 0 };
         return { ...item, exemptPayments: roundMoney(safe) };
       }),
@@ -220,5 +221,5 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
 
 function ContributionEditor({ context, title, party, product, items, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
   const labels = party === "employee" ? employeeComponents : employerComponents;
-  return <div className="contribution-section"><h3>{title}</h3><div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>רכיב</th>{context === "report" ? <th>סכום</th> : null}<th>אחוז</th>{context === "report" ? <th>תשלומים פטורים</th> : null}</tr></thead><tbody>{labels.map(({ value, label }) => { const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 }; const max = maxPercentage(product.productType, party, value); return <tr key={value}><th>{label}</th>{context === "report" ? <td><UiInput disabled={!editable} type="number" min="0" step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} /></td> : null}<td><UiInput disabled={!editable} type="number" min="0" max={max} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} /></td>{context === "report" ? <td><UiInput disabled={!editable} type="number" min="0" step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} /></td> : null}</tr>; })}</tbody></table></div></div>;
+  return <div className="contribution-section"><h3>{title}</h3><div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>רכיב</th><th>סכום</th><th>אחוז</th><th>תשלומים פטורים</th></tr></thead><tbody>{labels.map(({ value, label }) => { const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 }; const max = maxPercentage(product.productType, party, value); return <tr key={value}><th>{label}</th><td><UiInput disabled={!editable} type="number" min="0" step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} /></td><td><UiInput disabled={!editable} type="number" min="0" max={max} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} /></td><td><UiInput disabled={!editable} type="number" min="0" step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} /></td></tr>; })}</tbody></table></div></div>;
 }
