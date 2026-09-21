@@ -20,6 +20,7 @@ import type {
   EmployerPaymentAccount,
   EmployerPaymentAccountInput,
   EmployerProfileCenterSettings,
+  PensionPaymentResolution,
 } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
 
@@ -306,10 +307,9 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   pensionPayment: EmployerProfileCenterSettings["pensionPayment"];
   onModeSaved: (value: EmployerProfileCenterSettings["pensionPayment"]) => void;
 }) {
-  const account = useMemo(() => accounts[0] ?? null, [accounts]);
-  const inherited = account?.source === "Organization" || pensionPayment.mode === 2;
+  const [resolution, setResolution] = useState<PensionPaymentResolution | null>(null);
+  const [selectedMode, setSelectedMode] = useState<1 | 2 | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [creatingOverride, setCreatingOverride] = useState(false);
   const [form, setForm] = useState<EmployerPaymentAccountInput>({ ...EMPTY_ACCOUNT, isDefault: true });
   const [banks, setBanks] = useState<BankOption[]>([]);
   const [branches, setBranches] = useState<BankBranchOption[]>([]);
@@ -319,7 +319,23 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   const [externalMandateId, setExternalMandateId] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [saving, setSaving] = useState(false);
-  const [switching, setSwitching] = useState(false);
+  const [loadingChoice, setLoadingChoice] = useState(true);
+
+  async function loadResolution() {
+    setLoadingChoice(true);
+    try {
+      const value = await alphaApi.employerPaymentResolution(organizationId, employerId);
+      setResolution(value);
+      setSelectedMode(pensionPayment.modeOverridden ? pensionPayment.mode : value.employerAccount ? 1 : null);
+      setAccounts(value.account ? [value.account] : []);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "טעינת חשבון התשלום נכשלה");
+    } finally {
+      setLoadingChoice(false);
+    }
+  }
+
+  useEffect(() => { void loadResolution(); }, [organizationId, employerId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -336,63 +352,22 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     return () => window.clearTimeout(timer);
   }, [form.bankId, branchSearch]);
 
-  function clearEditor() {
-    setEditingId(null);
-    setCreatingOverride(false);
-    setForm({ ...EMPTY_ACCOUNT, isDefault: true });
-    setBankSearch("");
-    setBranchSearch("");
-    setMandateStatus(1);
-    setExternalMandateId("");
-    setDocumentId("");
-  }
-
-  async function reload() {
-    setAccounts(await alphaApi.employerPaymentAccounts(organizationId, employerId));
-  }
-
-  async function switchToOrganizationAccount() {
-    if (!pensionPayment.canChangeMode) return;
-    setSwitching(true);
-    try {
-      const result = await alphaApi.updateEmployerPensionPaymentMode(organizationId, employerId, 2);
-      onModeSaved({ ...pensionPayment, mode: result.mode, modeOverridden: result.modeOverridden });
-      clearEditor();
-      await reload();
-      toast.success("המעסיק משתמש כעת בחשבון הפנסיוני של הארגון");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שינוי מקור החשבון נכשל");
-    } finally {
-      setSwitching(false);
-    }
-  }
-
-  async function switchToEmployerAccount() {
-    if (!pensionPayment.canChangeMode) return;
-    setSwitching(true);
-    try {
-      const result = await alphaApi.updateEmployerPensionPaymentMode(organizationId, employerId, 1);
-      onModeSaved({ ...pensionPayment, mode: result.mode, modeOverridden: result.modeOverridden });
-      await reload();
-      toast.success("המעסיק משתמש כעת בחשבון עצמאי");
-    } catch {
-      setCreatingOverride(true);
+  async function selectEmployerMode() {
+    setSelectedMode(1);
+    const direct = resolution?.employerAccount;
+    if (!direct) {
       setEditingId(null);
       setForm({ ...EMPTY_ACCOUNT, isDefault: true });
       setBankSearch("");
       setBranchSearch("");
-      toast.info("כדי לעבור לחשבון עצמאי יש להגדיר תחילה את חשבון המעסיק.");
-    } finally {
-      setSwitching(false);
+      setMandateStatus(1);
+      setExternalMandateId("");
+      setDocumentId("");
+      return;
     }
-  }
-
-  async function edit() {
-    if (!canManage || !account || inherited) return;
     try {
-      const full = await alphaApi.employerPaymentAccount(organizationId, employerId, account.id);
-      setEditingId(account.id);
-      setCreatingOverride(false);
+      const full = await alphaApi.employerPaymentAccount(organizationId, employerId, direct.id);
+      setEditingId(direct.id);
       setForm({
         bankId: full.bankId,
         branchId: full.branchId,
@@ -407,11 +382,31 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
       setExternalMandateId(full.mandate?.externalMandateId ?? "");
       setDocumentId(full.mandate?.documentId ?? "");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "טעינת החשבון לעריכה נכשלה");
+      toast.error(err instanceof Error ? err.message : "טעינת חשבון המעסיק נכשלה");
     }
   }
 
-  async function save(event: React.FormEvent) {
+  function selectOrganizationMode() {
+    if (!resolution?.organizationAccount) return;
+    setSelectedMode(2);
+  }
+
+  async function saveOrganizationMode() {
+    if (!canManage || !resolution?.organizationAccount) return;
+    setSaving(true);
+    try {
+      const result = await alphaApi.updateEmployerPensionPaymentMode(organizationId, employerId, 2);
+      onModeSaved({ ...pensionPayment, mode: result.mode, modeOverridden: result.modeOverridden });
+      await loadResolution();
+      toast.success("חשבון הארגון נשמר כחשבון התשלום הפנסיוני של המעסיק");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "שמירת מקור החשבון נכשלה");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveEmployerMode(event: React.FormEvent) {
     event.preventDefault();
     if (!canManage) return;
     if (form.bankId <= 0 || form.branchId <= 0 || !form.accountNumber || !form.accountHolderName.trim() || !form.accountHolderId) {
@@ -434,13 +429,10 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           documentId,
         });
       }
-      if (creatingOverride) {
-        const result = await alphaApi.updateEmployerPensionPaymentMode(organizationId, employerId, 1);
-        onModeSaved({ ...pensionPayment, mode: result.mode, modeOverridden: result.modeOverridden });
-      }
-      clearEditor();
-      await reload();
-      toast.success(editingId ? "חשבון התשלום עודכן" : "חשבון התשלום העצמאי נשמר");
+      const result = await alphaApi.updateEmployerPensionPaymentMode(organizationId, employerId, 1);
+      onModeSaved({ ...pensionPayment, mode: result.mode, modeOverridden: result.modeOverridden });
+      await loadResolution();
+      toast.success("חשבון המעסיק נשמר");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שמירת חשבון התשלום נכשלה");
     } finally {
@@ -448,87 +440,107 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     }
   }
 
-  const showEditor = canManage && (editingId !== null || creatingOverride || (!account && pensionPayment.mode === 1));
+  if (loadingChoice) return <div className="empty">טוען חשבון תשלום פנסיוני...</div>;
 
-  return <div className="employer-profile-stack single-payment-layout">
-    <section className="card profile-payment-card">
-      <div className="card-head">
-        <div>
-          <h2>חשבון לתשלומים פנסיוניים</h2>
-          <span style={{ color: "var(--muted)" }}>למעסיק יש חשבון אפקטיבי אחד: חשבון הארגון או חשבון עצמאי מוחרג.</span>
-        </div>
-        {account ? <span className={inherited ? "badge badge-blue" : "badge badge-green"}>{inherited ? "חשבון ארגוני" : "חשבון מעסיק"}</span> : null}
+  const organizationAccount = resolution?.organizationAccount ?? null;
+  const directAccount = resolution?.employerAccount ?? null;
+  const activeAccount = selectedMode === 2 ? organizationAccount : selectedMode === 1 ? directAccount : null;
+
+  return <section className="card profile-payment-card payment-horizontal-shell">
+    <div className="card-head">
+      <div><h2>תשלום פנסיוני</h2><span style={{ color: "var(--muted)" }}>בחרו מאיזה חשבון יתבצעו הדיווחים וההפקדות הפנסיוניות של המעסיק.</span></div>
+      {pensionPayment.modeOverridden && resolution?.account ? <span className={resolution.source === "Organization" ? "badge badge-blue" : "badge badge-green"}>{resolution.source === "Organization" ? "פעיל: חשבון ארגוני" : "פעיל: חשבון מעסיק"}</span> : null}
+    </div>
+
+    <div className="payment-horizontal-layout">
+      <aside className="payment-source-column">
+        <button
+          type="button"
+          disabled={!canManage || !organizationAccount}
+          className={`choice-card compact-choice-card${selectedMode === 2 ? " selected" : ""}`}
+          onClick={selectOrganizationMode}
+          title={organizationAccount ? "קיים חשבון ארגוני זמין למעסיק הזה" : "לא קיים חשבון ארגוני זמין למעסיק הזה"}
+        >
+          <Building2 size={22} />
+          <b>חשבון הארגון</b>
+          <p>{organizationAccount ? "שימוש בחשבון הפנסיוני שמנוהל ברמת הארגון." : "לא קיים כרגע חשבון ארגוני זמין."}</p>
+          {organizationAccount ? <span className="option-hint" title="קיים חשבון ארגוני זמין למעסיק הזה">ⓘ קיים חשבון ארגוני</span> : null}
+        </button>
+
+        <button
+          type="button"
+          disabled={!canManage}
+          className={`choice-card compact-choice-card${selectedMode === 1 ? " selected" : ""}`}
+          onClick={() => void selectEmployerMode()}
+        >
+          <WalletCards size={22} />
+          <b>חשבון המעסיק</b>
+          <p>חשבון ייעודי למעסיק הזה בלבד.</p>
+        </button>
+      </aside>
+
+      <div className="payment-details-column">
+        {selectedMode === null ? <div className="payment-placeholder">
+          <WalletCards size={30} />
+          <b>בחרו מקור לחשבון התשלום</b>
+          <span>לא נשמר שינוי עד ללחיצה על שמירה.</span>
+        </div> : null}
+
+        {selectedMode === 2 && organizationAccount ? <>
+          <div className="account-context-head">
+            <div><span>מקור החשבון</span><strong>הארגון</strong></div>
+            <span className={organizationAccount.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{mandateLabel(organizationAccount.mandate?.status)}</span>
+          </div>
+          <div className="payment-account-details payment-account-details-wide compact-account-details">
+            <span><b>בנק וסניף</b><small>בנק {organizationAccount.bankId} · סניף {organizationAccount.branchId}</small></span>
+            <span><b>מספר חשבון</b><small>{organizationAccount.maskedAccountNumber}</small></span>
+            <span><b>בעל החשבון</b><small>{organizationAccount.accountHolderName}</small></span>
+            <span><b>מזהה בעל החשבון</b><small>{organizationAccount.maskedAccountHolderId}</small></span>
+          </div>
+          {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="button" disabled={saving} onClick={() => void saveOrganizationMode()}><Save size={17} />{saving ? "שומר..." : "שמירת בחירה"}</button></div> : null}
+        </> : null}
+
+        {selectedMode === 1 ? <form className="form compact-payment-form" onSubmit={saveEmployerMode}>
+          <div className="account-context-head">
+            <div><span>מקור החשבון</span><strong>המעסיק</strong></div>
+            {directAccount ? <span className={directAccount.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{mandateLabel(directAccount.mandate?.status)}</span> : <span className="badge badge-gray">טרם נשמר</span>}
+          </div>
+          <div className="grid compact-payment-grid">
+            <div className="field">
+              <label>בנק *</label>
+              <input list="employer-payment-banks" placeholder="שם או מספר בנק" value={bankSearch} onChange={(e) => {
+                const value = e.target.value;
+                setBankSearch(value);
+                const code = Number(value.split(" - ")[0]);
+                setForm((current) => ({ ...current, bankId: Number.isFinite(code) ? code : 0, branchId: 0 }));
+                setBranchSearch("");
+              }} />
+              <datalist id="employer-payment-banks">{banks.map((bank) => <option key={bank.bankCode} value={`${bank.bankCode} - ${bank.bankName}`} />)}</datalist>
+            </div>
+            <div className="field">
+              <label>סניף *</label>
+              <input list="employer-payment-branches" disabled={!form.bankId} placeholder="סניף או עיר" value={branchSearch} onChange={(e) => {
+                const value = e.target.value;
+                setBranchSearch(value);
+                const code = Number(value.split(" - ")[0]);
+                setForm((current) => ({ ...current, branchId: Number.isFinite(code) ? code : 0 }));
+              }} />
+              <datalist id="employer-payment-branches">{branches.map((branch) => <option key={branch.branchCode} value={`${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`} />)}</datalist>
+            </div>
+            <div className="field"><label>מספר חשבון *</label><input required inputMode="numeric" maxLength={30} value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })} /></div>
+            <div className="field"><label>שם בעל החשבון *</label><input required maxLength={150} value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} /></div>
+            <div className="field"><label>ת״ז / ח.פ. *</label><input required inputMode="numeric" maxLength={20} value={form.accountHolderId} onChange={(e) => setForm({ ...form, accountHolderId: e.target.value.replace(/\D/g, "") })} /></div>
+            <div className="field"><label>סטטוס הרשאה</label><select value={mandateStatus} onChange={(e) => setMandateStatus(Number(e.target.value) as BankDebitMandateStatus)}><option value={1}>ממתינה</option><option value={2}>פעילה</option><option value={3}>נדחתה</option><option value={4}>בוטלה</option><option value={5}>פגה</option></select></div>
+            <div className="field"><label>מזהה הרשאה</label><input maxLength={120} value={externalMandateId} onChange={(e) => setExternalMandateId(e.target.value)} /></div>
+            <div className="field"><label>מסמך הרשאה</label><input maxLength={200} value={documentId} onChange={(e) => setDocumentId(e.target.value)} /></div>
+          </div>
+          {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : directAccount ? "שמירת שינויים" : "שמירת חשבון"}</button></div> : null}
+        </form> : null}
+
+        {!canManage && activeAccount ? <div className="notice notice-info">החשבון מוצג לקריאה בלבד לפי ההרשאה שלך.</div> : null}
       </div>
-
-      {pensionPayment.canChangeMode ? <div className="grid two-cols" style={{ marginBottom: 18 }}>
-        <button type="button" disabled={switching} className={`choice-card${pensionPayment.mode === 2 ? " selected" : ""}`} onClick={() => void switchToOrganizationAccount()}>
-          <Building2 size={24} /><b>שימוש בחשבון הארגון</b><p>ברירת המחדל. שינויים בחשבון הארגוני יחולו על דיווחים חדשים.</p>
-        </button>
-        <button type="button" disabled={switching} className={`choice-card${pensionPayment.mode === 1 ? " selected" : ""}`} onClick={() => void switchToEmployerAccount()}>
-          <WalletCards size={24} /><b>חשבון עצמאי למעסיק</b><p>החרגה מהארגון ושימוש בחשבון ייעודי למעסיק הזה.</p>
-        </button>
-      </div> : null}
-
-      {account ? <article className="payment-account-card payment-account-card-single">
-        <div className="payment-account-head">
-          <div><b>{account.accountHolderName}</b>{inherited ? <span className="badge badge-blue">מנוהל ברמת הארגון</span> : null}</div>
-          <span className={account.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{mandateLabel(account.mandate?.status)}</span>
-        </div>
-        <div className="payment-account-details payment-account-details-wide">
-          <span><b>בנק וסניף</b><small>בנק {account.bankId} · סניף {account.branchId}</small></span>
-          <span><b>מספר חשבון</b><small>{account.maskedAccountNumber}</small></span>
-          <span><b>בעל החשבון</b><small>{account.maskedAccountHolderId}</small></span>
-          <span><b>מקור</b><small>{inherited ? "חשבון הארגון" : "חשבון עצמאי של המעסיק"}</small></span>
-        </div>
-        {canManage && !inherited ? <div className="payment-account-actions"><button className="btn btn-secondary" type="button" onClick={() => void edit()}>עריכת החשבון</button></div> : null}
-      </article> : <div className="empty">
-        <div>{inherited ? "אין כרגע חשבון תשלום פנסיוני זמין דרך המסגרת הארגונית." : "לא הוגדר עדיין חשבון עצמאי למעסיק."}</div>
-        {canManage && inherited ? <button className="btn btn-primary" type="button" style={{ marginTop: 14 }} onClick={() => void switchToEmployerAccount()}>הגדרת חשבון למעסיק</button> : null}
-      </div>}
-
-      {inherited && account ? <div className="notice notice-info" style={{ marginTop: 16 }}>החשבון מוצג לקריאה בלבד כאן. עריכת החשבון מתבצעת בפרופיל הארגון.</div> : null}
-    </section>
-
-    {showEditor ? <section className="card profile-payment-card">
-      <div className="card-head"><div><h2>{editingId ? "עריכת חשבון המעסיק" : "הגדרת חשבון עצמאי למעסיק"}</h2><span style={{ color: "var(--muted)" }}>שמירת חשבון חדש תיצור החרגה מהחשבון הארגוני.</span></div></div>
-      <form className="form" onSubmit={save}>
-        <div className="grid two-cols">
-          <div className="field">
-            <label>בנק *</label>
-            <input list="employer-payment-banks" placeholder="חיפוש לפי שם או מספר בנק" value={bankSearch} onChange={(e) => {
-              const value = e.target.value;
-              setBankSearch(value);
-              const code = Number(value.split(" - ")[0]);
-              setForm((current) => ({ ...current, bankId: Number.isFinite(code) ? code : 0, branchId: 0 }));
-              setBranchSearch("");
-            }} />
-            <datalist id="employer-payment-banks">{banks.map((bank) => <option key={bank.bankCode} value={`${bank.bankCode} - ${bank.bankName}`} />)}</datalist>
-          </div>
-          <div className="field">
-            <label>סניף *</label>
-            <input list="employer-payment-branches" disabled={!form.bankId} placeholder="חיפוש לפי סניף או עיר" value={branchSearch} onChange={(e) => {
-              const value = e.target.value;
-              setBranchSearch(value);
-              const code = Number(value.split(" - ")[0]);
-              setForm((current) => ({ ...current, branchId: Number.isFinite(code) ? code : 0 }));
-            }} />
-            <datalist id="employer-payment-branches">{branches.map((branch) => <option key={branch.branchCode} value={`${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`} />)}</datalist>
-          </div>
-          <div className="field"><label>מספר חשבון *</label><input required inputMode="numeric" maxLength={30} value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>שם בעל החשבון *</label><input required maxLength={150} value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} /></div>
-          <div className="field"><label>ת״ז / ח.פ. בעל החשבון *</label><input required inputMode="numeric" maxLength={20} value={form.accountHolderId} onChange={(e) => setForm({ ...form, accountHolderId: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>סטטוס הרשאה לחיוב</label><select value={mandateStatus} onChange={(e) => setMandateStatus(Number(e.target.value) as BankDebitMandateStatus)}><option value={1}>ממתינה</option><option value={2}>פעילה</option><option value={3}>נדחתה</option><option value={4}>בוטלה</option><option value={5}>פגה</option></select></div>
-          <div className="field"><label>מזהה הרשאה חיצוני</label><input maxLength={120} value={externalMandateId} onChange={(e) => setExternalMandateId(e.target.value)} /></div>
-          <div className="field"><label>הפניה למסמך הרשאה</label><input maxLength={200} value={documentId} onChange={(e) => setDocumentId(e.target.value)} /></div>
-        </div>
-        <div className="form-actions">
-          <button className="btn btn-secondary" type="button" onClick={clearEditor}>ביטול</button>
-          <button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירה"}</button>
-        </div>
-      </form>
-    </section> : null}
-    {!canManage ? <div className="notice notice-info">החשבון מוצג לקריאה בלבד לפי ההרשאה שלך.</div> : null}
-  </div>;
+    </div>
+  </section>;
 }
 
 function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmployer, billing, onModeSaved }: {
