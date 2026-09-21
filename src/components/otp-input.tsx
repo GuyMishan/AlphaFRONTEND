@@ -1,5 +1,6 @@
 "use client";
 
+import { UiInput } from "@/components/ui-controls";
 import { ClipboardEvent, KeyboardEvent, useEffect, useRef } from "react";
 
 type OtpInputProps = {
@@ -49,7 +50,7 @@ export function OtpInput({ value, onChange, onComplete, disabled = false, autoFo
   return (
     <div className="otp-inputs otp-inputs-row" dir="ltr" aria-label="קוד אימות בן 6 ספרות">
       {digits.map((digit, index) => (
-        <input
+        <UiInput
           key={index}
           ref={(element) => { refs.current[index] = element; }}
           className="otp-digit otp-digit-box"
