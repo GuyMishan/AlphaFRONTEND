@@ -1,5 +1,6 @@
 "use client";
 
+import { UiSelect } from "@/components/ui-controls";
 import { useEffect, useMemo, useState } from "react";
 import { employerInterfaceApi, type EmployerInterfaceOption } from "@/lib/employer-interface-api";
 
@@ -39,7 +40,7 @@ export function EmployerInterfaceOptionSelect({
 
   return (
     <>
-      <select
+      <UiSelect
         disabled={disabled || loading}
         required={required}
         value={value ?? ""}
@@ -48,7 +49,7 @@ export function EmployerInterfaceOptionSelect({
         <option value="">{loading ? "טוען אפשרויות..." : placeholder}</option>
         {!hasCurrentValue && value != null ? <option value={Number(value)}>קוד {Number(value)}</option> : null}
         {options.map((item) => <option key={`${item.scope}-${item.code}`} value={item.code}>{item.name} ({item.code})</option>)}
-      </select>
+      </UiSelect>
       {error ? <span className="field-error">{error}</span> : null}
     </>
   );
