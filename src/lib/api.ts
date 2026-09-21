@@ -20,6 +20,9 @@ import type {
   EmployerBillingMode,
   EmployerBillingResolution,
   EmployerBillingStatus,
+  EmployerPensionPaymentMode,
+  PensionPaymentResolution,
+  OrganizationPaymentAccountResponse,
   EmployerPaymentAccount,
   EmployerPaymentAccountEdit,
   EmployerPaymentAccountInput,
@@ -172,6 +175,18 @@ export const alphaApi = {
     invoiceName: string; invoiceRegistrationNumber: string; invoiceEmail: string;
     billingContactName: string; billingContactPhone: string; billingStatus?: number;
   }) => request<void>(`/api/organizations/${organizationId}/profile-center/billing`, { method: "PUT", body: JSON.stringify(payload) }),
+  organizationPaymentAccount: (organizationId: string): Promise<OrganizationPaymentAccountResponse> =>
+    request<OrganizationPaymentAccountResponse>(`/api/organizations/${organizationId}/payment-account/`),
+  organizationPaymentAccountEdit: (organizationId: string, accountId: string): Promise<EmployerPaymentAccountEdit> =>
+    request<EmployerPaymentAccountEdit>(`/api/organizations/${organizationId}/payment-account/${accountId}/edit`),
+  createOrganizationPaymentAccount: (organizationId: string, payload: EmployerPaymentAccountInput): Promise<EmployerPaymentAccount> =>
+    request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/payment-account/`, { method: "POST", body: JSON.stringify(payload) }),
+  updateOrganizationPaymentAccount: (organizationId: string, accountId: string, payload: EmployerPaymentAccountInput): Promise<EmployerPaymentAccount> =>
+    request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/payment-account/${accountId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  updateOrganizationPaymentMandate: (organizationId: string, accountId: string, payload: {
+    status: BankDebitMandateStatus; externalMandateId?: string; approvedAt?: string | null; cancelledAt?: string | null; documentId?: string;
+  }): Promise<BankDebitMandate> =>
+    request<BankDebitMandate>(`/api/organizations/${organizationId}/payment-account/${accountId}/mandate`, { method: "PUT", body: JSON.stringify(payload) }),
   organizationMembers: (organizationId: string): Promise<OrganizationMemberSummary[]> =>
     request<OrganizationMemberSummary[]>(`/api/organizations/${organizationId}/profile-center/members`),
   organizationEmployerBilling: (organizationId: string): Promise<OrganizationEmployerBilling[]> =>
@@ -219,10 +234,14 @@ export const alphaApi = {
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/address`, { method: "PUT", body: JSON.stringify(payload) }),
   updateEmployerBilling: (organizationId: string, employerId: string, billingMode: EmployerBillingMode, billingStatus?: EmployerBillingStatus) =>
     request<{ billingMode: EmployerBillingMode; billingStatus: EmployerBillingStatus }>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/billing`, { method: "PUT", body: JSON.stringify({ billingMode, billingStatus }) }),
+  updateEmployerPensionPaymentMode: (organizationId: string, employerId: string, mode: EmployerPensionPaymentMode) =>
+    request<{ mode: EmployerPensionPaymentMode; modeOverridden: boolean }>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/pension-payment`, { method: "PUT", body: JSON.stringify({ mode }) }),
   updateEmployerReportingSettings: (organizationId: string, employerId: string, payload: EmployerProfileCenterSettings["reporting"]) =>
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/reporting`, { method: "PUT", body: JSON.stringify(payload) }),
   employerPaymentAccounts: (organizationId: string, employerId: string): Promise<EmployerPaymentAccount[]> =>
     request<EmployerPaymentAccount[]>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/`),
+  employerPaymentResolution: (organizationId: string, employerId: string): Promise<PensionPaymentResolution> =>
+    request<PensionPaymentResolution>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/resolution`),
   employerPaymentAccount: (organizationId: string, employerId: string, accountId: string): Promise<EmployerPaymentAccountEdit> =>
     request<EmployerPaymentAccountEdit>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/${accountId}`),
   createEmployerPaymentAccount: (organizationId: string, employerId: string, payload: EmployerPaymentAccountInput) =>
