@@ -671,6 +671,8 @@ export type PensionPaymentResolution = {
   source: "Organization" | "Employer";
   inherited: boolean;
   account: EmployerPaymentAccount | null;
+  organizationAccount: EmployerPaymentAccount | null;
+  employerAccount: EmployerPaymentAccount | null;
 };
 
 export type OrganizationPaymentAccountResponse = {
