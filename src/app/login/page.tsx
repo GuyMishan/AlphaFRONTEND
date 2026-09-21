@@ -27,8 +27,8 @@ export default function LoginPage() {
 
   async function requestCode() {
     const next: FieldErrors = {};
-    const prototypeAdmin = nationalId === "123456789" && phone === "0501234567";
-    if (!prototypeAdmin && !isIsraeliId(nationalId)) next.nationalId = "תעודת הזהות אינה תקינה.";
+    const prototypeNationalId = nationalId === "123456789";
+    if (!prototypeNationalId && !isIsraeliId(nationalId)) next.nationalId = "תעודת הזהות אינה תקינה.";
     if (!/^05\d{8}$/.test(phone)) next.phone = "מספר הטלפון חייב להיות מספר נייד ישראלי בן 10 ספרות.";
     setErrors(next);
 
