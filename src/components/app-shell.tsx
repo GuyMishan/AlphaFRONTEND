@@ -93,7 +93,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         );
         setSingleEmployerUser(accessibleEmployers.length === 1);
         setSingleEmployerTarget(accessibleEmployers.length === 1 ? accessibleEmployers[0] : null);
-        setCanManageOrganization(scope.organizations.some((item) => item.canManageOrganization));
+        setCanManageOrganization(current.platformAdmin || scope.organizations.some((item) => item.canManageOrganization));
         setHasOrganizationScope(current.platformAdmin || scope.organizations.some((item) => item.hasOrganizationScope));
       })
       .catch(() => {
@@ -167,7 +167,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
       );
       setSingleEmployerUser(accessibleEmployers.length === 1);
       setSingleEmployerTarget(accessibleEmployers.length === 1 ? accessibleEmployers[0] : null);
-      setCanManageOrganization(scope.organizations.some((item) => item.canManageOrganization));
+      setCanManageOrganization(Boolean(session?.platformAdmin) || scope.organizations.some((item) => item.canManageOrganization));
       setHasOrganizationScope(Boolean(session?.platformAdmin) || scope.organizations.some((item) => item.hasOrganizationScope));
     } finally {
       router.replace("/dashboard");
