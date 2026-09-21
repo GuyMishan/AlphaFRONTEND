@@ -7,6 +7,7 @@ import { Building2, CreditCard, Landmark, Save, Settings2, ShieldCheck, Users } 
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
+import { OrganizationPensionPaymentAccount } from "@/components/organization-pension-payment-account";
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
 import type {
@@ -18,13 +19,14 @@ import type {
   SubscriptionSummary,
 } from "@/lib/types";
 
-type TabKey = "general" | "employers" | "users" | "billing" | "subscription" | "employer-billing";
+type TabKey = "general" | "employers" | "users" | "pension-payment" | "billing" | "subscription" | "employer-billing";
 
 const tabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
   { key: "general", label: "פרטים כלליים", icon: Building2 },
   { key: "employers", label: "מעסיקים", icon: Landmark },
   { key: "users", label: "משתמשים והרשאות", icon: Users },
-  { key: "billing", label: "Billing", icon: CreditCard },
+  { key: "pension-payment", label: "תשלום פנסיוני", icon: Landmark },
+  { key: "billing", label: "חיוב ALPHA", icon: CreditCard },
   { key: "subscription", label: "מנוי", icon: Settings2 },
   { key: "employer-billing", label: "חיוב למעסיקים", icon: ShieldCheck },
 ];
@@ -94,6 +96,7 @@ export default function OrganizationProfilePage() {
     {tab === "general" ? <GeneralTab profile={profile} onSaved={async () => { await load(); }} /> : null}
     {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} canCreate={Boolean(profile.canManageOrganization && entitlements && entitlements.employers.current < entitlements.employers.maximum)} entitlements={entitlements} /> : null}
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
+    {tab === "pension-payment" ? <OrganizationPensionPaymentAccount organizationId={id} canManage={profile.canManageOrganization} /> : null}
     {tab === "billing" ? <AlphaBillingAccountForm organizationId={id} canManage={profile.canManageOrganization} /> : null}
     {tab === "subscription" && subscription && entitlements ? <SubscriptionTab subscription={subscription} entitlements={entitlements} /> : null}
     {tab === "employer-billing" ? <EmployerBillingTab organizationId={id} items={employerBilling} canManage={profile.canManageOrganization} onChanged={setEmployerBilling} /> : null}
