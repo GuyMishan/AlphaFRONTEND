@@ -708,3 +708,27 @@ td { font-size: 14px; }
     max-width: none;
   }
 }
+
+
+.status-pill-active {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  border-radius: 99px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  background: #e7f8f3;
+  color: #087461;
+}
+
+.status-pill-active svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.employee-details-grid-status {
+  max-width: none;
+}
