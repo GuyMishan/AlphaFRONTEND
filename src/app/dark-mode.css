@@ -190,3 +190,24 @@ html[data-theme="dark"] .billing-source-icon {
   background: #16202d;
   border-color: var(--line);
 }
+
+
+/* Validation fields in dark mode */
+html[data-theme="dark"] .field-invalid input,
+html[data-theme="dark"] .field-invalid select,
+html[data-theme="dark"] .field-invalid textarea,
+html[data-theme="dark"] input[aria-invalid="true"],
+html[data-theme="dark"] select[aria-invalid="true"],
+html[data-theme="dark"] textarea[aria-invalid="true"] {
+  background: #111b28 !important;
+  color: var(--text) !important;
+  border-color: #8f3c49 !important;
+}
+html[data-theme="dark"] .field-invalid input::placeholder,
+html[data-theme="dark"] .field-invalid textarea::placeholder {
+  color: #7f91a6;
+}
+html[data-theme="dark"] .field-label-error,
+html[data-theme="dark"] .field-error-text {
+  color: #ff9aa5;
+}
