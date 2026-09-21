@@ -1,5 +1,6 @@
 "use client";
 
+import { UiInput } from "@/components/ui-controls";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Building2, Plus, Search } from "lucide-react";
@@ -79,7 +80,7 @@ export default function EmployersPage() {
     {!canCreate && !loading ? <div className="notice notice-info" style={{ marginBottom: 18 }}>אין לך הרשאה להקים מעסיק חדש. ניתן לצפות ולערוך רק מעסיקים שהוקצו לך.</div> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
     <section className="card">
-      <div className="toolbar"><div className="search"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ח.פ. או תיק ניכויים" /></div><span className="badge badge-blue">{employers.length} תוצאות</span></div>
+      <div className="toolbar"><div className="search"><Search size={17} /><UiInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ח.פ. או תיק ניכויים" /></div><span className="badge badge-blue">{employers.length} תוצאות</span></div>
       {loading ? <div className="empty">טוען מעסיקים...</div> : employers.length ? <VirtualizedTable
         items={employers}
         rowKey={(employer) => employer.id}
