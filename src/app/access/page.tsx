@@ -46,6 +46,21 @@ const employerAccessLabels: Record<EmployerAccessMode, string> = {
   2: "מעסיקים נבחרים",
 };
 
+const activeOptions = [
+  { value: "1", label: "פעיל" },
+  { value: "0", label: "לא פעיל" },
+];
+
+const yesNoOptions = [
+  { value: "0", label: "לא" },
+  { value: "1", label: "כן" },
+];
+
+const permissionOptions = [
+  { value: "1", label: "מורשה" },
+  { value: "0", label: "לא מורשה" },
+];
+
 type PermissionState = {
   canCreateEmployer: boolean;
   canEditEmployer: boolean;
@@ -61,10 +76,6 @@ function roleDefaults(role: OrganizationRole, accessMode: EmployerAccessMode): P
     canCreateEmployee: canOperate,
     canEditEmployee: canOperate,
   };
-}
-
-function boolLabel(value: boolean) {
-  return value ? "מורשה" : "לא מורשה";
 }
 
 export default function AccessPage() {
@@ -534,8 +545,8 @@ export default function AccessPage() {
         <div className="field"><label>אימייל</label><UiInput type="email" dir="ltr" value={platformEmail} onChange={(event) => setPlatformEmail(event.target.value)} /></div>
         <div className="field"><label>תעודת זהות</label><UiInput dir="ltr" value={platformNationalId} disabled={platformEditor !== "new"} onChange={(event) => setPlatformNationalId(event.target.value)} /></div>
         <div className="field"><label>טלפון</label><UiInput dir="ltr" value={platformPhone} disabled={platformEditor !== "new"} onChange={(event) => setPlatformPhone(event.target.value)} /></div>
-        <div className="field"><label>סטטוס</label><UiSelect value={platformActive ? "1" : "0"} onChange={(event) => setPlatformActive(event.target.value === "1")}><option value="1">פעיל</option><option value="0">לא פעיל</option></UiSelect></div>
-        <div className="field"><label>אדמין מערכת</label><UiSelect value={platformAdmin ? "1" : "0"} onChange={(event) => setPlatformAdmin(event.target.value === "1")}><option value="0">לא</option><option value="1">כן</option></UiSelect></div>
+        <div className="field"><label>סטטוס</label><UiSelect value={platformActive ? "1" : "0"} onChange={(event) => setPlatformActive(event.target.value === "1")}>{activeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></div>
+        <div className="field"><label>אדמין מערכת</label><UiSelect value={platformAdmin ? "1" : "0"} onChange={(event) => setPlatformAdmin(event.target.value === "1")}>{yesNoOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></div>
       </div>
     </UserEditorModal> : null}
 
@@ -650,8 +661,7 @@ function PermissionSelect({ label, value, onChange }: { label: string; value: bo
   return <div className="field">
     <label>{label}</label>
     <UiSelect value={value ? "1" : "0"} onChange={(event) => onChange(event.target.value === "1")}>
-      <option value="1">{boolLabel(true)}</option>
-      <option value="0">{boolLabel(false)}</option>
+      {permissionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
     </UiSelect>
   </div>;
 }
