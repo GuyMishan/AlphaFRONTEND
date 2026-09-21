@@ -11,7 +11,7 @@ import { getOrganizationSelection } from "@/lib/session";
 import { openUpgradeDialog } from "@/lib/upgrade";
 import { referenceOptionsApi, type ReferenceOption } from "@/lib/reference-options-api";
 import type { AccessEmployer, AccessUser, Employer, EmployerAccessMode, EmployerOption, EmployerRole, EntitlementSnapshot, Organization, OrganizationRole, UserCandidate, UserInvitation } from "@/lib/types";
-import { UiInput, UiSelect } from "@/components/ui-controls";
+import { UiChoiceCard, UiInput, UiSelect } from "@/components/ui-controls";
 
 const PAGE_SIZE = 50;
 const employerRoleLabels: Record<EmployerRole, string> = {
@@ -186,8 +186,8 @@ export default function AccessPage() {
       <div className="card-head"><div><h2>הזמנת משתמש חדש</h2><span style={{ color: "var(--muted)" }}>יישלח מייל עם קישור אישי. הגישה תיווצר רק אחרי הרשמה ואימות OTP.</span></div><button className="btn btn-secondary" type="button" onClick={() => setInviteOpen(false)}><X size={16} />סגירה</button></div>
       <div className="field"><label>אימייל</label><UiInput type="email" dir="ltr" maxLength={320} value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="name@example.com" /></div>
       <div className="grid two-cols" style={{ marginTop: 16 }}>
-        <button type="button" className={`choice-card${inviteScope === "organization" ? " selected" : ""}`} onClick={() => setInviteScope("organization")}><ShieldCheck size={22} /><b>גישה לארגון</b><p>המשתמש יקבל Role ארגוני וגישה לכל המעסיקים.</p></button>
-        <button type="button" className={`choice-card${inviteScope === "employer" ? " selected" : ""}`} onClick={() => setInviteScope("employer")}><Building2 size={22} /><b>גישה למעסיק</b><p>המשתמש יקבל גישה ישירה למעסיק אחד בלבד.</p></button>
+        <UiChoiceCard selected={inviteScope === "organization"} onClick={() => setInviteScope("organization")}><ShieldCheck size={22} /><b>גישה לארגון</b><p>המשתמש יקבל Role ארגוני וגישה לכל המעסיקים.</p></UiChoiceCard>
+        <UiChoiceCard selected={inviteScope === "employer"} onClick={() => setInviteScope("employer")}><Building2 size={22} /><b>גישה למעסיק</b><p>המשתמש יקבל גישה ישירה למעסיק אחד בלבד.</p></UiChoiceCard>
       </div>
       {inviteScope === "organization" ? <div className="field" style={{ marginTop: 16 }}><label>תפקיד בארגון</label><ReferenceOptionSelect category="organization-role" value={inviteOrganizationRole} onChange={(value) => setInviteOrganizationRole(Number(value) as OrganizationRole)} /></div> :
         <div className="grid two-cols" style={{ marginTop: 16 }}>
