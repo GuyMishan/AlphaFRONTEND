@@ -46,6 +46,7 @@ const EMPTY_CAPABILITIES: EmployerCapabilities = {
 const EMPTY_SETTINGS: EmployerProfileCenterSettings = {
   address: { city: "", street: "", houseNumber: "", apartment: "", postalCode: "", postOfficeBox: "" },
   billing: { mode: 1, modeOverridden: false, status: 1, canChangeMode: false },
+  pensionPayment: { mode: 2, modeOverridden: false, canChangeMode: false },
   reporting: {
     defaultSalaryPaymentDay: null,
     defaultPaymentMethodCode: null,
@@ -145,6 +146,8 @@ export default function EmployerProfilePage() {
       canManage={capabilities.canManageEmployer}
       accounts={accounts}
       setAccounts={setAccounts}
+      pensionPayment={settings.pensionPayment}
+      onModeSaved={(pensionPayment) => setSettings((current) => ({ ...current, pensionPayment }))}
     /> : null}
 
     {tab === "billing" ? <EmployerBillingInheritanceTab
@@ -218,15 +221,19 @@ function EmployeesTab({ organizationId, employer, canCreate }: { organizationId:
   return <EmployerEmployeesPanel organizationId={organizationId} employer={employer} canCreate={canCreate} />;
 }
 
-function PensionPaymentTab({ organizationId, employerId, canManage, accounts, setAccounts }: {
+function PensionPaymentTab({ organizationId, employerId, canManage, accounts, setAccounts, pensionPayment, onModeSaved }: {
   organizationId: string;
   employerId: string;
   canManage: boolean;
   accounts: EmployerPaymentAccount[];
   setAccounts: React.Dispatch<React.SetStateAction<EmployerPaymentAccount[]>>;
+  pensionPayment: EmployerProfileCenterSettings["pensionPayment"];
+  onModeSaved: (value: EmployerProfileCenterSettings["pensionPayment"]) => void;
 }) {
-  const account = useMemo(() => accounts.find((item) => item.isDefault) ?? accounts[0] ?? null, [accounts]);
+  const account = useMemo(() => accounts[0] ?? null, [accounts]);
+  const inherited = account?.source === "Organization" || pensionPayment.mode === 2;
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [creatingOverride, setCreatingOverride] = useState(false);
   const [form, setForm] = useState<EmployerPaymentAccountInput>({ ...EMPTY_ACCOUNT, isDefault: true });
   const [banks, setBanks] = useState<BankOption[]>([]);
   const [branches, setBranches] = useState<BankBranchOption[]>([]);
@@ -236,6 +243,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   const [externalMandateId, setExternalMandateId] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -254,6 +262,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
 
   function clearEditor() {
     setEditingId(null);
+    setCreatingOverride(false);
     setForm({ ...EMPTY_ACCOUNT, isDefault: true });
     setBankSearch("");
     setBranchSearch("");
@@ -262,11 +271,52 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     setDocumentId("");
   }
 
+  async function reload() {
+    setAccounts(await alphaApi.employerPaymentAccounts(organizationId, employerId));
+  }
+
+  async function useOrganizationAccount() {
+    if (!pensionPayment.canChangeMode) return;
+    setSwitching(true);
+    try {
+      const result = await alphaApi.updateEmployerPensionPaymentMode(organizationId, employerId, 2);
+      onModeSaved({ ...pensionPayment, mode: result.mode, modeOverridden: result.modeOverridden });
+      clearEditor();
+      await reload();
+      toast.success("המעסיק משתמש כעת בחשבון הפנסיוני של הארגון");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "שינוי מקור החשבון נכשל");
+    } finally {
+      setSwitching(false);
+    }
+  }
+
+  async function useEmployerAccount() {
+    if (!pensionPayment.canChangeMode) return;
+    setSwitching(true);
+    try {
+      const result = await alphaApi.updateEmployerPensionPaymentMode(organizationId, employerId, 1);
+      onModeSaved({ ...pensionPayment, mode: result.mode, modeOverridden: result.modeOverridden });
+      await reload();
+      toast.success("המעסיק משתמש כעת בחשבון עצמאי");
+    } catch {
+      setCreatingOverride(true);
+      setEditingId(null);
+      setForm({ ...EMPTY_ACCOUNT, isDefault: true });
+      setBankSearch("");
+      setBranchSearch("");
+      toast.info("כדי לעבור לחשבון עצמאי יש להגדיר תחילה את חשבון המעסיק.");
+    } finally {
+      setSwitching(false);
+    }
+  }
+
   async function edit() {
-    if (!canManage || !account) return;
+    if (!canManage || !account || inherited) return;
     try {
       const full = await alphaApi.employerPaymentAccount(organizationId, employerId, account.id);
       setEditingId(account.id);
+      setCreatingOverride(false);
       setForm({
         bankId: full.bankId,
         branchId: full.branchId,
@@ -283,10 +333,6 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "טעינת החשבון לעריכה נכשלה");
     }
-  }
-
-  async function reload() {
-    setAccounts(await alphaApi.employerPaymentAccounts(organizationId, employerId));
   }
 
   async function save(event: React.FormEvent) {
@@ -312,9 +358,13 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           documentId,
         });
       }
-      await reload();
+      if (creatingOverride) {
+        const result = await alphaApi.updateEmployerPensionPaymentMode(organizationId, employerId, 1);
+        onModeSaved({ ...pensionPayment, mode: result.mode, modeOverridden: result.modeOverridden });
+      }
       clearEditor();
-      toast.success(editingId ? "חשבון התשלום עודכן" : "חשבון התשלום נשמר");
+      await reload();
+      toast.success(editingId ? "חשבון התשלום עודכן" : "חשבון התשלום העצמאי נשמר");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שמירת חשבון התשלום נכשלה");
     } finally {
@@ -322,29 +372,46 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     }
   }
 
+  const showEditor = canManage && (editingId !== null || creatingOverride || (!account && pensionPayment.mode === 1));
+
   return <div className="employer-profile-stack single-payment-layout">
     <section className="card profile-payment-card">
       <div className="card-head">
-        <div><h2>חשבון לתשלומים פנסיוניים</h2><span style={{ color: "var(--muted)" }}>חשבון בנק יחיד שממנו מתבצעות ההפקדות הפנסיוניות של המעסיק.</span></div>
-        {account ? <span className="badge badge-blue">חשבון מעסיק</span> : null}
+        <div>
+          <h2>חשבון לתשלומים פנסיוניים</h2>
+          <span style={{ color: "var(--muted)" }}>למעסיק יש חשבון אפקטיבי אחד: חשבון הארגון או חשבון עצמאי מוחרג.</span>
+        </div>
+        {account ? <span className={inherited ? "badge badge-blue" : "badge badge-green"}>{inherited ? "חשבון ארגוני" : "חשבון מעסיק"}</span> : null}
       </div>
+
+      {pensionPayment.canChangeMode ? <div className="grid two-cols" style={{ marginBottom: 18 }}>
+        <button type="button" disabled={switching} className={`choice-card${pensionPayment.mode === 2 ? " selected" : ""}`} onClick={() => void useOrganizationAccount()}>
+          <Building2 size={24} /><b>שימוש בחשבון הארגון</b><p>ברירת המחדל. שינויים בחשבון הארגוני יחולו על דיווחים חדשים.</p>
+        </button>
+        <button type="button" disabled={switching} className={`choice-card${pensionPayment.mode === 1 ? " selected" : ""}`} onClick={() => void useEmployerAccount()}>
+          <WalletCards size={24} /><b>חשבון עצמאי למעסיק</b><p>החרגה מהארגון ושימוש בחשבון ייעודי למעסיק הזה.</p>
+        </button>
+      </div> : null}
+
       {account ? <article className="payment-account-card payment-account-card-single">
         <div className="payment-account-head">
-          <div><b>{account.accountHolderName}</b></div>
+          <div><b>{account.accountHolderName}</b>{inherited ? <span className="badge badge-blue">מנוהל ברמת הארגון</span> : null}</div>
           <span className={account.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{mandateLabel(account.mandate?.status)}</span>
         </div>
         <div className="payment-account-details payment-account-details-wide">
           <span><b>בנק וסניף</b><small>בנק {account.bankId} · סניף {account.branchId}</small></span>
           <span><b>מספר חשבון</b><small>{account.maskedAccountNumber}</small></span>
           <span><b>בעל החשבון</b><small>{account.maskedAccountHolderId}</small></span>
-          {account.mandate?.externalMandateId ? <span><b>מזהה הרשאה</b><small>{account.mandate.externalMandateId}</small></span> : null}
+          <span><b>מקור</b><small>{inherited ? "חשבון הארגון" : "חשבון עצמאי של המעסיק"}</small></span>
         </div>
-        {canManage ? <div className="payment-account-actions"><button className="btn btn-secondary" type="button" onClick={() => void edit()}>עריכת החשבון</button></div> : null}
-      </article> : <div className="empty">עדיין לא הוגדר חשבון לתשלומים פנסיוניים.</div>}
+        {canManage && !inherited ? <div className="payment-account-actions"><button className="btn btn-secondary" type="button" onClick={() => void edit()}>עריכת החשבון</button></div> : null}
+      </article> : <div className="empty">{inherited ? "לא הוגדר עדיין חשבון תשלום פנסיוני ברמת הארגון." : "לא הוגדר עדיין חשבון עצמאי למעסיק."}</div>}
+
+      {inherited && account ? <div className="notice notice-info" style={{ marginTop: 16 }}>החשבון מוצג לקריאה בלבד כאן. עריכת החשבון מתבצעת בפרופיל הארגון.</div> : null}
     </section>
 
-    {canManage && (!account || editingId) ? <section className="card profile-payment-card">
-      <div className="card-head"><div><h2>{editingId ? "עריכת חשבון" : "הגדרת חשבון"}</h2><span style={{ color: "var(--muted)" }}>למעסיק נשמר חשבון פעיל אחד בלבד.</span></div></div>
+    {showEditor ? <section className="card profile-payment-card">
+      <div className="card-head"><div><h2>{editingId ? "עריכת חשבון המעסיק" : "הגדרת חשבון עצמאי למעסיק"}</h2><span style={{ color: "var(--muted)" }}>שמירת חשבון חדש תיצור החרגה מהחשבון הארגוני.</span></div></div>
       <form className="form" onSubmit={save}>
         <div className="grid two-cols">
           <div className="field">
@@ -376,7 +443,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           <div className="field"><label>הפניה למסמך הרשאה</label><input maxLength={200} value={documentId} onChange={(e) => setDocumentId(e.target.value)} /></div>
         </div>
         <div className="form-actions">
-          {editingId ? <button className="btn btn-secondary" type="button" onClick={clearEditor}>ביטול</button> : <span />}
+          <button className="btn btn-secondary" type="button" onClick={clearEditor}>ביטול</button>
           <button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירה"}</button>
         </div>
       </form>
