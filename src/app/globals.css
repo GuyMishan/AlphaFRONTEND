@@ -824,3 +824,22 @@ td { font-size: 14px; }
 .employer-general-card-compact .single-save-action {
   margin-top: 12px;
 }
+
+
+.billing-gate-choice-copy {
+  margin: 14px 0;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: #f7f9fc;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.billing-gate-permission-note {
+  margin-top: 14px;
+}
+
+.billing-gate-actions {
+  flex-wrap: wrap;
+}
