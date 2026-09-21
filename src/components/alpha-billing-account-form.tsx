@@ -5,6 +5,7 @@ import { CreditCard, ExternalLink, Landmark, RefreshCw, Save, Trash2 } from "luc
 import { toast } from "sonner";
 import { alphaApi } from "@/lib/api";
 import type {
+import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
   AlphaBillingAccount,
   AlphaBillingAccountInput,
   BillingPaymentMethodStatus,
@@ -195,10 +196,10 @@ export function AlphaBillingAccountForm({
 
       <form className="form" onSubmit={saveDetails}>
         <div className="grid two-cols">
-          <div className="field"><label>שם לחיוב</label><input disabled={!canManage} maxLength={200} value={details.billingName} onChange={(e) => setDetails({ ...details, billingName: e.target.value })} /></div>
-          <div className="field"><label>ח.פ. / עוסק</label><input disabled={!canManage} maxLength={30} value={details.taxId} onChange={(e) => setDetails({ ...details, taxId: e.target.value })} /></div>
-          <div className="field"><label>אימייל לחשבוניות</label><input disabled={!canManage} type="email" maxLength={320} value={details.invoiceEmail} onChange={(e) => setDetails({ ...details, invoiceEmail: e.target.value })} /></div>
-          <div className="field"><label>כתובת לחיוב</label><input disabled={!canManage} maxLength={500} value={details.billingAddress} onChange={(e) => setDetails({ ...details, billingAddress: e.target.value })} /></div>
+          <div className="field"><label>שם לחיוב</label><UiInput disabled={!canManage} maxLength={200} value={details.billingName} onChange={(e) => setDetails({ ...details, billingName: e.target.value })} /></div>
+          <div className="field"><label>ח.פ. / עוסק</label><UiInput disabled={!canManage} maxLength={30} value={details.taxId} onChange={(e) => setDetails({ ...details, taxId: e.target.value })} /></div>
+          <div className="field"><label>אימייל לחשבוניות</label><UiInput disabled={!canManage} type="email" maxLength={320} value={details.invoiceEmail} onChange={(e) => setDetails({ ...details, invoiceEmail: e.target.value })} /></div>
+          <div className="field"><label>כתובת לחיוב</label><UiInput disabled={!canManage} maxLength={500} value={details.billingAddress} onChange={(e) => setDetails({ ...details, billingAddress: e.target.value })} /></div>
         </div>
 
         <div className="field">
