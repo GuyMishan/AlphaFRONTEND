@@ -1,5 +1,6 @@
 "use client";
 
+import { UiInput } from "@/components/ui-controls";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Search, UserRoundPlus, Users } from "lucide-react";
@@ -55,7 +56,7 @@ export function EmployerEmployeesPanel({
         {canCreate ? <Link className="btn btn-primary" href={`/employees/new?organizationId=${organizationId}&employerId=${employer.id}`}><UserRoundPlus size={18} />הוספת עובד</Link> : null}
       </div> : null}
       <div className="toolbar">
-        <div className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
+        <div className="search"><Search size={17} /><UiInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
         <span className="badge badge-blue">{employees.length} תוצאות</span>
       </div>
       {loading ? <div className="empty">טוען עובדים...</div> : employees.length ? <VirtualizedTable
