@@ -634,6 +634,8 @@ export type PublicInvitation = {
 
 export type CreateInvitationInput = {
   email: string;
+  nationalId: string;
+  phone: string;
   employerId?: string | null;
   organizationRole?: OrganizationRole | null;
   employerRole?: EmployerRole | null;
