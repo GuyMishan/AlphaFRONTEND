@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Tooltip } from "@/components/tooltip";
 
 export type FieldErrors = Record<string, string | undefined>;
 
@@ -9,7 +10,9 @@ export function Field({ label, error, children, className = "field" }: { label: 
   return <div className={`${className}${error ? " field-invalid" : ""}`} data-error={error || undefined}>
     <label className={error ? "field-label-error" : undefined}>{label}</label>
     {children}
-    {error ? <span className="field-error-text" title={error}>{short}</span> : null}
+    {error ? (short !== error
+      ? <Tooltip content={error} label={error}><span className="field-error-text">{short}</span></Tooltip>
+      : <span className="field-error-text">{short}</span>) : null}
   </div>;
 }
 
