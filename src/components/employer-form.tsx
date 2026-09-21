@@ -9,6 +9,7 @@ import { alphaApi } from "@/lib/api";
 import type { Employer, EmployerInput } from "@/lib/types";
 import { isValidEmail } from "@/lib/validation";
 import { Field, type FieldErrors } from "@/components/form-feedback";
+import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
 
 export function EmployerForm({
   organizationId,
@@ -108,20 +109,20 @@ export function EmployerForm({
     <div className="profile-summary"><div className="profile-avatar"><Building2 /></div><div><h2 style={{ margin: 0 }}>{title}</h2><span style={{ color: "var(--muted)" }}>{employer ? editable ? "עריכת פרופיל מעסיק" : "צפייה בפרופיל מעסיק" : onCreate ? "הגדרת העסק שלכם" : "הקמת מעסיק חדש בארגון"}</span></div></div>
     {!editable && employer ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק הזה, ללא הרשאת עריכה.</div> : null}
     <form className="form" onSubmit={submit} noValidate>
-      <Field label="שם משפטי מלא *" error={errors.legalName}><input aria-invalid={Boolean(errors.legalName)} required minLength={2} maxLength={200} disabled={!editable} value={form.legalName} onChange={(event) => update("legalName", event.target.value)} /></Field>
+      <Field label="שם משפטי מלא *" error={errors.legalName}><UiInput aria-invalid={Boolean(errors.legalName)} required minLength={2} maxLength={200} disabled={!editable} value={form.legalName} onChange={(event) => update("legalName", event.target.value)} /></Field>
       <div className="grid two-cols">
-        <Field label="מספר חברה / עוסק *" error={errors.registrationNumber}><input aria-invalid={Boolean(errors.registrationNumber)} required disabled={!editable} inputMode="numeric" maxLength={15} value={form.registrationNumber} onChange={(event) => update("registrationNumber", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
-        <Field label="מספר תיק ניכויים * (במידה ואין, יש להזין 900000000)" error={errors.withholdingFileNumber}><input aria-invalid={Boolean(errors.withholdingFileNumber)} required disabled={!editable} inputMode="numeric" maxLength={9} value={form.withholdingFileNumber} onChange={(event) => update("withholdingFileNumber", event.target.value.replace(/\D/g, "").slice(0, 9))} /></Field>
+        <Field label="מספר חברה / עוסק *" error={errors.registrationNumber}><UiInput aria-invalid={Boolean(errors.registrationNumber)} required disabled={!editable} inputMode="numeric" maxLength={15} value={form.registrationNumber} onChange={(event) => update("registrationNumber", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
+        <Field label="מספר תיק ניכויים * (במידה ואין, יש להזין 900000000)" error={errors.withholdingFileNumber}><UiInput aria-invalid={Boolean(errors.withholdingFileNumber)} required disabled={!editable} inputMode="numeric" maxLength={9} value={form.withholdingFileNumber} onChange={(event) => update("withholdingFileNumber", event.target.value.replace(/\D/g, "").slice(0, 9))} /></Field>
       </div>
       <div className="grid two-cols">
-        <Field label="שם פרטי איש קשר *" error={errors.contactFirstName}><input disabled={!editable} maxLength={20} value={form.contactFirstName ?? ""} onChange={(event) => update("contactFirstName", event.target.value)} /></Field>
-        <Field label="שם משפחה איש קשר *" error={errors.contactLastName}><input disabled={!editable} maxLength={20} value={form.contactLastName ?? ""} onChange={(event) => update("contactLastName", event.target.value)} /></Field>
-        <Field label="טלפון איש קשר" error={errors.contactPhone}><input disabled={!editable} inputMode="numeric" maxLength={11} value={form.contactPhone ?? ""} onChange={(event) => update("contactPhone", event.target.value.replace(/\D/g, "").slice(0, 11))} /></Field>
-        <Field label="נייד איש קשר" error={errors.contactMobile}><input disabled={!editable} inputMode="numeric" maxLength={15} value={form.contactMobile ?? ""} onChange={(event) => update("contactMobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
+        <Field label="שם פרטי איש קשר *" error={errors.contactFirstName}><UiInput disabled={!editable} maxLength={20} value={form.contactFirstName ?? ""} onChange={(event) => update("contactFirstName", event.target.value)} /></Field>
+        <Field label="שם משפחה איש קשר *" error={errors.contactLastName}><UiInput disabled={!editable} maxLength={20} value={form.contactLastName ?? ""} onChange={(event) => update("contactLastName", event.target.value)} /></Field>
+        <Field label="טלפון איש קשר" error={errors.contactPhone}><UiInput disabled={!editable} inputMode="numeric" maxLength={11} value={form.contactPhone ?? ""} onChange={(event) => update("contactPhone", event.target.value.replace(/\D/g, "").slice(0, 11))} /></Field>
+        <Field label="נייד איש קשר" error={errors.contactMobile}><UiInput disabled={!editable} inputMode="numeric" maxLength={15} value={form.contactMobile ?? ""} onChange={(event) => update("contactMobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
       </div>
       <small style={{ color: "var(--muted)", marginTop: -8 }}>יש להזין לפחות אחד מהשדות: טלפון או נייד.</small>
-      <Field label="אימייל איש קשר *" error={errors.contactEmail}><input disabled={!editable} type="email" maxLength={50} value={form.contactEmail ?? ""} onChange={(event) => update("contactEmail", event.target.value)} /></Field>
-      {employer ? <div className="field"><label>סטטוס</label><input disabled value={employer.status === 2 ? "פעיל" : "בתהליך הקמה"} /></div> : null}
+      <Field label="אימייל איש קשר *" error={errors.contactEmail}><UiInput disabled={!editable} type="email" maxLength={50} value={form.contactEmail ?? ""} onChange={(event) => update("contactEmail", event.target.value)} /></Field>
+      {employer ? <div className="field"><label>סטטוס</label><UiInput disabled value={employer.status === 2 ? "פעיל" : "בתהליך הקמה"} /></div> : null}
       <div className="form-actions">{showBackLink ? <Link className="btn btn-secondary" href="/employers">חזרה</Link> : null}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employer ? "שמירת שינויים" : createLabel}</button> : null}</div>
     </form>
   </div>;
