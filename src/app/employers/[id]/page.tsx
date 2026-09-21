@@ -481,7 +481,10 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           <span><b>מקור</b><small>{inherited ? "חשבון הארגון" : "חשבון עצמאי של המעסיק"}</small></span>
         </div>
         {canManage && !inherited ? <div className="payment-account-actions"><button className="btn btn-secondary" type="button" onClick={() => void edit()}>עריכת החשבון</button></div> : null}
-      </article> : <div className="empty">{inherited ? "לא הוגדר עדיין חשבון תשלום פנסיוני ברמת הארגון." : "לא הוגדר עדיין חשבון עצמאי למעסיק."}</div>}
+      </article> : <div className="empty">
+        <div>{inherited ? "אין כרגע חשבון תשלום פנסיוני זמין דרך המסגרת הארגונית." : "לא הוגדר עדיין חשבון עצמאי למעסיק."}</div>
+        {canManage && inherited ? <button className="btn btn-primary" type="button" style={{ marginTop: 14 }} onClick={() => void switchToEmployerAccount()}>הגדרת חשבון למעסיק</button> : null}
+      </div>}
 
       {inherited && account ? <div className="notice notice-info" style={{ marginTop: 16 }}>החשבון מוצג לקריאה בלבד כאן. עריכת החשבון מתבצעת בפרופיל הארגון.</div> : null}
     </section>
@@ -604,11 +607,16 @@ function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmpl
         </button>
       </div>
 
-      {!billing.canChangeMode ? <div className="notice notice-info" style={{ marginTop: 18 }}>רק Organization Admin יכול לשנות את אופן החיוב.</div> : null}
+      {!billing.canChangeMode ? <div className="notice notice-info" style={{ marginTop: 18 }}>אין לך הרשאה לשנות את אופן החיוב של המעסיק הזה.</div> : null}
 
-      <div className="notice notice-info" style={{ marginTop: 18 }}>
-        <b>מחויב דרך: {resolution.billedThroughName}</b>
-        <div>{resolution.source === "Organization" ? "Billing Account ארגוני" : "Billing Account עצמאי של המעסיק"} · {resolution.effectiveAccount.configured ? "מוגדר" : "עדיין לא הוגדר"}</div>
+      <div className={`billing-source-banner ${resolution.source === "Organization" ? "organization" : "employer"}`}>
+        <div className="billing-source-icon">{resolution.source === "Organization" ? <Building2 size={25} /> : <CreditCard size={25} />}</div>
+        <div>
+          <span>מקור החיוב הפעיל</span>
+          <strong>{resolution.source === "Organization" ? "הארגון" : "המעסיק"}</strong>
+          <small>{resolution.source === "Organization" ? `החיוב של ${employer.legalName} משתמש בפרטי החיוב של ${resolution.billedThroughName}` : `ל־${employer.legalName} יש פרטי חיוב עצמאיים משלו`}</small>
+        </div>
+        <span className={resolution.effectiveAccount.configured ? "badge badge-green" : "badge badge-orange"}>{resolution.effectiveAccount.configured ? "פרטי חיוב מוגדרים" : "נדרש להשלים פרטי חיוב"}</span>
       </div>
     </section>
 
@@ -627,6 +635,7 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
 }) {
   const [form, setForm] = useState(value);
   const [saving, setSaving] = useState(false);
+  const [dayMenuOpen, setDayMenuOpen] = useState(false);
   useEffect(() => setForm(value), [value]);
 
   async function save(event: React.FormEvent) {
@@ -648,12 +657,17 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
     {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הגדרות הדיווח מוצגות לקריאה בלבד לפי ההרשאה שלך.</div> : null}
     <form className="form" onSubmit={save}>
       <div className="grid two-cols">
-        <div className="field">
+        <div className="field compact-day-field">
           <label>יום תשלום שכר</label>
-          <select disabled={!canEdit} value={form.defaultSalaryPaymentDay ?? ""} onChange={(e) => setForm({ ...form, defaultSalaryPaymentDay: e.target.value ? Number(e.target.value) : null })}>
-            <option value="">לא הוגדר</option>
-            {Array.from({ length: 31 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1} בחודש</option>)}
-          </select>
+          <div className="compact-day-picker">
+            <button className="compact-day-trigger" type="button" disabled={!canEdit} onClick={() => setDayMenuOpen((open) => !open)}>
+              {form.defaultSalaryPaymentDay ? `${form.defaultSalaryPaymentDay} בחודש` : "לא הוגדר"}
+            </button>
+            {dayMenuOpen && canEdit ? <div className="compact-day-menu">
+              <button type="button" onClick={() => { setForm({ ...form, defaultSalaryPaymentDay: null }); setDayMenuOpen(false); }}>לא הוגדר</button>
+              {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => <button key={day} type="button" className={form.defaultSalaryPaymentDay === day ? "selected" : ""} onClick={() => { setForm({ ...form, defaultSalaryPaymentDay: day }); setDayMenuOpen(false); }}>{day} בחודש</button>)}
+            </div> : null}
+          </div>
         </div>
         <div className="field">
           <label>אמצעי תשלום</label>
