@@ -24,6 +24,7 @@ import type {
 } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
 import { UiChoiceCard, UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
+import { InfoTooltip } from "@/components/info-tooltip";
 
 type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting";
 
@@ -250,7 +251,7 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
     }
   }
 
-  return <section className="card profile-card employer-general-card">
+  return <section className="card profile-card employer-general-card employer-general-card-compact">
     <div className="card-head">
       <div><h2>פרטים כלליים</h2><span style={{ color: "var(--muted)" }}>פרטי המעסיק, איש הקשר והכתובת במקום אחד.</span></div>
       <span className={employer.status === 2 ? "badge badge-green" : "badge badge-gray"}>{employer.status === 2 ? "פעיל" : "בתהליך הקמה"}</span>
@@ -263,7 +264,7 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
         <div className="grid employer-details-grid">
           <div className="field field-span-2"><label>שם משפטי מלא *</label><UiInput disabled={!canEdit} required maxLength={200} value={details.legalName} onChange={(e) => setDetails({ ...details, legalName: e.target.value })} /></div>
           <div className="field"><label>מספר חברה / עוסק *</label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={15} value={details.registrationNumber} onChange={(e) => setDetails({ ...details, registrationNumber: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>תיק ניכויים *</label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={9} value={details.withholdingFileNumber} onChange={(e) => setDetails({ ...details, withholdingFileNumber: e.target.value.replace(/\D/g, "") })} /><small>אם אין תיק ניכויים, יש להזין 900000000.</small></div>
+          <div className="field"><label className="field-label-with-info"><span>תיק ניכויים *</span><InfoTooltip text="אם אין תיק ניכויים, יש להזין 900000000." /></label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={9} value={details.withholdingFileNumber} onChange={(e) => setDetails({ ...details, withholdingFileNumber: e.target.value.replace(/\D/g, "") })} /></div>
         </div>
       </div>
 
