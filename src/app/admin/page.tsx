@@ -3,8 +3,9 @@
 import { UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Play, RefreshCw, X } from "lucide-react";
+import { Eye, Play, RefreshCw, Settings2, CreditCard, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { AppTabs } from "@/components/app-tabs";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { Plan, PlatformSubscription } from "@/lib/types";
@@ -66,6 +67,11 @@ function statusLabel(status?: string) {
   if (status === "Active") return "פעיל";
   return status ?? "-";
 }
+
+const adminTabs = [
+  { key: "interfaces", label: "ממשקים", icon: Settings2 },
+  { key: "subscriptions", label: "מסלולים ומנויים", icon: CreditCard },
+] satisfies Array<{ key: "interfaces" | "subscriptions"; label: string; icon: typeof Settings2 }>;
 
 export default function AdminPage() {
   const router = useRouter();
@@ -153,10 +159,7 @@ export default function AdminPage() {
       <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={loading || Boolean(running)}><RefreshCw size={16} />רענון</button>
     </div>
 
-    <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
-      <button type="button" className={`btn ${tab === "interfaces" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("interfaces")}>ממשקים</button>
-      <button type="button" className={`btn ${tab === "subscriptions" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("subscriptions")}>מסלולים ומנויים</button>
-    </div>
+    <AppTabs items={adminTabs} activeKey={tab} onChange={setTab} ariaLabel="מסך אדמין" />
 
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
