@@ -16,7 +16,8 @@
   --warning: #b86d10;
   --shadow: 0 12px 36px rgba(16, 38, 64, 0.08);
   --control-height: 44px;
-  --control-height-compact: 34px;
+  --control-height-compact: 36px;
+  --control-height-dense: 30px;
 }
 
 * { box-sizing: border-box; }
@@ -96,7 +97,7 @@ a { color: inherit; text-decoration: none; }
 .scope-selects label > span { display: block; font-size: 11px; color: var(--muted); font-weight: 650; margin: 0 2px 3px; }
 .scope-selects label > div { position: relative; }
 .scope-selects label svg { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--blue); pointer-events: none; }
-.scope-selects select { min-width: 210px; height: 39px; border: 1px solid var(--line); border-radius: 9px; background: #f9fbfd; color: var(--text); padding: 0 37px 0 32px; outline: none; cursor: pointer; }
+.scope-selects select { min-width: 210px; height: var(--control-height-compact); border: 1px solid var(--line); border-radius: 9px; background: #f9fbfd; color: var(--text); padding: 0 37px 0 32px; outline: none; cursor: pointer; }
 .scope-selects select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(40,101,216,.1); }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
 .page-head h1 { font-size: 30px; margin: 0 0 5px; }
