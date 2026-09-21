@@ -1,5 +1,6 @@
 "use client";
 
+import { UiInput } from "@/components/ui-controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleAlert, CircleCheck, Pencil, Save, Search, UserPlus, X } from "lucide-react";
 import { InlineEmployeeCreateModal } from "@/components/inline-employee-create-modal";
@@ -251,7 +252,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
     </div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}
     <div className="toolbar manual-report-toolbar">
-      <div className="search"><Search size={17} /><input value={query} maxLength={80} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
+      <div className="search"><Search size={17} /><UiInput value={query} maxLength={80} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
       <button type="button" className="btn btn-primary" onClick={() => setShowCreate(true)}><UserPlus size={16} />הקמת עובד חדש</button>
       <button className="btn btn-soft" disabled={!visibleEmployees.some((item) => item.status === 1)} onClick={selectAllVisibleActive}>{syncing ? "מעדכן..." : "בחירת כל הפעילים בתוצאות"}</button>
     </div>
@@ -260,7 +261,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
         const selected = selectedIds.includes(employee.id);
         const row = rowByEmployment.get(employee.id);
         return <div className={`manual-employee-row${selected ? " selected" : ""}`} key={employee.id}>
-          <label className="manual-employee-check"><input type="checkbox" checked={selected} onChange={(event) => changeSelection(employee.id, event.target.checked)} /></label>
+          <label className="manual-employee-check"><UiInput type="checkbox" checked={selected} onChange={(event) => changeSelection(employee.id, event.target.checked)} /></label>
           <div className="manual-employee-main"><b>{employee.firstName} {employee.lastName}</b><span>ת״ז {employee.nationalId} · עובד {employee.employeeNumber}{row?.monthlySalary ? ` · ₪${Number(row.monthlySalary).toLocaleString("he-IL")}` : ""}</span></div>
           <div className="manual-employee-products">{selected && row ? row.productCount ? <span className="badge badge-green"><CircleCheck size={13} />{row.productCount} מוצרים</span> : <span className="badge badge-orange"><CircleAlert size={13} />חסר תמהיל/מוצרים</span> : selected ? <span className="badge badge-gray">שומר...</span> : <span className="badge badge-gray">לא בדיווח</span>}</div>
           <button className="btn btn-soft manual-edit-btn" disabled={!selected || !row} onClick={() => row && void editEmployee(row)}><Pencil size={16} />עריכה</button>
