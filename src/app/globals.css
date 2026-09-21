@@ -282,10 +282,59 @@ td { font-size: 14px; }
 }
 
 
-.profile-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
-.profile-tab { border: 1px solid transparent; background: transparent; color: var(--muted); padding: 10px 13px; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 650; }
-.profile-tab:hover { background: #f7f9fc; color: var(--text); }
-.profile-tab.active { color: var(--blue); background: var(--blue-soft); border-color: #d7e5ff; }
+/* Shared tabs used across profile and management screens */
+.app-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.app-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  min-height: 40px;
+  padding: 9px 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.app-tab svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.app-tab:hover {
+  background: #f7f9fc;
+  color: var(--text);
+}
+
+.app-tab.active,
+.app-tab[aria-selected="true"] {
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: #d7e5ff;
+}
+
+.app-tab:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(40,101,216,.1);
+}
 .employer-profile-stack { display: grid; gap: 18px; }
 .payment-account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
 .payment-account-card { border: 1px solid var(--line); border-radius: 13px; padding: 16px; background: #fff; }
@@ -296,8 +345,18 @@ td { font-size: 14px; }
 .payment-account-actions { display: flex; gap: 8px; margin-top: 15px; }
 
 @media (max-width: 760px) {
-  .profile-tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 12px; }
-  .profile-tab { white-space: nowrap; }
+  .app-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    padding-bottom: 12px;
+  }
+
+  .app-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 }
 
 
