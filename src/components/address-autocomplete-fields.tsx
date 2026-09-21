@@ -1,5 +1,6 @@
 "use client";
 
+import { UiInput } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { Field } from "@/components/form-feedback";
@@ -73,7 +74,7 @@ export function AddressAutocompleteFields({ city, street, cityError, streetError
       }}>
         <div className="pension-fund-search">
           <Search size={16} aria-hidden="true" />
-          <input
+          <UiInput
             disabled={disabled}
             required
             autoComplete="off"
@@ -115,7 +116,7 @@ export function AddressAutocompleteFields({ city, street, cityError, streetError
       }}>
         <div className="pension-fund-search">
           <Search size={16} aria-hidden="true" />
-          <input
+          <UiInput
             disabled={disabled || !cityCode}
             required
             autoComplete="off"
