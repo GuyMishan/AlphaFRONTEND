@@ -175,6 +175,15 @@ export function AlphaBillingAccountForm({
         </span>
       </div>
 
+      <div className={`billing-owner-banner ${employerId ? "employer" : "organization"}`}>
+        <div className="billing-source-icon">{employerId ? <CreditCard size={24} /> : <Landmark size={24} />}</div>
+        <div>
+          <span>הפרטים במסך הזה שייכים ל־</span>
+          <strong>{employerId ? "המעסיק" : "הארגון"}</strong>
+          <small>{employerId ? "אלו פרטי חיוב עצמאיים של המעסיק." : "אלו פרטי החיוב המרכזיים של הארגון."}</small>
+        </div>
+      </div>
+
       {!canManage ? <div className="notice notice-info" style={{ marginBottom: 18 }}>החשבון מוצג לקריאה בלבד לפי ההרשאה שלך.</div> : null}
 
       <form className="form" onSubmit={saveDetails}>
@@ -187,13 +196,27 @@ export function AlphaBillingAccountForm({
 
         <div className="field">
           <label>אמצעי תשלום</label>
-          <div className="grid two-cols">
-            <button type="button" disabled={!canManage} className={`choice-card${details.paymentMethodType === 1 ? " selected" : ""}`} onClick={() => setDetails({ ...details, paymentMethodType: 1 })}>
-              <CreditCard size={24} /><b>כרטיס אשראי</b><p>הפרטים מוזנים רק בדף המאובטח של PayPlus. Alpha שומרת token ו־metadata בלבד.</p>
+          <div className="grid two-cols billing-method-choices">
+            <button type="button" disabled={!canManage} className={`choice-card billing-method-card${details.paymentMethodType === 1 ? " selected" : ""}`} onClick={() => setDetails({ ...details, paymentMethodType: 1 })}>
+              <CreditCard size={24} /><b>כרטיס אשראי</b><p>חיבור מאובטח דרך ספק הסליקה. ALPHA לא שומרת מספר כרטיס מלא או CVV.</p>
             </button>
-            <button type="button" disabled={!canManage} className={`choice-card${details.paymentMethodType === 2 ? " selected" : ""}`} onClick={() => setDetails({ ...details, paymentMethodType: 2 })}>
-              <Landmark size={24} /><b>הרשאה לחיוב חשבון</b><p>נשמר רק mandate/reference מספק התשלום, ללא פרטי בנק רגישים.</p>
+            <button type="button" disabled={!canManage} className={`choice-card billing-method-card${details.paymentMethodType === 2 ? " selected" : ""}`} onClick={() => setDetails({ ...details, paymentMethodType: 2 })}>
+              <Landmark size={24} /><b>הרשאה לחיוב חשבון</b><p>חיוב באמצעות הרשאה בנקאית לאחר חיבור תשתית ה־Bank Debit.</p>
             </button>
+          </div>
+
+          <div className={`billing-method-next ${details.paymentMethodType === 1 ? "card-method" : "bank-method"}`}>
+            <div className="billing-source-icon">{details.paymentMethodType === 1 ? <CreditCard size={22} /> : <Landmark size={22} />}</div>
+            <div>
+              <b>{details.paymentMethodType === 1 ? "נבחר כרטיס אשראי" : "נבחרה הרשאה לחיוב חשבון"}</b>
+              <p>{details.paymentMethodType === 1
+                ? account.configured
+                  ? "פרטי החיוב נשמרו. אפשר להמשיך לחיבור הכרטיס המאובטח."
+                  : "שמרו את פרטי החיוב, ולאחר מכן יופיע חיבור הכרטיס המאובטח."
+                : account.configured
+                  ? "פרטי החיוב נשמרו. חיבור Bank Debit אוטומטי עדיין דורש מסוף/הרשאת MASAV אצל ספק התשלום."
+                  : "שמרו את פרטי החיוב. חיבור Bank Debit אוטומטי יופעל לאחר חיבור תשתית הספק המתאימה."}</p>
+            </div>
           </div>
         </div>
 
@@ -213,11 +236,11 @@ export function AlphaBillingAccountForm({
 
     {account.configured ? <section className="card profile-card profile-payment-card">
       <div className="card-head"><div><h2>אמצעי תשלום</h2><span style={{ color: "var(--muted)" }}>החיבור לאמצעי התשלום מתבצע בצורה מאובטחת, ללא שמירת מספר כרטיס מלא או CVV ב־ALPHA.</span></div><span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>{billingStatusLabel(account.paymentMethodStatus)}</span></div>
-      {account.paymentMethodType === 1 ? <div className="form-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
+      {details.paymentMethodType === 1 ? <div className="form-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
         {canManage ? <button className="btn btn-primary" type="button" disabled={connecting} onClick={() => void connectPaymentMethod()}><ExternalLink size={17} />{connecting ? "פותח..." : cardConnected ? "החלפת כרטיס" : "חיבור כרטיס מאובטח"}</button> : null}
         {cardConnected ? <button className="btn btn-secondary" type="button" disabled={syncing} onClick={() => void syncPaymentMethod()}><RefreshCw size={17} />{syncing ? "מסנכרן..." : "רענון סטטוס"}</button> : null}
         {canManage && cardConnected ? <button className="btn btn-danger" type="button" disabled={cancelling} onClick={() => void cancelPaymentMethod()}><Trash2 size={16} />{cancelling ? "מבטל..." : "ביטול אמצעי תשלום"}</button> : null}
-      </div> : <div className="notice notice-info">PayPlus תומך בתשתיות Bank Debit, אך חיבור mandate אוטומטי דורש הגדרת MASAV/מסוף ייעודית אצל הספק. Alpha לא אוספת כאן פרטי חשבון בנק של אמצעי החיוב.</div>}
+      </div> : <div className="billing-method-next bank-method"><div className="billing-source-icon"><Landmark size={22} /></div><div><b>הרשאה לחיוב חשבון</b><p>המסלול נבחר, אבל חיבור mandate אוטומטי עדיין לא פעיל. נדרשת תשתית MASAV/Bank Debit אצל ספק התשלום לפני שניתן יהיה להשלים את החיבור מתוך ALPHA.</p></div></div>}
     </section> : null}
 
     <div className="notice notice-info">ALPHA אינה מקבלת ואינה שומרת מספר כרטיס מלא או CVV.</div>
