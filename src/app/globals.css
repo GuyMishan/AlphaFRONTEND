@@ -401,7 +401,31 @@ td { font-size: 14px; }
 }
 
 
-.auth-brand .brand-tagline { font-size: 14px; color: rgba(255,255,255,.82); }
+.auth-brand .brand-wordmark { color: #ffffff; }
+.auth-brand .brand-tagline { font-size: 14px; color: #ffffff; }
 .auth-brand .brand-logo-tile { fill: #ffffff; }
 .auth-brand .brand-logo-symbol,
 .auth-brand .brand-logo-symbol-inner { fill: #173d65; }
+
+
+/* Employer profile layout */
+.employer-general-card { max-width: 1180px; margin: 0 auto; }
+.employer-form-embedded { display: grid; }
+.employer-form-embedded .profile-summary { margin-bottom: 24px; }
+.profile-section-divider { height: 1px; background: var(--line); margin: 28px 0 24px; }
+.profile-three-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.profile-payment-card, .reporting-settings-card { max-width: 1080px; margin: 0 auto; width: 100%; }
+.payment-account-card-single { padding: 20px; }
+.payment-account-details-wide { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.payment-account-details-wide > span { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--surface) 92%, var(--blue-soft)); }
+.payment-account-details-wide b { color: var(--text); font-size: 13px; }
+.payment-account-details-wide small { color: var(--muted); font-size: 14px; }
+.single-payment-layout { max-width: 1080px; margin: 0 auto; }
+.employee-panel-head { margin-bottom: 18px; }
+
+@media (max-width: 900px) {
+  .profile-three-cols, .payment-account-details-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .profile-three-cols, .payment-account-details-wide { grid-template-columns: 1fr; }
+}
