@@ -25,7 +25,7 @@ import type {
 } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
 import { UiChoiceCard, UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
-import { InfoTooltip } from "@/components/info-tooltip";
+import { Tooltip } from "@/components/tooltip";
 
 type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting";
 
@@ -256,7 +256,7 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
         <div className="grid employer-details-grid">
           <div className="field field-span-2"><label>שם משפטי מלא *</label><UiInput disabled={!canEdit} required maxLength={200} value={details.legalName} onChange={(e) => setDetails({ ...details, legalName: e.target.value })} /></div>
           <div className="field"><label>מספר חברה / עוסק *</label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={15} value={details.registrationNumber} onChange={(e) => setDetails({ ...details, registrationNumber: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label className="field-label-with-info"><span>תיק ניכויים *</span><InfoTooltip text="אם אין תיק ניכויים, יש להזין 900000000." /></label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={9} value={details.withholdingFileNumber} onChange={(e) => setDetails({ ...details, withholdingFileNumber: e.target.value.replace(/\D/g, "") })} /></div>
+          <div className="field"><label className="field-label-with-info"><span>תיק ניכויים *</span><Tooltip content="אם אין תיק ניכויים, יש להזין 900000000." /></label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={9} value={details.withholdingFileNumber} onChange={(e) => setDetails({ ...details, withholdingFileNumber: e.target.value.replace(/\D/g, "") })} /></div>
         </div>
       </div>
 
@@ -453,12 +453,12 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           disabled={!canManage || !organizationAccount}
           selected={selectedMode === 2}
           onClick={selectOrganizationMode}
-          title={organizationAccount ? "קיים חשבון ארגוני זמין למעסיק הזה" : "לא קיים חשבון ארגוני זמין למעסיק הזה"}
+          tooltip={organizationAccount ? "קיים חשבון ארגוני זמין למעסיק הזה" : "לא קיים חשבון ארגוני זמין למעסיק הזה"}
         >
           <Building2 size={22} />
           <b>חשבון הארגון</b>
           <p>{organizationAccount ? "שימוש בחשבון הפנסיוני שמנוהל ברמת הארגון." : "לא קיים כרגע חשבון ארגוני זמין."}</p>
-          {organizationAccount ? <span className="option-hint" title="קיים חשבון ארגוני זמין למעסיק הזה">ⓘ קיים חשבון ארגוני</span> : null}
+          {organizationAccount ? <Tooltip content="קיים חשבון ארגוני זמין למעסיק הזה"><span className="option-hint">ⓘ קיים חשבון ארגוני</span></Tooltip> : null}
         </UiChoiceCard>
 
         <UiChoiceCard
@@ -598,12 +598,12 @@ function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmpl
           disabled={!billing.canChangeMode || !organizationAvailable}
           selected={selectedMode === 2}
           onClick={() => setSelectedMode(2)}
-          title={organizationAvailable ? "קיימים פרטי חיוב ארגוניים זמינים למעסיק הזה" : "לא קיימים פרטי חיוב ארגוניים זמינים"}
+          tooltip={organizationAvailable ? "קיימים פרטי חיוב ארגוניים זמינים למעסיק הזה" : "לא קיימים פרטי חיוב ארגוניים זמינים"}
         >
           <Building2 size={22} />
           <b>חיוב דרך הארגון</b>
           <p>{organizationAvailable ? "שימוש בפרטי החיוב המרכזיים של הארגון." : "לא הוגדרו עדיין פרטי חיוב בארגון."}</p>
-          {organizationAvailable ? <span className="option-hint" title="קיימים פרטי חיוב ארגוניים זמינים למעסיק הזה">ⓘ קיים חיוב ארגוני</span> : null}
+          {organizationAvailable ? <Tooltip content="קיימים פרטי חיוב ארגוניים זמינים למעסיק הזה"><span className="option-hint">ⓘ קיים חיוב ארגוני</span></Tooltip> : null}
         </UiChoiceCard>
 
         <UiChoiceCard
