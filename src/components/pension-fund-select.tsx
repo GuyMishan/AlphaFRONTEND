@@ -1,5 +1,6 @@
 "use client";
 
+import { UiInput } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { alphaApi } from "@/lib/api";
@@ -72,7 +73,7 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
   }, [productType, query]);
 
   if (productType === 99) {
-    return <div className="field"><label>קופה</label><input disabled value="לא נדרש עבור מוצר מסוג אחר" /></div>;
+    return <div className="field"><label>קופה</label><UiInput disabled value="לא נדרש עבור מוצר מסוג אחר" /></div>;
   }
 
   return (
@@ -86,7 +87,7 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
       <label>קופה *</label>
       <div className="pension-fund-search">
         <Search size={16} aria-hidden="true" />
-        <input
+        <UiInput
           disabled={disabled}
           value={query}
           autoComplete="off"
