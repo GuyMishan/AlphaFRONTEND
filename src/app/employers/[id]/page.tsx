@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { Building2, CreditCard, FileSliders, Plus, Save, Trash2, Users, WalletCards } from "lucide-react";
+import { Building2, CreditCard, FileSliders, Save, Users, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
+import { EmployerEmployeesPanel } from "@/components/employer-employees-panel";
 import { EmployerForm } from "@/components/employer-form";
 import { alphaApi } from "@/lib/api";
 import type {
   BankDebitMandateStatus,
   BankBranchOption,
   BankOption,
-  Employee,
   Employer,
   EmployerAddressSettings,
   EmployerBillingResolution,
@@ -182,10 +182,7 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
     if (!canEdit) return;
     setSaving(true);
     try {
-      const normalized = {
-        ...form,
-        postalCode: form.postalCode.replace(/\D/g, ""),
-      };
+      const normalized = { ...form, postalCode: form.postalCode.replace(/\D/g, "") };
       await alphaApi.updateEmployerAddress(organizationId, employer.id, normalized);
       onAddressSaved(normalized);
       toast.success("כתובת המעסיק נשמרה");
@@ -196,59 +193,29 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
     }
   }
 
-  return <div className="employer-profile-stack">
-    <EmployerForm organizationId={organizationId} employer={employer} editable={canEdit} showBackLink={false} />
-    <section className="card profile-card">
-      <div className="card-head"><div><h2>כתובת המעסיק</h2><span style={{ color: "var(--muted)" }}>כתובת העסק לצורכי פרופיל ותפעול.</span></div></div>
-      {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הכתובת מוצגת לקריאה בלבד לפי ההרשאה שלך.</div> : null}
-      <form className="form" onSubmit={saveAddress}>
-        <div className="grid two-cols">
-          <div className="field"><label>יישוב</label><input disabled={!canEdit} maxLength={100} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
-          <div className="field"><label>רחוב</label><input disabled={!canEdit} maxLength={100} value={form.street} onChange={(e) => setForm({ ...form, street: e.target.value })} /></div>
-          <div className="field"><label>מספר בית</label><input disabled={!canEdit} maxLength={20} value={form.houseNumber} onChange={(e) => setForm({ ...form, houseNumber: e.target.value })} /></div>
-          <div className="field"><label>דירה</label><input disabled={!canEdit} maxLength={20} value={form.apartment} onChange={(e) => setForm({ ...form, apartment: e.target.value })} /></div>
-          <div className="field"><label>מיקוד</label><input disabled={!canEdit} inputMode="numeric" maxLength={10} value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>תא דואר</label><input disabled={!canEdit} maxLength={20} value={form.postOfficeBox} onChange={(e) => setForm({ ...form, postOfficeBox: e.target.value })} /></div>
-        </div>
-        {canEdit ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת כתובת"}</button></div> : null}
-      </form>
-    </section>
-  </div>;
+  return <section className="card profile-card employer-general-card">
+    <EmployerForm organizationId={organizationId} employer={employer} editable={canEdit} showBackLink={false} embedded />
+    <div className="profile-section-divider" />
+    <div className="card-head">
+      <div><h2>כתובת המעסיק</h2><span style={{ color: "var(--muted)" }}>כתובת העסק לצורכי פרופיל ותפעול.</span></div>
+    </div>
+    {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הכתובת מוצגת לקריאה בלבד לפי ההרשאה שלך.</div> : null}
+    <form className="form" onSubmit={saveAddress}>
+      <div className="grid profile-three-cols">
+        <div className="field"><label>יישוב</label><input disabled={!canEdit} maxLength={100} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
+        <div className="field"><label>רחוב</label><input disabled={!canEdit} maxLength={100} value={form.street} onChange={(e) => setForm({ ...form, street: e.target.value })} /></div>
+        <div className="field"><label>מספר בית</label><input disabled={!canEdit} maxLength={20} value={form.houseNumber} onChange={(e) => setForm({ ...form, houseNumber: e.target.value })} /></div>
+        <div className="field"><label>דירה</label><input disabled={!canEdit} maxLength={20} value={form.apartment} onChange={(e) => setForm({ ...form, apartment: e.target.value })} /></div>
+        <div className="field"><label>מיקוד</label><input disabled={!canEdit} inputMode="numeric" maxLength={10} value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value.replace(/\D/g, "") })} /></div>
+        <div className="field"><label>תא דואר</label><input disabled={!canEdit} maxLength={20} value={form.postOfficeBox} onChange={(e) => setForm({ ...form, postOfficeBox: e.target.value })} /></div>
+      </div>
+      {canEdit ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת כתובת"}</button></div> : null}
+    </form>
+  </section>;
 }
 
 function EmployeesTab({ organizationId, employer, canCreate }: { organizationId: string; employer: Employer; canCreate: boolean }) {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      alphaApi.employeeSearch(organizationId, employer.id, search.trim(), 0, 100)
-        .then((result) => setEmployees(result.items))
-        .catch((err) => toast.error(err instanceof Error ? err.message : "טעינת העובדים נכשלה"))
-        .finally(() => setLoading(false));
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [organizationId, employer.id, search]);
-
-  return <section className="card">
-    <div className="card-head">
-      <div><h2>עובדים</h2><span style={{ color: "var(--muted)" }}>עובדי המעסיק וקישורים לפרופילים שלהם.</span></div>
-      {canCreate ? <Link className="btn btn-primary" href={`/employees/new?organizationId=${organizationId}&employerId=${employer.id}`}><Plus size={17} />עובד חדש</Link> : null}
-    </div>
-    <div className="toolbar"><div className="search"><input aria-label="חיפוש עובדים" placeholder="חיפוש לפי שם, תעודת זהות או מספר עובד" value={search} onChange={(e) => setSearch(e.target.value)} /></div></div>
-    {loading ? <div className="empty">טוען עובדים...</div> : employees.length === 0 ? <div className="empty">לא נמצאו עובדים אצל המעסיק.</div> :
-      <div className="table-wrap"><table><thead><tr><th>עובד</th><th>תעודת זהות</th><th>מספר עובד</th><th>סטטוס</th><th /></tr></thead><tbody>
-        {employees.map((employee) => <tr key={employee.id}>
-          <td><b>{employee.firstName} {employee.lastName}</b></td>
-          <td>{employee.nationalId}</td>
-          <td>{employee.employeeNumber}</td>
-          <td>{employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"}</td>
-          <td><Link className="profile-link" href={`/employees/${employee.id}?organizationId=${organizationId}&employerId=${employer.id}`}>לפרופיל</Link></td>
-        </tr>)}
-      </tbody></table></div>}
-  </section>;
+  return <EmployerEmployeesPanel organizationId={organizationId} employer={employer} canCreate={canCreate} />;
 }
 
 function PensionPaymentTab({ organizationId, employerId, canManage, accounts, setAccounts }: {
@@ -258,8 +225,9 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   accounts: EmployerPaymentAccount[];
   setAccounts: React.Dispatch<React.SetStateAction<EmployerPaymentAccount[]>>;
 }) {
+  const account = useMemo(() => accounts.find((item) => item.isDefault) ?? accounts[0] ?? null, [accounts]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<EmployerPaymentAccountInput>(EMPTY_ACCOUNT);
+  const [form, setForm] = useState<EmployerPaymentAccountInput>({ ...EMPTY_ACCOUNT, isDefault: true });
   const [banks, setBanks] = useState<BankOption[]>([]);
   const [branches, setBranches] = useState<BankBranchOption[]>([]);
   const [bankSearch, setBankSearch] = useState("");
@@ -284,9 +252,9 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     return () => window.clearTimeout(timer);
   }, [form.bankId, branchSearch]);
 
-  function resetForm() {
+  function clearEditor() {
     setEditingId(null);
-    setForm({ ...EMPTY_ACCOUNT, isDefault: accounts.length === 0 });
+    setForm({ ...EMPTY_ACCOUNT, isDefault: true });
     setBankSearch("");
     setBranchSearch("");
     setMandateStatus(1);
@@ -294,18 +262,18 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     setDocumentId("");
   }
 
-  async function edit(item: EmployerPaymentAccount) {
-    if (!canManage) return;
+  async function edit() {
+    if (!canManage || !account) return;
     try {
-      const full = await alphaApi.employerPaymentAccount(organizationId, employerId, item.id);
-      setEditingId(item.id);
+      const full = await alphaApi.employerPaymentAccount(organizationId, employerId, account.id);
+      setEditingId(account.id);
       setForm({
         bankId: full.bankId,
         branchId: full.branchId,
         accountNumber: full.accountNumber,
         accountHolderName: full.accountHolderName,
         accountHolderId: full.accountHolderId,
-        isDefault: full.isDefault,
+        isDefault: true,
       });
       setBankSearch(String(full.bankId));
       setBranchSearch(String(full.branchId));
@@ -332,9 +300,9 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     try {
       let accountId = editingId;
       if (editingId) {
-        await alphaApi.updateEmployerPaymentAccount(organizationId, employerId, editingId, form);
+        await alphaApi.updateEmployerPaymentAccount(organizationId, employerId, editingId, { ...form, isDefault: true });
       } else {
-        const created = await alphaApi.createEmployerPaymentAccount(organizationId, employerId, form);
+        const created = await alphaApi.createEmployerPaymentAccount(organizationId, employerId, { ...form, isDefault: true });
         accountId = created.id;
       }
       if (accountId) {
@@ -345,8 +313,8 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
         });
       }
       await reload();
-      resetForm();
-      toast.success(editingId ? "חשבון התשלום עודכן" : "חשבון התשלום נוסף");
+      clearEditor();
+      toast.success(editingId ? "חשבון התשלום עודכן" : "חשבון התשלום נשמר");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שמירת חשבון התשלום נכשלה");
     } finally {
@@ -354,57 +322,29 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     }
   }
 
-  async function setDefault(id: string) {
-    try {
-      await alphaApi.setDefaultEmployerPaymentAccount(organizationId, employerId, id);
-      await reload();
-      toast.success("חשבון ברירת המחדל עודכן");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "עדכון ברירת המחדל נכשל");
-    }
-  }
-
-  async function remove(id: string) {
-    if (!window.confirm("להשבית את חשבון התשלום הזה?")) return;
-    try {
-      await alphaApi.deactivateEmployerPaymentAccount(organizationId, employerId, id);
-      await reload();
-      if (editingId === id) resetForm();
-      toast.success("חשבון התשלום הושבת");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "השבתת החשבון נכשלה");
-    }
-  }
-
-  return <div className="employer-profile-stack">
-    <section className="card">
+  return <div className="employer-profile-stack single-payment-layout">
+    <section className="card profile-payment-card">
       <div className="card-head">
-        <div><h2>חשבונות לתשלומים פנסיוניים</h2><span style={{ color: "var(--muted)" }}>חשבונות הבנק של המעסיק שמהם ממומנות ההפקדות הפנסיוניות. לא קשור לחיוב Alpha.</span></div>
-        {canManage ? <button className="btn btn-secondary" type="button" onClick={resetForm}><Plus size={17} />חשבון חדש</button> : null}
+        <div><h2>חשבון לתשלומים פנסיוניים</h2><span style={{ color: "var(--muted)" }}>חשבון בנק יחיד שממנו מתבצעות ההפקדות הפנסיוניות של המעסיק.</span></div>
+        {account ? <span className="badge badge-blue">חשבון מעסיק</span> : null}
       </div>
-      {accounts.length === 0 ? <div className="empty">עדיין לא הוגדר חשבון תשלום פנסיוני.</div> : <div className="payment-account-grid">
-        {accounts.map((item) => <article className="payment-account-card" key={item.id}>
-          <div className="payment-account-head">
-            <div><b>{item.accountHolderName}</b>{item.isDefault ? <span className="badge badge-blue">ברירת מחדל</span> : null}</div>
-            <span className={item.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{mandateLabel(item.mandate?.status)}</span>
-          </div>
-          <div className="payment-account-details">
-            <span>בנק {item.bankId} · סניף {item.branchId}</span>
-            <span>חשבון {item.maskedAccountNumber}</span>
-            <span>בעל חשבון {item.maskedAccountHolderId}</span>
-            {item.mandate?.externalMandateId ? <span>מזהה הרשאה: {item.mandate.externalMandateId}</span> : null}
-          </div>
-          {canManage ? <div className="payment-account-actions">
-            <button className="btn btn-secondary" type="button" onClick={() => void edit(item)}>עריכה</button>
-            {!item.isDefault ? <button className="btn btn-soft" type="button" onClick={() => void setDefault(item.id)}>הגדר כברירת מחדל</button> : null}
-            <button className="btn btn-danger" type="button" onClick={() => void remove(item.id)}><Trash2 size={15} />השבתה</button>
-          </div> : null}
-        </article>)}
-      </div>}
+      {account ? <article className="payment-account-card payment-account-card-single">
+        <div className="payment-account-head">
+          <div><b>{account.accountHolderName}</b></div>
+          <span className={account.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{mandateLabel(account.mandate?.status)}</span>
+        </div>
+        <div className="payment-account-details payment-account-details-wide">
+          <span><b>בנק וסניף</b><small>בנק {account.bankId} · סניף {account.branchId}</small></span>
+          <span><b>מספר חשבון</b><small>{account.maskedAccountNumber}</small></span>
+          <span><b>בעל החשבון</b><small>{account.maskedAccountHolderId}</small></span>
+          {account.mandate?.externalMandateId ? <span><b>מזהה הרשאה</b><small>{account.mandate.externalMandateId}</small></span> : null}
+        </div>
+        {canManage ? <div className="payment-account-actions"><button className="btn btn-secondary" type="button" onClick={() => void edit()}>עריכת החשבון</button></div> : null}
+      </article> : <div className="empty">עדיין לא הוגדר חשבון לתשלומים פנסיוניים.</div>}
     </section>
 
-    {canManage ? <section className="card">
-      <div className="card-head"><div><h2>{editingId ? "עריכת חשבון" : "הוספת חשבון"}</h2><span style={{ color: "var(--muted)" }}>המספר המלא זמין רק במסך העריכה למשתמש בעל הרשאת ניהול.</span></div></div>
+    {canManage && (!account || editingId) ? <section className="card profile-payment-card">
+      <div className="card-head"><div><h2>{editingId ? "עריכת חשבון" : "הגדרת חשבון"}</h2><span style={{ color: "var(--muted)" }}>למעסיק נשמר חשבון פעיל אחד בלבד.</span></div></div>
       <form className="form" onSubmit={save}>
         <div className="grid two-cols">
           <div className="field">
@@ -435,10 +375,13 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           <div className="field"><label>מזהה הרשאה חיצוני</label><input maxLength={120} value={externalMandateId} onChange={(e) => setExternalMandateId(e.target.value)} /></div>
           <div className="field"><label>הפניה למסמך הרשאה</label><input maxLength={200} value={documentId} onChange={(e) => setDocumentId(e.target.value)} /></div>
         </div>
-        {!editingId ? <label className="check-row"><input type="checkbox" checked={form.isDefault} onChange={(e) => setForm({ ...form, isDefault: e.target.checked })} />הגדר כחשבון ברירת המחדל</label> : null}
-        <div className="form-actions"><button className="btn btn-secondary" type="button" onClick={resetForm}>ניקוי</button><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירה"}</button></div>
+        <div className="form-actions">
+          {editingId ? <button className="btn btn-secondary" type="button" onClick={clearEditor}>ביטול</button> : <span />}
+          <button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירה"}</button>
+        </div>
       </form>
-    </section> : <div className="notice notice-info">לפי ההרשאה שלך ניתן לצפות בחשבונות ובסטטוס ההרשאה בלבד.</div>}
+    </section> : null}
+    {!canManage ? <div className="notice notice-info">החשבון מוצג לקריאה בלבד לפי ההרשאה שלך.</div> : null}
   </div>;
 }
 
@@ -557,17 +500,49 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
     }
   }
 
-  return <section className="card profile-card">
-    <div className="card-head"><div><h2>הגדרות דיווח</h2><span style={{ color: "var(--muted)" }}>ברירות מחדל שישמשו את תהליכי הדיווח של המעסיק.</span></div></div>
+  return <section className="card profile-card reporting-settings-card">
+    <div className="card-head"><div><h2>הגדרות דיווח</h2><span style={{ color: "var(--muted)" }}>ברירות מחדל נוחות לדיווחים חדשים. בכל דיווח ניתן לשנות אותן לפי הצורך.</span></div></div>
     {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הגדרות הדיווח מוצגות לקריאה בלבד לפי ההרשאה שלך.</div> : null}
     <form className="form" onSubmit={save}>
       <div className="grid two-cols">
-        <div className="field"><label>יום ברירת מחדל לתשלום שכר</label><input disabled={!canEdit} type="number" min={1} max={31} value={form.defaultSalaryPaymentDay ?? ""} onChange={(e) => setForm({ ...form, defaultSalaryPaymentDay: e.target.value ? Number(e.target.value) : null })} /></div>
-        <div className="field"><label>קוד אמצעי תשלום ברירת מחדל</label><input disabled={!canEdit} type="number" min={0} value={form.defaultPaymentMethodCode ?? ""} onChange={(e) => setForm({ ...form, defaultPaymentMethodCode: e.target.value ? Number(e.target.value) : null })} /></div>
-        <div className="field"><label>סוג חשבון מעסיק ברירת מחדל</label><input disabled={!canEdit} type="number" min={0} value={form.defaultEmployerAccountType ?? ""} onChange={(e) => setForm({ ...form, defaultEmployerAccountType: e.target.value ? Number(e.target.value) : null })} /></div>
-        <div className="field"><label>סוג חשבון מקבל ברירת מחדל</label><input disabled={!canEdit} type="number" min={0} value={form.defaultReceiverAccountType ?? ""} onChange={(e) => setForm({ ...form, defaultReceiverAccountType: e.target.value ? Number(e.target.value) : null })} /></div>
+        <div className="field">
+          <label>יום תשלום שכר</label>
+          <select disabled={!canEdit} value={form.defaultSalaryPaymentDay ?? ""} onChange={(e) => setForm({ ...form, defaultSalaryPaymentDay: e.target.value ? Number(e.target.value) : null })}>
+            <option value="">לא הוגדר</option>
+            {Array.from({ length: 31 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1} בחודש</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label>אמצעי תשלום</label>
+          <select disabled={!canEdit} value={form.defaultPaymentMethodCode ?? ""} onChange={(e) => setForm({ ...form, defaultPaymentMethodCode: e.target.value ? Number(e.target.value) : null })}>
+            <option value="">לא הוגדר</option>
+            <option value={1}>העברה בנקאית</option>
+            <option value={3}>כרטיס אשראי</option>
+            <option value={4}>שובר תשלום</option>
+            <option value={5}>סליקה באמצעות מסלקה פנסיונית</option>
+            <option value={6}>הרשאה לחיוב חשבון / הוראת קבע</option>
+            <option value={7}>סליקה באמצעות מס״ב</option>
+            <option value={9}>הרשאה לחיוב חשבון לפי קובץ דיווח</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>סוג חשבון המעסיק</label>
+          <select disabled={!canEdit} value={form.defaultEmployerAccountType ?? ""} onChange={(e) => setForm({ ...form, defaultEmployerAccountType: e.target.value ? Number(e.target.value) : null })}>
+            <option value="">לא הוגדר</option>
+            <option value={1}>חשבון מעסיק</option>
+            <option value={2}>חשבון נאמנות</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>סוג חשבון המקבל</label>
+          <select disabled={!canEdit} value={form.defaultReceiverAccountType ?? ""} onChange={(e) => setForm({ ...form, defaultReceiverAccountType: e.target.value ? Number(e.target.value) : null })}>
+            <option value="">לא הוגדר</option>
+            <option value={1}>חשבון יצרן</option>
+            <option value={2}>חשבון נאמנות</option>
+          </select>
+        </div>
       </div>
-      <div className="field"><label>הערות תפעוליות לדיווח</label><textarea disabled={!canEdit} maxLength={500} value={form.reportingNotes} onChange={(e) => setForm({ ...form, reportingNotes: e.target.value })} /></div>
+      <div className="field"><label>הערות תפעוליות לדיווח</label><textarea disabled={!canEdit} maxLength={500} value={form.reportingNotes} onChange={(e) => setForm({ ...form, reportingNotes: e.target.value })} placeholder="הערות פנימיות שיופיעו כברירת מחדל בתהליך הדיווח" /></div>
       {canEdit ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת הגדרות"}</button></div> : null}
     </form>
   </section>;
