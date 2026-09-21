@@ -8,6 +8,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
+import { Tooltip } from "@/components/tooltip";
 
 type ControlSize = "default" | "compact";
 
@@ -38,13 +39,15 @@ export function UiChoiceCard({
   compact = false,
   children,
   className,
+  tooltip,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   selected?: boolean;
   compact?: boolean;
   children: ReactNode;
+  tooltip?: string;
 }) {
-  return <button
+  const button = <button
     type="button"
     className={[
       "choice-card",
@@ -54,6 +57,8 @@ export function UiChoiceCard({
     ].filter(Boolean).join(" ")}
     {...props}
   >{children}</button>;
+
+  return tooltip ? <Tooltip content={tooltip} label={tooltip}>{button}</Tooltip> : button;
 }
 
 export function UiCard({
