@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CreditCard, ExternalLink, Landmark, RefreshCw, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { alphaApi } from "@/lib/api";
-import { UiInput } from "@/components/ui-controls";
+import { UiChoiceCard, UiInput } from "@/components/ui-controls";
 import type {
   AlphaBillingAccount,
   AlphaBillingAccountInput,
@@ -205,12 +205,12 @@ export function AlphaBillingAccountForm({
         <div className="field">
           <label>אמצעי תשלום</label>
           <div className="grid two-cols billing-method-choices">
-            <button type="button" disabled={!canManage} className={`choice-card billing-method-card${details.paymentMethodType === 1 ? " selected" : ""}`} onClick={() => setDetails({ ...details, paymentMethodType: 1 })}>
+            <UiChoiceCard disabled={!canManage} className="billing-method-card" selected={details.paymentMethodType === 1} onClick={() => setDetails({ ...details, paymentMethodType: 1 })}>
               <CreditCard size={24} /><b>כרטיס אשראי</b><p>חיבור מאובטח דרך ספק הסליקה. ALPHA לא שומרת מספר כרטיס מלא או CVV.</p>
-            </button>
-            <button type="button" disabled={!canManage} className={`choice-card billing-method-card${details.paymentMethodType === 2 ? " selected" : ""}`} onClick={() => setDetails({ ...details, paymentMethodType: 2 })}>
+            </UiChoiceCard>
+            <UiChoiceCard disabled={!canManage} className="billing-method-card" selected={details.paymentMethodType === 2} onClick={() => setDetails({ ...details, paymentMethodType: 2 })}>
               <Landmark size={24} /><b>הרשאה לחיוב חשבון</b><p>חיוב באמצעות הרשאה בנקאית לאחר חיבור תשתית ה־Bank Debit.</p>
-            </button>
+            </UiChoiceCard>
           </div>
 
           <div className={`billing-method-next ${details.paymentMethodType === 1 ? "card-method" : "bank-method"}`}>
