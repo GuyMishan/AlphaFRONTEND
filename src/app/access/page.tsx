@@ -396,8 +396,8 @@ export default function AccessPage() {
       setInviteOpen(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "שליחת ההזמנה נכשלה";
-      setError(message === "existing_identity_or_phone_not_supported_yet"
-        ? "כבר קיים במערכת משתמש עם תעודת הזהות או מספר הפלאפון האלה. כרגע לא ניתן להוסיף משתמש קיים לארגון; נטפל בתרחיש הזה בהמשך."
+      setError(message === "existing_identity_phone_pair_not_supported_yet"
+        ? "כבר קיים במערכת משתמש עם אותו שילוב של תעודת זהות + מספר פלאפון. כרגע לא ניתן להוסיף משתמש קיים לארגון; נטפל בתרחיש הזה בהמשך."
         : message === "invitation_already_pending" ? "כבר קיימת הזמנה פעילה לאימייל הזה." : message);
     } finally {
       setInviting(false);
