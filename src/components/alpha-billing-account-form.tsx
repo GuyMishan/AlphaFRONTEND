@@ -161,14 +161,14 @@ export function AlphaBillingAccountForm({
   const cardConnected = account.paymentMethodType === 1 && Boolean(account.providerPaymentMethodId);
   const bankConnected = account.paymentMethodType === 2 && Boolean(account.bankDebitMandateReference);
 
-  if (loading) return <div className="empty">טוען Billing Account...</div>;
+  if (loading) return <div className="empty">טוען פרטי חיוב...</div>;
 
   return <div className="employer-profile-stack">
-    <section className="card profile-card">
+    <section className="card profile-card profile-payment-card">
       <div className="card-head">
         <div>
-          <h2>Alpha Billing Account</h2>
-          <span style={{ color: "var(--muted)" }}>פרטי החיוב עבור השימוש ב־Alpha. חשבון זה נפרד מחשבון התשלומים הפנסיוניים.</span>
+          <h2>חשבון לחיוב ALPHA</h2>
+          <span style={{ color: "var(--muted)" }}>פרטי החיוב עבור השימוש ב־ALPHA. חשבון זה נפרד מחשבון התשלומים הפנסיוניים.</span>
         </div>
         <span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>
           {billingStatusLabel(account.paymentMethodStatus)}
@@ -207,12 +207,12 @@ export function AlphaBillingAccountForm({
               : "Bank Debit עדיין לא חובר לספק התשלום."}
         </div> : null}
 
-        {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת Billing Account"}</button></div> : null}
+        {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת פרטי חיוב"}</button></div> : null}
       </form>
     </section>
 
-    {account.configured ? <section className="card profile-card">
-      <div className="card-head"><div><h2>ספק סליקה</h2><span style={{ color: "var(--muted)" }}>PayPlus · tokenization מאובטח, ללא שמירת מספר כרטיס או CVV ב־Alpha.</span></div><span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>{billingStatusLabel(account.paymentMethodStatus)}</span></div>
+    {account.configured ? <section className="card profile-card profile-payment-card">
+      <div className="card-head"><div><h2>אמצעי תשלום</h2><span style={{ color: "var(--muted)" }}>החיבור לאמצעי התשלום מתבצע בצורה מאובטחת, ללא שמירת מספר כרטיס מלא או CVV ב־ALPHA.</span></div><span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>{billingStatusLabel(account.paymentMethodStatus)}</span></div>
       {account.paymentMethodType === 1 ? <div className="form-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
         {canManage ? <button className="btn btn-primary" type="button" disabled={connecting} onClick={() => void connectPaymentMethod()}><ExternalLink size={17} />{connecting ? "פותח..." : cardConnected ? "החלפת כרטיס" : "חיבור כרטיס מאובטח"}</button> : null}
         {cardConnected ? <button className="btn btn-secondary" type="button" disabled={syncing} onClick={() => void syncPaymentMethod()}><RefreshCw size={17} />{syncing ? "מסנכרן..." : "רענון סטטוס"}</button> : null}
@@ -220,7 +220,7 @@ export function AlphaBillingAccountForm({
       </div> : <div className="notice notice-info">PayPlus תומך בתשתיות Bank Debit, אך חיבור mandate אוטומטי דורש הגדרת MASAV/מסוף ייעודית אצל הספק. Alpha לא אוספת כאן פרטי חשבון בנק של אמצעי החיוב.</div>}
     </section> : null}
 
-    <div className="notice notice-info">החיוב מתבצע server-side דרך PayPlus באמצעות token. Alpha אינה מקבלת ואינה שומרת מספר כרטיס מלא או CVV.</div>
+    <div className="notice notice-info">ALPHA אינה מקבלת ואינה שומרת מספר כרטיס מלא או CVV.</div>
   </div>;
 }
 
