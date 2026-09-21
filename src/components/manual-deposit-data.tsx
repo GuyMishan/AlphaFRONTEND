@@ -1,6 +1,7 @@
 "use client";
 
 import { UiInput } from "@/components/ui-controls";
+import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, X } from "lucide-react";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
@@ -269,7 +270,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       <button className="payment-modal-close" onClick={onClose} aria-label="סגירה"><X size={20} /></button>
       <div className="payment-modal-title">פרטי תשלום</div>
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
-      {error ? <div className="notice notice-error payment-error" title={error}>{error}</div> : null}
+      {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מבטלים תנועה ללא החזר למעסיק, ולכן אין להזין אמצעי תשלום או פרטי החזר.</div> : null}
       <div className="payment-layout">
