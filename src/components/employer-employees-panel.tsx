@@ -70,12 +70,12 @@ export function EmployerEmployeesPanel({
           { key: "status", label: "סטטוס" },
         ]}
         renderCells={(employee) => [
-          <Link className="profile-link" href={`/employees/${employee.id}?organizationId=${organizationId}&employerId=${employer.id}`}><b>{employee.firstName} {employee.lastName}</b></Link>,
+          <Link key="name" className="profile-link" href={`/employees/${employee.id}?organizationId=${organizationId}&employerId=${employer.id}`}><b>{employee.firstName} {employee.lastName}</b></Link>,
           employee.nationalId,
           employee.employeeNumber,
           employee.startDate,
           employee.endDate ?? "—",
-          <span className={employee.status === 1 ? "badge badge-green" : "badge badge-gray"}>{employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"}</span>,
+          <span key="status" className={employee.status === 1 ? "badge badge-green" : "badge badge-gray"}>{employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"}</span>,
         ]}
       /> : <div className="empty"><Users size={35} /><div>לא נמצאו עובדים למעסיק הזה.</div></div>}
     </section>
