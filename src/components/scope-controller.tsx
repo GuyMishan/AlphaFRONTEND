@@ -1,5 +1,6 @@
 "use client";
 
+import { UiSelect } from "@/components/ui-controls";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Building2, UserRound } from "lucide-react";
@@ -227,25 +228,25 @@ export function ScopeController() {
     <div className="scope-selects">
       {showOrganizationSelector ? <label>
         <span>ארגון</span>
-        <div><Building2 size={16} /><select value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>
+        <div><Building2 size={16} /><UiSelect controlSize="compact" value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>
           {relevantOrganizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-        </select></div>
+        </UiSelect></div>
       </label> : null}
 
       {showEmployerSelector ? <label>
         <span>מעסיק</span>
-        <div><Building2 size={16} /><select value={employerId} disabled={loading} onChange={(event) => void changeEmployer(event.target.value)}>
+        <div><Building2 size={16} /><UiSelect controlSize="compact" value={employerId} disabled={loading} onChange={(event) => void changeEmployer(event.target.value)}>
           {selectedOrganizationHasScope
             ? employerOptions.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)
             : allEmployers.map((item) => <option key={item.employer.id} value={item.employer.id}>{item.employer.legalName}{scope.organizations.length > 1 ? ` · ${item.organization.name}` : ""}</option>)}
-        </select></div>
+        </UiSelect></div>
       </label> : null}
 
       {showEmployeeSelector ? <label>
         <span>עובד</span>
-        <div><UserRound size={16} /><select value={employeeId} disabled={loading || !employerId} onChange={(event) => changeEmployee(event.target.value)}>
+        <div><UserRound size={16} /><UiSelect controlSize="compact" value={employeeId} disabled={loading || !employerId} onChange={(event) => changeEmployee(event.target.value)}>
           {employees.map((item) => <option key={item.id} value={item.id}>{item.firstName} {item.lastName}</option>)}
-        </select></div>
+        </UiSelect></div>
       </label> : null}
     </div>
   </div>;
