@@ -793,7 +793,7 @@ td { font-size: 14px; }
 }
 
 
-/* Reusable inline info tooltip */
+/* Shared tooltip */
 .field-label-with-info {
   display: inline-flex;
   align-items: center;
@@ -805,20 +805,44 @@ td { font-size: 14px; }
   position: relative;
   display: inline-flex;
   align-items: center;
+  max-width: 100%;
+  outline: none;
+}
+
+.tooltip-icon {
   justify-content: center;
   width: 17px;
   height: 17px;
   border-radius: 50%;
   color: var(--muted);
   cursor: help;
-  outline: none;
   flex: 0 0 auto;
 }
 
-.tooltip:hover,
-.tooltip:focus-visible {
+.tooltip-icon:hover,
+.tooltip-icon:focus-visible {
   color: var(--blue);
   background: var(--blue-soft);
+}
+
+.tooltip-fill {
+  display: flex;
+  width: 100%;
+}
+
+.tooltip-fill > .tooltip-trigger {
+  width: 100%;
+}
+
+.tooltip-fill .choice-card {
+  width: 100%;
+}
+
+.tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
 }
 
 .tooltip-bubble {
@@ -844,8 +868,9 @@ td { font-size: 14px; }
   transition: opacity .12s ease, visibility .12s ease;
 }
 
-.tooltip:hover .tooltip-bubble,
-.tooltip:focus-visible .tooltip-bubble {
+.tooltip:hover > .tooltip-bubble,
+.tooltip:focus-visible > .tooltip-bubble,
+.tooltip:focus-within > .tooltip-bubble {
   opacity: 1;
   visibility: visible;
 }
@@ -903,9 +928,3 @@ td { font-size: 14px; }
   flex-wrap: wrap;
 }
 
-
-.tooltip-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
