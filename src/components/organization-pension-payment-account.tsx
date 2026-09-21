@@ -47,6 +47,7 @@ export function OrganizationPensionPaymentAccount({
     try {
       const result = await alphaApi.organizationPaymentAccount(organizationId);
       setAccount(result.account);
+      setEditing(!result.account && canManage);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "טעינת חשבון התשלום הארגוני נכשלה");
     } finally {
