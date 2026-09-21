@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { alphaApi } from "@/lib/api";
+import { UiInput, UiSelect } from "@/components/ui-controls";
 import type {
-import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
   BankBranchOption,
   BankDebitMandateStatus,
   BankOption,
