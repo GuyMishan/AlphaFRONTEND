@@ -9,7 +9,7 @@ import { alphaApi } from "@/lib/api";
 import type { Employer, EmployerInput } from "@/lib/types";
 import { isValidEmail } from "@/lib/validation";
 import { Field, type FieldErrors } from "@/components/form-feedback";
-import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
+import { UiInput } from "@/components/ui-controls";
 
 export function EmployerForm({
   organizationId,
