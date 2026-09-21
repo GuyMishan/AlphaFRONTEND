@@ -70,6 +70,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -89,6 +90,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
 
   async function save() {
     if (!editable || !employee) return;
+    setValidationAttempted(true);
     const normalized = normalizePensionEditorProducts(monthlySalary, products);
     const validationError = normalized.error || validatePensionEditorProducts(normalized.products, "employee");
     if (validationError) { setError(validationError); return; }
@@ -142,8 +144,9 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
       monthlySalary={monthlySalary}
       products={products}
       editable={editable}
-      onMonthlySalaryChange={(value) => { setMonthlySalary(value); setSaved(false); setError(""); }}
-      onProductsChange={(value) => { setProducts(value); setSaved(false); setError(""); }}
+      showAllocationError={validationAttempted}
+      onMonthlySalaryChange={(value) => { setMonthlySalary(value); setSaved(false); setError(""); setValidationAttempted(false); }}
+      onProductsChange={(value) => { setProducts(value); setSaved(false); setError(""); setValidationAttempted(false); }}
     />
   </div>;
 }
