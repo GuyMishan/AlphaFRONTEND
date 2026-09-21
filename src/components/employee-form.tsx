@@ -156,16 +156,10 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
       <div className="grid employee-details-grid">
         <Field label="שם פרטי *" error={errors.firstName}><UiInput aria-invalid={Boolean(errors.firstName)} required minLength={2} maxLength={100} disabled={!editable} value={form.firstName} onChange={(event) => update("firstName", event.target.value)} /></Field>
         <Field label="שם משפחה *" error={errors.lastName}><UiInput aria-invalid={Boolean(errors.lastName)} required minLength={2} maxLength={100} disabled={!editable} value={form.lastName} onChange={(event) => update("lastName", event.target.value)} /></Field>
-      </div>
-      <div className="grid employee-details-grid">
         <Field label="תעודת זהות *" error={errors.nationalId}><UiInput aria-invalid={Boolean(errors.nationalId)} required disabled={!editable} inputMode="numeric" maxLength={9} value={form.nationalId} onChange={(event) => update("nationalId", event.target.value.replace(/\D/g, "").slice(0, 9))} /></Field>
         <Field label="מספר עובד אצל המעסיק *" error={errors.employeeNumber}><UiInput aria-invalid={Boolean(errors.employeeNumber)} required maxLength={50} disabled={!editable} value={form.employeeNumber} onChange={(event) => update("employeeNumber", event.target.value)} /></Field>
-      </div>
-      <div className="grid employee-details-grid">
         <Field label="תאריך תחילת עבודה *" error={errors.startDate}><UiInput aria-invalid={Boolean(errors.startDate)} required disabled={!editable} type="date" value={form.startDate} onChange={(event) => update("startDate", event.target.value)} /></Field>
         <Field label="שכר חודשי" error={errors.monthlySalary}><UiInput aria-invalid={Boolean(errors.monthlySalary)} disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={form.monthlySalary || ""} onChange={(event) => update("monthlySalary", Number(event.target.value))} /></Field>
-      </div>
-      <div className="grid employee-details-grid">
         <Field label="תאריך לידה *" error={errors.birthDate}><UiInput disabled={!editable} required type="date" value={form.birthDate ?? ""} onChange={(event) => update("birthDate", event.target.value || null)} /></Field>
         <Field label="מין *" error={errors.gender}><EmployerInterfaceOptionSelect category="gender" value={form.gender ?? null} disabled={!editable} required onChange={(value) => update("gender", value)} /></Field>
         <Field label="אימייל *" error={errors.email}><UiInput disabled={!editable} required type="email" maxLength={50} value={form.email} onChange={(event) => update("email", event.target.value)} /></Field>
@@ -183,8 +177,8 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         <Field label="מספר דירה *" error={errors.apartment}><UiInput disabled={!editable} required maxLength={20} value={form.apartment} onChange={(event) => update("apartment", event.target.value)} /></Field>
         <Field label="מיקוד *" error={errors.postalCode}><UiInput disabled={!editable} required inputMode="numeric" maxLength={10} value={form.postalCode} onChange={(event) => update("postalCode", event.target.value.replace(/\D/g, "").slice(0, 10))} /></Field>
         <Field label="תא דואר *" error={errors.postOfficeBox}><UiInput disabled={!editable} required maxLength={20} value={form.postOfficeBox} onChange={(event) => update("postOfficeBox", event.target.value)} /></Field>
+        {employee ? <div className="field"><label>סטטוס</label><UiInput disabled value={employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"} /></div> : null}
       </div>
-      {employee ? <div className="employee-details-grid-status"><div className="field"><label>סטטוס</label><UiInput disabled value={employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"} /></div></div> : null}
       <div className="form-actions">{onCancel ? <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={saving}>ביטול</button> : <Link className="btn btn-secondary" href="/employees">חזרה</Link>}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : submitLabel ?? (employee ? "שמירת שינויים" : "הקמת עובד")}</button> : null}</div>
     </form>
   </>;
