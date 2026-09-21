@@ -57,6 +57,7 @@ import type {
   PensionProductType,
   Plan,
   PlatformSubscription,
+  PlatformUser,
   SubscriptionSummary,
   UserCandidate,
 } from "./types";
@@ -147,6 +148,13 @@ export const alphaApi = {
     request<PlatformSubscription[]>("/api/platform/subscriptions/"),
   changePlatformSubscriptionPlan: (organizationId: string, planId: string): Promise<SubscriptionSummary> =>
     request<SubscriptionSummary>(`/api/platform/subscriptions/${organizationId}/plan`, { method: "PUT", body: JSON.stringify({ planId }) }),
+  changePlatformOrganizationStatus: (organizationId: string, status: number) =>
+    request<void>(`/api/platform/subscriptions/${organizationId}/organization-status`, { method: "PUT", body: JSON.stringify({ status }) }),
+  platformUsers: (): Promise<PlatformUser[]> => request<PlatformUser[]>("/api/platform/users"),
+  createPlatformUser: (payload: { email: string; displayName: string; nationalId: string; phone: string }): Promise<PlatformUser> =>
+    request<PlatformUser>("/api/platform/users", { method: "POST", body: JSON.stringify(payload) }),
+  updatePlatformUser: (userId: string, payload: { email: string; displayName: string; isActive: boolean; isPlatformAdmin: boolean }) =>
+    request<void>(`/api/platform/users/${userId}`, { method: "PUT", body: JSON.stringify(payload) }),
   organizations: (): Promise<Organization[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoOrganizations)
     : request<Organization[]>("/api/organizations/"),
@@ -319,7 +327,7 @@ export const alphaApi = {
     getSession()?.mode === "demo" ? Promise.resolve([]) : request<UserCandidate[]>(`/api/organizations/${organizationId}/access/user-candidates${qs({ search, take })}`),
   addAccessUser: (organizationId: string, payload: { userId: string; role: OrganizationRole; employerAccessMode: EmployerAccessMode }) =>
     getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users`, { method: "POST", body: JSON.stringify(payload) }),
-  updateAccessUser: (organizationId: string, userId: string, payload: { role: OrganizationRole; employerAccessMode: EmployerAccessMode }) =>
+  updateAccessUser: (organizationId: string, userId: string, payload: { role: OrganizationRole; employerAccessMode: EmployerAccessMode; canCreateEmployer: boolean; canEditEmployer: boolean; canCreateEmployee: boolean; canEditEmployee: boolean }) =>
     getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}`, { method: "PUT", body: JSON.stringify(payload) }),
   removeAccessUser: (organizationId: string, userId: string) =>
     getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}`, { method: "DELETE" }),
