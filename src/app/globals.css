@@ -957,3 +957,95 @@ td { font-size: 14px; }
   .admin-interfaces-table { min-width: 700px; }
   .admin-subscriptions-table { min-width: 820px; }
 }
+
+
+/* Shared user editor */
+.table-entity-link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--blue);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: right;
+}
+.table-entity-link:hover { text-decoration: underline; }
+
+.user-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3400;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(16,38,64,.58);
+  backdrop-filter: blur(4px);
+}
+.user-modal {
+  width: min(980px, 96vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 30px 90px rgba(16,38,64,.28);
+  overflow: hidden;
+}
+.user-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--line);
+}
+.user-modal-head h2 { margin: 0; font-size: 23px; }
+.user-modal-head p { margin: 5px 0 0; color: var(--muted); }
+.user-modal-close {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.user-modal-body { overflow-y: auto; padding: 22px; }
+.user-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 22px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 96%, var(--bg));
+}
+.user-modal-actions-spacer { flex: 1; }
+.user-editor-grid,
+.user-permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.user-permissions-section,
+.user-employer-access-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.user-permissions-head h3,
+.user-employer-access-section h3 { margin: 0 0 5px; }
+.user-permissions-head p { margin: 0 0 14px; color: var(--muted); line-height: 1.5; }
+
+@media (max-width: 700px) {
+  .user-modal-backdrop { padding: 10px; }
+  .user-modal { width: 100%; max-height: calc(100vh - 20px); }
+  .user-editor-grid,
+  .user-permissions-grid { grid-template-columns: 1fr; }
+  .user-modal-actions { flex-wrap: wrap; }
+}
