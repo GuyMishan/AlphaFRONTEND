@@ -1,5 +1,6 @@
 "use client";
 
+import { UiInput } from "@/components/ui-controls";
 import { useState } from "react";
 import { FileCode2, UploadCloud, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -95,7 +96,7 @@ export function EmployerInterfaceXmlIntake({
 
     <div className="field">
       <label htmlFor="employer-interface-xml">קובץ ממשק מעסיקים</label>
-      <input
+      <UiInput
         id="employer-interface-xml"
         type="file"
         accept=".xml,.dat,.tst,application/xml,text/xml"
