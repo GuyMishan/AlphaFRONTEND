@@ -171,8 +171,8 @@ export function AlphaBillingAccountForm({
 
   if (loading) return <div className="empty">טוען פרטי חיוב...</div>;
 
-  return <div className={embedded ? "billing-inline-form" : "employer-profile-stack"}>
-    <section className={embedded ? "billing-inline-panel" : "card profile-card profile-payment-card"}>
+  return <div className={embedded ? "billing-inline-form" : "employer-profile-stack organization-billing-shell"}>
+    <section className={embedded ? "billing-inline-panel" : "card profile-card profile-payment-card payment-horizontal-shell"}>
       <div className="card-head">
         <div>
           <h2>חשבון לחיוב ALPHA</h2>
@@ -195,7 +195,7 @@ export function AlphaBillingAccountForm({
       {!canManage ? <div className="notice notice-info" style={{ marginBottom: 18 }}>החשבון מוצג לקריאה בלבד לפי ההרשאה שלך.</div> : null}
 
       <form className="form" onSubmit={saveDetails}>
-        <div className="grid two-cols">
+        <div className="grid compact-payment-grid">
           <div className="field"><label>שם לחיוב</label><UiInput disabled={!canManage} maxLength={200} value={details.billingName} onChange={(e) => setDetails({ ...details, billingName: e.target.value })} /></div>
           <div className="field"><label>ח.פ. / עוסק</label><UiInput disabled={!canManage} maxLength={30} value={details.taxId} onChange={(e) => setDetails({ ...details, taxId: e.target.value })} /></div>
           <div className="field"><label>אימייל לחשבוניות</label><UiInput disabled={!canManage} type="email" maxLength={320} value={details.invoiceEmail} onChange={(e) => setDetails({ ...details, invoiceEmail: e.target.value })} /></div>
@@ -242,7 +242,7 @@ export function AlphaBillingAccountForm({
       </form>
     </section>
 
-    {account.configured ? <section className={embedded ? "billing-inline-secondary" : "card profile-card profile-payment-card"}>
+    {account.configured ? <section className={embedded ? "billing-inline-secondary" : "card profile-card profile-payment-card payment-horizontal-shell"}>
       <div className="card-head"><div><h2>אמצעי תשלום</h2><span style={{ color: "var(--muted)" }}>החיבור לאמצעי התשלום מתבצע בצורה מאובטחת, ללא שמירת מספר כרטיס מלא או CVV ב־ALPHA.</span></div><span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>{billingStatusLabel(account.paymentMethodStatus)}</span></div>
       {details.paymentMethodType === 1 ? <div className="form-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
         {canManage ? <button className="btn btn-primary" type="button" disabled={connecting} onClick={() => void connectPaymentMethod()}><ExternalLink size={17} />{connecting ? "פותח..." : cardConnected ? "החלפת כרטיס" : "חיבור כרטיס מאובטח"}</button> : null}
