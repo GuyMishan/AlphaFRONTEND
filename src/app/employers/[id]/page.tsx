@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { Building2, CreditCard, FileSliders, Save, Users, WalletCards } from "lucide-react";
+import { Building2, CreditCard, FileSliders, Save, Settings2, Users, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
 import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
 import { EmployerEmployeesPanel } from "@/components/employer-employees-panel";
+import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
 import type {
   BankDebitMandateStatus,
@@ -21,15 +22,17 @@ import type {
   EmployerPaymentAccount,
   EmployerPaymentAccountInput,
   EmployerProfileCenterSettings,
+  EntitlementSnapshot,
   PensionPaymentResolution,
+  SubscriptionSummary,
 } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
 import { UiChoiceCard, UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
 import { Tooltip } from "@/components/tooltip";
 
-type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting";
+type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting" | "subscription";
 
-const tabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
+const baseTabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
   { key: "general", label: "פרטים כלליים", icon: Building2 },
   { key: "employees", label: "עובדים", icon: Users },
   { key: "pension-payment", label: "תשלום פנסיוני", icon: WalletCards },
@@ -74,12 +77,17 @@ export default function EmployerProfilePage() {
   const [tab, setTab] = useState<TabKey>("general");
   useEffect(() => {
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
-    if (requestedTab && tabs.some((item) => item.key === requestedTab)) setTab(requestedTab as TabKey);
+    if (requestedTab && [...baseTabs, { key: "subscription" as TabKey, label: "מנוי", icon: Settings2 }].some((item) => item.key === requestedTab)) {
+      setTab(requestedTab as TabKey);
+    }
   }, []);
   const [employer, setEmployer] = useState<Employer>();
   const [capabilities, setCapabilities] = useState<EmployerCapabilities>(EMPTY_CAPABILITIES);
   const [settings, setSettings] = useState<EmployerProfileCenterSettings>(EMPTY_SETTINGS);
   const [accounts, setAccounts] = useState<EmployerPaymentAccount[]>([]);
+  const [singleEmployerUser, setSingleEmployerUser] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
+  const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -98,6 +106,28 @@ export default function EmployerProfilePage() {
       setCapabilities(capabilityRow);
       setSettings(settingsRow);
       setAccounts(accountRows);
+
+      const scope = await alphaApi.scope();
+      const accessibleEmployers = scope.organizations.flatMap((organization) =>
+        organization.employers.map((item) => ({ organizationId: organization.id, employerId: item.id }))
+      );
+      const isSingleEmployerUser = accessibleEmployers.length === 1
+        && accessibleEmployers[0].organizationId === organizationId
+        && accessibleEmployers[0].employerId === id;
+      setSingleEmployerUser(isSingleEmployerUser);
+
+      if (isSingleEmployerUser) {
+        const [subscriptionRow, entitlementRow] = await Promise.all([
+          alphaApi.subscription(organizationId),
+          alphaApi.entitlements(organizationId),
+        ]);
+        setSubscription(subscriptionRow);
+        setEntitlements(entitlementRow);
+      } else {
+        setSubscription(null);
+        setEntitlements(null);
+        if (tab === "subscription") setTab("general");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת פרופיל המעסיק נכשלה");
     } finally {
@@ -118,7 +148,14 @@ export default function EmployerProfilePage() {
       </div>
     </div>
 
-    <AppTabs items={tabs} activeKey={tab} onChange={setTab} ariaLabel="פרופיל מעסיק" />
+    <AppTabs
+      items={singleEmployerUser
+        ? [...baseTabs, { key: "subscription" as TabKey, label: "מנוי", icon: Settings2 }]
+        : baseTabs}
+      activeKey={tab}
+      onChange={setTab}
+      ariaLabel="פרופיל מעסיק"
+    />
 
     {tab === "general" ? <GeneralTab
       organizationId={organizationId}
@@ -159,7 +196,32 @@ export default function EmployerProfilePage() {
       value={settings.reporting}
       onSaved={(reporting) => setSettings((current) => ({ ...current, reporting }))}
     /> : null}
+
+    {tab === "subscription" && singleEmployerUser && subscription && entitlements
+      ? <EmployerSubscriptionTab subscription={subscription} entitlements={entitlements} />
+      : null}
   </AppShell>;
+}
+
+function EmployerSubscriptionTab({ subscription, entitlements }: { subscription: SubscriptionSummary; entitlements: EntitlementSnapshot }) {
+  return <div className="employer-profile-stack">
+    <section className="card profile-card">
+      <div className="card-head">
+        <div>
+          <h2>מסלול {subscription.name}</h2>
+          <span style={{ color: "var(--muted)" }}>המנוי משויך לארגון של המעסיק ומוצג כאן למשתמש של מעסיק יחיד.</span>
+        </div>
+        <span className={subscription.isActive ? "badge badge-green" : "badge badge-gray"}>
+          {subscription.isActive ? "פעיל" : "לא פעיל"}
+        </span>
+      </div>
+      <div className="grid stats">
+        <PlanUsage label="מעסיקים" usage={entitlements.employers} />
+        <PlanUsage label="עובדים פעילים" usage={entitlements.activeEmployees} />
+        <PlanUsage label="משתמשים" usage={entitlements.users} />
+      </div>
+    </section>
+  </div>;
 }
 
 function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved }: {
