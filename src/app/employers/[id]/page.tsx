@@ -326,7 +326,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     try {
       const value = await alphaApi.employerPaymentResolution(organizationId, employerId);
       setResolution(value);
-      setSelectedMode(pensionPayment.modeOverridden ? pensionPayment.mode : value.employerAccount ? 1 : null);
+      setSelectedMode(pensionPayment.modeOverridden ? pensionPayment.mode : null);
       setAccounts(value.account ? [value.account] : []);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "טעינת חשבון התשלום נכשלה");
@@ -560,7 +560,7 @@ function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmpl
     try {
       const value = await alphaApi.employerBillingResolution(organizationId, employer.id);
       setResolution(value);
-      setSelectedMode(billing.modeOverridden ? billing.mode : value.employerAccount.configured ? 1 : null);
+      setSelectedMode(billing.modeOverridden ? billing.mode : null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "טעינת הגדרת החיוב נכשלה");
     } finally {
