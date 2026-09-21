@@ -158,12 +158,13 @@ function maxPercentage(productType: PensionProductType, party: "employer" | "emp
   return 100;
 }
 
-export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, onMonthlySalaryChange, onProductsChange }: {
+export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange }: {
   context: "employee" | "report";
   month?: string;
   monthlySalary: number;
   products: PensionEditorProduct[];
   editable?: boolean;
+  showAllocationError?: boolean;
   onMonthlySalaryChange: (value: number) => void;
   onProductsChange: (products: PensionEditorProduct[]) => void;
 }) {
@@ -188,14 +189,14 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
       <div className="field"><label>{context === "report" ? "שכר חודשי של העובד בדיווח *" : "שכר חודשי של העובד *"}</label><UiInput disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={monthlySalary || ""} onChange={(e) => onMonthlySalaryChange(Number(e.target.value))} /></div>
       <div className="field"><label>סה״כ שכר מבוטח מחושב</label><UiInput disabled value={`₪${Array.from(allocation.resolved.values()).reduce((sum, value) => sum + value, 0).toLocaleString("he-IL")}`} /></div>
     </div>
-    {allocation.error ? <div className="notice notice-error" style={{ marginBottom: 12 }}>{allocation.error}</div> : null}
+    {showAllocationError && allocation.error ? <div className="notice notice-error" style={{ marginBottom: 12 }}>{allocation.error}</div> : null}
     <div className="product-editor-list">{products.map((product, index) => {
       const allocationType = Number(product.salaryAllocationType ?? 1) as SalaryAllocationType;
       const section14Code = inferPensionSection14Code(product);
       const section14DateRequired = section14Code === 2 || section14Code === 4;
       const insuredSalary = allocation.resolved.get(index) ?? 0;
       return <section className="report-product-card" key={index} style={{ opacity: product.isActive === false ? .72 : 1 }}>
-        <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <span className="badge badge-green"><CircleCheck size={13} />פעיל</span>}{editable ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
+        <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <span className="status-pill-active"><CircleCheck size={13} /><span>פעיל</span></span>}{editable ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
         <div className="grid report-product-fields">
           {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
           <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required onChange={(value) => updateProduct(index, { productType: Number(value) as PensionProductType, fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "" })} /></div>
