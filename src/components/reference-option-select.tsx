@@ -1,5 +1,6 @@
 "use client";
 
+import { UiSelect } from "@/components/ui-controls";
 import { useEffect, useMemo, useState } from "react";
 import { referenceOptionsApi, type ReferenceOption } from "@/lib/reference-options-api";
 
@@ -33,9 +34,9 @@ export function ReferenceOptionSelect({ category, scope = "all", value, onChange
   const normalized = value == null ? "" : String(value);
   const hasCurrent = useMemo(() => options.some((item) => item.value === normalized), [options, normalized]);
 
-  return <select className={className} disabled={disabled || loading || Boolean(error)} required={required} value={normalized} onChange={(event) => onChange(event.target.value)}>
+  return <UiSelect className={className} disabled={disabled || loading || Boolean(error)} required={required} value={normalized} onChange={(event) => onChange(event.target.value)}>
     <option value="">{error ? "שגיאה בטעינת אפשרויות" : loading ? "טוען אפשרויות..." : placeholder}</option>
     {!hasCurrent && normalized ? <option value={normalized}>{normalized}</option> : null}
     {options.map((option) => <option key={`${option.scope}:${option.value}`} value={option.value}>{option.label}</option>)}
-  </select>;
+  </UiSelect>;
 }
