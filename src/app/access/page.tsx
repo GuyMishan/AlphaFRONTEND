@@ -11,7 +11,7 @@ import { getOrganizationSelection } from "@/lib/session";
 import { openUpgradeDialog } from "@/lib/upgrade";
 import { referenceOptionsApi, type ReferenceOption } from "@/lib/reference-options-api";
 import type { AccessEmployer, AccessUser, Employer, EmployerAccessMode, EmployerOption, EmployerRole, EntitlementSnapshot, Organization, OrganizationRole, UserCandidate, UserInvitation } from "@/lib/types";
-import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
+import { UiInput, UiSelect } from "@/components/ui-controls";
 
 const PAGE_SIZE = 50;
 const employerRoleLabels: Record<EmployerRole, string> = {
