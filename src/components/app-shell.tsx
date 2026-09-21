@@ -53,6 +53,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   const [singleEmployerTarget, setSingleEmployerTarget] = useState<{ organizationId: string; employerId: string } | null>(null);
   const [canManageOrganization, setCanManageOrganization] = useState<boolean | null>(null);
   const [hasOrganizationScope, setHasOrganizationScope] = useState<boolean | null>(null);
+  const [singleOrganizationTarget, setSingleOrganizationTarget] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pageConfig, setPageConfigState] = useState<ShellPageConfig>(initialConfig);
   const [upgradeDetail, setUpgradeDetail] = useState<UpgradeDialogDetail | null>(null);
@@ -93,6 +94,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         );
         setSingleEmployerUser(accessibleEmployers.length === 1);
         setSingleEmployerTarget(accessibleEmployers.length === 1 ? accessibleEmployers[0] : null);
+        setSingleOrganizationTarget(!current.platformAdmin && scope.organizations.length === 1 ? scope.organizations[0].id : null);
         setCanManageOrganization(current.platformAdmin || scope.organizations.some((item) => item.canManageOrganization));
         setHasOrganizationScope(current.platformAdmin || scope.organizations.some((item) => item.hasOrganizationScope));
       })
@@ -100,6 +102,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         if (!active) return;
         setSingleEmployerUser(false);
         setSingleEmployerTarget(null);
+        setSingleOrganizationTarget(null);
         setCanManageOrganization(false);
         setHasOrganizationScope(false);
       });
@@ -167,6 +170,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
       );
       setSingleEmployerUser(accessibleEmployers.length === 1);
       setSingleEmployerTarget(accessibleEmployers.length === 1 ? accessibleEmployers[0] : null);
+      setSingleOrganizationTarget(!session?.platformAdmin && scope.organizations.length === 1 ? scope.organizations[0].id : null);
       setCanManageOrganization(Boolean(session?.platformAdmin) || scope.organizations.some((item) => item.canManageOrganization));
       setHasOrganizationScope(Boolean(session?.platformAdmin) || scope.organizations.some((item) => item.hasOrganizationScope));
     } finally {
@@ -198,6 +202,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         ))}
         <div className="nav-divider" />
         {session.platformAdmin ? <Link href="/organizations" className={pathname.startsWith("/organizations") ? "active" : ""}><Landmark size={18} />ארגונים</Link> : null}
+        {!session.platformAdmin && singleOrganizationTarget ? <Link href={`/organizations/${singleOrganizationTarget}`} className={pathname.startsWith(`/organizations/${singleOrganizationTarget}`) ? "active" : ""}><Landmark size={18} />הארגון שלי</Link> : null}
         {session.platformAdmin ? <Link href="/admin" className={pathname.startsWith("/admin") ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
         {canManageOrganization ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />משתמשים והרשאות</Link> : null}
         <Link href="/settings" className={pathname === "/settings" ? "active" : ""}><Settings size={18} />הגדרות</Link>
