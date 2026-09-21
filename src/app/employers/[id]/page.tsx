@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Building2, CreditCard, FileSliders, Save, Users, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { AppTabs } from "@/components/app-tabs";
 import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
 import { EmployerEmployeesPanel } from "@/components/employer-employees-panel";
 import { alphaApi } from "@/lib/api";
@@ -117,16 +118,7 @@ export default function EmployerProfilePage() {
       </div>
     </div>
 
-    <div className="profile-tabs" role="tablist" aria-label="פרופיל מעסיק">
-      {tabs.map(({ key, label, icon: Icon }) => <button
-        key={key}
-        type="button"
-        role="tab"
-        aria-selected={tab === key}
-        className={`profile-tab${tab === key ? " active" : ""}`}
-        onClick={() => setTab(key)}
-      ><Icon size={17} />{label}</button>)}
-    </div>
+    <AppTabs items={tabs} activeKey={tab} onChange={setTab} ariaLabel="פרופיל מעסיק" />
 
     {tab === "general" ? <GeneralTab
       organizationId={organizationId}
