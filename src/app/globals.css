@@ -931,6 +931,25 @@ td { font-size: 14px; }
 
 
 /* Admin */
-.admin-plan-select { min-width: 180px; padding-inline-start: 14px; padding-inline-end: 38px; }
+.admin-section-card { color: var(--text); }
+.admin-interfaces-table { min-width: 760px; }
+.admin-subscriptions-table { min-width: 860px; }
+.admin-plan-select {
+  min-width: 180px;
+  padding-inline-start: 14px;
+  padding-inline-end: 44px;
+  background-position: left 14px center;
+}
+.admin-actions-cell { width: 1%; min-width: 0; white-space: nowrap; }
+.admin-actions { display: flex; gap: 8px; flex-wrap: nowrap; }
+.admin-actions .btn { white-space: nowrap; padding-inline: 12px; }
 .admin-run-history-table th:last-child,
-.admin-run-history-table td:last-child { width: 76px; min-width: 76px; max-width: 76px; }
+.admin-run-history-table td:last-child { width: 72px; min-width: 72px; max-width: 72px; }
+.admin-run-history-table td:last-child .btn { width: 100%; padding-inline: 8px !important; }
+.profile-link { color: var(--blue); font-weight: 650; text-decoration: none; }
+.profile-link:hover { text-decoration: underline; }
+
+@media (max-width: 760px) {
+  .admin-interfaces-table { min-width: 700px; }
+  .admin-subscriptions-table { min-width: 820px; }
+}
