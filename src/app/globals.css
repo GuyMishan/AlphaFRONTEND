@@ -263,7 +263,7 @@ td { font-size: 14px; }
 .plan-usage.full .plan-usage-track > span { background: var(--warning); }
 
 .upgrade-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 20px; background: rgba(16,38,64,.54); backdrop-filter: blur(3px); }
-.upgrade-modal { position: relative; width: min(480px, 100%); background: white; border: 1px solid var(--line); border-radius: 18px; padding: 30px; box-shadow: 0 28px 80px rgba(16,38,64,.24); text-align: right; }
+.upgrade-modal { position: relative; width: min(480px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 30px; box-shadow: 0 28px 80px rgba(16,38,64,.24); text-align: right; }
 .upgrade-close { position: absolute; left: 16px; top: 16px; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; padding: 6px; border-radius: 8px; }
 .upgrade-close:hover { background: #f2f5f8; color: var(--text); }
 .upgrade-icon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; color: var(--blue); background: var(--blue-soft); margin-bottom: 18px; }
@@ -928,3 +928,9 @@ td { font-size: 14px; }
   flex-wrap: wrap;
 }
 
+
+
+/* Admin */
+.admin-plan-select { min-width: 180px; padding-inline-start: 14px; padding-inline-end: 38px; }
+.admin-run-history-table th:last-child,
+.admin-run-history-table td:last-child { width: 76px; min-width: 76px; max-width: 76px; }
