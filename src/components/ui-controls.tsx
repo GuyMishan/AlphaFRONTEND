@@ -58,7 +58,7 @@ export function UiChoiceCard({
     {...props}
   >{children}</button>;
 
-  return tooltip ? <Tooltip content={tooltip} label={tooltip}>{button}</Tooltip> : button;
+  return tooltip ? <Tooltip content={tooltip} label={tooltip} className="tooltip-fill">{button}</Tooltip> : button;
 }
 
 export function UiCard({
