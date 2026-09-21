@@ -5,6 +5,7 @@ import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { alphaApi } from "@/lib/api";
 import type {
+import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
   BankBranchOption,
   BankDebitMandateStatus,
   BankOption,
@@ -169,7 +170,7 @@ export function OrganizationPensionPaymentAccount({
         <div className="grid two-cols">
           <div className="field">
             <label>בנק *</label>
-            <input list="organization-payment-banks" placeholder="חיפוש לפי שם או מספר בנק" value={bankSearch} onChange={(e) => {
+            <UiInput list="organization-payment-banks" placeholder="חיפוש לפי שם או מספר בנק" value={bankSearch} onChange={(e) => {
               const value = e.target.value;
               setBankSearch(value);
               const code = Number(value.split(" - ")[0]);
@@ -180,7 +181,7 @@ export function OrganizationPensionPaymentAccount({
           </div>
           <div className="field">
             <label>סניף *</label>
-            <input list="organization-payment-branches" disabled={!form.bankId} placeholder="חיפוש לפי סניף או עיר" value={branchSearch} onChange={(e) => {
+            <UiInput list="organization-payment-branches" disabled={!form.bankId} placeholder="חיפוש לפי סניף או עיר" value={branchSearch} onChange={(e) => {
               const value = e.target.value;
               setBranchSearch(value);
               const code = Number(value.split(" - ")[0]);
@@ -188,12 +189,12 @@ export function OrganizationPensionPaymentAccount({
             }} />
             <datalist id="organization-payment-branches">{branches.map((branch) => <option key={branch.branchCode} value={`${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`} />)}</datalist>
           </div>
-          <div className="field"><label>מספר חשבון *</label><input required inputMode="numeric" maxLength={30} value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>שם בעל החשבון *</label><input required maxLength={150} value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} /></div>
-          <div className="field"><label>ת״ז / ח.פ. בעל החשבון *</label><input required inputMode="numeric" maxLength={20} value={form.accountHolderId} onChange={(e) => setForm({ ...form, accountHolderId: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>סטטוס הרשאה לחיוב</label><select value={mandateStatus} onChange={(e) => setMandateStatus(Number(e.target.value) as BankDebitMandateStatus)}><option value={1}>ממתינה</option><option value={2}>פעילה</option><option value={3}>נדחתה</option><option value={4}>בוטלה</option><option value={5}>פגה</option></select></div>
-          <div className="field"><label>מזהה הרשאה חיצוני</label><input maxLength={120} value={externalMandateId} onChange={(e) => setExternalMandateId(e.target.value)} /></div>
-          <div className="field"><label>הפניה למסמך הרשאה</label><input maxLength={200} value={documentId} onChange={(e) => setDocumentId(e.target.value)} /></div>
+          <div className="field"><label>מספר חשבון *</label><UiInput required inputMode="numeric" maxLength={30} value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })} /></div>
+          <div className="field"><label>שם בעל החשבון *</label><UiInput required maxLength={150} value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} /></div>
+          <div className="field"><label>ת״ז / ח.פ. בעל החשבון *</label><UiInput required inputMode="numeric" maxLength={20} value={form.accountHolderId} onChange={(e) => setForm({ ...form, accountHolderId: e.target.value.replace(/\D/g, "") })} /></div>
+          <div className="field"><label>סטטוס הרשאה לחיוב</label><UiSelect value={mandateStatus} onChange={(e) => setMandateStatus(Number(e.target.value) as BankDebitMandateStatus)}><option value={1}>ממתינה</option><option value={2}>פעילה</option><option value={3}>נדחתה</option><option value={4}>בוטלה</option><option value={5}>פגה</option></UiSelect></div>
+          <div className="field"><label>מזהה הרשאה חיצוני</label><UiInput maxLength={120} value={externalMandateId} onChange={(e) => setExternalMandateId(e.target.value)} /></div>
+          <div className="field"><label>הפניה למסמך הרשאה</label><UiInput maxLength={200} value={documentId} onChange={(e) => setDocumentId(e.target.value)} /></div>
         </div>
         <div className="form-actions">
           <button className="btn btn-secondary" type="button" onClick={() => setEditing(false)}>ביטול</button>
