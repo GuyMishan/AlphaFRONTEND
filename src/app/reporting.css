@@ -23,7 +23,7 @@
 .report-modal-body > .notice { margin-bottom: 10px; }
 .report-modal .field { gap: 4px; }
 .report-modal .field label { font-size: 12px; }
-.report-modal .field input, .report-modal .field select, .report-modal .field textarea { min-height: 36px; padding: 7px 9px; border-radius: 8px; font-size: 13px; }
+.report-modal .field input, .report-modal .field select, .report-modal .field textarea { min-height: var(--control-height-compact); padding: 7px 9px; border-radius: 8px; font-size: 13px; }
 .icon-button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 9px; background: white; display: grid; place-items: center; cursor: pointer; color: var(--text); }
 .icon-button.danger { color: var(--danger); background: #fff7f8; }
 .employee-report-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 8px; }
@@ -39,7 +39,7 @@
 .report-product-title span { color: var(--muted); font-size: 11px; }
 .report-product-title b { margin-top: 1px; font-size: 15px; }
 .report-product-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: end; }
-.section14-check { height: 36px; display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; background: #fbfcfe; font-size: 13px; font-weight: 600; }
+.section14-check { height: var(--control-height-compact); display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; background: #fbfcfe; font-size: 13px; font-weight: 600; }
 .section14-check input { width: 16px; height: 16px; accent-color: var(--blue); }
 .contribution-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
 .contribution-section { margin-top: 9px; min-width: 0; }
@@ -49,7 +49,7 @@
 .contribution-table th, .contribution-table td { padding: 3px 4px; font-size: 11px; }
 .contribution-table th:first-child { width: 19%; min-width: 0; }
 .contribution-table th:last-child { width: 23%; }
-.contribution-table input { width: 100%; min-width: 0; height: 27px; border: 1px solid var(--line); border-radius: 6px; padding: 3px 4px; text-align: right; background: #fff; font-size: 11px; }
+.contribution-table input { width: 100%; min-width: 0; height: var(--control-height-dense); border: 1px solid var(--line); border-radius: 6px; padding: 3px 4px; text-align: right; background: #fff; font-size: 11px; }
 
 .virtual-table-wrap thead { position: sticky; top: 0; z-index: 2; background: white; }
 .virtual-table-wrap .virtual-spacer:hover { background: transparent; }
@@ -125,7 +125,7 @@
   .contribution-table th, .contribution-table td { padding: 4px 3px !important; min-width: 0; }
   .contribution-table th:first-child, .contribution-table td:first-child { width: 21%; min-width: 0; }
   .contribution-table th:last-child, .contribution-table td:last-child { width: 29%; }
-  .contribution-table input { width: 100%; min-width: 0; box-sizing: border-box; padding: 4px 3px; height: 27px; border-radius: 5px; font-size: 11px; }
+  .contribution-table input { width: 100%; min-width: 0; box-sizing: border-box; padding: 4px 3px; height: var(--control-height-dense); border-radius: 5px; font-size: 11px; }
   .upload-zone { min-height: 195px; padding: 22px 14px; }
   .upload-zone h3 { font-size: 15px; text-align: center; }
   .salary-upload-tools { grid-template-columns: 1fr; }
