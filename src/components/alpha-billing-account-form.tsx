@@ -34,10 +34,16 @@ export function AlphaBillingAccountForm({
   organizationId,
   employerId,
   canManage,
+  onSaved,
+  embedded = false,
+  showOwnerContext = true,
 }: {
   organizationId: string;
   employerId?: string;
   canManage: boolean;
+  onSaved?: () => void | Promise<void>;
+  embedded?: boolean;
+  showOwnerContext?: boolean;
 }) {
   const [account, setAccount] = useState<AlphaBillingAccount>(EMPTY);
   const [details, setDetails] = useState<AlphaBillingAccountInput>({
@@ -99,6 +105,7 @@ export function AlphaBillingAccountForm({
         ? await alphaApi.saveEmployerBillingAccount(organizationId, employerId, details)
         : await alphaApi.saveOrganizationBillingAccount(organizationId, details);
       setAccount(value);
+      if (onSaved) await onSaved();
       toast.success("פרטי החיוב נשמרו");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שמירת פרטי החיוב נכשלה");
@@ -163,8 +170,8 @@ export function AlphaBillingAccountForm({
 
   if (loading) return <div className="empty">טוען פרטי חיוב...</div>;
 
-  return <div className="employer-profile-stack">
-    <section className="card profile-card profile-payment-card">
+  return <div className={embedded ? "billing-inline-form" : "employer-profile-stack"}>
+    <section className={embedded ? "billing-inline-panel" : "card profile-card profile-payment-card"}>
       <div className="card-head">
         <div>
           <h2>חשבון לחיוב ALPHA</h2>
@@ -175,14 +182,14 @@ export function AlphaBillingAccountForm({
         </span>
       </div>
 
-      <div className={`billing-owner-banner ${employerId ? "employer" : "organization"}`}>
+      {showOwnerContext ? <div className={`billing-owner-banner ${employerId ? "employer" : "organization"}`}>
         <div className="billing-source-icon">{employerId ? <CreditCard size={24} /> : <Landmark size={24} />}</div>
         <div>
           <span>הפרטים במסך הזה שייכים ל־</span>
           <strong>{employerId ? "המעסיק" : "הארגון"}</strong>
           <small>{employerId ? "אלו פרטי חיוב עצמאיים של המעסיק." : "אלו פרטי החיוב המרכזיים של הארגון."}</small>
         </div>
-      </div>
+      </div> : null}
 
       {!canManage ? <div className="notice notice-info" style={{ marginBottom: 18 }}>החשבון מוצג לקריאה בלבד לפי ההרשאה שלך.</div> : null}
 
@@ -234,7 +241,7 @@ export function AlphaBillingAccountForm({
       </form>
     </section>
 
-    {account.configured ? <section className="card profile-card profile-payment-card">
+    {account.configured ? <section className={embedded ? "billing-inline-secondary" : "card profile-card profile-payment-card"}>
       <div className="card-head"><div><h2>אמצעי תשלום</h2><span style={{ color: "var(--muted)" }}>החיבור לאמצעי התשלום מתבצע בצורה מאובטחת, ללא שמירת מספר כרטיס מלא או CVV ב־ALPHA.</span></div><span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>{billingStatusLabel(account.paymentMethodStatus)}</span></div>
       {details.paymentMethodType === 1 ? <div className="form-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
         {canManage ? <button className="btn btn-primary" type="button" disabled={connecting} onClick={() => void connectPaymentMethod()}><ExternalLink size={17} />{connecting ? "פותח..." : cardConnected ? "החלפת כרטיס" : "חיבור כרטיס מאובטח"}</button> : null}
