@@ -1,5 +1,6 @@
 "use client";
 
+import { UiInput } from "@/components/ui-controls";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -159,10 +160,10 @@ export default function RegisterPage() {
 
     {!challenge ? (
       <form className="form" onSubmit={(event) => { event.preventDefault(); void requestCode(); }} noValidate>
-        <Field label="שם מלא *" error={errors.displayName}><input aria-invalid={Boolean(errors.displayName)} id="name" maxLength={120} value={displayName} onChange={(e) => { setDisplayName(e.target.value); setErrors((current) => ({ ...current, displayName: undefined })); }} required /></Field>
-        <Field label="תעודת זהות *" error={errors.nationalId}><input aria-invalid={Boolean(errors.nationalId)} id="national-id" inputMode="numeric" dir="ltr" maxLength={9} value={nationalId} onChange={(e) => { setNationalId(e.target.value.replace(/\D/g, "").slice(0, 9)); setErrors((current) => ({ ...current, nationalId: undefined })); }} required /></Field>
-        <Field label="מספר טלפון *" error={errors.phone}><input aria-invalid={Boolean(errors.phone)} id="phone" type="tel" inputMode="tel" dir="ltr" maxLength={10} value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setErrors((current) => ({ ...current, phone: undefined })); }} required /></Field>
-        <Field label="אימייל *" error={errors.email}><input aria-invalid={Boolean(errors.email)} id="email" type="email" maxLength={254} dir="ltr" value={email} disabled={Boolean(invitation)} onChange={(e) => { setEmail(e.target.value); setErrors((current) => ({ ...current, email: undefined })); }} required /></Field>
+        <Field label="שם מלא *" error={errors.displayName}><UiInput aria-invalid={Boolean(errors.displayName)} id="name" maxLength={120} value={displayName} onChange={(e) => { setDisplayName(e.target.value); setErrors((current) => ({ ...current, displayName: undefined })); }} required /></Field>
+        <Field label="תעודת זהות *" error={errors.nationalId}><UiInput aria-invalid={Boolean(errors.nationalId)} id="national-id" inputMode="numeric" dir="ltr" maxLength={9} value={nationalId} onChange={(e) => { setNationalId(e.target.value.replace(/\D/g, "").slice(0, 9)); setErrors((current) => ({ ...current, nationalId: undefined })); }} required /></Field>
+        <Field label="מספר טלפון *" error={errors.phone}><UiInput aria-invalid={Boolean(errors.phone)} id="phone" type="tel" inputMode="tel" dir="ltr" maxLength={10} value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setErrors((current) => ({ ...current, phone: undefined })); }} required /></Field>
+        <Field label="אימייל *" error={errors.email}><UiInput aria-invalid={Boolean(errors.email)} id="email" type="email" maxLength={254} dir="ltr" value={email} disabled={Boolean(invitation)} onChange={(e) => { setEmail(e.target.value); setErrors((current) => ({ ...current, email: undefined })); }} required /></Field>
         <button className="btn btn-primary btn-lg wide" disabled={loading || invitationLoading || Boolean(invitationToken && !invitation)} type="submit">{loading ? "שולח..." : "שלחו לי קוד אימות"}<ArrowLeft size={18} /></button>
       </form>
     ) : (
