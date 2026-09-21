@@ -43,7 +43,7 @@ export function UpgradeModal({ detail, onClose }: { detail: UpgradeDialogDetail 
           ? `${featureLabels[detail.feature ?? ""] ?? "האפשרות הזו"} זמינה במסלול מתקדם יותר.`
           : "כדי להמשיך להרחיב את הפעילות במערכת, יש לשדרג את המסלול."}
       </p>
-      {detail.current !== undefined && detail.maximum !== undefined
+      {detail.reason !== "users" && detail.current !== undefined && detail.maximum !== undefined
         ? <div className="upgrade-usage"><span>שימוש במסלול</span><b>{detail.current}/{detail.maximum}</b></div>
         : null}
       {detail.planName ? <div className="upgrade-plan">מסלול נוכחי: <b>{detail.planName}</b></div> : null}
