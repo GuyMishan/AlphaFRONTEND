@@ -375,6 +375,10 @@ export default function AccessPage() {
         ? { email, organizationRole: inviteOrganizationRole, expiresInDays: 7 }
         : { email, employerId: inviteEmployerId, employerRole: inviteEmployerRole, expiresInDays: 7 });
       setInvitations(await alphaApi.invitations(organizationId));
+      const refreshedUsers = await alphaApi.accessUsers(organizationId, search.trim(), skip, PAGE_SIZE);
+      setUsers(refreshedUsers.items);
+      setHasMore(refreshedUsers.hasMore);
+      setEntitlements(await alphaApi.entitlements(organizationId));
       setInviteEmail("");
       setInviteOpen(false);
     } catch (err) {
