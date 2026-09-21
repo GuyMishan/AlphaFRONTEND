@@ -108,3 +108,48 @@ html[data-theme="dark"] .auth-brand .brand {
 html[data-theme="dark"] .brand-logo {
   filter: drop-shadow(0 4px 10px rgba(0,0,0,.26));
 }
+
+
+/* Admin + global upgrade modal dark mode */
+html[data-theme="dark"] .upgrade-modal,
+html[data-theme="dark"] .admin-section-card {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] .upgrade-backdrop {
+  background: rgba(2, 8, 18, .72);
+}
+
+html[data-theme="dark"] .upgrade-close:hover {
+  background: #223044;
+  color: var(--text);
+}
+
+html[data-theme="dark"] .upgrade-usage {
+  background: #111b28;
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] .upgrade-plan,
+html[data-theme="dark"] .upgrade-modal small,
+html[data-theme="dark"] .admin-section-card p {
+  color: var(--muted);
+}
+
+html[data-theme="dark"] .admin-plan-select {
+  background-color: #111b28;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] .profile-link {
+  color: var(--blue);
+}
+
+html[data-theme="dark"] .admin-run-history-table tbody tr:hover,
+html[data-theme="dark"] .admin-interfaces-table tbody tr:hover,
+html[data-theme="dark"] .admin-subscriptions-table tbody tr:hover {
+  background: rgba(255,255,255,.025);
+}
