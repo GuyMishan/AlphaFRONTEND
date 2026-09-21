@@ -567,6 +567,8 @@ export type EmployerBillingResolution = {
   source: "Organization" | "Employer";
   billedThroughName: string;
   effectiveAccount: AlphaBillingAccount;
+  organizationAccount: AlphaBillingAccount;
+  employerAccount: AlphaBillingAccount;
 };
 
 
