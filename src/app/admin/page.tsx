@@ -85,6 +85,7 @@ export default function AdminPage() {
   const [savingOrganizationId, setSavingOrganizationId] = useState<string | null>(null);
   const [editingOrganizationId, setEditingOrganizationId] = useState<string | null>(null);
   const [draftPlanByOrganization, setDraftPlanByOrganization] = useState<Record<string, string>>({});
+  const [draftStatusByOrganization, setDraftStatusByOrganization] = useState<Record<string, number>>({});
   const [error, setError] = useState("");
   const [historyKey, setHistoryKey] = useState<string | null>(null);
   const [history, setHistory] = useState<RunDetail[]>([]);
@@ -143,16 +144,20 @@ export default function AdminPage() {
     }
   }
 
-  async function changePlan(organizationId: string, planId: string) {
+  async function saveSubscriptionRow(organizationId: string, planId: string, organizationStatus: number) {
     setSavingOrganizationId(organizationId);
     setError("");
     try {
-      await alphaApi.changePlatformSubscriptionPlan(organizationId, planId);
+      await Promise.all([
+        alphaApi.changePlatformSubscriptionPlan(organizationId, planId),
+        alphaApi.changePlatformOrganizationStatus(organizationId, organizationStatus),
+      ]);
       setSubscriptions(await alphaApi.platformSubscriptions());
       setEditingOrganizationId(null);
       setDraftPlanByOrganization((current) => { const next = { ...current }; delete next[organizationId]; return next; });
+      setDraftStatusByOrganization((current) => { const next = { ...current }; delete next[organizationId]; return next; });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שינוי המסלול נכשל");
+      setError(err instanceof Error ? err.message : "שמירת המסלול או סטטוס הארגון נכשלה");
     } finally {
       setSavingOrganizationId(null);
     }
@@ -214,7 +219,18 @@ export default function AdminPage() {
                   {plans.filter((plan) => plan.isActive || plan.id === item.planId).map((plan) => <option key={plan.id} value={plan.id}>{plan.name} ({plan.code})</option>)}
                 </UiSelect>
               </td>
-              <td style={cellStyle}>{String(item.status) === "1" ? "פעיל" : String(item.status) === "2" ? "לא פעיל" : statusLabel(String(item.status))}</td>
+              <td style={cellStyle}>
+                {editingOrganizationId === item.organizationId ? <UiSelect
+                  value={draftStatusByOrganization[item.organizationId] ?? Number(item.organizationStatus)}
+                  disabled={savingOrganizationId === item.organizationId}
+                  onChange={(event) => setDraftStatusByOrganization((current) => ({ ...current, [item.organizationId]: Number(event.target.value) }))}
+                >
+                  <option value={1}>בהקמה</option>
+                  <option value={2}>פעיל</option>
+                  <option value={3}>מושהה</option>
+                  <option value={4}>סגור</option>
+                </UiSelect> : organizationStatusLabel(item.organizationStatus)}
+              </td>
               <td style={cellStyle}>{item.maxEmployers}</td>
               <td style={cellStyle}>{item.maxEmployees}</td>
               <td style={cellStyle}>{item.maxUsers}</td>
@@ -222,9 +238,9 @@ export default function AdminPage() {
               <td style={cellStyle}>{item.expiresAt ? formatDate(item.expiresAt) : "ללא הגבלה"}</td>
               <td className="admin-actions-cell" style={cellStyle}>
                 {editingOrganizationId === item.organizationId ? <div style={{ display: "flex", gap: 6 }}>
-                  <button className="btn btn-primary" type="button" disabled={savingOrganizationId === item.organizationId} onClick={() => void changePlan(item.organizationId, draftPlanByOrganization[item.organizationId] ?? item.planId)}><Save size={15} />{savingOrganizationId === item.organizationId ? "שומר..." : "שמירה"}</button>
-                  <button className="btn btn-secondary" type="button" disabled={savingOrganizationId === item.organizationId} onClick={() => { setEditingOrganizationId(null); setDraftPlanByOrganization((current) => { const next = { ...current }; delete next[item.organizationId]; return next; }); }}>ביטול</button>
-                </div> : <button className="btn btn-secondary" type="button" onClick={() => { setEditingOrganizationId(item.organizationId); setDraftPlanByOrganization((current) => ({ ...current, [item.organizationId]: item.planId })); }}><Pencil size={15} />עריכה</button>}
+                  <button className="btn btn-primary" type="button" disabled={savingOrganizationId === item.organizationId} onClick={() => void saveSubscriptionRow(item.organizationId, draftPlanByOrganization[item.organizationId] ?? item.planId, draftStatusByOrganization[item.organizationId] ?? Number(item.organizationStatus))}><Save size={15} />{savingOrganizationId === item.organizationId ? "שומר..." : "שמירה"}</button>
+                  <button className="btn btn-secondary" type="button" disabled={savingOrganizationId === item.organizationId} onClick={() => { setEditingOrganizationId(null); setDraftPlanByOrganization((current) => { const next = { ...current }; delete next[item.organizationId]; return next; }); setDraftStatusByOrganization((current) => { const next = { ...current }; delete next[item.organizationId]; return next; }); }}>ביטול</button>
+                </div> : <button className="btn btn-secondary" type="button" onClick={() => { setEditingOrganizationId(item.organizationId); setDraftPlanByOrganization((current) => ({ ...current, [item.organizationId]: item.planId })); setDraftStatusByOrganization((current) => ({ ...current, [item.organizationId]: Number(item.organizationStatus) })); }}><Pencil size={15} />עריכה</button>}
               </td>
             </tr>)}
           </tbody>
@@ -257,6 +273,15 @@ export default function AdminPage() {
       </div>
     </div> : null}
   </AppShell>;
+}
+
+function organizationStatusLabel(status: number | string) {
+  const value = Number(status);
+  if (value === 1 || String(status) === "Onboarding") return "בהקמה";
+  if (value === 2 || String(status) === "Active") return "פעיל";
+  if (value === 3 || String(status) === "Suspended") return "מושהה";
+  if (value === 4 || String(status) === "Closed") return "סגור";
+  return String(status);
 }
 
 const thStyle: React.CSSProperties = { textAlign: "right", padding: 12, borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" };
