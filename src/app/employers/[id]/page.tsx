@@ -23,6 +23,7 @@ import type {
   PensionPaymentResolution,
 } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
+import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
 
 type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting";
 
@@ -260,32 +261,32 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
       <div className="profile-form-section">
         <h3>פרטי מעסיק</h3>
         <div className="grid employer-details-grid">
-          <div className="field field-span-2"><label>שם משפטי מלא *</label><input disabled={!canEdit} required maxLength={200} value={details.legalName} onChange={(e) => setDetails({ ...details, legalName: e.target.value })} /></div>
-          <div className="field"><label>מספר חברה / עוסק *</label><input disabled={!canEdit} required inputMode="numeric" maxLength={15} value={details.registrationNumber} onChange={(e) => setDetails({ ...details, registrationNumber: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>תיק ניכויים *</label><input disabled={!canEdit} required inputMode="numeric" maxLength={9} value={details.withholdingFileNumber} onChange={(e) => setDetails({ ...details, withholdingFileNumber: e.target.value.replace(/\D/g, "") })} /><small>אם אין תיק ניכויים, יש להזין 900000000.</small></div>
+          <div className="field field-span-2"><label>שם משפטי מלא *</label><UiInput disabled={!canEdit} required maxLength={200} value={details.legalName} onChange={(e) => setDetails({ ...details, legalName: e.target.value })} /></div>
+          <div className="field"><label>מספר חברה / עוסק *</label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={15} value={details.registrationNumber} onChange={(e) => setDetails({ ...details, registrationNumber: e.target.value.replace(/\D/g, "") })} /></div>
+          <div className="field"><label>תיק ניכויים *</label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={9} value={details.withholdingFileNumber} onChange={(e) => setDetails({ ...details, withholdingFileNumber: e.target.value.replace(/\D/g, "") })} /><small>אם אין תיק ניכויים, יש להזין 900000000.</small></div>
         </div>
       </div>
 
       <div className="profile-form-section">
         <h3>איש קשר</h3>
         <div className="grid employer-details-grid">
-          <div className="field"><label>שם פרטי *</label><input disabled={!canEdit} maxLength={20} value={details.contactFirstName ?? ""} onChange={(e) => setDetails({ ...details, contactFirstName: e.target.value })} /></div>
-          <div className="field"><label>שם משפחה *</label><input disabled={!canEdit} maxLength={20} value={details.contactLastName ?? ""} onChange={(e) => setDetails({ ...details, contactLastName: e.target.value })} /></div>
-          <div className="field"><label>טלפון</label><input disabled={!canEdit} inputMode="numeric" maxLength={11} value={details.contactPhone ?? ""} onChange={(e) => setDetails({ ...details, contactPhone: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>נייד</label><input disabled={!canEdit} inputMode="numeric" maxLength={15} value={details.contactMobile ?? ""} onChange={(e) => setDetails({ ...details, contactMobile: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field field-span-2"><label>אימייל *</label><input disabled={!canEdit} required type="email" maxLength={50} value={details.contactEmail ?? ""} onChange={(e) => setDetails({ ...details, contactEmail: e.target.value })} /></div>
+          <div className="field"><label>שם פרטי *</label><UiInput disabled={!canEdit} maxLength={20} value={details.contactFirstName ?? ""} onChange={(e) => setDetails({ ...details, contactFirstName: e.target.value })} /></div>
+          <div className="field"><label>שם משפחה *</label><UiInput disabled={!canEdit} maxLength={20} value={details.contactLastName ?? ""} onChange={(e) => setDetails({ ...details, contactLastName: e.target.value })} /></div>
+          <div className="field"><label>טלפון</label><UiInput disabled={!canEdit} inputMode="numeric" maxLength={11} value={details.contactPhone ?? ""} onChange={(e) => setDetails({ ...details, contactPhone: e.target.value.replace(/\D/g, "") })} /></div>
+          <div className="field"><label>נייד</label><UiInput disabled={!canEdit} inputMode="numeric" maxLength={15} value={details.contactMobile ?? ""} onChange={(e) => setDetails({ ...details, contactMobile: e.target.value.replace(/\D/g, "") })} /></div>
+          <div className="field field-span-2"><label>אימייל *</label><UiInput disabled={!canEdit} required type="email" maxLength={50} value={details.contactEmail ?? ""} onChange={(e) => setDetails({ ...details, contactEmail: e.target.value })} /></div>
         </div>
       </div>
 
       <div className="profile-form-section">
         <h3>כתובת</h3>
         <div className="grid employer-details-grid">
-          <div className="field"><label>יישוב</label><input disabled={!canEdit} maxLength={100} value={addressForm.city} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} /></div>
-          <div className="field"><label>רחוב</label><input disabled={!canEdit} maxLength={100} value={addressForm.street} onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })} /></div>
-          <div className="field"><label>מספר בית</label><input disabled={!canEdit} maxLength={20} value={addressForm.houseNumber} onChange={(e) => setAddressForm({ ...addressForm, houseNumber: e.target.value })} /></div>
-          <div className="field"><label>דירה</label><input disabled={!canEdit} maxLength={20} value={addressForm.apartment} onChange={(e) => setAddressForm({ ...addressForm, apartment: e.target.value })} /></div>
-          <div className="field"><label>מיקוד</label><input disabled={!canEdit} inputMode="numeric" maxLength={10} value={addressForm.postalCode} onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>תא דואר</label><input disabled={!canEdit} maxLength={20} value={addressForm.postOfficeBox} onChange={(e) => setAddressForm({ ...addressForm, postOfficeBox: e.target.value })} /></div>
+          <div className="field"><label>יישוב</label><UiInput disabled={!canEdit} maxLength={100} value={addressForm.city} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} /></div>
+          <div className="field"><label>רחוב</label><UiInput disabled={!canEdit} maxLength={100} value={addressForm.street} onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })} /></div>
+          <div className="field"><label>מספר בית</label><UiInput disabled={!canEdit} maxLength={20} value={addressForm.houseNumber} onChange={(e) => setAddressForm({ ...addressForm, houseNumber: e.target.value })} /></div>
+          <div className="field"><label>דירה</label><UiInput disabled={!canEdit} maxLength={20} value={addressForm.apartment} onChange={(e) => setAddressForm({ ...addressForm, apartment: e.target.value })} /></div>
+          <div className="field"><label>מיקוד</label><UiInput disabled={!canEdit} inputMode="numeric" maxLength={10} value={addressForm.postalCode} onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value.replace(/\D/g, "") })} /></div>
+          <div className="field"><label>תא דואר</label><UiInput disabled={!canEdit} maxLength={20} value={addressForm.postOfficeBox} onChange={(e) => setAddressForm({ ...addressForm, postOfficeBox: e.target.value })} /></div>
         </div>
       </div>
 
@@ -508,7 +509,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           <div className="grid compact-payment-grid">
             <div className="field">
               <label>בנק *</label>
-              <input list="employer-payment-banks" placeholder="שם או מספר בנק" value={bankSearch} onChange={(e) => {
+              <UiInput list="employer-payment-banks" placeholder="שם או מספר בנק" value={bankSearch} onChange={(e) => {
                 const value = e.target.value;
                 setBankSearch(value);
                 const code = Number(value.split(" - ")[0]);
@@ -519,7 +520,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
             </div>
             <div className="field">
               <label>סניף *</label>
-              <input list="employer-payment-branches" disabled={!form.bankId} placeholder="סניף או עיר" value={branchSearch} onChange={(e) => {
+              <UiInput list="employer-payment-branches" disabled={!form.bankId} placeholder="סניף או עיר" value={branchSearch} onChange={(e) => {
                 const value = e.target.value;
                 setBranchSearch(value);
                 const code = Number(value.split(" - ")[0]);
@@ -527,12 +528,12 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
               }} />
               <datalist id="employer-payment-branches">{branches.map((branch) => <option key={branch.branchCode} value={`${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`} />)}</datalist>
             </div>
-            <div className="field"><label>מספר חשבון *</label><input required inputMode="numeric" maxLength={30} value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })} /></div>
-            <div className="field"><label>שם בעל החשבון *</label><input required maxLength={150} value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} /></div>
-            <div className="field"><label>ת״ז / ח.פ. *</label><input required inputMode="numeric" maxLength={20} value={form.accountHolderId} onChange={(e) => setForm({ ...form, accountHolderId: e.target.value.replace(/\D/g, "") })} /></div>
-            <div className="field"><label>סטטוס הרשאה</label><select value={mandateStatus} onChange={(e) => setMandateStatus(Number(e.target.value) as BankDebitMandateStatus)}><option value={1}>ממתינה</option><option value={2}>פעילה</option><option value={3}>נדחתה</option><option value={4}>בוטלה</option><option value={5}>פגה</option></select></div>
-            <div className="field"><label>מזהה הרשאה</label><input maxLength={120} value={externalMandateId} onChange={(e) => setExternalMandateId(e.target.value)} /></div>
-            <div className="field"><label>מסמך הרשאה</label><input maxLength={200} value={documentId} onChange={(e) => setDocumentId(e.target.value)} /></div>
+            <div className="field"><label>מספר חשבון *</label><UiInput required inputMode="numeric" maxLength={30} value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })} /></div>
+            <div className="field"><label>שם בעל החשבון *</label><UiInput required maxLength={150} value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} /></div>
+            <div className="field"><label>ת״ז / ח.פ. *</label><UiInput required inputMode="numeric" maxLength={20} value={form.accountHolderId} onChange={(e) => setForm({ ...form, accountHolderId: e.target.value.replace(/\D/g, "") })} /></div>
+            <div className="field"><label>סטטוס הרשאה</label><UiSelect value={mandateStatus} onChange={(e) => setMandateStatus(Number(e.target.value) as BankDebitMandateStatus)}><option value={1}>ממתינה</option><option value={2}>פעילה</option><option value={3}>נדחתה</option><option value={4}>בוטלה</option><option value={5}>פגה</option></UiSelect></div>
+            <div className="field"><label>מזהה הרשאה</label><UiInput maxLength={120} value={externalMandateId} onChange={(e) => setExternalMandateId(e.target.value)} /></div>
+            <div className="field"><label>מסמך הרשאה</label><UiInput maxLength={200} value={documentId} onChange={(e) => setDocumentId(e.target.value)} /></div>
           </div>
           {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : directAccount ? "שמירת שינויים" : "שמירת חשבון"}</button></div> : null}
         </form> : null}
@@ -714,7 +715,7 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
         </div>
         <div className="field">
           <label>אמצעי תשלום</label>
-          <select disabled={!canEdit} value={form.defaultPaymentMethodCode ?? ""} onChange={(e) => setForm({ ...form, defaultPaymentMethodCode: e.target.value ? Number(e.target.value) : null })}>
+          <UiSelect disabled={!canEdit} value={form.defaultPaymentMethodCode ?? ""} onChange={(e) => setForm({ ...form, defaultPaymentMethodCode: e.target.value ? Number(e.target.value) : null })}>
             <option value="">לא הוגדר</option>
             <option value={1}>העברה בנקאית</option>
             <option value={3}>כרטיס אשראי</option>
@@ -723,26 +724,26 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
             <option value={6}>הרשאה לחיוב חשבון / הוראת קבע</option>
             <option value={7}>סליקה באמצעות מס״ב</option>
             <option value={9}>הרשאה לחיוב חשבון לפי קובץ דיווח</option>
-          </select>
+          </UiSelect>
         </div>
         <div className="field">
           <label>סוג חשבון המעסיק</label>
-          <select disabled={!canEdit} value={form.defaultEmployerAccountType ?? ""} onChange={(e) => setForm({ ...form, defaultEmployerAccountType: e.target.value ? Number(e.target.value) : null })}>
+          <UiSelect disabled={!canEdit} value={form.defaultEmployerAccountType ?? ""} onChange={(e) => setForm({ ...form, defaultEmployerAccountType: e.target.value ? Number(e.target.value) : null })}>
             <option value="">לא הוגדר</option>
             <option value={1}>חשבון מעסיק</option>
             <option value={2}>חשבון נאמנות</option>
-          </select>
+          </UiSelect>
         </div>
         <div className="field">
           <label>סוג חשבון המקבל</label>
-          <select disabled={!canEdit} value={form.defaultReceiverAccountType ?? ""} onChange={(e) => setForm({ ...form, defaultReceiverAccountType: e.target.value ? Number(e.target.value) : null })}>
+          <UiSelect disabled={!canEdit} value={form.defaultReceiverAccountType ?? ""} onChange={(e) => setForm({ ...form, defaultReceiverAccountType: e.target.value ? Number(e.target.value) : null })}>
             <option value="">לא הוגדר</option>
             <option value={1}>חשבון יצרן</option>
             <option value={2}>חשבון נאמנות</option>
-          </select>
+          </UiSelect>
         </div>
       </div>
-      <div className="field"><label>הערות תפעוליות לדיווח</label><textarea disabled={!canEdit} maxLength={500} value={form.reportingNotes} onChange={(e) => setForm({ ...form, reportingNotes: e.target.value })} placeholder="הערות פנימיות שיופיעו כברירת מחדל בתהליך הדיווח" /></div>
+      <div className="field"><label>הערות תפעוליות לדיווח</label><UiTextarea disabled={!canEdit} maxLength={500} value={form.reportingNotes} onChange={(e) => setForm({ ...form, reportingNotes: e.target.value })} placeholder="הערות פנימיות שיופיעו כברירת מחדל בתהליך הדיווח" /></div>
       {canEdit ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת הגדרות"}</button></div> : null}
     </form>
   </section>;
