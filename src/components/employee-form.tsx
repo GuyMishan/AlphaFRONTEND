@@ -12,7 +12,7 @@ import { isIsraeliId, isValidEmail } from "@/lib/validation";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
 import { AddressAutocompleteFields } from "@/components/address-autocomplete-fields";
 import { Field, type FieldErrors } from "@/components/form-feedback";
-import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
+import { UiInput } from "@/components/ui-controls";
 
 type EmployeeFormProps = {
   organizationId: string;
