@@ -622,7 +622,7 @@ function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmpl
           <CreditCard size={22} />
           <b>חיוב עצמאי למעסיק</b>
           <p>פרטי חיוב ואמצעי תשלום נפרדים למעסיק הזה.</p>
-        </button>
+        </UiChoiceCard>
 
         {!billing.canChangeMode ? <small className="permission-hint">אין לך הרשאה לשנות את אופן החיוב.</small> : null}
       </aside>
