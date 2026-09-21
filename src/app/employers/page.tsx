@@ -3,7 +3,7 @@
 import { UiInput } from "@/components/ui-controls";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Building2, Plus, Search } from "lucide-react";
+import { Building2, Plus, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { VirtualizedTable } from "@/components/virtualized-table";
 import { alphaApi } from "@/lib/api";
@@ -84,13 +84,12 @@ export default function EmployersPage() {
       {loading ? <div className="empty">טוען מעסיקים...</div> : employers.length ? <VirtualizedTable
         items={employers}
         rowKey={(employer) => employer.id}
-        columns={[{ key: "name", label: "שם המעסיק" }, { key: "registration", label: "ח.פ." }, { key: "withholding", label: "תיק ניכויים" }, { key: "status", label: "סטטוס" }, { key: "actions", label: "פעולות", width: "170px" }]}
+        columns={[{ key: "name", label: "שם המעסיק" }, { key: "registration", label: "ח.פ." }, { key: "withholding", label: "תיק ניכויים" }, { key: "status", label: "סטטוס" }]}
         renderCells={(employer) => [
-          <b>{employer.legalName}</b>,
+          <Link className="table-entity-link" href={`/employers/${employer.id}?organizationId=${employer.organizationId}`}>{employer.legalName}</Link>,
           employer.registrationNumber,
           employer.withholdingFileNumber,
           <span className={employer.status === 2 ? "badge badge-green" : "badge badge-orange"}>{employer.status === 2 ? "פעיל" : "בהקמה"}</span>,
-          <Link className="btn" href={`/employers/${employer.id}?organizationId=${employer.organizationId}`}>לכרטיס מעסיק <ArrowLeft size={16} /></Link>,
         ]}
       /> : <div className="empty"><Building2 size={35} /><div>לא נמצאו מעסיקים.</div></div>}
     </section>
