@@ -107,6 +107,8 @@ export default function AccessPage() {
   const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteNationalId, setInviteNationalId] = useState("");
+  const [invitePhone, setInvitePhone] = useState("");
   const [inviteScope, setInviteScope] = useState<"organization" | "employer">("organization");
   const [inviteOrganizationRole, setInviteOrganizationRole] = useState<OrganizationRole>(4);
   const [inviteEmployerRole, setInviteEmployerRole] = useState<EmployerRole>(3);
@@ -364,6 +366,14 @@ export default function AccessPage() {
       setError("יש להזין כתובת אימייל תקינה.");
       return;
     }
+    if (!/^\d{1,9}$/.test(inviteNationalId.trim())) {
+      setError("יש להזין תעודת זהות תקינה.");
+      return;
+    }
+    if (!/^05\d{8}$/.test(invitePhone.trim())) {
+      setError("יש להזין מספר פלאפון ישראלי תקין.");
+      return;
+    }
     if (inviteScope === "employer" && !inviteEmployerId) {
       setError("יש לבחור מעסיק להזמנה.");
       return;
@@ -371,20 +381,23 @@ export default function AccessPage() {
     setInviting(true);
     setError("");
     try {
+      const identity = { email, nationalId: inviteNationalId.trim(), phone: invitePhone.trim() };
       await alphaApi.createInvitation(organizationId, inviteScope === "organization"
-        ? { email, organizationRole: inviteOrganizationRole, expiresInDays: 7 }
-        : { email, employerId: inviteEmployerId, employerRole: inviteEmployerRole, expiresInDays: 7 });
+        ? { ...identity, organizationRole: inviteOrganizationRole, expiresInDays: 7 }
+        : { ...identity, employerId: inviteEmployerId, employerRole: inviteEmployerRole, expiresInDays: 7 });
       setInvitations(await alphaApi.invitations(organizationId));
       const refreshedUsers = await alphaApi.accessUsers(organizationId, search.trim(), skip, PAGE_SIZE);
       setUsers(refreshedUsers.items);
       setHasMore(refreshedUsers.hasMore);
       setEntitlements(await alphaApi.entitlements(organizationId));
       setInviteEmail("");
+      setInviteNationalId("");
+      setInvitePhone("");
       setInviteOpen(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "שליחת ההזמנה נכשלה";
-      setError(message === "user_exists_use_existing_access"
-        ? "המשתמש כבר קיים במערכת. כרגע לא ניתן לצרף אותו דרך הזמנה; אין יותר מסלול נפרד של 'הוספת משתמש קיים'."
+      setError(message === "existing_identity_or_phone_not_supported_yet"
+        ? "כבר קיים במערכת משתמש עם תעודת הזהות או מספר הפלאפון האלה. כרגע לא ניתן להוסיף משתמש קיים לארגון; נטפל בתרחיש הזה בהמשך."
         : message === "invitation_already_pending" ? "כבר קיימת הזמנה פעילה לאימייל הזה." : message);
     } finally {
       setInviting(false);
@@ -563,7 +576,11 @@ export default function AccessPage() {
         <button className="btn btn-primary" type="button" disabled={inviting} onClick={() => void createInvitation()}><Mail size={17} />{inviting ? "שולח..." : "שליחת הזמנה"}</button>
       </>}
     >
-      <div className="field"><label>אימייל</label><UiInput type="email" dir="ltr" maxLength={320} value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="name@example.com" /></div>
+      <div className="user-editor-grid">
+        <div className="field"><label>אימייל</label><UiInput type="email" dir="ltr" maxLength={320} value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="name@example.com" /></div>
+        <div className="field"><label>תעודת זהות</label><UiInput inputMode="numeric" dir="ltr" maxLength={9} value={inviteNationalId} onChange={(event) => setInviteNationalId(event.target.value.replace(/\D/g, "").slice(0, 9))} /></div>
+        <div className="field"><label>פלאפון</label><UiInput type="tel" inputMode="tel" dir="ltr" maxLength={10} value={invitePhone} onChange={(event) => setInvitePhone(event.target.value.replace(/\D/g, "").slice(0, 10))} /></div>
+      </div>
       <div className="grid two-cols" style={{ marginTop: 16 }}>
         <UiChoiceCard selected={inviteScope === "organization"} onClick={() => setInviteScope("organization")}><ShieldCheck size={22} /><b>גישה לארגון</b><p>גישה ברמת הארגון לפי התפקיד שייבחר.</p></UiChoiceCard>
         <UiChoiceCard selected={inviteScope === "employer"} onClick={() => setInviteScope("employer")}><Building2 size={22} /><b>גישה למעסיק</b><p>גישה ישירה למעסיק אחד בלבד.</p></UiChoiceCard>
