@@ -59,6 +59,9 @@ const metrics: Array<{ metricType: BillingMetricType; label: string; defaultPric
 const planStatusOptions = [{ value: "1", label: "פעילה" }, { value: "0", label: "לא פעילה" }];
 const currencyOptions = [{ value: "ILS", label: "ILS" }];
 const billingIntervalOptions = [{ value: "Monthly", label: "חודשי" }];
+const allClientsOption = [{ value: "all", label: "כל הלקוחות" }];
+const allMonthsOption = [{ value: "all", label: "כל החודשים" }];
+
 const subscriptionStatusOptions = [
   { value: 1, label: "פעיל" },
   { value: 2, label: "מושהה" },
@@ -506,12 +509,12 @@ export default function AdminBillingPage() {
           </UiSelect></label>
 
           <label className="field"><span>לקוח משלם</span><UiSelect value={summaryPayerKey} onChange={(event) => setSummaryPayerKey(event.target.value)}>
-            <option value="all">כל הלקוחות</option>
+            {allClientsOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             {summaryPayers.map((payer) => <option key={payer.key} value={payer.key}>{payer.label}</option>)}
           </UiSelect></label>
 
           <label className="field"><span>חודש</span><UiSelect value={summaryMonth} onChange={(event) => setSummaryMonth(event.target.value)}>
-            <option value="all">כל החודשים</option>
+            {allMonthsOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             {summaryMonths.map((month) => <option key={month} value={month}>{month}</option>)}
           </UiSelect></label>
 
