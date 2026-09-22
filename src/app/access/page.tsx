@@ -460,8 +460,8 @@ export default function AccessPage() {
       </div>
       {tab === "platform" ? <button className="btn btn-primary" type="button" onClick={() => openPlatformEditor("new")}><Plus size={18} />משתמש חדש</button> :
         <button className="btn btn-primary" type="button" onClick={() => {
-          if (entitlements && entitlements.users.current >= entitlements.users.maximum) {
-            openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum });
+          if (entitlements && entitlements.users.maximum !== null && entitlements.users.current >= entitlements.users.maximum) {
+            openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum ?? undefined });
             return;
           }
           setInviteOpen(true);
@@ -501,9 +501,9 @@ export default function AccessPage() {
         <PlanUsage label="משתמשים" usage={entitlements.users} />
       </section> : null}
 
-      {entitlements && entitlements.users.current >= entitlements.users.maximum ? <div className="notice notice-info" style={{ marginBottom: 18 }}>
+      {entitlements && entitlements.users.maximum !== null && entitlements.users.current >= entitlements.users.maximum ? <div className="notice notice-info" style={{ marginBottom: 18 }}>
         <b>הגעתם למגבלת המשתמשים במסלול.</b>
-        <div style={{ marginTop: 10 }}><button className="btn btn-primary" type="button" onClick={() => openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum })}>יצירת קשר לשדרוג</button></div>
+        <div style={{ marginTop: 10 }}><button className="btn btn-primary" type="button" onClick={() => openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum ?? undefined })}>יצירת קשר לשדרוג</button></div>
       </div> : null}
 
       {invitations.length ? <section className="card" style={{ marginBottom: 18 }}>
