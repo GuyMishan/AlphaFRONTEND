@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   Calculator,
@@ -22,6 +23,7 @@ import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type {
   BillingCalculation,
+  BillingMonthlySummaryRow,
   BillingMetricType,
   BillingPayment,
   BillingPeriod,
@@ -35,9 +37,10 @@ import type {
   PlatformSubscription,
 } from "@/lib/types";
 
-type Tab = "plans" | "subscriptions" | "periods" | "payments" | "refunds" | "usage";
+type Tab = "summary" | "plans" | "subscriptions" | "periods" | "payments" | "refunds" | "usage";
 
 const tabs = [
+  { key: "summary", label: "סיכום חודשי", icon: ReceiptText },
   { key: "plans", label: "תוכניות", icon: Layers3 },
   { key: "subscriptions", label: "מנויים", icon: UsersRound },
   { key: "periods", label: "תקופות חיוב", icon: WalletCards },
@@ -168,7 +171,8 @@ function isoFromLocal(value: string | null) {
 }
 
 export default function AdminBillingPage() {
-  const [tab, setTab] = useState<Tab>("plans");
+  const [tab, setTab] = useState<Tab>("summary");
+  const [summary, setSummary] = useState<BillingMonthlySummaryRow[]>([]);
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [subscriptions, setSubscriptions] = useState<PlatformSubscription[]>([]);
   const [periods, setPeriods] = useState<BillingPeriod[]>([]);
@@ -188,19 +192,25 @@ export default function AdminBillingPage() {
   const [runEnd, setRunEnd] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [summaryPayerType, setSummaryPayerType] = useState("all");
+  const [summaryPayerKey, setSummaryPayerKey] = useState("all");
+  const [summaryMonth, setSummaryMonth] = useState("all");
+  const [summaryPaymentState, setSummaryPaymentState] = useState("all");
   const [error, setError] = useState("");
 
   async function load() {
     setLoading(true);
     setError("");
     try {
-      const [planRows, subscriptionRows, periodRows, paymentRows, refundRows] = await Promise.all([
+      const [summaryRows, planRows, subscriptionRows, periodRows, paymentRows, refundRows] = await Promise.all([
+        alphaApi.platformBillingSummary(),
         alphaApi.billingPlans(),
         alphaApi.platformSubscriptions(),
         alphaApi.platformBillingPeriods(),
         alphaApi.platformBillingPayments(),
         alphaApi.platformBillingRefunds(),
       ]);
+      setSummary(summaryRows);
       setPlans(planRows);
       setSubscriptions(subscriptionRows);
       setPeriods(periodRows);
@@ -408,6 +418,43 @@ export default function AdminBillingPage() {
     }
   }
 
+  const summaryMonths = useMemo(
+    () => Array.from(new Set(summary.map((row) => row.month))).sort().reverse(),
+    [summary],
+  );
+
+  const summaryPayers = useMemo(() => {
+    const seen = new Map<string, { key: string; label: string; type: "Organization" | "Employer" }>();
+    for (const row of summary) {
+      if (summaryPayerType !== "all" && row.payerType !== summaryPayerType) continue;
+      const id = row.payerType === "Organization" ? row.organizationId : row.employerId;
+      if (!id) continue;
+      const key = `${row.payerType}:${id}`;
+      if (!seen.has(key)) seen.set(key, { key, label: row.payerName, type: row.payerType });
+    }
+    return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label, "he"));
+  }, [summary, summaryPayerType]);
+
+  const filteredSummary = useMemo(() => summary.filter((row) => {
+    if (summaryPayerType !== "all" && row.payerType !== summaryPayerType) return false;
+    const rowPayerId = row.payerType === "Organization" ? row.organizationId : row.employerId;
+    if (summaryPayerKey !== "all" && `${row.payerType}:${rowPayerId}` !== summaryPayerKey) return false;
+    if (summaryMonth !== "all" && row.month !== summaryMonth) return false;
+    if (summaryPaymentState === "paid" && !row.paid) return false;
+    if (summaryPaymentState === "unpaid" && row.paid) return false;
+    if (summaryPaymentState === "failed" && !["4", "Failed"].includes(String(row.paymentStatus))) return false;
+    if (summaryPaymentState === "pending" &&
+        !["1", "Pending", "2", "Processing"].includes(String(row.paymentStatus))) return false;
+    return true;
+  }), [summary, summaryPayerType, summaryPayerKey, summaryMonth, summaryPaymentState]);
+
+  const summaryTotals = useMemo(() => ({
+    billed: filteredSummary.reduce((sum, row) => sum + row.amount, 0),
+    paid: filteredSummary.filter((row) => row.paid).reduce((sum, row) => sum + row.amount, 0),
+    unpaid: filteredSummary.filter((row) => !row.paid).reduce((sum, row) => sum + row.amount, 0),
+    unpaidCount: filteredSummary.filter((row) => !row.paid).length,
+  }), [filteredSummary]);
+
   const selectedPlan = useMemo(
     () => plans.find((item) => item.id === selectedPlanId) ?? null,
     [plans, selectedPlanId],
@@ -432,6 +479,95 @@ export default function AdminBillingPage() {
 
     <AppTabs items={tabs} activeKey={tab} onChange={setTab} ariaLabel="ניהול גבייה" />
     {error ? <div className="notice notice-error" style={{ margin: "16px 0" }}>{error}</div> : null}
+
+    {tab === "summary" ? <div style={{ marginTop: 18, display: "grid", gap: 18 }}>
+      <section className="grid" style={{ gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 12 }}>
+        <div className="card"><div style={{ color: "var(--muted)", fontSize: 13 }}>סה״כ לחיוב</div><div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{money(summaryTotals.billed)}</div></div>
+        <div className="card"><div style={{ color: "var(--muted)", fontSize: 13 }}>שולם</div><div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{money(summaryTotals.paid)}</div></div>
+        <div className="card"><div style={{ color: "var(--muted)", fontSize: 13 }}>טרם שולם</div><div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{money(summaryTotals.unpaid)}</div></div>
+        <div className="card"><div style={{ color: "var(--muted)", fontSize: 13 }}>חיובים פתוחים</div><div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{summaryTotals.unpaidCount}</div></div>
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <div>
+            <h2>סיכום גבייה חודשי</h2>
+            <p style={{ color: "var(--muted)", margin: "5px 0 0" }}>מי משלם, עבור איזה חודש, כמה חויב והאם התשלום הושלם.</p>
+          </div>
+        </div>
+
+        <div className="grid" style={{ gridTemplateColumns: "repeat(4,minmax(160px,1fr))", gap: 12, marginBottom: 16 }}>
+          <label className="field"><span>סוג משלם</span><UiSelect value={summaryPayerType} onChange={(event) => {
+            setSummaryPayerType(event.target.value);
+            setSummaryPayerKey("all");
+          }}>
+            {[{ value: "all", label: "הכול" }, { value: "Organization", label: "ארגון משלם" }, { value: "Employer", label: "מעסיק משלם" }].map((option) =>
+              <option key={option.value} value={option.value}>{option.label}</option>)}
+          </UiSelect></label>
+
+          <label className="field"><span>לקוח משלם</span><UiSelect value={summaryPayerKey} onChange={(event) => setSummaryPayerKey(event.target.value)}>
+            <option value="all">כל הלקוחות</option>
+            {summaryPayers.map((payer) => <option key={payer.key} value={payer.key}>{payer.label}</option>)}
+          </UiSelect></label>
+
+          <label className="field"><span>חודש</span><UiSelect value={summaryMonth} onChange={(event) => setSummaryMonth(event.target.value)}>
+            <option value="all">כל החודשים</option>
+            {summaryMonths.map((month) => <option key={month} value={month}>{month}</option>)}
+          </UiSelect></label>
+
+          <label className="field"><span>מצב תשלום</span><UiSelect value={summaryPaymentState} onChange={(event) => setSummaryPaymentState(event.target.value)}>
+            {[{ value: "all", label: "הכול" }, { value: "paid", label: "שולם" }, { value: "unpaid", label: "לא שולם" }, { value: "failed", label: "נכשל" }, { value: "pending", label: "ממתין/בתהליך" }].map((option) =>
+              <option key={option.value} value={option.value}>{option.label}</option>)}
+          </UiSelect></label>
+        </div>
+
+        <div style={{ overflowX: "auto" }}>
+          {filteredSummary.length ? <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>{["חודש", "לקוח משלם", "סוג", "ארגון", "סכום", "תשלום", "אמצעי תשלום", "שולם בתאריך", "בעיה", "פעולות"].map((item) => <th key={item} style={th}>{item}</th>)}</tr></thead>
+            <tbody>{filteredSummary.map((row) => {
+              const payerHref = row.payerType === "Organization" && row.organizationId
+                ? `/organizations/${row.organizationId}`
+                : row.employerId ? `/employers/${row.employerId}` : null;
+              return <tr key={row.id}>
+                <td style={td}><b>{row.month}</b></td>
+                <td style={td}>{payerHref ? <Link href={payerHref} style={{ fontWeight: 700 }}>{row.payerName}</Link> : <b>{row.payerName}</b>}</td>
+                <td style={td}>{row.payerType === "Organization" ? "ארגון משלם" : "מעסיק משלם"}</td>
+                <td style={td}>{row.organizationName || "—"}</td>
+                <td style={td}><b>{money(row.amount, row.currency)}</b></td>
+                <td style={td}>
+                  <b>{row.paid ? "שולם" : row.paymentStatus ? paymentStatus(row.paymentStatus) : "לא חויב"}</b>
+                  <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 3 }}>{periodStatus(row.status)}</div>
+                </td>
+                <td style={td}>{row.cardLast4 ? `${row.cardBrand || "כרטיס"} •••• ${row.cardLast4}` : "לא מוגדר"}</td>
+                <td style={td}>{row.paidAt ? shortDate(row.paidAt) : "—"}</td>
+                <td style={td}>{row.failureMessage
+                  ? <span style={{ color: "var(--danger)" }}>{row.failureMessage}</span>
+                  : !row.paid && ["5", "PastDue", "6", "Suspended"].includes(String(row.status))
+                    ? <span style={{ color: "var(--danger)" }}>נדרש טיפול בחיוב</span>
+                    : "—"}</td>
+                <td style={td}><div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                  {payerHref ? <Link className="btn btn-secondary" href={payerHref}>כרטיס לקוח</Link> : null}
+                  <button className="btn btn-secondary" onClick={() => void showUsage(row.id)}>פירוט</button>
+                  {!row.paid ? <button className="btn btn-primary" disabled={saving} onClick={() => void runPeriod(true, {
+                    id: row.id,
+                    billingAccountId: row.billingAccountId,
+                    planId: "",
+                    periodStart: row.periodStart,
+                    periodEnd: row.periodEnd,
+                    status: row.status,
+                    currency: row.currency,
+                    subtotal: row.amount,
+                    total: row.amount,
+                    calculatedAt: row.calculatedAt,
+                    chargedAt: row.chargedAt,
+                  })}>נסה לחייב</button> : null}
+                </div></td>
+              </tr>;
+            })}</tbody>
+          </table> : <div className="empty">אין חיובים שמתאימים לפילטרים שנבחרו.</div>}
+        </div>
+      </section>
+    </div> : null}
 
     {tab === "plans" ? <div className="grid" style={{ gridTemplateColumns: "minmax(240px,.45fr) minmax(0,1.55fr)", alignItems: "start", marginTop: 18 }}>
       <section className="card">
