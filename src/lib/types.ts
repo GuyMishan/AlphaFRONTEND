@@ -388,7 +388,7 @@ export type PlatformSubscription = {
 
 export type EntitlementUsage = {
   current: number;
-  maximum: number;
+  maximum: number | null;
 };
 
 export type EntitlementSnapshot = {
