@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, Landmark, LogOut, Menu, Settings, ShieldCheck, Users, X } from "lucide-react";
+import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, Landmark, LogOut, Menu, ReceiptText, Settings, ShieldCheck, Users, X } from "lucide-react";
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
 import { UpgradeModal } from "./upgrade-modal";
@@ -19,6 +19,7 @@ const nav = [
   { href: "/reports", label: "דיווחים ומשובים", icon: FileClock },
   { href: "/employees", label: "עובדים", icon: Users },
   { href: "/employers", label: "מעסיקים", icon: Building2 },
+  { href: "/billing", label: "חיובים", icon: ReceiptText },
 ];
 
 type ShellPageConfig = {
