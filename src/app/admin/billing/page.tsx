@@ -16,10 +16,10 @@ import type {
   BillingRefund,
 } from "@/lib/types";
 
-type Tab = "customers" | "summary" | "payments" | "refunds";
+type Tab = "subscriptions" | "summary" | "payments" | "refunds";
 
 const tabs = [
-  { key: "customers", label: "לקוחות", icon: UsersRound },
+  { key: "subscriptions", label: "מנויים", icon: UsersRound },
   { key: "summary", label: "סיכום חודשי", icon: ReceiptText },
   { key: "payments", label: "תשלומים", icon: CreditCard },
   { key: "refunds", label: "זיכויים", icon: RotateCcw },
@@ -29,12 +29,6 @@ const customerBillingTypeOptions = [
   { value: "Free", label: "חינם" },
   { value: "PerEmployee", label: "תשלום פר עובד" },
   { value: "PerReportRow", label: "תשלום פר שורה" },
-];
-
-const payerTypeOptions = [
-  { value: "all", label: "כל הלקוחות" },
-  { value: "Organization", label: "ארגונים משלמים" },
-  { value: "Employer", label: "מעסיקים משלמים" },
 ];
 
 const allMonthsOption = [{ value: "all", label: "כל החודשים" }];
@@ -92,14 +86,15 @@ function paymentMethodLabel(row: Pick<BillingCustomerRow, "paymentMethodStatus" 
 }
 
 export default function AdminBillingPage() {
-  const [tab, setTab] = useState<Tab>("customers");
+  const [tab, setTab] = useState<Tab>("subscriptions");
   const [customers, setCustomers] = useState<BillingCustomerRow[]>([]);
   const [summary, setSummary] = useState<BillingMonthlySummaryRow[]>([]);
   const [payments, setPayments] = useState<BillingPayment[]>([]);
   const [refunds, setRefunds] = useState<BillingRefund[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [payerTypeFilter, setPayerTypeFilter] = useState("all");
+  const [organizationFilter, setOrganizationFilter] = useState("all");
+  const [employerFilter, setEmployerFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [pricingCustomer, setPricingCustomer] = useState<BillingCustomerRow | null>(null);
   const [customerBillingType, setCustomerBillingType] = useState<BillingAccountPricingType>("Free");
@@ -230,9 +225,29 @@ export default function AdminBillingPage() {
     }
   }
 
+  const organizationOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const row of customers) seen.set(row.organizationId, row.organizationName);
+    return Array.from(seen.entries()).sort((a, b) => a[1].localeCompare(b[1], "he"));
+  }, [customers]);
+
+  const employerOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const row of customers) {
+      if (!row.employerId || !row.employerName) continue;
+      if (organizationFilter !== "all" && row.organizationId !== organizationFilter) continue;
+      seen.set(row.employerId, row.employerName);
+    }
+    return Array.from(seen.entries()).sort((a, b) => a[1].localeCompare(b[1], "he"));
+  }, [customers, organizationFilter]);
+
   const visibleCustomers = useMemo(
-    () => customers.filter((row) => payerTypeFilter === "all" || row.payerType === payerTypeFilter),
-    [customers, payerTypeFilter],
+    () => customers.filter((row) => {
+      if (organizationFilter !== "all" && row.organizationId !== organizationFilter) return false;
+      if (employerFilter !== "all" && row.employerId !== employerFilter) return false;
+      return true;
+    }),
+    [customers, organizationFilter, employerFilter],
   );
 
   const months = useMemo(
@@ -242,11 +257,12 @@ export default function AdminBillingPage() {
 
   const visibleSummary = useMemo(
     () => summary.filter((row) => {
-      if (payerTypeFilter !== "all" && row.payerType !== payerTypeFilter) return false;
+      if (organizationFilter !== "all" && row.organizationId !== organizationFilter) return false;
+      if (employerFilter !== "all" && row.employerId !== employerFilter) return false;
       if (monthFilter !== "all" && row.month !== monthFilter) return false;
       return true;
     }),
-    [summary, payerTypeFilter, monthFilter],
+    [summary, organizationFilter, employerFilter, monthFilter],
   );
 
   const totals = useMemo(() => ({
@@ -256,7 +272,7 @@ export default function AdminBillingPage() {
   }), [visibleSummary]);
 
   if (!getSession()?.platformAdmin) {
-    return <AppShell title="חיובים" hideScopeController>
+    return <AppShell title="ניהול גבייה ותמחור" hideScopeController>
       <div className="notice notice-error">אין הרשאת Platform Admin למסך זה.</div>
     </AppShell>;
   }
@@ -264,48 +280,61 @@ export default function AdminBillingPage() {
   return <AppShell title="חיובים" hideScopeController>
     <div className="page-head">
       <div>
-        <h1>חיובים</h1>
-        <p>הגדרת סוג החיוב לכל לקוח ומעקב אחר חיובים ותשלומים.</p>
+        <h1>ניהול גבייה ותמחור</h1>
+        <p>ניהול מסלול ותעריף לכל ארגון או מעסיק, ומעקב אחר הגבייה בפועל.</p>
       </div>
       <button className="btn btn-secondary" onClick={() => void load()} disabled={loading}>
         <RefreshCw size={16} />רענון
       </button>
     </div>
 
-    <AppTabs items={tabs} activeKey={tab} onChange={setTab} ariaLabel="חיובים" />
+    <AppTabs items={tabs} activeKey={tab} onChange={setTab} ariaLabel="ניהול גבייה ותמחור" />
     {error ? <div className="notice notice-error" style={{ margin: "16px 0" }}>{error}</div> : null}
 
-    {tab === "customers" ? <section className="card" style={{ marginTop: 18, overflowX: "auto" }}>
+    {tab === "subscriptions" ? <section className="card" style={{ marginTop: 18, overflowX: "auto" }}>
       <div className="card-head">
         <div>
-          <h2>לקוחות</h2>
+          <h2>מנויים</h2>
           <p style={{ color: "var(--muted)", margin: "5px 0 0" }}>
-            לכל לקוח מגדירים חינם, מחיר לעובד או מחיר לשורת דיווח.
+            לכל ארגון או מעסיק מוגדר מסלול אחד: חינם, פר עובד או פר שורה — והתעריף שלו.
           </p>
         </div>
-        <label className="field" style={{ minWidth: 190 }}>
-          <span>סוג לקוח</span>
-          <UiSelect value={payerTypeFilter} onChange={(event) => setPayerTypeFilter(event.target.value)}>
-            {payerTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </UiSelect>
-        </label>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <label className="field" style={{ minWidth: 220 }}>
+            <span>ארגון</span>
+            <UiSelect value={organizationFilter} onChange={(event) => {
+              setOrganizationFilter(event.target.value);
+              setEmployerFilter("all");
+            }}>
+              <option value="all">כל הארגונים</option>
+              {organizationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </UiSelect>
+          </label>
+          <label className="field" style={{ minWidth: 220 }}>
+            <span>מעסיק</span>
+            <UiSelect value={employerFilter} onChange={(event) => setEmployerFilter(event.target.value)}>
+              <option value="all">כל המעסיקים</option>
+              {employerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </UiSelect>
+          </label>
+        </div>
       </div>
 
       {visibleCustomers.length ? <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead><tr>{["לקוח", "סוג", "ארגון", "חיוב", "אמצעי תשלום", "פעולות"].map((item) => <th key={item} style={th}>{item}</th>)}</tr></thead>
+        <thead><tr>{["ארגון", "מעסיק", "מסלול", "תעריף", "אמצעי תשלום", "פעולות"].map((item) => <th key={item} style={th}>{item}</th>)}</tr></thead>
         <tbody>{visibleCustomers.map((row) => {
           const href = row.payerType === "Organization"
             ? `/organizations/${row.organizationId}`
             : row.employerId ? `/employers/${row.employerId}` : null;
           return <tr key={`${row.payerType}:${row.payerId}`}>
-            <td style={td}><b>{row.payerName}</b></td>
-            <td style={td}>{row.payerType === "Organization" ? "ארגון משלם" : "מעסיק משלם"}</td>
-            <td style={td}>{row.organizationName || "—"}</td>
-            <td style={td}><b>{billingLabel(row.billingType, row.unitPrice)}</b></td>
+            <td style={td}><b>{row.organizationName || "—"}</b></td>
+            <td style={td}>{row.payerType === "Employer" ? (row.employerName || row.payerName) : "כל הארגון"}</td>
+            <td style={td}>{row.billingType === "Free" ? "חינם" : row.billingType === "PerEmployee" ? "פר עובד" : "פר שורה"}</td>
+            <td style={td}><b>{row.billingType === "Free" ? "—" : money(row.unitPrice)}</b></td>
             <td style={td}>{paymentMethodLabel(row)}</td>
             <td style={td}>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button className="btn btn-primary" type="button" onClick={() => openPricing(row)}>עריכת חיוב</button>
+                <button className="btn btn-primary" type="button" onClick={() => openPricing(row)}>עריכת מסלול ותעריף</button>
                 {href ? <Link className="btn btn-secondary" href={href}>כרטיס לקוח</Link> : null}
               </div>
             </td>
@@ -325,8 +354,16 @@ export default function AdminBillingPage() {
         <div className="card-head">
           <div><h2>סיכום חודשי</h2></div>
           <div style={{ display: "flex", gap: 10 }}>
-            <UiSelect value={payerTypeFilter} onChange={(event) => setPayerTypeFilter(event.target.value)}>
-              {payerTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            <UiSelect value={organizationFilter} onChange={(event) => {
+              setOrganizationFilter(event.target.value);
+              setEmployerFilter("all");
+            }}>
+              <option value="all">כל הארגונים</option>
+              {organizationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </UiSelect>
+            <UiSelect value={employerFilter} onChange={(event) => setEmployerFilter(event.target.value)}>
+              <option value="all">כל המעסיקים</option>
+              {employerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
             </UiSelect>
             <UiSelect value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
               {allMonthsOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -401,15 +438,15 @@ export default function AdminBillingPage() {
       <section role="dialog" aria-modal="true" aria-label="עריכת חיוב לקוח" className="card" style={{ width: "min(500px,96vw)", padding: 22 }}>
         <div className="card-head">
           <div>
-            <h2>עריכת חיוב · {pricingCustomer.payerName}</h2>
-            <p style={{ color: "var(--muted)", margin: "5px 0 0" }}>רק סוג החיוב והמחיר של הלקוח.</p>
+            <h2>עריכת מסלול ותעריף · {pricingCustomer.payerName}</h2>
+            <p style={{ color: "var(--muted)", margin: "5px 0 0" }}>בחר מסלול והגדר את התעריף של הלקוח.</p>
           </div>
           <button className="btn btn-secondary" type="button" onClick={() => setPricingCustomer(null)}>סגירה</button>
         </div>
 
         <div className="grid" style={{ gap: 14 }}>
           <label className="field">
-            <span>סוג חיוב</span>
+            <span>מסלול</span>
             <UiSelect value={customerBillingType} onChange={(event) => setCustomerBillingType(event.target.value as BillingAccountPricingType)}>
               {customerBillingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </UiSelect>
