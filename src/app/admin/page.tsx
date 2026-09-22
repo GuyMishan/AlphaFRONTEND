@@ -1,6 +1,6 @@
 "use client";
 
-import { UiSelect } from "@/components/ui-controls";
+import { UiInput, UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
-import type { Plan, PlatformSubscription } from "@/lib/types";
+import type { BillingAccountPricingType, BillingCustomerRow } from "@/lib/types";
 
 type RunSummary = {
   id: string;
@@ -71,21 +71,22 @@ function statusLabel(status?: string) {
 
 const adminTabs = [
   { key: "interfaces", label: "ממשקים", icon: Settings2 },
-  { key: "subscriptions", label: "מסלולים ומנויים", icon: CreditCard },
+  { key: "subscriptions", label: "ניהול גבייה ותמחור", icon: CreditCard },
 ] satisfies Array<{ key: "interfaces" | "subscriptions"; label: string; icon: typeof Settings2 }>;
 
 export default function AdminPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"interfaces" | "subscriptions">("interfaces");
   const [rows, setRows] = useState<IntegrationRow[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [subscriptions, setSubscriptions] = useState<PlatformSubscription[]>([]);
+  const [billingCustomers, setBillingCustomers] = useState<BillingCustomerRow[]>([]);
+  const [organizationFilter, setOrganizationFilter] = useState("all");
+  const [employerFilter, setEmployerFilter] = useState("all");
+  const [editingBillingCustomer, setEditingBillingCustomer] = useState<BillingCustomerRow | null>(null);
+  const [billingTypeDraft, setBillingTypeDraft] = useState<BillingAccountPricingType>("Free");
+  const [unitPriceDraft, setUnitPriceDraft] = useState("0");
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<string | null>(null);
-  const [savingOrganizationId, setSavingOrganizationId] = useState<string | null>(null);
-  const [editingOrganizationId, setEditingOrganizationId] = useState<string | null>(null);
-  const [draftPlanByOrganization, setDraftPlanByOrganization] = useState<Record<string, string>>({});
-  const [draftStatusByOrganization, setDraftStatusByOrganization] = useState<Record<string, number>>({});
+  const [savingPricing, setSavingPricing] = useState(false);
   const [error, setError] = useState("");
   const [historyKey, setHistoryKey] = useState<string | null>(null);
   const [history, setHistory] = useState<RunDetail[]>([]);
@@ -95,14 +96,12 @@ export default function AdminPage() {
     setLoading(true);
     setError("");
     try {
-      const [interfaceRows, planRows, subscriptionRows] = await Promise.all([
+      const [interfaceRows, customers] = await Promise.all([
         adminRequest<IntegrationRow[]>("/api/platform/reference-data/interfaces"),
-        alphaApi.platformPlans(),
-        alphaApi.platformSubscriptions(),
+        alphaApi.billingCustomers(),
       ]);
       setRows(interfaceRows);
-      setPlans(planRows);
-      setSubscriptions(subscriptionRows);
+      setBillingCustomers(customers);
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת מסך האדמין נכשלה");
     } finally {
@@ -144,28 +143,66 @@ export default function AdminPage() {
     }
   }
 
-  async function saveSubscriptionRow(organizationId: string, planId: string, organizationStatus: number) {
-    setSavingOrganizationId(organizationId);
+  function billingPlanLabel(type: BillingAccountPricingType) {
+    if (type === "PerEmployee") return "פר עובד";
+    if (type === "PerReportRow") return "פר שורה";
+    return "חינם";
+  }
+
+  function openBillingEdit(row: BillingCustomerRow) {
+    setEditingBillingCustomer(row);
+    setBillingTypeDraft(row.billingType);
+    setUnitPriceDraft(String(row.unitPrice ?? 0));
+    setError("");
+  }
+
+  async function saveBillingEdit() {
+    if (!editingBillingCustomer) return;
+    const unitPrice = billingTypeDraft === "Free" ? 0 : Number(unitPriceDraft);
+    if (billingTypeDraft !== "Free" && (!Number.isFinite(unitPrice) || unitPrice <= 0)) {
+      setError("יש להזין תעריף גדול מאפס.");
+      return;
+    }
+
+    setSavingPricing(true);
     setError("");
     try {
-      await Promise.all([
-        alphaApi.changePlatformSubscriptionPlan(organizationId, planId),
-        alphaApi.changePlatformOrganizationStatus(organizationId, organizationStatus),
-      ]);
-      setSubscriptions(await alphaApi.platformSubscriptions());
-      setEditingOrganizationId(null);
-      setDraftPlanByOrganization((current) => { const next = { ...current }; delete next[organizationId]; return next; });
-      setDraftStatusByOrganization((current) => { const next = { ...current }; delete next[organizationId]; return next; });
+      await alphaApi.updateBillingCustomerPricing({
+        payerType: editingBillingCustomer.payerType,
+        payerId: editingBillingCustomer.payerId,
+        billingType: billingTypeDraft,
+        unitPrice,
+      });
+      setBillingCustomers(await alphaApi.billingCustomers());
+      setEditingBillingCustomer(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שמירת המסלול או סטטוס הארגון נכשלה");
+      setError(err instanceof Error ? err.message : "שמירת המסלול והתעריף נכשלה");
     } finally {
-      setSavingOrganizationId(null);
+      setSavingPricing(false);
     }
   }
 
+  const organizationOptions = Array.from(
+    new Map(billingCustomers.map((row) => [row.organizationId, row.organizationName])).entries(),
+  ).sort((a, b) => a[1].localeCompare(b[1], "he"));
+
+  const employerOptions = Array.from(
+    new Map(
+      billingCustomers
+        .filter((row) => row.employerId && row.employerName && (organizationFilter === "all" || row.organizationId === organizationFilter))
+        .map((row) => [row.employerId!, row.employerName!]),
+    ).entries(),
+  ).sort((a, b) => a[1].localeCompare(b[1], "he"));
+
+  const filteredBillingCustomers = billingCustomers.filter((row) => {
+    if (organizationFilter !== "all" && row.organizationId !== organizationFilter) return false;
+    if (employerFilter !== "all" && row.employerId !== employerFilter) return false;
+    return true;
+  });
+
   return <AppShell title="מסך אדמין" hideScopeController>
     <div className="page-head">
-      <div><h1>מסך אדמין</h1><p>ניהול ממשקי המערכת ומסלולי הלקוחות</p></div>
+      <div><h1>מסך אדמין</h1><p>ניהול ממשקי המערכת וניהול הגבייה והתמחור</p></div>
       <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={loading || Boolean(running)}><RefreshCw size={16} />רענון</button>
     </div>
 
@@ -200,58 +237,75 @@ export default function AdminPage() {
       </div>
     </section> : <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>מסלולים ומנויים</h2>
-            <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>שיוך מסלולים לארגונים וניהול סטטוס המנוי.</p>
-          </div>
-          <Link className="btn btn-primary" href="/admin/billing"><CreditCard size={16} />ניהול גבייה ותמחור</Link>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 18 }}>מנויים</h2>
+          <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>כל ארגון וכל מעסיק, המסלול שלו והתעריף שלו.</p>
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+          <label className="field" style={{ minWidth: 220 }}>
+            <span>ארגון</span>
+            <UiSelect value={organizationFilter} onChange={(event) => { setOrganizationFilter(event.target.value); setEmployerFilter("all"); }}>
+              {[{ value: "all", label: "כל הארגונים" }].map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              {organizationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </UiSelect>
+          </label>
+          <label className="field" style={{ minWidth: 220 }}>
+            <span>מעסיק</span>
+            <UiSelect value={employerFilter} onChange={(event) => setEmployerFilter(event.target.value)}>
+              {[{ value: "all", label: "כל המעסיקים" }].map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              {employerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </UiSelect>
+          </label>
         </div>
       </div>
       <div style={{ overflowX: "auto" }}>
         <table className="admin-subscriptions-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["ארגון","מסלול","סטטוס ארגון","מעסיקים","עובדים","משתמשים","התחלה","תוקף","פעולות"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
+          <thead><tr>{["ארגון","מעסיק","מסלול","תעריף","אמצעי תשלום","פעולות"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan={8} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : subscriptions.map((item) => <tr key={item.subscriptionId}>
+            {loading ? <tr><td colSpan={6} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : filteredBillingCustomers.map((item) => <tr key={`${item.payerType}:${item.payerId}`}>
               <td style={cellStyle}><Link className="profile-link" href={`/organizations/${item.organizationId}`}><b>{item.organizationName}</b></Link></td>
-              <td style={cellStyle}>
-                <UiSelect
-                  className="admin-plan-select"
-                  value={draftPlanByOrganization[item.organizationId] ?? item.planId}
-                  disabled={editingOrganizationId !== item.organizationId || savingOrganizationId === item.organizationId}
-                  onChange={(event) => setDraftPlanByOrganization((current) => ({ ...current, [item.organizationId]: event.target.value }))}
-                >
-                  {plans.filter((plan) => plan.isActive || plan.id === item.planId).map((plan) => <option key={plan.id} value={plan.id}>{plan.name} ({plan.code})</option>)}
-                </UiSelect>
-              </td>
-              <td style={cellStyle}>
-                {editingOrganizationId === item.organizationId ? <UiSelect
-                  value={draftStatusByOrganization[item.organizationId] ?? Number(item.organizationStatus)}
-                  disabled={savingOrganizationId === item.organizationId}
-                  onChange={(event) => setDraftStatusByOrganization((current) => ({ ...current, [item.organizationId]: Number(event.target.value) }))}
-                >
-                  <option value={1}>בהקמה</option>
-                  <option value={2}>פעיל</option>
-                  <option value={3}>מושהה</option>
-                  <option value={4}>סגור</option>
-                </UiSelect> : organizationStatusLabel(item.organizationStatus)}
-              </td>
-              <td style={cellStyle}>{item.maxEmployers}</td>
-              <td style={cellStyle}>{item.maxEmployees}</td>
-              <td style={cellStyle}>{item.maxUsers}</td>
-              <td style={cellStyle}>{formatDate(item.startedAt)}</td>
-              <td style={cellStyle}>{item.expiresAt ? formatDate(item.expiresAt) : "ללא הגבלה"}</td>
-              <td className="admin-actions-cell" style={cellStyle}>
-                {editingOrganizationId === item.organizationId ? <div style={{ display: "flex", gap: 6 }}>
-                  <button className="btn btn-primary" type="button" disabled={savingOrganizationId === item.organizationId} onClick={() => void saveSubscriptionRow(item.organizationId, draftPlanByOrganization[item.organizationId] ?? item.planId, draftStatusByOrganization[item.organizationId] ?? Number(item.organizationStatus))}><Save size={15} />{savingOrganizationId === item.organizationId ? "שומר..." : "שמירה"}</button>
-                  <button className="btn btn-secondary" type="button" disabled={savingOrganizationId === item.organizationId} onClick={() => { setEditingOrganizationId(null); setDraftPlanByOrganization((current) => { const next = { ...current }; delete next[item.organizationId]; return next; }); setDraftStatusByOrganization((current) => { const next = { ...current }; delete next[item.organizationId]; return next; }); }}>ביטול</button>
-                </div> : <button className="btn btn-secondary" type="button" onClick={() => { setEditingOrganizationId(item.organizationId); setDraftPlanByOrganization((current) => ({ ...current, [item.organizationId]: item.planId })); setDraftStatusByOrganization((current) => ({ ...current, [item.organizationId]: Number(item.organizationStatus) })); }}><Pencil size={15} />עריכה</button>}
-              </td>
+              <td style={cellStyle}>{item.payerType === "Employer" ? <Link className="profile-link" href={`/employers/${item.employerId}`}><b>{item.employerName || item.payerName}</b></Link> : "כל הארגון"}</td>
+              <td style={cellStyle}><b>{billingPlanLabel(item.billingType)}</b></td>
+              <td style={cellStyle}>{item.billingType === "Free" ? "—" : new Intl.NumberFormat("he-IL", { style: "currency", currency: "ILS" }).format(item.unitPrice)}</td>
+              <td style={cellStyle}>{item.cardLast4 ? `${item.cardBrand || "כרטיס"} •••• ${item.cardLast4}` : "לא מוגדר"}</td>
+              <td style={cellStyle}><button className="btn btn-secondary" type="button" onClick={() => openBillingEdit(item)}><Pencil size={15} />עריכת מסלול ותעריף</button></td>
             </tr>)}
           </tbody>
         </table>
       </div>
     </section>}
+
+    {editingBillingCustomer ? <div style={backdropStyle} onClick={() => setEditingBillingCustomer(null)}>
+      <div style={{ ...modalStyle, maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
+        <div style={modalHeaderStyle}>
+          <div>
+            <h2 style={{ margin: 0 }}>עריכת מסלול ותעריף</h2>
+            <div style={{ color: "var(--muted)", marginTop: 4 }}>{editingBillingCustomer.payerName}</div>
+          </div>
+          <button className="btn btn-secondary" type="button" onClick={() => setEditingBillingCustomer(null)}><X size={17} /></button>
+        </div>
+        <div style={{ display: "grid", gap: 14 }}>
+          <label className="field">
+            <span>מסלול</span>
+            <UiSelect value={billingTypeDraft} onChange={(event) => setBillingTypeDraft(event.target.value as BillingAccountPricingType)}>
+              {[
+                { value: "Free", label: "חינם" },
+                { value: "PerEmployee", label: "פר עובד" },
+                { value: "PerReportRow", label: "פר שורה" },
+              ].map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </UiSelect>
+          </label>
+          {billingTypeDraft !== "Free" ? <label className="field">
+            <span>{billingTypeDraft === "PerEmployee" ? "תעריף לעובד" : "תעריף לשורה"}</span>
+            <UiInput type="number" min={0.01} step="0.01" value={unitPriceDraft} onChange={(event) => setUnitPriceDraft(event.target.value)} />
+          </label> : null}
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
+          <button className="btn btn-secondary" type="button" onClick={() => setEditingBillingCustomer(null)}>ביטול</button>
+          <button className="btn btn-primary" type="button" disabled={savingPricing} onClick={() => void saveBillingEdit()}><Save size={15} />{savingPricing ? "שומר..." : "שמירה"}</button>
+        </div>
+      </div>
+    </div> : null}
 
     {historyKey ? <div style={backdropStyle} onClick={() => setHistoryKey(null)}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
@@ -278,15 +332,6 @@ export default function AdminPage() {
       </div>
     </div> : null}
   </AppShell>;
-}
-
-function organizationStatusLabel(status: number | string) {
-  const value = Number(status);
-  if (value === 1 || String(status) === "Onboarding") return "בהקמה";
-  if (value === 2 || String(status) === "Active") return "פעיל";
-  if (value === 3 || String(status) === "Suspended") return "מושהה";
-  if (value === 4 || String(status) === "Closed") return "סגור";
-  return String(status);
 }
 
 const thStyle: React.CSSProperties = { textAlign: "right", padding: 12, borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" };
