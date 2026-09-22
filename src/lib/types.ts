@@ -754,6 +754,20 @@ export type BillingPlan = {
   components: BillingPricingComponent[];
 };
 
+export type BillingAccountPricingProfile = {
+  billingAccountId: string;
+  source: "Account" | "Plan";
+  planId: string;
+  planName: string;
+  effectiveFrom: string;
+  components: BillingPricingComponent[];
+};
+
+export type BillingAccountPricingInput = {
+  effectiveFrom: string | null;
+  components: BillingPricingComponent[];
+};
+
 export type BillingPlanInput = {
   code: string;
   name: string;
