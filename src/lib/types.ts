@@ -754,18 +754,17 @@ export type BillingPlan = {
   components: BillingPricingComponent[];
 };
 
+export type BillingAccountPricingType = "Free" | "PerEmployee" | "PerReportRow";
+
 export type BillingAccountPricingProfile = {
   billingAccountId: string;
-  source: "Account" | "Plan";
-  planId: string;
-  planName: string;
-  effectiveFrom: string;
-  components: BillingPricingComponent[];
+  billingType: BillingAccountPricingType;
+  unitPrice: number;
 };
 
 export type BillingAccountPricingInput = {
-  effectiveFrom: string | null;
-  components: BillingPricingComponent[];
+  billingType: BillingAccountPricingType;
+  unitPrice: number | null;
 };
 
 export type BillingPlanInput = {
@@ -831,8 +830,8 @@ export type BillingMonthlySummaryRow = {
   paidAt: string | null;
   calculatedAt: string | null;
   chargedAt: string | null;
-  pricingSource: "Account" | "Plan";
-  pricingComponents: BillingPricingComponent[];
+  billingType: BillingAccountPricingType;
+  unitPrice: number;
 };
 
 export type BillingPeriod = {
