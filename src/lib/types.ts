@@ -822,3 +822,24 @@ export type BillingUsageRow = {
   sourceType: string;
   sourceId: string;
 };
+
+export type BillingCustomerContext = {
+  organizationId: string;
+  employerId: string | null;
+  source: "Organization" | "Employer";
+  billedThroughName: string;
+  canManageBilling: boolean;
+  account: {
+    id: string | null;
+    billingMode: BillingMode | null;
+    status: BillingAccountStatus;
+    paymentMethodType: BillingPaymentMethodType;
+    paymentMethodStatus: BillingPaymentMethodStatus;
+    cardBrand: string;
+    cardLast4: string;
+    cardExpiryMonth: number | null;
+    cardExpiryYear: number | null;
+    hasBankDebitMandate: boolean;
+    configured: boolean;
+  };
+};
