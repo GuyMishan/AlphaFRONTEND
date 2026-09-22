@@ -699,3 +699,121 @@ export type PensionPaymentResolution = {
 export type OrganizationPaymentAccountResponse = {
   account: EmployerPaymentAccount | null;
 };
+
+
+export type BillingMetricType = 1 | 2 | 3 | 4 | 5;
+export type BillingPricingType = 1 | 2 | 3;
+export type CorrectionBillingMode = 1 | 2 | 3 | 4;
+
+export type BillingPricingComponent = {
+  id?: string;
+  version?: number;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  metricType: BillingMetricType;
+  pricingType: BillingPricingType;
+  unitPrice: number;
+  includedQuantity: number;
+  minimumCharge: number | null;
+  maximumCharge: number | null;
+  isEnabled: boolean;
+  correctionMode?: CorrectionBillingMode | null;
+};
+
+export type BillingPlan = {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  currency: string;
+  billingInterval: string;
+  version: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  correctionBillingMode: CorrectionBillingMode;
+  correctionUnitPrice: number | null;
+  includedCorrections: number;
+  includedCorrectionRows: number;
+  maxEmployers: number;
+  maxEmployees: number;
+  maxUsers: number;
+  isActive: boolean;
+  components: BillingPricingComponent[];
+};
+
+export type BillingPlanInput = {
+  code: string;
+  name: string;
+  description: string;
+  currency: string;
+  billingInterval: string;
+  maxEmployers: number;
+  maxEmployees: number;
+  maxUsers: number;
+  isActive: boolean;
+  correctionBillingMode: CorrectionBillingMode;
+  correctionUnitPrice: number | null;
+  includedCorrections: number;
+  includedCorrectionRows: number;
+  effectiveFrom: string | null;
+  components: BillingPricingComponent[];
+};
+
+export type BillingCalculationLine = {
+  metric: BillingMetricType | string;
+  quantity: number;
+  includedQuantity: number;
+  billableQuantity: number;
+  unitPrice: number;
+  amount: number;
+};
+
+export type BillingCalculation = {
+  subtotal: number;
+  total: number;
+  components: BillingCalculationLine[];
+};
+
+export type BillingPeriod = {
+  id: string;
+  billingAccountId: string;
+  planId: string;
+  periodStart: string;
+  periodEnd: string;
+  status: number | string;
+  currency: string;
+  subtotal: number;
+  total: number;
+  calculationSnapshotJson?: string;
+  calculatedAt: string | null;
+  chargedAt: string | null;
+};
+
+export type BillingPayment = {
+  id: string;
+  billingAccountId: string;
+  billingPeriodId: string;
+  amount: number;
+  currency: string;
+  status: number | string;
+  provider: string;
+  providerTransactionId: string;
+  invoiceReference: string;
+  failureCode: string;
+  failureMessage: string;
+  paidAt: string | null;
+  createdAt: string;
+};
+
+export type BillingUsageRow = {
+  id: string;
+  employerId: string | null;
+  metricType: BillingMetricType | string;
+  quantity: number;
+  includedQuantity: number;
+  billableQuantity: number;
+  unitPrice: number;
+  amount: number;
+  sourceType: string;
+  sourceId: string;
+};
