@@ -22,6 +22,7 @@ import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type {
+  BillingAccountPricingProfile,
   BillingCalculation,
   BillingMonthlySummaryRow,
   BillingMetricType,
@@ -126,6 +127,47 @@ function planTariffSummary(plan: BillingPlan) {
   if (correctionMode === 3) lines.push(`תיקון: ${money(plan.correctionUnitPrice ?? 0, plan.currency)} לשורה מתוקנת`);
   if (correctionMode === 4) lines.push("תיקון: לפי מחיר שורת דיווח רגילה");
   return lines.length ? lines : ["ללא חיוב"];
+}
+
+function customerTariffSummary(components: BillingPricingComponent[], currency = "ILS") {
+  const active = components.filter((component) => component.isEnabled);
+  if (!active.length) return ["ללא חיוב"];
+  return active.map((component) => {
+    const metric = componentMetricLabel(component.metricType);
+    if (Number(component.pricingType) === 3) return `${metric}: מדרגות`;
+    const suffix = Number(component.metricType) === 1 ? "לחודש" :
+      Number(component.metricType) === 2 ? "למעסיק" :
+      Number(component.metricType) === 3 ? "לעובד" :
+      Number(component.metricType) === 4 ? "לשורה" :
+      Number(component.correctionMode) === 2 ? "לתיקון" :
+      Number(component.correctionMode) === 3 ? "לשורה מתוקנת" : "";
+    if (Number(component.metricType) === 5 && Number(component.correctionMode) === 1) return "תיקונים: ללא חיוב";
+    if (Number(component.metricType) === 5 && Number(component.correctionMode) === 4) return "תיקונים: כמו שורת דיווח";
+    const included = component.includedQuantity > 0 ? ` · ${component.includedQuantity} כלולים` : "";
+    return `${metric}: ${money(component.unitPrice, currency)} ${suffix}${included}`;
+  });
+}
+
+function normalizeCustomerPricing(profile: BillingAccountPricingProfile) {
+  const byMetric = new Map(profile.components.map((component) => [Number(component.metricType), component]));
+  return ([1, 2, 3, 4, 5] as BillingMetricType[]).map((metricType) => {
+    const found = byMetric.get(metricType);
+    if (found) return { ...found, metricType, tiers: found.tiers?.map((tier) => ({ ...tier })) ?? [] };
+    if (metricType === 5) {
+      return {
+        metricType,
+        pricingType: 2 as const,
+        unitPrice: 0,
+        includedQuantity: 0,
+        minimumCharge: null,
+        maximumCharge: null,
+        isEnabled: true,
+        correctionMode: 1 as CorrectionBillingMode,
+        tiers: [],
+      };
+    }
+    return emptyComponent(metricType, metricType === 1 ? 1 : 2);
+  });
 }
 
 function emptyComponent(metricType: BillingMetricType, pricingType: 1 | 2): BillingPricingComponent {
@@ -253,6 +295,11 @@ export default function AdminBillingPage() {
   const [summaryMonth, setSummaryMonth] = useState("all");
   const [summaryPaymentState, setSummaryPaymentState] = useState("all");
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [customerPricingOpen, setCustomerPricingOpen] = useState(false);
+  const [customerPricingRow, setCustomerPricingRow] = useState<BillingMonthlySummaryRow | null>(null);
+  const [customerPricingSource, setCustomerPricingSource] = useState<"Account" | "Plan">("Plan");
+  const [customerPricingPlanName, setCustomerPricingPlanName] = useState("");
+  const [customerPricingComponents, setCustomerPricingComponents] = useState<BillingPricingComponent[]>([]);
   const [error, setError] = useState("");
 
   async function load() {
@@ -298,6 +345,88 @@ export default function AdminBillingPage() {
   function openPricingEditor(plan?: BillingPlan) {
     if (plan) selectPlan(plan);
     setPricingModalOpen(true);
+  }
+
+  async function openCustomerPricingEditor(row: BillingMonthlySummaryRow) {
+    setError("");
+    try {
+      const profile = await alphaApi.billingAccountPricing(row.billingAccountId);
+      setCustomerPricingRow(row);
+      setCustomerPricingSource(profile.source);
+      setCustomerPricingPlanName(profile.planName);
+      setCustomerPricingComponents(normalizeCustomerPricing(profile));
+      setCustomerPricingOpen(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "טעינת תעריפי הלקוח נכשלה.");
+    }
+  }
+
+  function updateCustomerComponent(metricType: BillingMetricType, patch: Partial<BillingPricingComponent>) {
+    setCustomerPricingComponents((current) => current.map((item) =>
+      Number(item.metricType) === Number(metricType) ? { ...item, ...patch } : item));
+  }
+
+  function updateCustomerTier(metricType: BillingMetricType, index: number, patch: Partial<BillingPricingTier>) {
+    setCustomerPricingComponents((current) => current.map((item) => {
+      if (Number(item.metricType) !== Number(metricType)) return item;
+      const tiers = [...(item.tiers ?? [])];
+      tiers[index] = { ...tiers[index], ...patch };
+      return { ...item, tiers };
+    }));
+  }
+
+  function addCustomerTier(metricType: BillingMetricType) {
+    setCustomerPricingComponents((current) => current.map((item) => {
+      if (Number(item.metricType) !== Number(metricType)) return item;
+      const tiers = [...(item.tiers ?? [])];
+      const last = tiers[tiers.length - 1];
+      if (last?.toQuantity === null) tiers[tiers.length - 1] = { ...last, toQuantity: last.fromQuantity + 100 };
+      const fromQuantity = tiers[tiers.length - 1]?.toQuantity ?? 0;
+      tiers.push({ fromQuantity, toQuantity: null, unitPrice: item.unitPrice });
+      return { ...item, tiers };
+    }));
+  }
+
+  function removeCustomerTier(metricType: BillingMetricType, index: number) {
+    setCustomerPricingComponents((current) => current.map((item) => {
+      if (Number(item.metricType) !== Number(metricType)) return item;
+      const tiers = (item.tiers ?? []).filter((_, tierIndex) => tierIndex !== index);
+      if (tiers.length) tiers[tiers.length - 1] = { ...tiers[tiers.length - 1], toQuantity: null };
+      return { ...item, tiers };
+    }));
+  }
+
+  async function saveCustomerPricing() {
+    if (!customerPricingRow) return;
+    setSaving(true);
+    setError("");
+    try {
+      await alphaApi.updateBillingAccountPricing(customerPricingRow.billingAccountId, {
+        effectiveFrom: new Date().toISOString(),
+        components: customerPricingComponents,
+      });
+      setCustomerPricingOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שמירת תעריפי הלקוח נכשלה.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function resetCustomerPricing() {
+    if (!customerPricingRow) return;
+    setSaving(true);
+    setError("");
+    try {
+      await alphaApi.resetBillingAccountPricing(customerPricingRow.billingAccountId);
+      setCustomerPricingOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "איפוס תעריפי הלקוח נכשל.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function updateComponent(metricType: BillingMetricType, patch: Partial<BillingPricingComponent>) {
@@ -587,7 +716,7 @@ export default function AdminBillingPage() {
 
         <div style={{ overflowX: "auto" }}>
           {filteredSummary.length ? <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr>{["חודש", "לקוח משלם", "סוג", "ארגון", "סכום", "תשלום", "אמצעי תשלום", "שולם בתאריך", "בעיה", "פעולות"].map((item) => <th key={item} style={th}>{item}</th>)}</tr></thead>
+            <thead><tr>{["חודש", "לקוח משלם", "סוג", "ארגון", "תעריפים", "סכום", "תשלום", "אמצעי תשלום", "שולם בתאריך", "בעיה", "פעולות"].map((item) => <th key={item} style={th}>{item}</th>)}</tr></thead>
             <tbody>{filteredSummary.map((row) => {
               const payerHref = row.payerType === "Organization" && row.organizationId
                 ? `/organizations/${row.organizationId}`
@@ -597,6 +726,12 @@ export default function AdminBillingPage() {
                 <td style={td}>{payerHref ? <Link href={payerHref} style={{ fontWeight: 700 }}>{row.payerName}</Link> : <b>{row.payerName}</b>}</td>
                 <td style={td}>{row.payerType === "Organization" ? "ארגון משלם" : "מעסיק משלם"}</td>
                 <td style={td}>{row.organizationName || "—"}</td>
+                <td style={td}>
+                  <div style={{ display: "grid", gap: 3 }}>
+                    {customerTariffSummary(row.pricingComponents ?? [], row.currency).map((line) => <span key={line}>{line}</span>)}
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{row.pricingSource === "Account" ? "מחיר מיוחד ללקוח" : "מחירון המסלול"}</span>
+                  </div>
+                </td>
                 <td style={td}><b>{money(row.amount, row.currency)}</b></td>
                 <td style={td}>
                   <b>{row.paid ? "שולם" : row.paymentStatus ? paymentStatus(row.paymentStatus) : "לא חויב"}</b>
@@ -611,6 +746,7 @@ export default function AdminBillingPage() {
                     : "—"}</td>
                 <td style={td}><div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                   {payerHref ? <Link className="btn btn-secondary" href={payerHref}>כרטיס לקוח</Link> : null}
+                  <button className="btn btn-secondary" type="button" onClick={() => void openCustomerPricingEditor(row)}>עריכת תעריפים</button>
                   <button className="btn btn-secondary" onClick={() => void showUsage(row.id)}>פירוט</button>
                   {!row.paid ? <button className="btn btn-primary" disabled={saving} onClick={() => void runPeriod(true, {
                     id: row.id,
@@ -636,7 +772,7 @@ export default function AdminBillingPage() {
     {tab === "plans" ? <div className="grid" style={{ gridTemplateColumns: "1fr", alignItems: "start", marginTop: 18 }}>
       <section className="card">
         <div className="card-head">
-          <h2>תוכניות</h2>
+          <h2>מחירוני מסלולים</h2>
           <button className="btn btn-secondary" onClick={() => {
             setSelectedPlanId(null);
             setDraft(emptyPlan());
@@ -684,7 +820,7 @@ export default function AdminBillingPage() {
             <div>
               <h2>{selectedPlan ? "עריכת תוכנית" : "תוכנית חדשה"}</h2>
               <p style={{ color: "var(--muted)", margin: "5px 0 0" }}>
-                שינוי מחיר יוצר גרסה חדשה ואינו משנה תקופות היסטוריות.
+                זהו מחירון ברירת המחדל. תעריף מיוחד ללקוח מוגדר מטבלת סיכום הגבייה.
               </p>
             </div>
           </div>
@@ -876,6 +1012,95 @@ export default function AdminBillingPage() {
         </tr>)}</tbody>
       </table> : <div className="empty">אין נתוני שימוש להצגה.</div>}
     </section> : null}
+    {customerPricingOpen && customerPricingRow ? <div
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) setCustomerPricingOpen(false);
+      }}
+      style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,.48)", display: "grid", placeItems: "center", padding: 20 }}
+    >
+      <section role="dialog" aria-modal="true" aria-label="עריכת תעריפי לקוח" className="card" style={{ width: "min(1080px,96vw)", maxHeight: "90vh", overflowY: "auto", padding: 22 }}>
+        <div className="card-head" style={{ position: "sticky", top: -22, background: "var(--surface)", zIndex: 2, paddingBottom: 14 }}>
+          <div>
+            <h2>תעריפי לקוח · {customerPricingRow.payerName}</h2>
+            <p style={{ color: "var(--muted)", margin: "5px 0 0" }}>
+              מסלול: {customerPricingPlanName || "—"} · {customerPricingSource === "Account" ? "מחיר מיוחד ללקוח" : "כרגע משתמש במחירון המסלול"}
+            </p>
+          </div>
+          <button className="btn btn-secondary" type="button" onClick={() => setCustomerPricingOpen(false)}>סגירה</button>
+        </div>
+
+        <div style={{ display: "grid", gap: 14 }}>
+          {customerPricingComponents.filter((component) => Number(component.metricType) !== 5).map((component) => {
+            const metricType = Number(component.metricType) as BillingMetricType;
+            return <section key={metricType} style={{ border: "1px solid var(--line)", borderRadius: 14, padding: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "150px 150px repeat(4,minmax(120px,1fr))", gap: 10, alignItems: "end" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 12 }}>
+                  <UiInput type="checkbox" checked={component.isEnabled} onChange={(event) => updateCustomerComponent(metricType, { isEnabled: event.target.checked })} />
+                  <b>{componentMetricLabel(metricType)}</b>
+                </label>
+                <label className="field"><span>דרך תמחור</span><UiSelect value={component.pricingType} disabled={metricType === 1} onChange={(event) => {
+                  const pricingType = Number(event.target.value) as 1 | 2 | 3;
+                  updateCustomerComponent(metricType, {
+                    pricingType,
+                    tiers: pricingType === 3 && !(component.tiers?.length)
+                      ? [{ fromQuantity: 0, toQuantity: null, unitPrice: component.unitPrice }]
+                      : component.tiers,
+                  });
+                }}>
+                  {pricingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </UiSelect></label>
+                <label className="field"><span>כמות כלולה</span><UiInput type="number" min={0} value={component.includedQuantity} disabled={!component.isEnabled || metricType === 1} onChange={(event) => updateCustomerComponent(metricType, { includedQuantity: Number(event.target.value) })} /></label>
+                <label className="field"><span>מחיר</span><UiInput type="number" min={0} step="0.01" value={component.unitPrice} disabled={!component.isEnabled || Number(component.pricingType) === 3} onChange={(event) => updateCustomerComponent(metricType, { unitPrice: Number(event.target.value) })} /></label>
+                <label className="field"><span>מינימום</span><UiInput type="number" min={0} step="0.01" value={component.minimumCharge ?? ""} disabled={!component.isEnabled} onChange={(event) => updateCustomerComponent(metricType, { minimumCharge: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+                <label className="field"><span>מקסימום</span><UiInput type="number" min={0} step="0.01" value={component.maximumCharge ?? ""} disabled={!component.isEnabled} onChange={(event) => updateCustomerComponent(metricType, { maximumCharge: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+              </div>
+              {Number(component.pricingType) === 3 && component.isEnabled ? <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                {(component.tiers ?? []).map((tier, index) => <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 8 }}>
+                  <UiInput type="number" min={0} value={tier.fromQuantity} onChange={(event) => updateCustomerTier(metricType, index, { fromQuantity: Number(event.target.value) })} />
+                  <UiInput type="number" min={0} value={tier.toQuantity ?? ""} placeholder="ללא הגבלה" onChange={(event) => updateCustomerTier(metricType, index, { toQuantity: event.target.value === "" ? null : Number(event.target.value) })} />
+                  <UiInput type="number" min={0} step="0.01" value={tier.unitPrice} onChange={(event) => updateCustomerTier(metricType, index, { unitPrice: Number(event.target.value) })} />
+                  <button className="btn btn-secondary" type="button" onClick={() => removeCustomerTier(metricType, index)}><Trash2 size={16} /></button>
+                </div>)}
+                <button className="btn btn-secondary" type="button" onClick={() => addCustomerTier(metricType)}><Plus size={15} />מדרגה</button>
+              </div> : null}
+            </section>;
+          })}
+        </div>
+
+        {customerPricingComponents.find((component) => Number(component.metricType) === 5) ? (() => {
+          const correction = customerPricingComponents.find((component) => Number(component.metricType) === 5)!;
+          return <section style={{ marginTop: 14, border: "1px solid var(--line)", borderRadius: 14, padding: 14 }}>
+            <h3 style={{ marginTop: 0 }}>תיקונים</h3>
+            <div className="grid" style={{ gridTemplateColumns: "repeat(3,minmax(0,1fr))" }}>
+              <label className="field"><span>אופן חיוב</span><UiSelect value={correction.correctionMode ?? 1} onChange={(event) => updateCustomerComponent(5, {
+                isEnabled: true,
+                correctionMode: Number(event.target.value) as CorrectionBillingMode,
+              })}>
+                {correctionBillingOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </UiSelect></label>
+              {Number(correction.correctionMode ?? 1) === 2 || Number(correction.correctionMode ?? 1) === 3
+                ? <label className="field"><span>מחיר</span><UiInput type="number" min={0} step="0.01" value={correction.unitPrice} onChange={(event) => updateCustomerComponent(5, { unitPrice: Number(event.target.value) })} /></label>
+                : <div />}
+              {Number(correction.correctionMode ?? 1) === 2 || Number(correction.correctionMode ?? 1) === 3 || Number(correction.correctionMode ?? 1) === 4
+                ? <label className="field"><span>כמות כלולה</span><UiInput type="number" min={0} value={correction.includedQuantity} onChange={(event) => updateCustomerComponent(5, { includedQuantity: Number(event.target.value) })} /></label>
+                : null}
+            </div>
+          </section>;
+        })() : null}
+
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 20 }}>
+          <div>
+            {customerPricingSource === "Account" ? <button className="btn btn-secondary" type="button" disabled={saving} onClick={() => void resetCustomerPricing()}>חזרה למחירון המסלול</button> : null}
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn btn-secondary" type="button" onClick={() => setCustomerPricingOpen(false)}>ביטול</button>
+            <button className="btn btn-primary" type="button" disabled={saving} onClick={() => void saveCustomerPricing()}><Save size={16} />{saving ? "שומר..." : "שמירת תעריפי לקוח"}</button>
+          </div>
+        </div>
+      </section>
+    </div> : null}
+
     {pricingModalOpen ? <div
       role="presentation"
       onMouseDown={(event) => {
