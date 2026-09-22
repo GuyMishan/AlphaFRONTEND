@@ -58,3 +58,21 @@ export function getEmployeeSelection(): string | null {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(EMPLOYEE_KEY);
 }
+
+
+export function isPlatformAdminSession(session: Session | null): boolean {
+  if (!session) return false;
+  if (session.platformAdmin === true) return true;
+  if (!session.accessToken) return false;
+
+  try {
+    const payloadPart = session.accessToken.split(".")[1];
+    if (!payloadPart) return false;
+    const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const payload = JSON.parse(window.atob(padded)) as Record<string, unknown>;
+    return payload["alpha:platform_admin"] === "true" || payload["alpha:platform_admin"] === true;
+  } catch {
+    return false;
+  }
+}
