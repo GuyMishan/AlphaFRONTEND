@@ -31,6 +31,12 @@ import type {
   BankOption,
   BankBranchOption,
   BillingGateStatus,
+  BillingPlan,
+  BillingPlanInput,
+  BillingCalculation,
+  BillingPeriod,
+  BillingPayment,
+  BillingUsageRow,
   GlobalScopeContext,
   CreateInvitationInput,
   PublicInvitation,
@@ -144,6 +150,28 @@ export const alphaApi = {
     request<EntitlementSnapshot>(`/api/organizations/${organizationId}/entitlements`),
   platformPlans: (): Promise<Plan[]> =>
     request<Plan[]>("/api/platform/subscriptions/plans"),
+  billingPlans: (): Promise<BillingPlan[]> =>
+    request<BillingPlan[]>("/api/platform/billing/plans"),
+  createBillingPlan: (payload: BillingPlanInput): Promise<BillingPlan> =>
+    request<BillingPlan>("/api/platform/billing/plans", { method: "POST", body: JSON.stringify(payload) }),
+  updateBillingPlan: (planId: string, payload: BillingPlanInput): Promise<BillingPlan> =>
+    request<BillingPlan>(`/api/platform/billing/plans/${planId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  simulateBillingPlan: (planId: string, payload: { employers: number; employees: number; reportRows: number; corrections: number; correctedRows: number }): Promise<BillingCalculation> =>
+    request<BillingCalculation>(`/api/platform/billing/plans/${planId}/simulate`, { method: "POST", body: JSON.stringify(payload) }),
+  platformBillingPeriods: (take = 100): Promise<BillingPeriod[]> =>
+    request<BillingPeriod[]>(`/api/platform/billing/periods?take=${take}`),
+  platformBillingPayments: (take = 100): Promise<BillingPayment[]> =>
+    request<BillingPayment[]>(`/api/platform/billing/payments?take=${take}`),
+  platformBillingUsage: (billingPeriodId: string): Promise<BillingUsageRow[]> =>
+    request<BillingUsageRow[]>(`/api/platform/billing/usage?billingPeriodId=${encodeURIComponent(billingPeriodId)}`),
+  runBillingPeriod: (billingAccountId: string, payload: { periodStart: string; periodEnd: string; charge: boolean }) =>
+    request(`/api/platform/billing/accounts/${billingAccountId}/run`, { method: "POST", body: JSON.stringify(payload) }),
+  refundBillingPayment: (paymentId: string, payload: { amount: number; reason: string; idempotencyKey: string }) =>
+    request(`/api/platform/billing/payments/${paymentId}/refunds`, { method: "POST", body: JSON.stringify(payload) }),
+  organizationBillingPeriods: (organizationId: string): Promise<BillingPeriod[]> =>
+    request<BillingPeriod[]>(`/api/organizations/${organizationId}/billing/periods`),
+  employerBillingPeriods: (organizationId: string, employerId: string): Promise<BillingPeriod[]> =>
+    request<BillingPeriod[]>(`/api/organizations/${organizationId}/employers/${employerId}/billing/periods`),
   platformSubscriptions: (): Promise<PlatformSubscription[]> =>
     request<PlatformSubscription[]>("/api/platform/subscriptions/"),
   changePlatformSubscriptionPlan: (organizationId: string, planId: string): Promise<SubscriptionSummary> =>
