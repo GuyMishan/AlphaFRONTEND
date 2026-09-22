@@ -22,7 +22,7 @@ import { UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type {
-  BillingAccountPricingProfile,
+  BillingAccountPricingType,
   BillingCalculation,
   BillingMonthlySummaryRow,
   BillingMetricType,
@@ -31,10 +31,8 @@ import type {
   BillingPlan,
   BillingPlanInput,
   BillingPricingComponent,
-  BillingPricingTier,
   BillingRefund,
   BillingUsageRow,
-  CorrectionBillingMode,
   PlatformSubscription,
 } from "@/lib/types";
 
@@ -63,17 +61,10 @@ const billingIntervalOptions = [{ value: "Monthly", label: "חודשי" }];
 const allClientsOption = [{ value: "all", label: "כל הלקוחות" }];
 const allMonthsOption = [{ value: "all", label: "כל החודשים" }];
 
-const pricingTypeOptions = [
-  { value: 1, label: "קבוע" },
-  { value: 2, label: "ליחידה" },
-  { value: 3, label: "מדרגות" },
-];
-
-const correctionBillingOptions = [
-  { value: 1, label: "ללא חיוב" },
-  { value: 2, label: "מחיר לכל תיקון" },
-  { value: 3, label: "מחיר לכל שורה מתוקנת" },
-  { value: 4, label: "זהה לשורת דיווח רגילה" },
+const customerBillingTypeOptions = [
+  { value: "Free", label: "חינם" },
+  { value: "PerEmployee", label: "תשלום פר עובד" },
+  { value: "PerReportRow", label: "תשלום פר שורה" },
 ];
 
 const subscriptionStatusOptions = [
@@ -89,85 +80,10 @@ const metricLabels: Record<string, string> = {
   Base: "מחיר בסיס", Employer: "מעסיקים", Employee: "עובדים", ReportRow: "שורות דיווח", Correction: "תיקונים",
 };
 
-function componentMetricLabel(metricType: BillingMetricType | string) {
-  return metricLabels[String(metricType)] ?? String(metricType);
-}
-
-function pricingTypeLabel(pricingType: number | string) {
-  return pricingTypeOptions.find((option) => String(option.value) === String(pricingType))?.label ?? String(pricingType);
-}
-
-function activePricingComponents(plan: BillingPlan) {
-  return plan.components.filter((component) => component.isEnabled && !["5", "Correction"].includes(String(component.metricType)));
-}
-
-function planChargingMethods(plan: BillingPlan) {
-  const labels = activePricingComponents(plan).map((component) => componentMetricLabel(component.metricType));
-  const correctionMode = Number(plan.correctionBillingMode);
-  if (correctionMode !== 1) labels.push("תיקונים");
-  return labels.length ? labels.join(" + ") : "ללא חיוב";
-}
-
-function planTariffSummary(plan: BillingPlan) {
-  const lines = activePricingComponents(plan).map((component) => {
-    const metric = componentMetricLabel(component.metricType);
-    if (Number(component.pricingType) === 3) {
-      const tiers = component.tiers ?? [];
-      return tiers.length ? `${metric}: ${tiers.length} מדרגות` : `${metric}: מדרגות`;
-    }
-    const suffix = ["1", "Base"].includes(String(component.metricType)) ? "לחודש" :
-      ["2", "Employer"].includes(String(component.metricType)) ? "למעסיק" :
-      ["3", "Employee"].includes(String(component.metricType)) ? "לעובד" :
-      ["4", "ReportRow"].includes(String(component.metricType)) ? "לשורה" : "ליחידה";
-    const included = component.includedQuantity > 0 ? ` · ${component.includedQuantity} כלולים` : "";
-    return `${metric}: ${money(component.unitPrice, plan.currency)} ${suffix}${included}`;
-  });
-  const correctionMode = Number(plan.correctionBillingMode);
-  if (correctionMode === 2) lines.push(`תיקון: ${money(plan.correctionUnitPrice ?? 0, plan.currency)} לפעולה`);
-  if (correctionMode === 3) lines.push(`תיקון: ${money(plan.correctionUnitPrice ?? 0, plan.currency)} לשורה מתוקנת`);
-  if (correctionMode === 4) lines.push("תיקון: לפי מחיר שורת דיווח רגילה");
-  return lines.length ? lines : ["ללא חיוב"];
-}
-
-function customerTariffSummary(components: BillingPricingComponent[], currency = "ILS") {
-  const active = components.filter((component) => component.isEnabled);
-  if (!active.length) return ["ללא חיוב"];
-  return active.map((component) => {
-    const metric = componentMetricLabel(component.metricType);
-    if (Number(component.pricingType) === 3) return `${metric}: מדרגות`;
-    const suffix = Number(component.metricType) === 1 ? "לחודש" :
-      Number(component.metricType) === 2 ? "למעסיק" :
-      Number(component.metricType) === 3 ? "לעובד" :
-      Number(component.metricType) === 4 ? "לשורה" :
-      Number(component.correctionMode) === 2 ? "לתיקון" :
-      Number(component.correctionMode) === 3 ? "לשורה מתוקנת" : "";
-    if (Number(component.metricType) === 5 && Number(component.correctionMode) === 1) return "תיקונים: ללא חיוב";
-    if (Number(component.metricType) === 5 && Number(component.correctionMode) === 4) return "תיקונים: כמו שורת דיווח";
-    const included = component.includedQuantity > 0 ? ` · ${component.includedQuantity} כלולים` : "";
-    return `${metric}: ${money(component.unitPrice, currency)} ${suffix}${included}`;
-  });
-}
-
-function normalizeCustomerPricing(profile: BillingAccountPricingProfile) {
-  const byMetric = new Map(profile.components.map((component) => [Number(component.metricType), component]));
-  return ([1, 2, 3, 4, 5] as BillingMetricType[]).map((metricType) => {
-    const found = byMetric.get(metricType);
-    if (found) return { ...found, metricType, tiers: found.tiers?.map((tier) => ({ ...tier })) ?? [] };
-    if (metricType === 5) {
-      return {
-        metricType,
-        pricingType: 2 as const,
-        unitPrice: 0,
-        includedQuantity: 0,
-        minimumCharge: null,
-        maximumCharge: null,
-        isEnabled: true,
-        correctionMode: 1 as CorrectionBillingMode,
-        tiers: [],
-      };
-    }
-    return emptyComponent(metricType, metricType === 1 ? 1 : 2);
-  });
+function customerBillingLabel(type: BillingAccountPricingType, unitPrice: number, currency = "ILS") {
+  if (type === "PerEmployee") return `${money(unitPrice, currency)} לעובד`;
+  if (type === "PerReportRow") return `${money(unitPrice, currency)} לשורה`;
+  return "חינם";
 }
 
 function emptyComponent(metricType: BillingMetricType, pricingType: 1 | 2): BillingPricingComponent {
@@ -294,12 +210,10 @@ export default function AdminBillingPage() {
   const [summaryPayerKey, setSummaryPayerKey] = useState("all");
   const [summaryMonth, setSummaryMonth] = useState("all");
   const [summaryPaymentState, setSummaryPaymentState] = useState("all");
-  const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [customerPricingOpen, setCustomerPricingOpen] = useState(false);
   const [customerPricingRow, setCustomerPricingRow] = useState<BillingMonthlySummaryRow | null>(null);
-  const [customerPricingSource, setCustomerPricingSource] = useState<"Account" | "Plan">("Plan");
-  const [customerPricingPlanName, setCustomerPricingPlanName] = useState("");
-  const [customerPricingComponents, setCustomerPricingComponents] = useState<BillingPricingComponent[]>([]);
+  const [customerBillingType, setCustomerBillingType] = useState<BillingAccountPricingType>("Free");
+  const [customerUnitPrice, setCustomerUnitPrice] = useState("0");
   const [error, setError] = useState("");
 
   async function load() {
@@ -342,68 +256,33 @@ export default function AdminBillingPage() {
     setCalculation(null);
   }
 
-  function openPricingEditor(plan?: BillingPlan) {
-    if (plan) selectPlan(plan);
-    setPricingModalOpen(true);
-  }
-
   async function openCustomerPricingEditor(row: BillingMonthlySummaryRow) {
     setError("");
     try {
       const profile = await alphaApi.billingAccountPricing(row.billingAccountId);
       setCustomerPricingRow(row);
-      setCustomerPricingSource(profile.source);
-      setCustomerPricingPlanName(profile.planName);
-      setCustomerPricingComponents(normalizeCustomerPricing(profile));
+      setCustomerBillingType(profile.billingType);
+      setCustomerUnitPrice(String(profile.unitPrice ?? 0));
       setCustomerPricingOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת תעריפי הלקוח נכשלה.");
     }
   }
 
-  function updateCustomerComponent(metricType: BillingMetricType, patch: Partial<BillingPricingComponent>) {
-    setCustomerPricingComponents((current) => current.map((item) =>
-      Number(item.metricType) === Number(metricType) ? { ...item, ...patch } : item));
-  }
-
-  function updateCustomerTier(metricType: BillingMetricType, index: number, patch: Partial<BillingPricingTier>) {
-    setCustomerPricingComponents((current) => current.map((item) => {
-      if (Number(item.metricType) !== Number(metricType)) return item;
-      const tiers = [...(item.tiers ?? [])];
-      tiers[index] = { ...tiers[index], ...patch };
-      return { ...item, tiers };
-    }));
-  }
-
-  function addCustomerTier(metricType: BillingMetricType) {
-    setCustomerPricingComponents((current) => current.map((item) => {
-      if (Number(item.metricType) !== Number(metricType)) return item;
-      const tiers = [...(item.tiers ?? [])];
-      const last = tiers[tiers.length - 1];
-      if (last?.toQuantity === null) tiers[tiers.length - 1] = { ...last, toQuantity: last.fromQuantity + 100 };
-      const fromQuantity = tiers[tiers.length - 1]?.toQuantity ?? 0;
-      tiers.push({ fromQuantity, toQuantity: null, unitPrice: item.unitPrice });
-      return { ...item, tiers };
-    }));
-  }
-
-  function removeCustomerTier(metricType: BillingMetricType, index: number) {
-    setCustomerPricingComponents((current) => current.map((item) => {
-      if (Number(item.metricType) !== Number(metricType)) return item;
-      const tiers = (item.tiers ?? []).filter((_, tierIndex) => tierIndex !== index);
-      if (tiers.length) tiers[tiers.length - 1] = { ...tiers[tiers.length - 1], toQuantity: null };
-      return { ...item, tiers };
-    }));
-  }
-
   async function saveCustomerPricing() {
     if (!customerPricingRow) return;
+    const unitPrice = customerBillingType === "Free" ? 0 : Number(customerUnitPrice);
+    if (customerBillingType !== "Free" && (!Number.isFinite(unitPrice) || unitPrice <= 0)) {
+      setError("יש להזין מחיר גדול מאפס.");
+      return;
+    }
+
     setSaving(true);
     setError("");
     try {
       await alphaApi.updateBillingAccountPricing(customerPricingRow.billingAccountId, {
-        effectiveFrom: new Date().toISOString(),
-        components: customerPricingComponents,
+        billingType: customerBillingType,
+        unitPrice,
       });
       setCustomerPricingOpen(false);
       await load();
@@ -412,70 +291,6 @@ export default function AdminBillingPage() {
     } finally {
       setSaving(false);
     }
-  }
-
-  async function resetCustomerPricing() {
-    if (!customerPricingRow) return;
-    setSaving(true);
-    setError("");
-    try {
-      await alphaApi.resetBillingAccountPricing(customerPricingRow.billingAccountId);
-      setCustomerPricingOpen(false);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "איפוס תעריפי הלקוח נכשל.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function updateComponent(metricType: BillingMetricType, patch: Partial<BillingPricingComponent>) {
-    setDraft((current) => ({
-      ...current,
-      components: current.components.map((item) =>
-        item.metricType === metricType ? { ...item, ...patch } : item),
-    }));
-  }
-
-  function updateTier(metricType: BillingMetricType, index: number, patch: Partial<BillingPricingTier>) {
-    setDraft((current) => ({
-      ...current,
-      components: current.components.map((item) => {
-        if (item.metricType !== metricType) return item;
-        const tiers = [...(item.tiers ?? [])];
-        tiers[index] = { ...tiers[index], ...patch };
-        return { ...item, tiers };
-      }),
-    }));
-  }
-
-  function addTier(metricType: BillingMetricType) {
-    setDraft((current) => ({
-      ...current,
-      components: current.components.map((item) => {
-        if (item.metricType !== metricType) return item;
-        const tiers = [...(item.tiers ?? [])];
-        const previous = tiers[tiers.length - 1];
-        const fromQuantity = previous?.toQuantity ?? 0;
-        if (previous && previous.toQuantity === null)
-          tiers[tiers.length - 1] = { ...previous, toQuantity: previous.fromQuantity + 100 };
-        const normalizedFrom = tiers[tiers.length - 1]?.toQuantity ?? fromQuantity;
-        tiers.push({ fromQuantity: normalizedFrom, toQuantity: null, unitPrice: 0 });
-        return { ...item, tiers };
-      }),
-    }));
-  }
-
-  function removeTier(metricType: BillingMetricType, index: number) {
-    setDraft((current) => ({
-      ...current,
-      components: current.components.map((item) => {
-        if (item.metricType !== metricType) return item;
-        const tiers = (item.tiers ?? []).filter((_, tierIndex) => tierIndex !== index);
-        if (tiers.length) tiers[tiers.length - 1] = { ...tiers[tiers.length - 1], toQuantity: null };
-        return { ...item, tiers };
-      }),
-    }));
   }
 
   async function savePlan() {
@@ -726,12 +541,7 @@ export default function AdminBillingPage() {
                 <td style={td}>{payerHref ? <Link href={payerHref} style={{ fontWeight: 700 }}>{row.payerName}</Link> : <b>{row.payerName}</b>}</td>
                 <td style={td}>{row.payerType === "Organization" ? "ארגון משלם" : "מעסיק משלם"}</td>
                 <td style={td}>{row.organizationName || "—"}</td>
-                <td style={td}>
-                  <div style={{ display: "grid", gap: 3 }}>
-                    {customerTariffSummary(row.pricingComponents ?? [], row.currency).map((line) => <span key={line}>{line}</span>)}
-                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{row.pricingSource === "Account" ? "מחיר מיוחד ללקוח" : "מחירון המסלול"}</span>
-                  </div>
-                </td>
+                <td style={td}><b>{customerBillingLabel(row.billingType, row.unitPrice, row.currency)}</b></td>
                 <td style={td}><b>{money(row.amount, row.currency)}</b></td>
                 <td style={td}>
                   <b>{row.paid ? "שולם" : row.paymentStatus ? paymentStatus(row.paymentStatus) : "לא חויב"}</b>
@@ -786,9 +596,7 @@ export default function AdminBillingPage() {
             <thead>
               <tr>
                 <th style={th}>מסלול</th>
-                <th style={th}>דרך חיוב</th>
-                <th style={th}>תעריפים</th>
-                <th style={th}>פעולה</th>
+                <th style={th}>סטטוס</th>
               </tr>
             </thead>
             <tbody>
@@ -799,15 +607,7 @@ export default function AdminBillingPage() {
                     <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 3 }}>{plan.code} · גרסה {plan.version} · {plan.isActive ? "פעילה" : "לא פעילה"}</div>
                   </button>
                 </td>
-                <td style={td}>{planChargingMethods(plan)}</td>
-                <td style={td}>
-                  <div style={{ display: "grid", gap: 4 }}>
-                    {planTariffSummary(plan).map((line) => <span key={line}>{line}</span>)}
-                  </div>
-                </td>
-                <td style={td}>
-                  <button className="btn btn-secondary" type="button" onClick={() => openPricingEditor(plan)}>עריכת תעריפים</button>
-                </td>
+                <td style={td}>{plan.isActive ? "פעיל" : "לא פעיל"}</td>
               </tr>)}
             </tbody>
           </table>
@@ -829,23 +629,11 @@ export default function AdminBillingPage() {
             <label className="field"><span>שם</span><UiInput value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
             <label className="field"><span>קוד</span><UiInput value={draft.code} disabled={Boolean(selectedPlanId)} onChange={(event) => setDraft({ ...draft, code: event.target.value })} /></label>
             <label className="field"><span>מטבע</span><UiSelect value={draft.currency} onChange={(event) => setDraft({ ...draft, currency: event.target.value })}>{currencyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></label>
-            <label className="field"><span>מקסימום מעסיקים</span><UiInput type="number" min={0} value={draft.maxEmployers} onChange={(event) => setDraft({ ...draft, maxEmployers: Number(event.target.value) })} /></label>
-            <label className="field"><span>מקסימום עובדים</span><UiInput type="number" min={0} value={draft.maxEmployees} onChange={(event) => setDraft({ ...draft, maxEmployees: Number(event.target.value) })} /></label>
             <label className="field"><span>מקסימום משתמשים</span><UiInput type="number" min={0} value={draft.maxUsers} onChange={(event) => setDraft({ ...draft, maxUsers: Number(event.target.value) })} /></label>
             <label className="field"><span>בתוקף מתאריך</span><UiInput type="datetime-local" value={draft.effectiveFrom ?? ""} onChange={(event) => setDraft({ ...draft, effectiveFrom: event.target.value || null })} /></label>
             <label className="field"><span>סטטוס</span><UiSelect value={draft.isActive ? "1" : "0"} onChange={(event) => setDraft({ ...draft, isActive: event.target.value === "1" })}>{planStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></label>
             <label className="field"><span>מחזור חיוב</span><UiSelect value={draft.billingInterval} onChange={(event) => setDraft({ ...draft, billingInterval: event.target.value })}>{billingIntervalOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></label>
             <label className="field" style={{ gridColumn: "1 / -1" }}><span>תיאור</span><UiTextarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
-          </div>
-
-          <div style={{ marginTop: 24, padding: 16, border: "1px solid var(--line)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-            <div>
-              <b>דרך חיוב ותעריפים</b>
-              <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>
-                {selectedPlan ? planChargingMethods(selectedPlan) : "הגדר אילו רכיבי חיוב פעילים ומה המחיר של כל רכיב."}
-              </div>
-            </div>
-            <button className="btn btn-secondary" type="button" onClick={() => openPricingEditor()}>עריכת תעריפים</button>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>
@@ -1019,180 +807,38 @@ export default function AdminBillingPage() {
       }}
       style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,.48)", display: "grid", placeItems: "center", padding: 20 }}
     >
-      <section role="dialog" aria-modal="true" aria-label="עריכת תעריפי לקוח" className="card" style={{ width: "min(1080px,96vw)", maxHeight: "90vh", overflowY: "auto", padding: 22 }}>
-        <div className="card-head" style={{ position: "sticky", top: -22, background: "var(--surface)", zIndex: 2, paddingBottom: 14 }}>
+      <section role="dialog" aria-modal="true" aria-label="עריכת תעריפי לקוח" className="card" style={{ width: "min(520px,96vw)", padding: 22 }}>
+        <div className="card-head">
           <div>
-            <h2>תעריפי לקוח · {customerPricingRow.payerName}</h2>
-            <p style={{ color: "var(--muted)", margin: "5px 0 0" }}>
-              מסלול: {customerPricingPlanName || "—"} · {customerPricingSource === "Account" ? "מחיר מיוחד ללקוח" : "כרגע משתמש במחירון המסלול"}
-            </p>
+            <h2>תעריף · {customerPricingRow.payerName}</h2>
+            <p style={{ color: "var(--muted)", margin: "5px 0 0" }}>הגדרת החיוב של הלקוח המשלם.</p>
           </div>
           <button className="btn btn-secondary" type="button" onClick={() => setCustomerPricingOpen(false)}>סגירה</button>
         </div>
 
-        <div style={{ display: "grid", gap: 14 }}>
-          {customerPricingComponents.filter((component) => Number(component.metricType) !== 5).map((component) => {
-            const metricType = Number(component.metricType) as BillingMetricType;
-            return <section key={metricType} style={{ border: "1px solid var(--line)", borderRadius: 14, padding: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "150px 150px repeat(4,minmax(120px,1fr))", gap: 10, alignItems: "end" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 12 }}>
-                  <UiInput type="checkbox" checked={component.isEnabled} onChange={(event) => updateCustomerComponent(metricType, { isEnabled: event.target.checked })} />
-                  <b>{componentMetricLabel(metricType)}</b>
-                </label>
-                <label className="field"><span>דרך תמחור</span><UiSelect value={component.pricingType} disabled={metricType === 1} onChange={(event) => {
-                  const pricingType = Number(event.target.value) as 1 | 2 | 3;
-                  updateCustomerComponent(metricType, {
-                    pricingType,
-                    tiers: pricingType === 3 && !(component.tiers?.length)
-                      ? [{ fromQuantity: 0, toQuantity: null, unitPrice: component.unitPrice }]
-                      : component.tiers,
-                  });
-                }}>
-                  {pricingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </UiSelect></label>
-                <label className="field"><span>כמות כלולה</span><UiInput type="number" min={0} value={component.includedQuantity} disabled={!component.isEnabled || metricType === 1} onChange={(event) => updateCustomerComponent(metricType, { includedQuantity: Number(event.target.value) })} /></label>
-                <label className="field"><span>מחיר</span><UiInput type="number" min={0} step="0.01" value={component.unitPrice} disabled={!component.isEnabled || Number(component.pricingType) === 3} onChange={(event) => updateCustomerComponent(metricType, { unitPrice: Number(event.target.value) })} /></label>
-                <label className="field"><span>מינימום</span><UiInput type="number" min={0} step="0.01" value={component.minimumCharge ?? ""} disabled={!component.isEnabled} onChange={(event) => updateCustomerComponent(metricType, { minimumCharge: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-                <label className="field"><span>מקסימום</span><UiInput type="number" min={0} step="0.01" value={component.maximumCharge ?? ""} disabled={!component.isEnabled} onChange={(event) => updateCustomerComponent(metricType, { maximumCharge: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-              </div>
-              {Number(component.pricingType) === 3 && component.isEnabled ? <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                {(component.tiers ?? []).map((tier, index) => <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 8 }}>
-                  <UiInput type="number" min={0} value={tier.fromQuantity} onChange={(event) => updateCustomerTier(metricType, index, { fromQuantity: Number(event.target.value) })} />
-                  <UiInput type="number" min={0} value={tier.toQuantity ?? ""} placeholder="ללא הגבלה" onChange={(event) => updateCustomerTier(metricType, index, { toQuantity: event.target.value === "" ? null : Number(event.target.value) })} />
-                  <UiInput type="number" min={0} step="0.01" value={tier.unitPrice} onChange={(event) => updateCustomerTier(metricType, index, { unitPrice: Number(event.target.value) })} />
-                  <button className="btn btn-secondary" type="button" onClick={() => removeCustomerTier(metricType, index)}><Trash2 size={16} /></button>
-                </div>)}
-                <button className="btn btn-secondary" type="button" onClick={() => addCustomerTier(metricType)}><Plus size={15} />מדרגה</button>
-              </div> : null}
-            </section>;
-          })}
+        <div className="grid" style={{ gap: 14 }}>
+          <label className="field">
+            <span>סוג חיוב</span>
+            <UiSelect value={customerBillingType} onChange={(event) => setCustomerBillingType(event.target.value as BillingAccountPricingType)}>
+              {customerBillingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </UiSelect>
+          </label>
+
+          {customerBillingType !== "Free" ? <label className="field">
+            <span>{customerBillingType === "PerEmployee" ? "מחיר לעובד" : "מחיר לשורה"}</span>
+            <UiInput type="number" min={0.01} step="0.01" value={customerUnitPrice} onChange={(event) => setCustomerUnitPrice(event.target.value)} />
+          </label> : null}
         </div>
-
-        {customerPricingComponents.find((component) => Number(component.metricType) === 5) ? (() => {
-          const correction = customerPricingComponents.find((component) => Number(component.metricType) === 5)!;
-          return <section style={{ marginTop: 14, border: "1px solid var(--line)", borderRadius: 14, padding: 14 }}>
-            <h3 style={{ marginTop: 0 }}>תיקונים</h3>
-            <div className="grid" style={{ gridTemplateColumns: "repeat(3,minmax(0,1fr))" }}>
-              <label className="field"><span>אופן חיוב</span><UiSelect value={correction.correctionMode ?? 1} onChange={(event) => updateCustomerComponent(5, {
-                isEnabled: true,
-                correctionMode: Number(event.target.value) as CorrectionBillingMode,
-              })}>
-                {correctionBillingOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </UiSelect></label>
-              {Number(correction.correctionMode ?? 1) === 2 || Number(correction.correctionMode ?? 1) === 3
-                ? <label className="field"><span>מחיר</span><UiInput type="number" min={0} step="0.01" value={correction.unitPrice} onChange={(event) => updateCustomerComponent(5, { unitPrice: Number(event.target.value) })} /></label>
-                : <div />}
-              {Number(correction.correctionMode ?? 1) === 2 || Number(correction.correctionMode ?? 1) === 3 || Number(correction.correctionMode ?? 1) === 4
-                ? <label className="field"><span>כמות כלולה</span><UiInput type="number" min={0} value={correction.includedQuantity} onChange={(event) => updateCustomerComponent(5, { includedQuantity: Number(event.target.value) })} /></label>
-                : null}
-            </div>
-          </section>;
-        })() : null}
-
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 20 }}>
-          <div>
-            {customerPricingSource === "Account" ? <button className="btn btn-secondary" type="button" disabled={saving} onClick={() => void resetCustomerPricing()}>חזרה למחירון המסלול</button> : null}
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button className="btn btn-secondary" type="button" onClick={() => setCustomerPricingOpen(false)}>ביטול</button>
-            <button className="btn btn-primary" type="button" disabled={saving} onClick={() => void saveCustomerPricing()}><Save size={16} />{saving ? "שומר..." : "שמירת תעריפי לקוח"}</button>
-          </div>
-        </div>
-      </section>
-    </div> : null}
-
-    {pricingModalOpen ? <div
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) setPricingModalOpen(false);
-      }}
-      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.48)", display: "grid", placeItems: "center", padding: 20 }}
-    >
-      <section role="dialog" aria-modal="true" aria-label="עריכת תעריפים" className="card" style={{ width: "min(1080px, 96vw)", maxHeight: "90vh", overflowY: "auto", padding: 22 }}>
-        <div className="card-head" style={{ position: "sticky", top: -22, background: "var(--surface)", zIndex: 2, paddingTop: 4, paddingBottom: 14 }}>
-          <div>
-            <h2>עריכת תעריפים{draft.name ? ` · ${draft.name}` : ""}</h2>
-            <p style={{ color: "var(--muted)", margin: "5px 0 0" }}>בחר אילו דרכי חיוב פעילות והגדר את המחיר של כל אחת.</p>
-          </div>
-          <button className="btn btn-secondary" type="button" onClick={() => setPricingModalOpen(false)}>סגירה</button>
-        </div>
-
-        <div style={{ display: "grid", gap: 14 }}>
-          {metrics.map((metric) => {
-            const component = draft.components.find((item) => item.metricType === metric.metricType)!;
-            return <section key={metric.metricType} style={{ border: "1px solid var(--line)", borderRadius: 14, padding: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "150px 150px repeat(4,minmax(120px,1fr))", gap: 10, alignItems: "end" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 12 }}>
-                  <UiInput type="checkbox" checked={component.isEnabled} onChange={(event) => updateComponent(metric.metricType, { isEnabled: event.target.checked })} />
-                  <b>{metric.label}</b>
-                </label>
-
-                <label className="field"><span>דרך תמחור</span><UiSelect
-                  value={component.pricingType}
-                  disabled={metric.metricType === 1}
-                  onChange={(event) => {
-                    const pricingType = Number(event.target.value) as 1 | 2 | 3;
-                    updateComponent(metric.metricType, {
-                      pricingType,
-                      tiers: pricingType === 3 && !(component.tiers?.length)
-                        ? [{ fromQuantity: 0, toQuantity: null, unitPrice: component.unitPrice }]
-                        : component.tiers,
-                    });
-                  }}
-                >
-                  {pricingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </UiSelect></label>
-
-                <label className="field"><span>כמות כלולה</span><UiInput type="number" min={0} step="1" value={component.includedQuantity} disabled={!component.isEnabled || metric.metricType === 1} onChange={(event) => updateComponent(metric.metricType, { includedQuantity: Number(event.target.value) })} /></label>
-                <label className="field"><span>מחיר</span><UiInput type="number" min={0} step="0.01" value={component.unitPrice} disabled={!component.isEnabled || component.pricingType === 3} onChange={(event) => updateComponent(metric.metricType, { unitPrice: Number(event.target.value) })} /></label>
-                <label className="field"><span>מינימום חיוב</span><UiInput type="number" min={0} step="0.01" value={component.minimumCharge ?? ""} disabled={!component.isEnabled} onChange={(event) => updateComponent(metric.metricType, { minimumCharge: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-                <label className="field"><span>מקסימום חיוב</span><UiInput type="number" min={0} step="0.01" value={component.maximumCharge ?? ""} disabled={!component.isEnabled} onChange={(event) => updateComponent(metric.metricType, { maximumCharge: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-              </div>
-
-              {component.pricingType === 3 && component.isEnabled ? <div style={{ marginTop: 12, padding: 12, borderTop: "1px solid var(--line)" }}>
-                <div className="card-head">
-                  <div><b>מדרגות מחיר</b><div style={{ color: "var(--muted)", fontSize: 13, marginTop: 3 }}>המדרגה הראשונה מתחילה ב־0 והאחרונה ללא גבול עליון.</div></div>
-                  <button className="btn btn-secondary" type="button" onClick={() => addTier(metric.metricType)}><Plus size={15} />מדרגה</button>
-                </div>
-                <div style={{ display: "grid", gap: 8 }}>
-                  {(component.tiers ?? []).map((tier, index) => <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 8, alignItems: "end" }}>
-                    <label className="field"><span>מכמות</span><UiInput type="number" min={0} value={tier.fromQuantity} onChange={(event) => updateTier(metric.metricType, index, { fromQuantity: Number(event.target.value) })} /></label>
-                    <label className="field"><span>עד כמות</span><UiInput type="number" min={0} value={tier.toQuantity ?? ""} placeholder="ללא הגבלה" onChange={(event) => updateTier(metric.metricType, index, { toQuantity: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-                    <label className="field"><span>מחיר ליחידה</span><UiInput type="number" min={0} step="0.01" value={tier.unitPrice} onChange={(event) => updateTier(metric.metricType, index, { unitPrice: Number(event.target.value) })} /></label>
-                    <button className="btn btn-secondary" type="button" onClick={() => removeTier(metric.metricType, index)} aria-label="מחיקת מדרגה"><Trash2 size={16} /></button>
-                  </div>)}
-                </div>
-              </div> : null}
-            </section>;
-          })}
-        </div>
-
-        <section style={{ marginTop: 18, border: "1px solid var(--line)", borderRadius: 14, padding: 14 }}>
-          <h3 style={{ marginTop: 0 }}>תיקונים</h3>
-          <div className="grid" style={{ gridTemplateColumns: "repeat(3, minmax(0,1fr))" }}>
-            <label className="field"><span>אופן חיוב</span><UiSelect value={draft.correctionBillingMode} onChange={(event) => setDraft({ ...draft, correctionBillingMode: Number(event.target.value) as CorrectionBillingMode })}>
-              {correctionBillingOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </UiSelect></label>
-            {draft.correctionBillingMode !== 1 && draft.correctionBillingMode !== 4
-              ? <label className="field"><span>מחיר</span><UiInput type="number" min={0} step="0.01" value={draft.correctionUnitPrice ?? 0} onChange={(event) => setDraft({ ...draft, correctionUnitPrice: Number(event.target.value) })} /></label>
-              : <div />}
-            {draft.correctionBillingMode === 2
-              ? <label className="field"><span>תיקונים כלולים</span><UiInput type="number" min={0} value={draft.includedCorrections} onChange={(event) => setDraft({ ...draft, includedCorrections: Number(event.target.value) })} /></label>
-              : null}
-            {draft.correctionBillingMode === 3 || draft.correctionBillingMode === 4
-              ? <label className="field"><span>שורות תיקון כלולות</span><UiInput type="number" min={0} value={draft.includedCorrectionRows} onChange={(event) => setDraft({ ...draft, includedCorrectionRows: Number(event.target.value) })} /></label>
-              : null}
-          </div>
-        </section>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
-          <button className="btn btn-secondary" type="button" onClick={() => setPricingModalOpen(false)}>ביטול</button>
-          <button className="btn btn-primary" type="button" disabled={saving} onClick={async () => {
-            if (await savePlan()) setPricingModalOpen(false);
-          }}><Save size={16} />{saving ? "שומר..." : "שמירת תעריפים"}</button>
+          <button className="btn btn-secondary" type="button" onClick={() => setCustomerPricingOpen(false)}>ביטול</button>
+          <button className="btn btn-primary" type="button" disabled={saving} onClick={() => void saveCustomerPricing()}>
+            <Save size={16} />{saving ? "שומר..." : "שמירה"}
+          </button>
         </div>
       </section>
     </div> : null}
+
   </AppShell>;
 }
 
