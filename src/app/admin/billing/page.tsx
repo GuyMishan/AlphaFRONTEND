@@ -360,11 +360,11 @@ export default function AdminBillingPage() {
               setOrganizationFilter(event.target.value);
               setEmployerFilter("all");
             }}>
-              <option value="all">כל הארגונים</option>
+              {allOrganizationsOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               {organizationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
             </UiSelect>
             <UiSelect value={employerFilter} onChange={(event) => setEmployerFilter(event.target.value)}>
-              <option value="all">כל המעסיקים</option>
+              {allEmployersOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               {employerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
             </UiSelect>
             <UiSelect value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
