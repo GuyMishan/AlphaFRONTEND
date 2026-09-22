@@ -46,6 +46,7 @@ import type {
   GlobalScopeContext,
   CreateInvitationInput,
   PublicInvitation,
+  RefreshedSession,
   PaymentMethodSetupResult,
   PaymentMethodSyncResult,
   UserInvitation,
@@ -131,6 +132,8 @@ function normalizePaged<T>(result: PagedResult<T> | T[], take: number): PagedRes
 }
 
 export const alphaApi = {
+  refreshSession: (): Promise<RefreshedSession> =>
+    request<RefreshedSession>("/api/auth/session"),
   scope: (): Promise<GlobalScopeContext> => getSession()?.mode === "demo"
     ? Promise.resolve({
         organizations: demoOrganizations.map((organization) => ({
