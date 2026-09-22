@@ -710,6 +710,13 @@ export type BillingMetricType = 1 | 2 | 3 | 4 | 5;
 export type BillingPricingType = 1 | 2 | 3;
 export type CorrectionBillingMode = 1 | 2 | 3 | 4;
 
+export type BillingPricingTier = {
+  id?: string;
+  fromQuantity: number;
+  toQuantity: number | null;
+  unitPrice: number;
+};
+
 export type BillingPricingComponent = {
   id?: string;
   version?: number;
@@ -723,6 +730,7 @@ export type BillingPricingComponent = {
   maximumCharge: number | null;
   isEnabled: boolean;
   correctionMode?: CorrectionBillingMode | null;
+  tiers?: BillingPricingTier[];
 };
 
 export type BillingPlan = {
@@ -807,6 +815,18 @@ export type BillingPayment = {
   failureCode: string;
   failureMessage: string;
   paidAt: string | null;
+  createdAt: string;
+};
+
+export type BillingRefund = {
+  id: string;
+  paymentId: string;
+  amount: number;
+  reason: string;
+  status: number | string;
+  providerRefundId: string;
+  errorMessage: string;
+  idempotencyKey: string;
   createdAt: string;
 };
 
