@@ -52,6 +52,13 @@ export type Session = {
   displayName: string;
 };
 
+export type RefreshedSession = {
+  accessToken: string;
+  userId: string;
+  platformAdmin: boolean;
+  displayName: string;
+};
+
 export type ReportMode = "manual" | "excel" | "correction";
 export type ManualReportKind = 1 | 2 | 3;
 export type ReportDraft = {
