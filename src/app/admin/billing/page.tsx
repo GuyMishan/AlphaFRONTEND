@@ -240,7 +240,7 @@ export default function AdminBillingPage() {
               const component = draft.components.find((x) => x.metricType === metric.metricType)!;
               return <div key={metric.metricType} style={{ display: "grid", gridTemplateColumns: "170px 110px 1fr 1fr", gap: 12, alignItems: "end", borderTop: "1px solid var(--line)", paddingTop: 12 }}>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 12 }}>
-                  <input type="checkbox" checked={component.isEnabled} onChange={(e) => updateComponent(metric.metricType, { isEnabled: e.target.checked })} />
+                  <UiInput type="checkbox" checked={component.isEnabled} onChange={(e) => updateComponent(metric.metricType, { isEnabled: e.target.checked })} />
                   <b>{metric.label}</b>
                 </label>
                 <label className="field"><span>סוג</span><UiSelect value={component.pricingType} disabled={metric.metricType === 1} onChange={(e) => updateComponent(metric.metricType, { pricingType: Number(e.target.value) as 1 | 2 })}><option value={1}>קבוע</option><option value={2}>ליחידה</option></UiSelect></label>
