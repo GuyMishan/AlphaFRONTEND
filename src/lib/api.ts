@@ -31,6 +31,7 @@ import type {
   BankOption,
   BankBranchOption,
   BillingGateStatus,
+  BillingCustomerContext,
   BillingPlan,
   BillingPlanInput,
   BillingCalculation,
@@ -168,10 +169,14 @@ export const alphaApi = {
     request(`/api/platform/billing/accounts/${billingAccountId}/run`, { method: "POST", body: JSON.stringify(payload) }),
   refundBillingPayment: (paymentId: string, payload: { amount: number; reason: string; idempotencyKey: string }) =>
     request(`/api/platform/billing/payments/${paymentId}/refunds`, { method: "POST", body: JSON.stringify(payload) }),
+  organizationBillingContext: (organizationId: string): Promise<BillingCustomerContext> =>
+    request<BillingCustomerContext>(`/api/organizations/${organizationId}/billing/context`),
   organizationBillingPeriods: (organizationId: string): Promise<BillingPeriod[]> =>
     request<BillingPeriod[]>(`/api/organizations/${organizationId}/billing/periods`),
   organizationBillingPayments: (organizationId: string): Promise<BillingPayment[]> =>
     request<BillingPayment[]>(`/api/organizations/${organizationId}/billing/payments`),
+  employerBillingContext: (organizationId: string, employerId: string): Promise<BillingCustomerContext> =>
+    request<BillingCustomerContext>(`/api/organizations/${organizationId}/employers/${employerId}/billing/context`),
   employerBillingPeriods: (organizationId: string, employerId: string): Promise<BillingPeriod[]> =>
     request<BillingPeriod[]>(`/api/organizations/${organizationId}/employers/${employerId}/billing/periods`),
   employerBillingPayments: (organizationId: string, employerId: string): Promise<BillingPayment[]> =>
