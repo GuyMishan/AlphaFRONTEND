@@ -831,6 +831,8 @@ export type BillingMonthlySummaryRow = {
   paidAt: string | null;
   calculatedAt: string | null;
   chargedAt: string | null;
+  pricingSource: "Account" | "Plan";
+  pricingComponents: BillingPricingComponent[];
 };
 
 export type BillingPeriod = {
