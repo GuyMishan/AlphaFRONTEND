@@ -32,6 +32,8 @@ import type {
   BankBranchOption,
   BillingGateStatus,
   BillingCustomerContext,
+  BillingAccountPricingProfile,
+  BillingAccountPricingInput,
   BillingPlan,
   BillingPlanInput,
   BillingCalculation,
@@ -163,6 +165,12 @@ export const alphaApi = {
     request<BillingCalculation>(`/api/platform/billing/plans/${planId}/simulate`, { method: "POST", body: JSON.stringify(payload) }),
   platformBillingSummary: (take = 500): Promise<BillingMonthlySummaryRow[]> =>
     request<BillingMonthlySummaryRow[]>(`/api/platform/billing/summary?take=${take}`),
+  billingAccountPricing: (billingAccountId: string): Promise<BillingAccountPricingProfile> =>
+    request<BillingAccountPricingProfile>(`/api/platform/billing/accounts/${billingAccountId}/pricing`),
+  updateBillingAccountPricing: (billingAccountId: string, payload: BillingAccountPricingInput): Promise<BillingAccountPricingProfile> =>
+    request<BillingAccountPricingProfile>(`/api/platform/billing/accounts/${billingAccountId}/pricing`, { method: "PUT", body: JSON.stringify(payload) }),
+  resetBillingAccountPricing: (billingAccountId: string): Promise<void> =>
+    request<void>(`/api/platform/billing/accounts/${billingAccountId}/pricing`, { method: "DELETE" }),
   platformBillingPeriods: (take = 100): Promise<BillingPeriod[]> =>
     request<BillingPeriod[]>(`/api/platform/billing/periods?take=${take}`),
   platformBillingPayments: (take = 100): Promise<BillingPayment[]> =>
