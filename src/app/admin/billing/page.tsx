@@ -32,6 +32,8 @@ const customerBillingTypeOptions = [
 ];
 
 const allMonthsOption = [{ value: "all", label: "כל החודשים" }];
+const allOrganizationsOption = [{ value: "all", label: "כל הארגונים" }];
+const allEmployersOption = [{ value: "all", label: "כל המעסיקים" }];
 
 function money(value: number, currency = "ILS") {
   return new Intl.NumberFormat("he-IL", { style: "currency", currency }).format(value);
@@ -306,14 +308,14 @@ export default function AdminBillingPage() {
               setOrganizationFilter(event.target.value);
               setEmployerFilter("all");
             }}>
-              <option value="all">כל הארגונים</option>
+              {allOrganizationsOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               {organizationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
             </UiSelect>
           </label>
           <label className="field" style={{ minWidth: 220 }}>
             <span>מעסיק</span>
             <UiSelect value={employerFilter} onChange={(event) => setEmployerFilter(event.target.value)}>
-              <option value="all">כל המעסיקים</option>
+              {allEmployersOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               {employerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
             </UiSelect>
           </label>
