@@ -187,7 +187,8 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
 
   if (!session || singleEmployerUser === null || canManageOrganization === null || hasOrganizationScope === null) return null;
 
-  const visibleNav = nav.map((item) => {
+  const baseNav = session.platformAdmin ? nav.filter((item) => item.href !== "/billing") : nav;
+  const visibleNav = baseNav.map((item) => {
     if (item.href !== "/employers" || !singleEmployerUser || !singleEmployerTarget) return item;
     return {
       ...item,
@@ -204,7 +205,8 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         <div className="nav-divider" />
         {session.platformAdmin ? <Link href="/organizations" className={pathname.startsWith("/organizations") ? "active" : ""}><Landmark size={18} />ארגונים</Link> : null}
         {!session.platformAdmin && singleOrganizationTarget ? <Link href={`/organizations/${singleOrganizationTarget}`} className={pathname.startsWith(`/organizations/${singleOrganizationTarget}`) ? "active" : ""}><Landmark size={18} />הארגון שלי</Link> : null}
-        {session.platformAdmin ? <Link href="/admin" className={pathname.startsWith("/admin") ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
+        {session.platformAdmin ? <Link href="/admin" className={pathname === "/admin" ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
+        {session.platformAdmin ? <Link href="/admin/billing" className={pathname.startsWith("/admin/billing") ? "active" : ""}><ReceiptText size={18} />ניהול גבייה ותמחור</Link> : null}
         {canManageOrganization ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />משתמשים והרשאות</Link> : null}
         <Link href="/settings" className={pathname === "/settings" ? "active" : ""}><Settings size={18} />הגדרות</Link>
       </nav>
