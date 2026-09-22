@@ -14,11 +14,10 @@ import { AppShell } from "@/components/app-shell";
 import { alphaApi } from "@/lib/api";
 import { getEmployerSelection, getOrganizationSelection } from "@/lib/session";
 import type {
-  AlphaBillingAccount,
   BillingCalculationLine,
   BillingPayment,
   BillingPeriod,
-  EmployerBillingResolution,
+  BillingCustomerContext,
 } from "@/lib/types";
 
 const metricLabels: Record<string, string> = {
@@ -34,13 +33,7 @@ const metricLabels: Record<string, string> = {
   Correction: "תיקונים",
 };
 
-type BillingContext = {
-  organizationId: string;
-  employerId?: string;
-  source: "Organization" | "Employer";
-  billedThroughName: string;
-  account: AlphaBillingAccount;
-};
+type BillingContext = BillingCustomerContext;
 
 function money(value: number, currency = "ILS") {
   return new Intl.NumberFormat("he-IL", { style: "currency", currency }).format(value);
@@ -110,14 +103,14 @@ function snapshotLines(period: BillingPeriod): BillingCalculationLine[] {
   }
 }
 
-function cardSummary(account: AlphaBillingAccount) {
+function cardSummary(account: BillingCustomerContext["account"]) {
   if (account.paymentMethodType === 2) {
-    return account.bankDebitMandateReference
+    return account.hasBankDebitMandate
       ? "הרשאה לחיוב חשבון מחוברת"
       : "הרשאה לחיוב חשבון לא הוגדרה";
   }
 
-  if (!account.providerPaymentMethodId) return "כרטיס אשראי לא הוגדר";
+  if (!account.configured || account.paymentMethodStatus !== 3) return "כרטיס אשראי לא הוגדר";
   const brand = account.cardBrand || "כרטיס";
   const last4 = account.cardLast4 ? ` •••• ${account.cardLast4}` : "";
   const expiry = account.cardExpiryMonth && account.cardExpiryYear
@@ -150,34 +143,23 @@ export default function BillingPage() {
 
     try {
       if (employerId) {
-        const [resolution, periodRows, paymentRows] = await Promise.all([
-          alphaApi.employerBillingResolution(organizationId, employerId),
+        const [billingContext, periodRows, paymentRows] = await Promise.all([
+          alphaApi.employerBillingContext(organizationId, employerId),
           alphaApi.employerBillingPeriods(organizationId, employerId),
           alphaApi.employerBillingPayments(organizationId, employerId),
-        ]) as [EmployerBillingResolution, BillingPeriod[], BillingPayment[]];
+        ]) as [BillingCustomerContext, BillingPeriod[], BillingPayment[]];
 
-        setContext({
-          organizationId,
-          employerId,
-          source: resolution.source,
-          billedThroughName: resolution.billedThroughName,
-          account: resolution.effectiveAccount,
-        });
+        setContext(billingContext);
         setPeriods(periodRows);
         setPayments(paymentRows);
       } else {
-        const [account, periodRows, paymentRows] = await Promise.all([
-          alphaApi.organizationBillingAccount(organizationId),
+        const [billingContext, periodRows, paymentRows] = await Promise.all([
+          alphaApi.organizationBillingContext(organizationId),
           alphaApi.organizationBillingPeriods(organizationId),
           alphaApi.organizationBillingPayments(organizationId),
         ]);
 
-        setContext({
-          organizationId,
-          source: "Organization",
-          billedThroughName: account.billingName || "הארגון",
-          account,
-        });
+        setContext(billingContext);
         setPeriods(periodRows);
         setPayments(paymentRows);
       }
@@ -233,9 +215,9 @@ export default function BillingPage() {
         <button className="btn btn-secondary" type="button" onClick={() => void load()}>
           <RefreshCw size={16} />רענון
         </button>
-        <Link className="btn btn-primary" href={settingsHref}>
+        {context.canManageBilling ? <Link className="btn btn-primary" href={settingsHref}>
           <CreditCard size={16} />פרטי חיוב ואמצעי תשלום
-        </Link>
+        </Link> : null}
       </div> : null}
     </div>
 
@@ -260,7 +242,9 @@ export default function BillingPage() {
               </div>
             </div>
           </div>
-          <Link className="btn btn-primary" href={settingsHref}>לתיקון פרטי החיוב</Link>
+          {context.canManageBilling
+            ? <Link className="btn btn-primary" href={settingsHref}>לתיקון פרטי החיוב</Link>
+            : <span style={{ color: "var(--muted)", fontSize: 13 }}>יש לפנות למנהל החשבון כדי לעדכן את אמצעי התשלום.</span>}
         </div>
       </div> : null}
 
