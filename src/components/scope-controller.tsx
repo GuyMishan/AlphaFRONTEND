@@ -9,6 +9,7 @@ import {
   getEmployeeSelection,
   getEmployerSelection,
   getOrganizationSelection,
+  getSession,
   setEmployeeSelection,
   setEmployerSelection,
   setOrganizationSelection,
@@ -32,6 +33,7 @@ export function ScopeController() {
   const pathname = usePathname();
   const router = useRouter();
   const level = requiredScope(pathname);
+  const isAdminDashboard = pathname === "/dashboard" && Boolean(getSession()?.platformAdmin);
   const [scope, setScope] = useState<GlobalScopeContext | null>(null);
   const [organizationId, setOrganizationId] = useState("");
   const [employerId, setEmployerId] = useState("");
@@ -75,6 +77,14 @@ export function ScopeController() {
         const context = await alphaApi.scope();
         if (!active) return;
         setScope(context);
+
+        if (isAdminDashboard) {
+          setOrganizationId("");
+          setEmployerId("");
+          setEmployees([]);
+          setEmployeeId("");
+          return;
+        }
 
         const savedOrg = getOrganizationSelection();
         const savedEmployer = getEmployerSelection();
@@ -136,11 +146,23 @@ export function ScopeController() {
 
     void load();
     return () => { active = false; };
-  }, [level]);
+  }, [level, isAdminDashboard]);
 
   async function changeOrganization(value: string) {
     if (!scope) return;
     setOrganizationId(value);
+    setEmployerId("");
+
+    if (isAdminDashboard) {
+      if (!value) {
+        emitScopeChange({ organizationId: "" });
+        return;
+      }
+      setOrganizationSelection(value);
+      emitScopeChange({ organizationId: value });
+      return;
+    }
+
     setOrganizationSelection(value);
 
     if (level === "organization") {
@@ -172,6 +194,12 @@ export function ScopeController() {
 
   async function changeEmployer(value: string) {
     if (!scope) return;
+
+    if (isAdminDashboard && !value) {
+      setEmployerId("");
+      if (organizationId) emitScopeChange({ organizationId });
+      return;
+    }
 
     const entry = allEmployers.find((item) => item.employer.id === value);
     if (!entry) return;
@@ -206,18 +234,22 @@ export function ScopeController() {
 
   const hasAnyOrganizationScope = scope.organizations.some((item) => item.hasOrganizationScope);
   const showOrganizationSelector =
-    hasAnyOrganizationScope &&
-    relevantOrganizations.length > 1 &&
-    (level === "organization" || selectedOrganizationHasScope);
+    isAdminDashboard
+      ? scope.organizations.length > 0
+      : hasAnyOrganizationScope &&
+        relevantOrganizations.length > 1 &&
+        (level === "organization" || selectedOrganizationHasScope);
 
   const employerOptions = selectedOrganizationHasScope
     ? organizationEmployers
     : allEmployers.map((item) => item.employer);
 
   const showEmployerSelector =
-    pathname !== "/employers" &&
-    (level !== "organization" || !hasAnyOrganizationScope) &&
-    employerOptions.length > 1;
+    isAdminDashboard
+      ? Boolean(organizationId)
+      : pathname !== "/employers" &&
+        (level !== "organization" || !hasAnyOrganizationScope) &&
+        employerOptions.length > 1;
 
   const showEmployeeSelector = level === "employee" && employees.length > 1;
 
@@ -229,16 +261,18 @@ export function ScopeController() {
       {showOrganizationSelector ? <label>
         <span>ארגון</span>
         <div><Building2 size={16} /><UiSelect controlSize="compact" value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>
-          {relevantOrganizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          {isAdminDashboard ? [{ id: "", name: "בחר ארגון" }, ...scope.organizations].map((item) => <option key={item.id || "empty"} value={item.id}>{item.name}</option>) : relevantOrganizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </UiSelect></div>
       </label> : null}
 
       {showEmployerSelector ? <label>
         <span>מעסיק</span>
         <div><Building2 size={16} /><UiSelect controlSize="compact" value={employerId} disabled={loading} onChange={(event) => void changeEmployer(event.target.value)}>
-          {selectedOrganizationHasScope
-            ? employerOptions.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)
-            : allEmployers.map((item) => <option key={item.employer.id} value={item.employer.id}>{item.employer.legalName}{scope.organizations.length > 1 ? ` · ${item.organization.name}` : ""}</option>)}
+          {isAdminDashboard
+            ? [{ id: "", legalName: "בחר מעסיק" }, ...organizationEmployers].map((item) => <option key={item.id || "empty"} value={item.id}>{item.legalName}</option>)
+            : selectedOrganizationHasScope
+              ? employerOptions.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)
+              : allEmployers.map((item) => <option key={item.employer.id} value={item.employer.id}>{item.employer.legalName}{scope.organizations.length > 1 ? ` · ${item.organization.name}` : ""}</option>)}
         </UiSelect></div>
       </label> : null}
 
