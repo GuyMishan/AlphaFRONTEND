@@ -19,7 +19,6 @@ const nav = [
   { href: "/reports", label: "דיווחים ומשובים", icon: FileClock },
   { href: "/employees", label: "עובדים", icon: Users },
   { href: "/employers", label: "מעסיקים", icon: Building2 },
-  { href: "/billing", label: "חיובים", icon: ReceiptText },
 ];
 
 type ShellPageConfig = {
@@ -207,8 +206,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   if (!session || singleEmployerUser === null || canManageOrganization === null || hasOrganizationScope === null) return null;
 
   const platformAdmin = isPlatformAdminSession(session);
-  const baseNav = platformAdmin ? nav.filter((item) => item.href !== "/billing") : nav;
-  const visibleNav = baseNav.map((item) => {
+  const visibleNav = nav.map((item) => {
     if (item.href !== "/employers" || !singleEmployerUser || !singleEmployerTarget) return item;
     return {
       ...item,
