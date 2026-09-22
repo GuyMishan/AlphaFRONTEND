@@ -534,6 +534,8 @@ export type OrganizationEmployerBilling = {
 
 export type BillingPaymentMethodType = 1 | 2;
 export type BillingPaymentMethodStatus = 1 | 2 | 3 | 4 | 5 | 6;
+export type BillingAccountStatus = 1 | 2 | 3 | 4 | 5;
+export type BillingMode = 1 | 2;
 
 export type AlphaBillingAccount = {
   id: string | null;
@@ -552,6 +554,9 @@ export type AlphaBillingAccount = {
   cardExpiryMonth: number | null;
   cardExpiryYear: number | null;
   bankDebitMandateReference: string;
+  billingMode: BillingMode;
+  status: BillingAccountStatus;
+  defaultPaymentMethodId: string | null;
   configured: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -698,4 +703,195 @@ export type PensionPaymentResolution = {
 
 export type OrganizationPaymentAccountResponse = {
   account: EmployerPaymentAccount | null;
+};
+
+
+export type BillingMetricType = 1 | 2 | 3 | 4 | 5;
+export type BillingPricingType = 1 | 2 | 3;
+export type CorrectionBillingMode = 1 | 2 | 3 | 4;
+
+export type BillingPricingTier = {
+  id?: string;
+  fromQuantity: number;
+  toQuantity: number | null;
+  unitPrice: number;
+};
+
+export type BillingPricingComponent = {
+  id?: string;
+  version?: number;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  metricType: BillingMetricType;
+  pricingType: BillingPricingType;
+  unitPrice: number;
+  includedQuantity: number;
+  minimumCharge: number | null;
+  maximumCharge: number | null;
+  isEnabled: boolean;
+  correctionMode?: CorrectionBillingMode | null;
+  tiers?: BillingPricingTier[];
+};
+
+export type BillingPlan = {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  currency: string;
+  billingInterval: string;
+  version: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  correctionBillingMode: CorrectionBillingMode;
+  correctionUnitPrice: number | null;
+  includedCorrections: number;
+  includedCorrectionRows: number;
+  maxEmployers: number;
+  maxEmployees: number;
+  maxUsers: number;
+  isActive: boolean;
+  components: BillingPricingComponent[];
+};
+
+export type BillingPlanInput = {
+  code: string;
+  name: string;
+  description: string;
+  currency: string;
+  billingInterval: string;
+  maxEmployers: number;
+  maxEmployees: number;
+  maxUsers: number;
+  isActive: boolean;
+  correctionBillingMode: CorrectionBillingMode;
+  correctionUnitPrice: number | null;
+  includedCorrections: number;
+  includedCorrectionRows: number;
+  effectiveFrom: string | null;
+  components: BillingPricingComponent[];
+};
+
+export type BillingCalculationLine = {
+  metric: BillingMetricType | string;
+  quantity: number;
+  includedQuantity: number;
+  billableQuantity: number;
+  unitPrice: number;
+  amount: number;
+};
+
+export type BillingCalculation = {
+  subtotal: number;
+  total: number;
+  components: BillingCalculationLine[];
+};
+
+export type BillingMonthlySummaryRow = {
+  id: string;
+  billingAccountId: string;
+  payerType: "Organization" | "Employer";
+  payerName: string;
+  organizationId: string | null;
+  organizationName: string;
+  employerId: string | null;
+  employerName: string | null;
+  month: string;
+  periodStart: string;
+  periodEnd: string;
+  status: number | string;
+  accountStatus: number | string;
+  paymentMethodStatus: number | string;
+  paymentMethodType: number | string;
+  cardBrand: string;
+  cardLast4: string;
+  currency: string;
+  amount: number;
+  paid: boolean;
+  paymentId: string | null;
+  paymentStatus: number | string | null;
+  provider: string;
+  providerTransactionId: string;
+  failureCode: string;
+  failureMessage: string;
+  paidAt: string | null;
+  calculatedAt: string | null;
+  chargedAt: string | null;
+};
+
+export type BillingPeriod = {
+  id: string;
+  billingAccountId: string;
+  planId: string;
+  periodStart: string;
+  periodEnd: string;
+  status: number | string;
+  currency: string;
+  subtotal: number;
+  total: number;
+  calculationSnapshotJson?: string;
+  calculatedAt: string | null;
+  chargedAt: string | null;
+};
+
+export type BillingPayment = {
+  id: string;
+  billingAccountId: string;
+  billingPeriodId: string;
+  amount: number;
+  currency: string;
+  status: number | string;
+  provider: string;
+  providerTransactionId: string;
+  invoiceReference: string;
+  failureCode: string;
+  failureMessage: string;
+  paidAt: string | null;
+  createdAt: string;
+};
+
+export type BillingRefund = {
+  id: string;
+  paymentId: string;
+  amount: number;
+  reason: string;
+  status: number | string;
+  providerRefundId: string;
+  errorMessage: string;
+  idempotencyKey: string;
+  createdAt: string;
+};
+
+export type BillingUsageRow = {
+  id: string;
+  employerId: string | null;
+  metricType: BillingMetricType | string;
+  quantity: number;
+  includedQuantity: number;
+  billableQuantity: number;
+  unitPrice: number;
+  amount: number;
+  sourceType: string;
+  sourceId: string;
+};
+
+export type BillingCustomerContext = {
+  organizationId: string;
+  employerId: string | null;
+  source: "Organization" | "Employer";
+  billedThroughName: string;
+  canManageBilling: boolean;
+  account: {
+    id: string | null;
+    billingMode: BillingMode | null;
+    status: BillingAccountStatus;
+    paymentMethodType: BillingPaymentMethodType;
+    paymentMethodStatus: BillingPaymentMethodStatus;
+    cardBrand: string;
+    cardLast4: string;
+    cardExpiryMonth: number | null;
+    cardExpiryYear: number | null;
+    hasBankDebitMandate: boolean;
+    configured: boolean;
+  };
 };

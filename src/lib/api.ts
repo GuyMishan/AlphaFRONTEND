@@ -31,6 +31,15 @@ import type {
   BankOption,
   BankBranchOption,
   BillingGateStatus,
+  BillingCustomerContext,
+  BillingPlan,
+  BillingPlanInput,
+  BillingCalculation,
+  BillingMonthlySummaryRow,
+  BillingPeriod,
+  BillingPayment,
+  BillingRefund,
+  BillingUsageRow,
   GlobalScopeContext,
   CreateInvitationInput,
   PublicInvitation,
@@ -144,10 +153,46 @@ export const alphaApi = {
     request<EntitlementSnapshot>(`/api/organizations/${organizationId}/entitlements`),
   platformPlans: (): Promise<Plan[]> =>
     request<Plan[]>("/api/platform/subscriptions/plans"),
+  billingPlans: (): Promise<BillingPlan[]> =>
+    request<BillingPlan[]>("/api/platform/billing/plans"),
+  createBillingPlan: (payload: BillingPlanInput): Promise<BillingPlan> =>
+    request<BillingPlan>("/api/platform/billing/plans", { method: "POST", body: JSON.stringify(payload) }),
+  updateBillingPlan: (planId: string, payload: BillingPlanInput): Promise<BillingPlan> =>
+    request<BillingPlan>(`/api/platform/billing/plans/${planId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  simulateBillingPlan: (planId: string, payload: { employers: number; employees: number; reportRows: number; corrections: number; correctedRows: number }): Promise<BillingCalculation> =>
+    request<BillingCalculation>(`/api/platform/billing/plans/${planId}/simulate`, { method: "POST", body: JSON.stringify(payload) }),
+  platformBillingSummary: (take = 500): Promise<BillingMonthlySummaryRow[]> =>
+    request<BillingMonthlySummaryRow[]>(`/api/platform/billing/summary?take=${take}`),
+  platformBillingPeriods: (take = 100): Promise<BillingPeriod[]> =>
+    request<BillingPeriod[]>(`/api/platform/billing/periods?take=${take}`),
+  platformBillingPayments: (take = 100): Promise<BillingPayment[]> =>
+    request<BillingPayment[]>(`/api/platform/billing/payments?take=${take}`),
+  platformBillingRefunds: (take = 100): Promise<BillingRefund[]> =>
+    request<BillingRefund[]>(`/api/platform/billing/refunds?take=${take}`),
+  platformBillingUsage: (billingPeriodId: string): Promise<BillingUsageRow[]> =>
+    request<BillingUsageRow[]>(`/api/platform/billing/usage?billingPeriodId=${encodeURIComponent(billingPeriodId)}`),
+  runBillingPeriod: (billingAccountId: string, payload: { periodStart: string; periodEnd: string; charge: boolean }) =>
+    request(`/api/platform/billing/accounts/${billingAccountId}/run`, { method: "POST", body: JSON.stringify(payload) }),
+  refundBillingPayment: (paymentId: string, payload: { amount: number; reason: string; idempotencyKey: string }) =>
+    request(`/api/platform/billing/payments/${paymentId}/refunds`, { method: "POST", body: JSON.stringify(payload) }),
+  organizationBillingContext: (organizationId: string): Promise<BillingCustomerContext> =>
+    request<BillingCustomerContext>(`/api/organizations/${organizationId}/billing/context`),
+  organizationBillingPeriods: (organizationId: string): Promise<BillingPeriod[]> =>
+    request<BillingPeriod[]>(`/api/organizations/${organizationId}/billing/periods`),
+  organizationBillingPayments: (organizationId: string): Promise<BillingPayment[]> =>
+    request<BillingPayment[]>(`/api/organizations/${organizationId}/billing/payments`),
+  employerBillingContext: (organizationId: string, employerId: string): Promise<BillingCustomerContext> =>
+    request<BillingCustomerContext>(`/api/organizations/${organizationId}/employers/${employerId}/billing/context`),
+  employerBillingPeriods: (organizationId: string, employerId: string): Promise<BillingPeriod[]> =>
+    request<BillingPeriod[]>(`/api/organizations/${organizationId}/employers/${employerId}/billing/periods`),
+  employerBillingPayments: (organizationId: string, employerId: string): Promise<BillingPayment[]> =>
+    request<BillingPayment[]>(`/api/organizations/${organizationId}/employers/${employerId}/billing/payments`),
   platformSubscriptions: (): Promise<PlatformSubscription[]> =>
     request<PlatformSubscription[]>("/api/platform/subscriptions/"),
   changePlatformSubscriptionPlan: (organizationId: string, planId: string): Promise<SubscriptionSummary> =>
     request<SubscriptionSummary>(`/api/platform/subscriptions/${organizationId}/plan`, { method: "PUT", body: JSON.stringify({ planId }) }),
+  changePlatformSubscriptionStatus: (organizationId: string, status: number) =>
+    request<SubscriptionSummary>(`/api/platform/subscriptions/${organizationId}/status`, { method: "PUT", body: JSON.stringify({ status }) }),
   changePlatformOrganizationStatus: (organizationId: string, status: number) =>
     request<void>(`/api/platform/subscriptions/${organizationId}/organization-status`, { method: "PUT", body: JSON.stringify({ status }) }),
   platformUsers: (): Promise<PlatformUser[]> => request<PlatformUser[]>("/api/platform/users"),

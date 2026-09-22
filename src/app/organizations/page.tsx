@@ -56,10 +56,10 @@ export default function OrganizationsPage() {
           { key: "id", label: "מזהה" },
         ]}
         renderCells={(item) => [
-          <Link className="table-entity-link" href={`/organizations/${item.id}`}>{item.name}</Link>,
+          <Link key="name" className="table-entity-link" href={`/organizations/${item.id}`}>{item.name}</Link>,
           organizationTypeLabel(item.type),
-          <span className={item.status === 2 ? "badge badge-green" : "badge badge-gray"}>{organizationStatusLabel(item.status)}</span>,
-          <span dir="ltr">{item.id}</span>,
+          <span key="status" className={item.status === 2 ? "badge badge-green" : "badge badge-gray"}>{organizationStatusLabel(item.status)}</span>,
+          <span key="id" dir="ltr">{item.id}</span>,
         ]}
       /> : <div className="empty"><Landmark size={34} /><div>לא נמצאו ארגונים.</div></div>}
     </section>
