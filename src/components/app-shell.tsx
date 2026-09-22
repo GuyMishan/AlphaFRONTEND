@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, Landmark, LogOut, Menu, ReceiptText, Settings, ShieldCheck, Users, X } from "lucide-react";
+import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, Landmark, LogOut, Menu, Settings, ShieldCheck, Users, X } from "lucide-react";
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
 import { UpgradeModal } from "./upgrade-modal";
@@ -224,7 +224,6 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         {platformAdmin ? <Link href="/organizations" className={pathname.startsWith("/organizations") ? "active" : ""}><Landmark size={18} />ארגונים</Link> : null}
         {!session.platformAdmin && singleOrganizationTarget ? <Link href={`/organizations/${singleOrganizationTarget}`} className={pathname.startsWith(`/organizations/${singleOrganizationTarget}`) ? "active" : ""}><Landmark size={18} />הארגון שלי</Link> : null}
         {platformAdmin ? <Link href="/admin" className={pathname === "/admin" ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
-        {platformAdmin ? <Link href="/admin/billing" className={pathname.startsWith("/admin/billing") ? "active" : ""}><ReceiptText size={18} />ניהול גבייה ותמחור</Link> : null}
         {canManageOrganization ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />משתמשים והרשאות</Link> : null}
         <Link href="/settings" className={pathname === "/settings" ? "active" : ""}><Settings size={18} />הגדרות</Link>
       </nav>
