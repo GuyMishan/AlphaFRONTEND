@@ -28,6 +28,9 @@ const EMPTY: AlphaBillingAccount = {
   cardExpiryMonth: null,
   cardExpiryYear: null,
   bankDebitMandateReference: "",
+  billingMode: 1,
+  status: 1,
+  defaultPaymentMethodId: null,
   configured: false,
 };
 
