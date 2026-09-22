@@ -53,6 +53,17 @@ const metrics: Array<{ metricType: BillingMetricType; label: string; defaultPric
   { metricType: 4, label: "שורות דיווח", defaultPricing: 2 },
 ];
 
+const planStatusOptions = [{ value: "1", label: "פעילה" }, { value: "0", label: "לא פעילה" }];
+const currencyOptions = [{ value: "ILS", label: "ILS" }];
+const billingIntervalOptions = [{ value: "Monthly", label: "חודשי" }];
+const subscriptionStatusOptions = [
+  { value: 1, label: "פעיל" },
+  { value: 2, label: "מושהה" },
+  { value: 3, label: "פג תוקף" },
+  { value: 4, label: "בוטל" },
+  { value: 5, label: "תשלום באיחור" },
+];
+
 const metricLabels: Record<string, string> = {
   "1": "מחיר בסיס", "2": "מעסיקים", "3": "עובדים", "4": "שורות דיווח", "5": "תיקונים",
   Base: "מחיר בסיס", Employer: "מעסיקים", Employee: "עובדים", ReportRow: "שורות דיווח", Correction: "תיקונים",
@@ -463,13 +474,13 @@ export default function AdminBillingPage() {
           <div className="grid" style={{ gridTemplateColumns: "repeat(3, minmax(0,1fr))" }}>
             <label className="field"><span>שם</span><UiInput value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
             <label className="field"><span>קוד</span><UiInput value={draft.code} disabled={Boolean(selectedPlanId)} onChange={(event) => setDraft({ ...draft, code: event.target.value })} /></label>
-            <label className="field"><span>מטבע</span><UiSelect value={draft.currency} onChange={(event) => setDraft({ ...draft, currency: event.target.value })}><option value="ILS">ILS</option></UiSelect></label>
+            <label className="field"><span>מטבע</span><UiSelect value={draft.currency} onChange={(event) => setDraft({ ...draft, currency: event.target.value })}>{currencyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></label>
             <label className="field"><span>מקסימום מעסיקים</span><UiInput type="number" min={0} value={draft.maxEmployers} onChange={(event) => setDraft({ ...draft, maxEmployers: Number(event.target.value) })} /></label>
             <label className="field"><span>מקסימום עובדים</span><UiInput type="number" min={0} value={draft.maxEmployees} onChange={(event) => setDraft({ ...draft, maxEmployees: Number(event.target.value) })} /></label>
             <label className="field"><span>מקסימום משתמשים</span><UiInput type="number" min={0} value={draft.maxUsers} onChange={(event) => setDraft({ ...draft, maxUsers: Number(event.target.value) })} /></label>
             <label className="field"><span>בתוקף מתאריך</span><UiInput type="datetime-local" value={draft.effectiveFrom ?? ""} onChange={(event) => setDraft({ ...draft, effectiveFrom: event.target.value || null })} /></label>
-            <label className="field"><span>סטטוס</span><UiSelect value={draft.isActive ? "1" : "0"} onChange={(event) => setDraft({ ...draft, isActive: event.target.value === "1" })}><option value="1">פעילה</option><option value="0">לא פעילה</option></UiSelect></label>
-            <label className="field"><span>מחזור חיוב</span><UiSelect value={draft.billingInterval} onChange={(event) => setDraft({ ...draft, billingInterval: event.target.value })}><option value="Monthly">חודשי</option></UiSelect></label>
+            <label className="field"><span>סטטוס</span><UiSelect value={draft.isActive ? "1" : "0"} onChange={(event) => setDraft({ ...draft, isActive: event.target.value === "1" })}>{planStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></label>
+            <label className="field"><span>מחזור חיוב</span><UiSelect value={draft.billingInterval} onChange={(event) => setDraft({ ...draft, billingInterval: event.target.value })}>{billingIntervalOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></label>
             <label className="field" style={{ gridColumn: "1 / -1" }}><span>תיאור</span><UiTextarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
           </div>
 
@@ -591,11 +602,7 @@ export default function AdminBillingPage() {
             {plans.filter((plan) => plan.isActive || plan.id === row.planId).map((plan) => <option key={plan.id} value={plan.id}>{plan.name} · {plan.code}</option>)}
           </UiSelect></td>
           <td style={td}><UiSelect value={String(row.status)} disabled={saving} onChange={(event) => void changeSubscriptionStatus(row.organizationId, Number(event.target.value))}>
-            <option value="1">פעיל</option>
-            <option value="2">מושהה</option>
-            <option value="3">פג תוקף</option>
-            <option value="4">בוטל</option>
-            <option value="5">תשלום באיחור</option>
+            {subscriptionStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </UiSelect><div style={{ color: "var(--muted)", fontSize: 12, marginTop: 4 }}>{subscriptionStatus(row.status)}</div></td>
           <td style={td}>{shortDate(row.startedAt)}</td>
           <td style={td}>{row.expiresAt ? shortDate(row.expiresAt) : "ללא הגבלה"}</td>
