@@ -170,8 +170,12 @@ export const alphaApi = {
     request(`/api/platform/billing/payments/${paymentId}/refunds`, { method: "POST", body: JSON.stringify(payload) }),
   organizationBillingPeriods: (organizationId: string): Promise<BillingPeriod[]> =>
     request<BillingPeriod[]>(`/api/organizations/${organizationId}/billing/periods`),
+  organizationBillingPayments: (organizationId: string): Promise<BillingPayment[]> =>
+    request<BillingPayment[]>(`/api/organizations/${organizationId}/billing/payments`),
   employerBillingPeriods: (organizationId: string, employerId: string): Promise<BillingPeriod[]> =>
     request<BillingPeriod[]>(`/api/organizations/${organizationId}/employers/${employerId}/billing/periods`),
+  employerBillingPayments: (organizationId: string, employerId: string): Promise<BillingPayment[]> =>
+    request<BillingPayment[]>(`/api/organizations/${organizationId}/employers/${employerId}/billing/payments`),
   platformSubscriptions: (): Promise<PlatformSubscription[]> =>
     request<PlatformSubscription[]>("/api/platform/subscriptions/"),
   changePlatformSubscriptionPlan: (organizationId: string, planId: string): Promise<SubscriptionSummary> =>
