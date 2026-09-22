@@ -534,6 +534,8 @@ export type OrganizationEmployerBilling = {
 
 export type BillingPaymentMethodType = 1 | 2;
 export type BillingPaymentMethodStatus = 1 | 2 | 3 | 4 | 5 | 6;
+export type BillingAccountStatus = 1 | 2 | 3 | 4 | 5;
+export type BillingMode = 1 | 2;
 
 export type AlphaBillingAccount = {
   id: string | null;
@@ -552,6 +554,9 @@ export type AlphaBillingAccount = {
   cardExpiryMonth: number | null;
   cardExpiryYear: number | null;
   bankDebitMandateReference: string;
+  billingMode: BillingMode;
+  status: BillingAccountStatus;
+  defaultPaymentMethodId: string | null;
   configured: boolean;
   createdAt?: string;
   updatedAt?: string;
