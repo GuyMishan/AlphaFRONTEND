@@ -233,14 +233,26 @@ export default function DashboardPage() {
   }, [query, organizationId, mode]);
 
   useEffect(() => {
-    if (mode === "admin") return;
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail;
       setQuery("");
       setLoading(true);
       setError("");
 
-      if (mode === "organization") {
+      if (!detail.organizationId) {
+        setMode("admin");
+        setOrganizationId("");
+        setEmployerId("");
+        setEmployers([]);
+        setEntitlements(null);
+        void loadAdminDashboard(organizations)
+          .catch((err) => setError(err instanceof Error ? err.message : "טעינת נתוני המערכת נכשלה"))
+          .finally(() => setLoading(false));
+        return;
+      }
+
+      if (!detail.employerId) {
+        setMode("organization");
         setOrganizationId(detail.organizationId);
         setOrganizationSelection(detail.organizationId);
         setEmployerId("");
@@ -250,21 +262,17 @@ export default function DashboardPage() {
         return;
       }
 
-      if (!detail.employerId) {
-        setLoading(false);
-        return;
-      }
-
       void (async () => {
-        const [organization, employer] = await Promise.all([
-          alphaApi.organizations().then((items) => items.find((item) => item.id === detail.organizationId) ?? null),
-          alphaApi.employer(detail.organizationId, detail.employerId!),
-        ]);
+        const organization = organizations.find((item) => item.id === detail.organizationId)
+          ?? await alphaApi.organizations().then((items) => items.find((item) => item.id === detail.organizationId) ?? null);
+        const employer = await alphaApi.employer(detail.organizationId, detail.employerId!);
         if (!organization) throw new Error("הארגון שנבחר אינו זמין.");
+        setMode("employer");
         setOrganizationId(detail.organizationId);
         setEmployerId(detail.employerId!);
+        setOrganizationSelection(detail.organizationId);
         setEmployerSelection(detail.organizationId, detail.employerId!);
-        setEmployers((items) => items.some((item) => item.id === employer.id) ? items : [...items, employer]);
+        setEmployers([employer]);
         await loadEmployerDashboard(organization, employer);
       })()
         .catch((err) => setError(err instanceof Error ? err.message : "טעינת המעסיק נכשלה"))
@@ -272,7 +280,7 @@ export default function DashboardPage() {
     };
     window.addEventListener("alpha:scope-change", handler);
     return () => window.removeEventListener("alpha:scope-change", handler);
-  }, [mode]);
+  }, [mode, organizations]);
 
   function chooseEmployer(id: string) {
     setEmployerId(id);
