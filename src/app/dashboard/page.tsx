@@ -283,8 +283,12 @@ export default function DashboardPage() {
   }, [mode, organizations]);
 
   function chooseEmployer(id: string) {
+    if (!organizationId) return;
     setEmployerId(id);
     setEmployerSelection(organizationId, id);
+    window.dispatchEvent(new CustomEvent("alpha:scope-change", {
+      detail: { organizationId, employerId: id },
+    }));
   }
 
   const title = useMemo(() => {
