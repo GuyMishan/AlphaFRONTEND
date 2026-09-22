@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Calculator, CreditCard, RefreshCw, Save, WalletCards } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
@@ -292,7 +292,7 @@ export default function AdminBillingPage() {
       <section className="card" style={{ overflowX: "auto" }}>
         <div className="card-head"><h2>תשלומים</h2></div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>{["תאריך","Provider","סטטוס","סכום","עסקה","פעולות"].map((x) => <th key={x} style={th}>{x}</th>)}</tr></thead>
-          <tbody>{payments.map((row) => <tr key={row.id}><td style={td}>{shortDate(row.createdAt)}</td><td style={td}>{row.provider || "—"}</td><td style={td}>{String(row.status)}</td><td style={td}><b>{money(row.amount,row.currency)}</b></td><td style={td}>{row.providerTransactionId || "—"}</td><td style={td}><button className="btn btn-secondary" disabled={!["4","Succeeded","6","PartiallyRefunded"].includes(String(row.status))} onClick={() => { setRefundPayment(row); setRefundAmount(String(row.amount)); }}>זיכוי</button></td></tr>)}</tbody>
+          <tbody>{payments.map((row) => <tr key={row.id}><td style={td}>{shortDate(row.createdAt)}</td><td style={td}>{row.provider || "—"}</td><td style={td}>{String(row.status)}</td><td style={td}><b>{money(row.amount,row.currency)}</b></td><td style={td}>{row.providerTransactionId || "—"}</td><td style={td}><button className="btn btn-secondary" disabled={!["3","Succeeded","6","PartiallyRefunded"].includes(String(row.status))} onClick={() => { setRefundPayment(row); setRefundAmount(String(row.amount)); }}>זיכוי</button></td></tr>)}</tbody>
         </table>
       </section>
       {refundPayment ? <section className="card">
@@ -314,5 +314,5 @@ export default function AdminBillingPage() {
   </AppShell>;
 }
 
-const th: React.CSSProperties = { textAlign: "right", padding: 12, borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" };
-const td: React.CSSProperties = { padding: 12, borderBottom: "1px solid var(--line)", verticalAlign: "middle" };
+const th: CSSProperties = { textAlign: "right", padding: 12, borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" };
+const td: CSSProperties = { padding: 12, borderBottom: "1px solid var(--line)", verticalAlign: "middle" };
