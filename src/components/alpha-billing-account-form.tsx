@@ -88,10 +88,10 @@ export function AlphaBillingAccountForm({
     const result = new URLSearchParams(window.location.search).get("payment");
     if (!result) return;
     if (result === "success") {
-      toast.success("אמצעי התשלום נקלט אצל PayPlus. מסנכרן סטטוס...");
+      toast.success("אמצעי התשלום נקלט אצל CardCom. מסנכרן סטטוס...");
       window.setTimeout(() => void syncPaymentMethod(), 400);
     } else if (result === "failed") {
-      toast.error("חיבור אמצעי התשלום נכשל אצל PayPlus.");
+      toast.error("חיבור אמצעי התשלום נכשל אצל CardCom.");
     } else if (result === "cancelled") {
       toast.info("חיבור אמצעי התשלום בוטל.");
     }
@@ -231,8 +231,8 @@ export function AlphaBillingAccountForm({
         {account.configured ? <div className="notice notice-info">
           {account.paymentMethodType === 1
             ? cardConnected
-              ? <>כרטיס מחובר דרך PayPlus: {account.cardBrand || "Card"} · •••• {account.cardLast4 || "----"}{account.cardExpiryMonth && account.cardExpiryYear ? ` · ${String(account.cardExpiryMonth).padStart(2, "0")}/${account.cardExpiryYear}` : ""}</>
-              : account.paymentMethodStatus === 2 ? "ממתין להשלמת החיבור אצל PayPlus." : "עדיין לא חובר כרטיס דרך PayPlus."
+              ? <>כרטיס מחובר דרך CardCom: {account.cardBrand || "Card"} · •••• {account.cardLast4 || "----"}{account.cardExpiryMonth && account.cardExpiryYear ? ` · ${String(account.cardExpiryMonth).padStart(2, "0")}/${account.cardExpiryYear}` : ""}</>
+              : account.paymentMethodStatus === 2 ? "ממתין להשלמת החיבור אצל CardCom." : "עדיין לא חובר כרטיס דרך CardCom."
             : bankConnected
               ? <>Bank Debit מחובר · reference: {account.bankDebitMandateReference}</>
               : "Bank Debit עדיין לא חובר לספק התשלום."}
