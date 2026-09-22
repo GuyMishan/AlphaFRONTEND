@@ -9,7 +9,7 @@ import { ScopeController } from "./scope-controller";
 import { UpgradeModal } from "./upgrade-modal";
 import { EmployerForm } from "./employer-form";
 import { alphaApi } from "@/lib/api";
-import { clearSession, getSession, setEmployerSelection, setOrganizationSelection } from "@/lib/session";
+import { clearSession, getSession, setEmployerSelection, setOrganizationSelection, setSession } from "@/lib/session";
 import type { Employer, EmployerInput, Session } from "@/lib/types";
 import { UPGRADE_DIALOG_EVENT, type UpgradeDialogDetail } from "@/lib/upgrade";
 
@@ -68,19 +68,30 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
 
   useEffect(() => {
     let active = true;
-    const current = getSession();
-    if (!current) {
-      router.replace("/login");
-      return;
-    }
 
-    setLocalSession(current);
-    Promise.all([
-      alphaApi.onboardingStatus(),
-      alphaApi.scope(),
-    ])
-      .then(([onboarding, scope]) => {
+    async function initializeSession() {
+      const stored = getSession();
+      if (!stored) {
+        router.replace("/login");
+        return;
+      }
+
+      let current = stored;
+      try {
+        if (stored.mode === "oidc") {
+          const refreshed = await alphaApi.refreshSession();
+          current = { mode: "oidc", ...refreshed };
+          setSession(current);
+        }
         if (!active) return;
+        setLocalSession(current);
+
+        const [onboarding, scope] = await Promise.all([
+          alphaApi.onboardingStatus(),
+          alphaApi.scope(),
+        ]);
+        if (!active) return;
+
         if (onboarding.needsOnboarding) {
           setSingleEmployerUser(false);
           setSingleEmployerTarget(null);
@@ -89,6 +100,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
           setOnboardingRequired(true);
           return;
         }
+
         setOnboardingRequired(false);
         const accessibleEmployers = scope.organizations.flatMap((organization) =>
           organization.employers.map((employer) => ({ organizationId: organization.id, employerId: employer.id }))
@@ -98,16 +110,23 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         setSingleOrganizationTarget(!current.platformAdmin && scope.organizations.length === 1 ? scope.organizations[0].id : null);
         setCanManageOrganization(current.platformAdmin || scope.organizations.some((item) => item.canManageOrganization));
         setHasOrganizationScope(current.platformAdmin || scope.organizations.some((item) => item.hasOrganizationScope));
-      })
-      .catch(() => {
+      } catch {
         if (!active) return;
+        if (stored.mode === "oidc") {
+          clearSession();
+          router.replace("/login");
+          return;
+        }
+        setLocalSession(stored);
         setSingleEmployerUser(false);
         setSingleEmployerTarget(null);
         setSingleOrganizationTarget(null);
         setCanManageOrganization(false);
         setHasOrganizationScope(false);
-      });
+      }
+    }
 
+    void initializeSession();
     return () => { active = false; };
   }, [router]);
 
