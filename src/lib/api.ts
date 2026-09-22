@@ -37,6 +37,7 @@ import type {
   BillingCalculation,
   BillingPeriod,
   BillingPayment,
+  BillingRefund,
   BillingUsageRow,
   GlobalScopeContext,
   CreateInvitationInput,
@@ -163,6 +164,8 @@ export const alphaApi = {
     request<BillingPeriod[]>(`/api/platform/billing/periods?take=${take}`),
   platformBillingPayments: (take = 100): Promise<BillingPayment[]> =>
     request<BillingPayment[]>(`/api/platform/billing/payments?take=${take}`),
+  platformBillingRefunds: (take = 100): Promise<BillingRefund[]> =>
+    request<BillingRefund[]>(`/api/platform/billing/refunds?take=${take}`),
   platformBillingUsage: (billingPeriodId: string): Promise<BillingUsageRow[]> =>
     request<BillingUsageRow[]>(`/api/platform/billing/usage?billingPeriodId=${encodeURIComponent(billingPeriodId)}`),
   runBillingPeriod: (billingAccountId: string, payload: { periodStart: string; periodEnd: string; charge: boolean }) =>
@@ -185,6 +188,8 @@ export const alphaApi = {
     request<PlatformSubscription[]>("/api/platform/subscriptions/"),
   changePlatformSubscriptionPlan: (organizationId: string, planId: string): Promise<SubscriptionSummary> =>
     request<SubscriptionSummary>(`/api/platform/subscriptions/${organizationId}/plan`, { method: "PUT", body: JSON.stringify({ planId }) }),
+  changePlatformSubscriptionStatus: (organizationId: string, status: number) =>
+    request<SubscriptionSummary>(`/api/platform/subscriptions/${organizationId}/status`, { method: "PUT", body: JSON.stringify({ status }) }),
   changePlatformOrganizationStatus: (organizationId: string, status: number) =>
     request<void>(`/api/platform/subscriptions/${organizationId}/organization-status`, { method: "PUT", body: JSON.stringify({ status }) }),
   platformUsers: (): Promise<PlatformUser[]> => request<PlatformUser[]>("/api/platform/users"),
