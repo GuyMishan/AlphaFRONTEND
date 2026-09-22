@@ -37,6 +37,8 @@ const payerTypeOptions = [
   { value: "Employer", label: "מעסיקים משלמים" },
 ];
 
+const allMonthsOption = [{ value: "all", label: "כל החודשים" }];
+
 function money(value: number, currency = "ILS") {
   return new Intl.NumberFormat("he-IL", { style: "currency", currency }).format(value);
 }
@@ -327,7 +329,7 @@ export default function AdminBillingPage() {
               {payerTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </UiSelect>
             <UiSelect value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
-              <option value="all">כל החודשים</option>
+              {allMonthsOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               {months.map((month) => <option key={month} value={month}>{month}</option>)}
             </UiSelect>
           </div>
