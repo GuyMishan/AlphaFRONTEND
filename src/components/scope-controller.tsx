@@ -9,6 +9,7 @@ import {
   getEmployeeSelection,
   getEmployerSelection,
   getOrganizationSelection,
+  getSession,
   setEmployeeSelection,
   setEmployerSelection,
   setOrganizationSelection,
@@ -33,6 +34,7 @@ export function ScopeController() {
   const router = useRouter();
   const level = requiredScope(pathname);
   const isDashboard = pathname === "/dashboard";
+  const isAdminDashboard = isDashboard && Boolean(getSession()?.platformAdmin);
   const [scope, setScope] = useState<GlobalScopeContext | null>(null);
   const [organizationId, setOrganizationId] = useState("");
   const [employerId, setEmployerId] = useState("");
@@ -76,6 +78,14 @@ export function ScopeController() {
         const context = await alphaApi.scope();
         if (!active) return;
         setScope(context);
+
+        if (isAdminDashboard) {
+          setOrganizationId("");
+          setEmployerId("");
+          setEmployees([]);
+          setEmployeeId("");
+          return;
+        }
 
         const savedOrg = getOrganizationSelection();
         const savedEmployer = getEmployerSelection();
@@ -137,7 +147,7 @@ export function ScopeController() {
 
     void load();
     return () => { active = false; };
-  }, [level]);
+  }, [level, isAdminDashboard]);
 
   async function changeOrganization(value: string) {
     if (!scope) return;
@@ -204,7 +214,7 @@ export function ScopeController() {
     emitScopeChange({ organizationId, employerId, employeeId: value });
   }
 
-  if (!scope || loading) return null;
+  if (!scope || loading || isAdminDashboard) return null;
 
   const hasAnyOrganizationScope = scope.organizations.some((item) => item.hasOrganizationScope);
   const showOrganizationSelector =
@@ -243,7 +253,9 @@ export function ScopeController() {
         <span>מעסיק</span>
         <div><Building2 size={16} /><UiSelect controlSize="compact" value={employerId} disabled={loading} onChange={(event) => void changeEmployer(event.target.value)}>
           {selectedOrganizationHasScope
-            ? employerOptions.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)
+            ? (isDashboard
+                ? [{ id: "", legalName: "בחר מעסיק" }, ...employerOptions].map((item) => <option key={item.id || "empty"} value={item.id}>{item.legalName}</option>)
+                : employerOptions.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>))
             : allEmployers.map((item) => <option key={item.employer.id} value={item.employer.id}>{item.employer.legalName}{scope.organizations.length > 1 ? ` · ${item.organization.name}` : ""}</option>)}
         </UiSelect></div>
       </label> : null}
