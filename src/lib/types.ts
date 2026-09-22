@@ -800,6 +800,24 @@ export type BillingCalculation = {
   components: BillingCalculationLine[];
 };
 
+export type BillingCustomerRow = {
+  payerType: "Organization" | "Employer";
+  payerId: string;
+  payerName: string;
+  organizationId: string;
+  organizationName: string;
+  employerId: string | null;
+  employerName: string | null;
+  billingAccountId: string | null;
+  paymentMethodStatus: number | string;
+  paymentMethodType: number | string;
+  cardBrand: string;
+  cardLast4: string;
+  configured: boolean;
+  billingType: BillingAccountPricingType;
+  unitPrice: number;
+};
+
 export type BillingMonthlySummaryRow = {
   id: string;
   billingAccountId: string;
