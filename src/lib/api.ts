@@ -32,6 +32,7 @@ import type {
   BankBranchOption,
   BillingGateStatus,
   BillingCustomerContext,
+  BillingCustomerRow,
   BillingAccountPricingProfile,
   BillingAccountPricingInput,
   BillingPlan,
@@ -163,6 +164,10 @@ export const alphaApi = {
     request<BillingPlan>(`/api/platform/billing/plans/${planId}`, { method: "PUT", body: JSON.stringify(payload) }),
   simulateBillingPlan: (planId: string, payload: { employers: number; employees: number; reportRows: number; corrections: number; correctedRows: number }): Promise<BillingCalculation> =>
     request<BillingCalculation>(`/api/platform/billing/plans/${planId}/simulate`, { method: "POST", body: JSON.stringify(payload) }),
+  billingCustomers: (): Promise<BillingCustomerRow[]> =>
+    request<BillingCustomerRow[]>("/api/platform/billing/customers"),
+  updateBillingCustomerPricing: (payload: { payerType: "Organization" | "Employer"; payerId: string; billingType: "Free" | "PerEmployee" | "PerReportRow"; unitPrice: number | null }) =>
+    request("/api/platform/billing/customers/pricing", { method: "PUT", body: JSON.stringify(payload) }),
   platformBillingSummary: (take = 500): Promise<BillingMonthlySummaryRow[]> =>
     request<BillingMonthlySummaryRow[]>(`/api/platform/billing/summary?take=${take}`),
   billingAccountPricing: (billingAccountId: string): Promise<BillingAccountPricingProfile> =>
