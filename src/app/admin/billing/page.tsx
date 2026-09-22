@@ -364,8 +364,10 @@ export default function AdminBillingPage() {
       setSelectedPlanId(saved.id);
       setDraft(toDraft(saved));
       await load();
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "שמירת התוכנית נכשלה.");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -631,7 +633,7 @@ export default function AdminBillingPage() {
       </section>
     </div> : null}
 
-    {tab === "plans" ? <div className="grid" style={{ gridTemplateColumns: "minmax(240px,.45fr) minmax(0,1.55fr)", alignItems: "start", marginTop: 18 }}>
+    {tab === "plans" ? <div className="grid" style={{ gridTemplateColumns: "1fr", alignItems: "start", marginTop: 18 }}>
       <section className="card">
         <div className="card-head">
           <h2>תוכניות</h2>
@@ -961,8 +963,7 @@ export default function AdminBillingPage() {
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
           <button className="btn btn-secondary" type="button" onClick={() => setPricingModalOpen(false)}>ביטול</button>
           <button className="btn btn-primary" type="button" disabled={saving} onClick={async () => {
-            await savePlan();
-            setPricingModalOpen(false);
+            if (await savePlan()) setPricingModalOpen(false);
           }}><Save size={16} />{saving ? "שומר..." : "שמירת תעריפים"}</button>
         </div>
       </section>
