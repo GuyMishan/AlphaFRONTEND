@@ -35,6 +35,7 @@ import type {
   BillingPlan,
   BillingPlanInput,
   BillingCalculation,
+  BillingMonthlySummaryRow,
   BillingPeriod,
   BillingPayment,
   BillingRefund,
@@ -160,6 +161,8 @@ export const alphaApi = {
     request<BillingPlan>(`/api/platform/billing/plans/${planId}`, { method: "PUT", body: JSON.stringify(payload) }),
   simulateBillingPlan: (planId: string, payload: { employers: number; employees: number; reportRows: number; corrections: number; correctedRows: number }): Promise<BillingCalculation> =>
     request<BillingCalculation>(`/api/platform/billing/plans/${planId}/simulate`, { method: "POST", body: JSON.stringify(payload) }),
+  platformBillingSummary: (take = 500): Promise<BillingMonthlySummaryRow[]> =>
+    request<BillingMonthlySummaryRow[]>(`/api/platform/billing/summary?take=${take}`),
   platformBillingPeriods: (take = 100): Promise<BillingPeriod[]> =>
     request<BillingPeriod[]>(`/api/platform/billing/periods?take=${take}`),
   platformBillingPayments: (take = 100): Promise<BillingPayment[]> =>
