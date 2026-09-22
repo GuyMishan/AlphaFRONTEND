@@ -9,7 +9,7 @@ import { ScopeController } from "./scope-controller";
 import { UpgradeModal } from "./upgrade-modal";
 import { EmployerForm } from "./employer-form";
 import { alphaApi } from "@/lib/api";
-import { clearSession, getSession, setEmployerSelection, setOrganizationSelection, setSession } from "@/lib/session";
+import { clearSession, getSession, isPlatformAdminSession, setEmployerSelection, setOrganizationSelection, setSession } from "@/lib/session";
 import type { Employer, EmployerInput, Session } from "@/lib/types";
 import { UPGRADE_DIALOG_EVENT, type UpgradeDialogDetail } from "@/lib/upgrade";
 
@@ -206,7 +206,8 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
 
   if (!session || singleEmployerUser === null || canManageOrganization === null || hasOrganizationScope === null) return null;
 
-  const baseNav = session.platformAdmin ? nav.filter((item) => item.href !== "/billing") : nav;
+  const platformAdmin = isPlatformAdminSession(session);
+  const baseNav = platformAdmin ? nav.filter((item) => item.href !== "/billing") : nav;
   const visibleNav = baseNav.map((item) => {
     if (item.href !== "/employers" || !singleEmployerUser || !singleEmployerTarget) return item;
     return {
@@ -222,10 +223,10 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
           <Link key={href} href={href} className={href.startsWith("/employers/") ? (pathname.startsWith("/employers/") ? "active" : "") : (pathname === href ? "active" : "")}><Icon size={18} />{label}</Link>
         ))}
         <div className="nav-divider" />
-        {session.platformAdmin ? <Link href="/organizations" className={pathname.startsWith("/organizations") ? "active" : ""}><Landmark size={18} />ארגונים</Link> : null}
+        {platformAdmin ? <Link href="/organizations" className={pathname.startsWith("/organizations") ? "active" : ""}><Landmark size={18} />ארגונים</Link> : null}
         {!session.platformAdmin && singleOrganizationTarget ? <Link href={`/organizations/${singleOrganizationTarget}`} className={pathname.startsWith(`/organizations/${singleOrganizationTarget}`) ? "active" : ""}><Landmark size={18} />הארגון שלי</Link> : null}
-        {session.platformAdmin ? <Link href="/admin" className={pathname === "/admin" ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
-        {session.platformAdmin ? <Link href="/admin/billing" className={pathname.startsWith("/admin/billing") ? "active" : ""}><ReceiptText size={18} />ניהול גבייה ותמחור</Link> : null}
+        {platformAdmin ? <Link href="/admin" className={pathname === "/admin" ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
+        {platformAdmin ? <Link href="/admin/billing" className={pathname.startsWith("/admin/billing") ? "active" : ""}><ReceiptText size={18} />ניהול גבייה ותמחור</Link> : null}
         {canManageOrganization ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />משתמשים והרשאות</Link> : null}
         <Link href="/settings" className={pathname === "/settings" ? "active" : ""}><Settings size={18} />הגדרות</Link>
       </nav>
