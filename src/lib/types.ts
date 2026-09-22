@@ -787,6 +787,38 @@ export type BillingCalculation = {
   components: BillingCalculationLine[];
 };
 
+export type BillingMonthlySummaryRow = {
+  id: string;
+  billingAccountId: string;
+  payerType: "Organization" | "Employer";
+  payerName: string;
+  organizationId: string | null;
+  organizationName: string;
+  employerId: string | null;
+  employerName: string | null;
+  month: string;
+  periodStart: string;
+  periodEnd: string;
+  status: number | string;
+  accountStatus: number | string;
+  paymentMethodStatus: number | string;
+  paymentMethodType: number | string;
+  cardBrand: string;
+  cardLast4: string;
+  currency: string;
+  amount: number;
+  paid: boolean;
+  paymentId: string | null;
+  paymentStatus: number | string | null;
+  provider: string;
+  providerTransactionId: string;
+  failureCode: string;
+  failureMessage: string;
+  paidAt: string | null;
+  calculatedAt: string | null;
+  chargedAt: string | null;
+};
+
 export type BillingPeriod = {
   id: string;
   billingAccountId: string;
