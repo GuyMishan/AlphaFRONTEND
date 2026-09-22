@@ -809,6 +809,7 @@ export type BillingCalculation = {
 
 export type BillingCustomerRow = {
   payerType: "Organization" | "Employer";
+  entityType: "Organization" | "Employer";
   payerId: string;
   payerName: string;
   organizationId: string;
@@ -816,6 +817,9 @@ export type BillingCustomerRow = {
   employerId: string | null;
   employerName: string | null;
   billingAccountId: string | null;
+  billingSource: "Organization" | "Employer";
+  billedThroughName: string;
+  inherited: boolean;
   paymentMethodStatus: number | string;
   paymentMethodType: number | string;
   cardBrand: string;
