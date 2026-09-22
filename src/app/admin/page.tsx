@@ -200,8 +200,13 @@ export default function AdminPage() {
       </div>
     </section> : <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
-        <h2 style={{ margin: 0, fontSize: 18 }}>מסלולים ומנויים</h2>
-        <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>כאן מוגדר מסלול השימוש בלבד. גבייה ותשלומים אינם חלק מהשלב הזה.</p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18 }}>מסלולים ומנויים</h2>
+            <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>שיוך מסלולים לארגונים וניהול סטטוס המנוי.</p>
+          </div>
+          <Link className="btn btn-primary" href="/admin/billing"><CreditCard size={16} />ניהול גבייה ותמחור</Link>
+        </div>
       </div>
       <div style={{ overflowX: "auto" }}>
         <table className="admin-subscriptions-table" style={{ width: "100%", borderCollapse: "collapse" }}>
