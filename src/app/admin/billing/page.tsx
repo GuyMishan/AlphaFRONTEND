@@ -15,6 +15,7 @@ import type {
   BillingPayment,
   BillingRefund,
 } from "@/lib/types";
+import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
 type Tab = "subscriptions" | "summary" | "payments" | "refunds";
 
@@ -40,7 +41,7 @@ function money(value: number, currency = "ILS") {
 }
 
 function shortDate(value: string) {
-  return new Intl.DateTimeFormat("he-IL", { dateStyle: "short" }).format(new Date(value));
+  return formatDateDDMMYYYY(value, "—");
 }
 
 function billingLabel(type: BillingAccountPricingType, unitPrice: number, currency = "ILS") {
