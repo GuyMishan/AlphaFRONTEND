@@ -15,7 +15,7 @@ import type {
   BillingPayment,
   BillingRefund,
 } from "@/lib/types";
-import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 type Tab = "subscriptions" | "summary" | "payments" | "refunds";
 
