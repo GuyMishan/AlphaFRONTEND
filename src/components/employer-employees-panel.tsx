@@ -7,7 +7,7 @@ import { Search, UserRoundPlus, Users } from "lucide-react";
 import { VirtualizedTable } from "@/components/virtualized-table";
 import { alphaApi } from "@/lib/api";
 import type { Employee, Employer } from "@/lib/types";
-import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 const PAGE_SIZE = 100;
 
