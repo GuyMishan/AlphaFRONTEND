@@ -41,6 +41,14 @@ export default function OrganizationProfilePage() {
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
     if (requestedTab && tabs.some((item) => item.key === requestedTab)) setTab(requestedTab as TabKey);
   }, []);
+
+  function changeTab(nextTab: string) {
+    const next = nextTab as TabKey;
+    setTab(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", next);
+    window.history.replaceState(window.history.state, "", url.pathname + `?${url.searchParams.toString()}` + url.hash);
+  }
   const [profile, setProfile] = useState<OrganizationProfileCenter | null>(null);
   const [employers, setEmployers] = useState<Employer[]>([]);
   const [members, setMembers] = useState<OrganizationMemberSummary[]>([]);
@@ -87,7 +95,7 @@ export default function OrganizationProfilePage() {
       <button className="btn btn-secondary" type="button" onClick={() => router.push("/dashboard")}>חזרה לדף הבית</button>
     </div>
 
-    <AppTabs items={tabs} activeKey={tab} onChange={setTab} ariaLabel="פרופיל ארגון" />
+    <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל ארגון" />
 
     {tab === "general" ? <GeneralTab profile={profile} onSaved={async () => { await load(); }} /> : null}
     {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))} entitlements={entitlements} /> : null}
