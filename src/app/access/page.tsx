@@ -24,7 +24,7 @@ import type {
   PlatformUser,
   UserInvitation,
 } from "@/lib/types";
-import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 const PAGE_SIZE = 50;
 
