@@ -81,6 +81,7 @@ export default function NewReportPage() {
   const [paymentAccounts, setPaymentAccounts] = useState<EmployerPaymentAccount[]>([]);
   const [selectedPaymentAccountId, setSelectedPaymentAccountId] = useState("");
   const [billingGate, setBillingGate] = useState<BillingGateStatus | null>(null);
+  const [showBillingGateModal, setShowBillingGateModal] = useState(false);
 
   const selectedSource = useMemo(() => sourceReports.find((report) => report.id === selectedSourceReportId) ?? null, [sourceReports, selectedSourceReportId]);
   const isExcel = reportKind === 1 && mode === "excel";
@@ -89,13 +90,12 @@ export default function NewReportPage() {
   async function loadScope(nextScope: { organizationId: string; employerId: string }) {
     setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
     try {
-      const [employerItem, employeePage, capabilities, profileSettings, accountRows, billingGateStatus, globalScope] = await Promise.all([
+      const [employerItem, employeePage, capabilities, profileSettings, accountRows, globalScope] = await Promise.all([
         alphaApi.employer(nextScope.organizationId, nextScope.employerId),
         alphaApi.employeeSearch(nextScope.organizationId, nextScope.employerId, "", 0, 100),
         alphaApi.employerCapabilities(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerProfileCenterSettings(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerPaymentAccounts(nextScope.organizationId, nextScope.employerId),
-        alphaApi.employerBillingGate(nextScope.organizationId, nextScope.employerId),
         alphaApi.scope(),
       ]);
       setEmployer(employerItem);
@@ -108,7 +108,8 @@ export default function NewReportPage() {
       setSelectedIds(employeePage.items.filter((x) => x.status === 1).map((x) => x.id));
       setPaymentAccounts(accountRows);
       setSelectedPaymentAccountId(accountRows.find((x) => x.isDefault)?.id ?? accountRows[0]?.id ?? "");
-      setBillingGate(billingGateStatus);
+      setBillingGate(null);
+      setShowBillingGateModal(false);
       if (!salaryPaymentDate) {
         setSalaryPaymentDate(defaultSalaryDate(month, profileSettings.reporting.defaultSalaryPaymentDay));
       }
@@ -143,12 +144,6 @@ export default function NewReportPage() {
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
   useEffect(() => { const handler = (event: Event) => { if (step !== 1) return; const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail; if (detail.employerId) void loadScope({ organizationId: detail.organizationId, employerId: detail.employerId }); }; window.addEventListener("alpha:scope-change", handler); return () => window.removeEventListener("alpha:scope-change", handler); }, [step]);
   useEffect(() => { if (reportKind === 1 || !scope) return; setMode("manual"); setManualReportId(""); setSourceSearch(""); setSentExternalId(""); void loadSources(true, ""); }, [reportKind, scope?.organizationId, scope?.employerId]);
-  useEffect(() => {
-    if (!scope || step !== summaryStep) return;
-    alphaApi.employerBillingGate(scope.organizationId, scope.employerId)
-      .then(setBillingGate)
-      .catch(() => setBillingGate(null));
-  }, [step, summaryStep, scope?.organizationId, scope?.employerId]);
 
   function chooseSource(report: SourceManualReport) { setSelectedSourceReportId(report.id); setMonth(report.reportingMonth.slice(0, 7)); setSalaryPaymentDate(report.salaryPaymentDate?.slice(0, 10) ?? ""); setError(""); setSentExternalId(""); }
   function chooseKind(kind: ManualReportKind) { setReportKind(kind); setManualReportId(""); setSelectedSourceReportId(""); setFileName(""); setExcelIntake(null); setError(""); setSentExternalId(""); if (kind !== 1) setMode("manual"); }
@@ -202,6 +197,19 @@ export default function NewReportPage() {
     setExcelIntake({ ...excelIntake, matchedEmploymentIds: employmentIds, newEmployees: [] });
   }
 
+  async function ensureBillingAccess() {
+    if (!scope) return false;
+    const freshBillingGate = await alphaApi.employerBillingGate(scope.organizationId, scope.employerId);
+    setBillingGate(freshBillingGate);
+    if (freshBillingGate.canTransmit) {
+      setShowBillingGateModal(false);
+      return true;
+    }
+
+    setShowBillingGateModal(true);
+    return false;
+  }
+
   async function next() {
     if (step >= summaryStep || !scope || !employer || !canCreateReport) return;
     setError(""); setAdvancing(true);
@@ -209,6 +217,7 @@ export default function NewReportPage() {
       if (step === 1) {
         const localError = validateStepOne();
         if (localError) throw new Error(localError);
+        if (!await ensureBillingAccess()) return;
         if (reportKind === 1 && mode === "manual" && !manualReportId) {
           const report = await alphaApi.createManualReport(scope.organizationId, scope.employerId, { reportingMonth: `${month}-01`, salaryPaymentDate, employmentIds: selectedIds, paymentAccountId: selectedPaymentAccountId });
           setManualReportId(report.id);
@@ -243,7 +252,10 @@ export default function NewReportPage() {
     try {
       const freshBillingGate = await alphaApi.employerBillingGate(scope.organizationId, scope.employerId);
       setBillingGate(freshBillingGate);
-      if (!freshBillingGate.canTransmit) return;
+      if (!freshBillingGate.canTransmit) {
+        setShowBillingGateModal(true);
+        return;
+      }
       const validation = await reportValidationApi.commit(scope.organizationId, scope.employerId, manualReportId, "final");
       if (!validation.isValid) throw new Error(validationMessage(validation.errors));
       const result = await reportTransmissionApi.send(scope.organizationId, scope.employerId, manualReportId);
@@ -268,8 +280,8 @@ export default function NewReportPage() {
       
       {billingGate?.canTransmit ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
     </> : null}
-    <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={!canContinue || advancing || !canCreateReport} onClick={() => void next()}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport || billingGate?.canTransmit === false} onClick={() => void sendReport()}><Send size={17} />{sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div>
-  </section>}</div>{scope && billingGate && !billingGate.canTransmit ? <BillingGateModal
+    <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={!canContinue || advancing || !canCreateReport} onClick={() => void next()}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div>
+  </section>}</div>{scope && billingGate && showBillingGateModal && !billingGate.canTransmit ? <BillingGateModal
     gate={billingGate}
     organizationId={scope.organizationId}
     employerId={scope.employerId}
