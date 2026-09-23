@@ -2,7 +2,7 @@
 
 import { UiInput } from "@/components/ui-controls";
 import { useState } from "react";
-import { FileCode2, UploadCloud, CheckCircle2, AlertTriangle } from "lucide-react";
+import { UploadCloud, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { employerInterfaceApi, type EmployerInterfaceUploadValidation } from "@/lib/employer-interface-api";
 
@@ -85,17 +85,10 @@ export function EmployerInterfaceXmlIntake({
     }
   }
 
-  return <div className="card" style={{ marginBottom: 24, padding: 20 }}>
-    <div className="card-head">
-      <div>
-        <h3 style={{ margin: 0 }}>קליטה מקובץ XML / ממשק מעסיקים</h3>
-        <span style={{ color: "var(--muted)" }}>המערכת מזהה אוטומטית אם זה דיווח שוטף, דיווח שלילי, משוב מסכם או משוב שנתי ומבצעת ולידציה מול ה־XSD המתאים.</span>
-      </div>
-      <FileCode2 size={28} />
-    </div>
-
+  return <div style={{ marginTop: 20 }}>
     <div className="field">
-      <label htmlFor="employer-interface-xml">קובץ ממשק מעסיקים</label>
+      <label htmlFor="employer-interface-xml">קובץ XML ממשק מעסיקים 006</label>
+      <small style={{ display: "block", marginBottom: 8 }}>המערכת מזהה אוטומטית את סוג הקובץ ומבצעת ולידציה מול ה־XSD המתאים.</small>
       <UiInput
         id="employer-interface-xml"
         type="file"
