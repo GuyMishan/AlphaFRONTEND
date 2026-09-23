@@ -4,7 +4,7 @@ import { UiInput } from "@/components/ui-controls";
 import { useState } from "react";
 import { UploadCloud, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { employerInterfaceApi, type EmployerInterfaceUploadValidation } from "@/lib/employer-interface-api";
+import { employerInterfaceApi, type EmployerInterfaceImportResult, type EmployerInterfaceUploadValidation } from "@/lib/employer-interface-api";
 
 function documentTypeLabel(value: string | null | undefined) {
   switch (value) {
@@ -20,12 +20,16 @@ export function EmployerInterfaceXmlIntake({
   organizationId,
   employerId,
   disabled = false,
+  paymentAccountId,
+  onBeforeImport,
   onReportImported,
 }: {
   organizationId: string;
   employerId: string;
   disabled?: boolean;
-  onReportImported?: (reportId: string) => void;
+  paymentAccountId: string;
+  onBeforeImport?: () => Promise<boolean>;
+  onReportImported?: (result: EmployerInterfaceImportResult) => Promise<void> | void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [validation, setValidation] = useState<EmployerInterfaceUploadValidation | null>(null);
@@ -63,13 +67,14 @@ export function EmployerInterfaceXmlIntake({
   }
 
   async function importFile() {
-    if (!file || !validation?.isValid || importing) return;
+    if (!file || !validation?.isValid || importing || !paymentAccountId) return;
     setImporting(true);
     try {
-      const result = await employerInterfaceApi.importUpload(organizationId, employerId, file);
+      if (onBeforeImport && !await onBeforeImport()) return;
+      const result = await employerInterfaceApi.importUpload(organizationId, employerId, file, paymentAccountId);
       if (result.reportId) {
         toast.success(`הדיווח נקלט בהצלחה. יובאו ${result.importedEmployees} עובדים${result.unmatchedRows ? `, ${result.unmatchedRows} רשומות לא הותאמו` : ""}.`);
-        onReportImported?.(result.reportId);
+        await onReportImported?.(result);
         return;
       }
       if (result.feedbackId) {
@@ -121,7 +126,7 @@ export function EmployerInterfaceXmlIntake({
       <button
         type="button"
         className="btn btn-primary"
-        disabled={disabled || !file || !validation?.isValid || validating || importing}
+        disabled={disabled || !paymentAccountId || !file || !validation?.isValid || validating || importing}
         onClick={() => void importFile()}
       >
         {importing ? "קולט קובץ..." : "אישור וקליטת הקובץ"}

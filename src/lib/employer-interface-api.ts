@@ -113,7 +113,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 
-async function uploadEmployerInterface<T>(path: string, file: File): Promise<T> {
+async function uploadEmployerInterface<T>(path: string, file: File, fields?: Record<string, string>): Promise<T> {
   const session = getSession();
   const headers = new Headers({ Accept: "application/json" });
   if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
@@ -123,6 +123,7 @@ async function uploadEmployerInterface<T>(path: string, file: File): Promise<T> 
   }
   const body = new FormData();
   body.append("file", file);
+  Object.entries(fields ?? {}).forEach(([key, value]) => body.append(key, value));
   const response = await fetch(`/api/backend${path}`, { method: "POST", headers, body, cache: "no-store" });
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
@@ -142,8 +143,8 @@ function employerPath(organizationId: string, employerId: string) {
 export const employerInterfaceApi = {
   validateUpload: (organizationId: string, employerId: string, file: File) =>
     uploadEmployerInterface<EmployerInterfaceUploadValidation>(`${employerPath(organizationId, employerId)}/validate`, file),
-  importUpload: (organizationId: string, employerId: string, file: File) =>
-    uploadEmployerInterface<EmployerInterfaceImportResult>(`${employerPath(organizationId, employerId)}/import`, file),
+  importUpload: (organizationId: string, employerId: string, file: File, paymentAccountId: string) =>
+    uploadEmployerInterface<EmployerInterfaceImportResult>(`${employerPath(organizationId, employerId)}/import`, file, { paymentAccountId }),
   options: (category: string, scope = "all") => {
     const params = new URLSearchParams({ category, scope });
     return request<EmployerInterfaceOption[]>(`/api/reference-data/employer-interface-006/options?${params}`);
