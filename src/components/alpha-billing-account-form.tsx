@@ -85,6 +85,29 @@ export function AlphaBillingAccountForm({
     }
   }
 
+  async function settlePaymentMethodAfterReturn() {
+    setSyncing(true);
+    try {
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        try {
+          if (employerId) await alphaApi.syncEmployerPaymentMethod(organizationId, employerId);
+          else await alphaApi.syncOrganizationPaymentMethod(organizationId);
+          await load();
+          toast.success("אמצעי התשלום אומת והופעל");
+          return;
+        } catch {
+          await new Promise((resolve) => window.setTimeout(resolve, 750));
+        }
+      }
+
+      await load();
+      toast.info("האישור מספק הסליקה עדיין בעיבוד. אפשר לרענן את הסטטוס בעוד רגע.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+
   useEffect(() => { void load(); }, [organizationId, employerId]);
 
   useEffect(() => {
@@ -136,28 +159,6 @@ export function AlphaBillingAccountForm({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "פתיחת דף הסליקה נכשלה");
       setConnecting(false);
-    }
-  }
-
-  async function settlePaymentMethodAfterReturn() {
-    setSyncing(true);
-    try {
-      for (let attempt = 0; attempt < 8; attempt += 1) {
-        try {
-          if (employerId) await alphaApi.syncEmployerPaymentMethod(organizationId, employerId);
-          else await alphaApi.syncOrganizationPaymentMethod(organizationId);
-          await load();
-          toast.success("אמצעי התשלום אומת והופעל");
-          return;
-        } catch {
-          await new Promise((resolve) => window.setTimeout(resolve, 750));
-        }
-      }
-
-      await load();
-      toast.info("האישור מספק הסליקה עדיין בעיבוד. אפשר לרענן את הסטטוס בעוד רגע.");
-    } finally {
-      setSyncing(false);
     }
   }
 
