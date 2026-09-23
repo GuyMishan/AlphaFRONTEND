@@ -12,6 +12,7 @@ import { bankReferenceApi, type BankBranchReference, type BankReference } from "
 import { employerInterfaceApi, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
 import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
 import type { Employer, PensionFundOption, PensionProductType } from "@/lib/types";
+import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
 const productNames: Record<number, string> = { 1: "קרן פנסיה", 2: "קרן השתלמות", 3: "ביטוח מנהלים", 4: "קופת גמל", 99: "אחר" };
 const emptyPreviousReference = (): EmployerInterfacePreviousReference => ({ previousIdentifier: "", previousClearingIdentifier: "", previousReferenceExceptionCode: null });
@@ -84,8 +85,7 @@ function formatEmployerAccount(row: ManualDepositRow) {
   return values.length ? values.join(" - ") : "—";
 }
 function formatDate(value: string) {
-  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("he-IL");
+  return formatDateDDMMYYYY(value, value);
 }
 function emptyMetadata(): EmployerInterfaceProductMetadataInput {
   return { operationCode: null, depositStatus: null, employeeStatus: null, statusStartDate: null, employmentPercentage: null, workDaysInMonth: null, lastDeposit: null, refundReason: null, paymentMethodCode: null, employerAccountType: null, receiverAccountType: null };
