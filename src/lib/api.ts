@@ -189,6 +189,11 @@ export const alphaApi = {
     request<BillingUsageRow[]>(`/api/platform/billing/usage?billingPeriodId=${encodeURIComponent(billingPeriodId)}`),
   runBillingPeriod: (billingAccountId: string, payload: { periodStart: string; periodEnd: string; charge: boolean }) =>
     request(`/api/platform/billing/accounts/${billingAccountId}/run`, { method: "POST", body: JSON.stringify(payload) }),
+  testBillingCharge: (billingAccountId: string, amount = 1) =>
+    request(`/api/platform/billing-accounts/${billingAccountId}/charge`, {
+      method: "POST",
+      body: JSON.stringify({ amount, description: "ALPHA CardCom sandbox test", createInvoice: false }),
+    }),
   refundBillingPayment: (paymentId: string, payload: { amount: number; reason: string; idempotencyKey: string }) =>
     request(`/api/platform/billing/payments/${paymentId}/refunds`, { method: "POST", body: JSON.stringify(payload) }),
   organizationBillingContext: (organizationId: string): Promise<BillingCustomerContext> =>

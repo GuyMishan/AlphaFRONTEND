@@ -85,16 +85,39 @@ export function AlphaBillingAccountForm({
     }
   }
 
+  async function settlePaymentMethodAfterReturn() {
+    setSyncing(true);
+    try {
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        try {
+          if (employerId) await alphaApi.syncEmployerPaymentMethod(organizationId, employerId);
+          else await alphaApi.syncOrganizationPaymentMethod(organizationId);
+          await load();
+          toast.success("אמצעי התשלום אומת והופעל");
+          return;
+        } catch {
+          await new Promise((resolve) => window.setTimeout(resolve, 750));
+        }
+      }
+
+      await load();
+      toast.info("האישור מספק הסליקה עדיין בעיבוד. אפשר לרענן את הסטטוס בעוד רגע.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+
   useEffect(() => { void load(); }, [organizationId, employerId]);
 
   useEffect(() => {
     const result = new URLSearchParams(window.location.search).get("payment");
     if (!result) return;
     if (result === "success") {
-      toast.success("אמצעי התשלום נקלט אצל CardCom. מסנכרן סטטוס...");
-      window.setTimeout(() => void syncPaymentMethod(), 400);
+      toast.success("אמצעי התשלום נקלט אצל ספק הסליקה. ממתין לאישור המאומת...");
+      window.setTimeout(() => void settlePaymentMethodAfterReturn(), 300);
     } else if (result === "failed") {
-      toast.error("חיבור אמצעי התשלום נכשל אצל CardCom.");
+      toast.error("חיבור אמצעי התשלום נכשל אצל ספק הסליקה.");
     } else if (result === "cancelled") {
       toast.info("חיבור אמצעי התשלום בוטל.");
     }
@@ -234,8 +257,8 @@ export function AlphaBillingAccountForm({
         {account.configured ? <div className="notice notice-info">
           {account.paymentMethodType === 1
             ? cardConnected
-              ? <>כרטיס מחובר דרך CardCom: {account.cardBrand || "Card"} · •••• {account.cardLast4 || "----"}{account.cardExpiryMonth && account.cardExpiryYear ? ` · ${String(account.cardExpiryMonth).padStart(2, "0")}/${account.cardExpiryYear}` : ""}</>
-              : account.paymentMethodStatus === 2 ? "ממתין להשלמת החיבור אצל CardCom." : "עדיין לא חובר כרטיס דרך CardCom."
+              ? <>כרטיס מחובר דרך ספק הסליקה: {account.cardBrand || "Card"} · •••• {account.cardLast4 || "----"}{account.cardExpiryMonth && account.cardExpiryYear ? ` · ${String(account.cardExpiryMonth).padStart(2, "0")}/${account.cardExpiryYear}` : ""}</>
+              : account.paymentMethodStatus === 2 ? "ממתין להשלמת החיבור אצל ספק הסליקה." : "עדיין לא חובר כרטיס דרך ספק הסליקה."
             : bankConnected
               ? <>Bank Debit מחובר · reference: {account.bankDebitMandateReference}</>
               : "Bank Debit עדיין לא חובר לספק התשלום."}

@@ -81,7 +81,7 @@ function refundStatus(status: string | number) {
 }
 
 function paymentMethodLabel(row: Pick<BillingCustomerRow, "paymentMethodStatus" | "cardBrand" | "cardLast4">) {
-  const active = ["2", "Active"].includes(String(row.paymentMethodStatus));
+  const active = ["3", "Active"].includes(String(row.paymentMethodStatus));
   if (!active) return "לא מוגדר";
   if (row.cardLast4) return `${row.cardBrand || "כרטיס"} •••• ${row.cardLast4}`;
   return "מוגדר";
@@ -178,6 +178,27 @@ export default function AdminBillingPage() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "החיוב נכשל.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function testCharge(customer: BillingCustomerRow) {
+    if (!customer.billingAccountId) {
+      setError("ללקוח עדיין אין חשבון חיוב פעיל.");
+      return;
+    }
+
+    if (!window.confirm("לבצע חיוב בדיקה של ₪1 באמצעי התשלום המחובר?")) return;
+
+    setSaving(true);
+    setError("");
+    try {
+      await alphaApi.testBillingCharge(customer.billingAccountId, 1);
+      window.alert("חיוב הבדיקה של ₪1 עבר בהצלחה.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "חיוב הבדיקה נכשל.");
     } finally {
       setSaving(false);
     }
@@ -337,6 +358,9 @@ export default function AdminBillingPage() {
             <td style={td}>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button className="btn btn-primary" type="button" onClick={() => openPricing(row)}>עריכת מסלול ותעריף</button>
+                {row.billingAccountId && ["3", "Active"].includes(String(row.paymentMethodStatus))
+                  ? <button className="btn btn-secondary" type="button" disabled={saving} onClick={() => void testCharge(row)}>חיוב בדיקה ₪1</button>
+                  : null}
                 {href ? <Link className="btn btn-secondary" href={href}>כרטיס לקוח</Link> : null}
               </div>
             </td>
