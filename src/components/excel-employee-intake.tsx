@@ -1,6 +1,6 @@
 "use client";
 
-import { UiInput } from "@/components/ui-controls";
+import { UiDateInput, UiInput  } from "@/components/ui-controls";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { CircleAlert, CircleCheck, UploadCloud, UserPlus } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -244,7 +244,7 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
         <div className="notice notice-info"><UserPlus size={17} /> {newRows.length} עובדים חדשים זוהו</div>
         <div className={blocked.length ? "notice notice-error" : "notice notice-info"}><CircleAlert size={17} /> {blocked.length} שורות דורשות טיפול</div>
       </div>
-      <div className="field" style={{ maxWidth: 300, marginBottom: 16 }}><label>תאריך תחילת עבודה ברירת מחדל לעובד חדש</label><UiInput type="date" value={defaultStartDate} onChange={(e) => setDefaultStartDate(e.target.value)} /></div>
+      <div className="field" style={{ maxWidth: 300, marginBottom: 16 }}><label>תאריך תחילת עבודה ברירת מחדל לעובד חדש</label><UiDateInput value={defaultStartDate} onValueChange={setDefaultStartDate} /></div>
       {blocked.length ? <div className="notice notice-error" style={{ marginBottom: 16 }}><b>לא ניתן להמשיך כל עוד קיימות שורות חסומות.</b> תקנו את הקובץ והעלו אותו מחדש. בכל שורה חסומה מוצגת רשימת השדות שחסרים או אינם תקינים.</div> : null}
       <div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>שורה</th><th>סטטוס</th><th>ת״ז</th><th>שם</th><th>מספר עובד</th><th>פעולה / שגיאה</th></tr></thead><tbody>{rows.slice(0, 250).map((row) => <tr key={row.rowNumber}><td>{row.rowNumber}</td><td>{row.status === "matched" ? "עובד קיים" : row.status === "new" ? "עובד חדש" : "חסום"}</td><td>{row.nationalId || "—"}</td><td>{`${row.firstName} ${row.lastName}`.trim() || "—"}</td><td>{row.employeeNumber || "—"}</td><td>{row.status === "new" ? <label style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><UiInput type="checkbox" checked={row.selected} onChange={() => toggleNew(row.rowNumber)} />להקים</label> : row.reason ?? "ייכלל בדיווח"}</td></tr>)}</tbody></table></div>
       {rows.length > 250 ? <div className="notice notice-info" style={{ marginTop: 12 }}>מוצגות 250 השורות הראשונות מתוך {rows.length}. כל השורות נבדקו וייכללו בעיבוד.</div> : null}
