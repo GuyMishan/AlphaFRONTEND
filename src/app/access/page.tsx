@@ -24,6 +24,7 @@ import type {
   PlatformUser,
   UserInvitation,
 } from "@/lib/types";
+import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
 const PAGE_SIZE = 50;
 
@@ -513,7 +514,7 @@ export default function AccessPage() {
             <td><b>{item.email}</b></td>
             <td>{item.employerName ?? "כל הארגון"}</td>
             <td>{invitationStatusLabel(item.status)}</td>
-            <td>{new Date(item.expiresAt).toLocaleDateString("he-IL")}</td>
+            <td>{formatDateDDMMYYYY(item.expiresAt, "—")}</td>
             <td>{item.status === 1 ? <button className="btn btn-secondary" type="button" onClick={() => void cancelInvitation(item.id)}>ביטול</button> : null}</td>
           </tr>)}
         </tbody></table></div>
