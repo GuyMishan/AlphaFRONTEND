@@ -76,7 +76,10 @@ export function UiDateInput({
       if (nextDisplay === "" || nextDisplay.length === 10) commit(nextDisplay);
     }}
     onBlur={(event) => {
-      if (!commit(displayValue)) setDisplayValue(formatDateDDMMYYYY(value));
+      if (!commit(displayValue)) {
+        onValueChange("");
+        setDisplayValue("");
+      }
       onBlur?.(event);
     }}
   />;
