@@ -110,8 +110,14 @@ export function AlphaBillingAccountForm({
   useEffect(() => { void load(); }, [organizationId, employerId]);
 
   useEffect(() => {
-    const result = new URLSearchParams(window.location.search).get("payment");
+    const url = new URL(window.location.href);
+    const result = url.searchParams.get("payment");
     if (!result) return;
+
+    url.searchParams.delete("payment");
+    const cleanUrl = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "") + url.hash;
+    window.history.replaceState(window.history.state, "", cleanUrl);
+
     if (result === "success") {
       toast.success("אמצעי התשלום נקלט אצל ספק הסליקה. ממתין לאישור המאומת...");
       window.setTimeout(() => void settlePaymentMethodAfterReturn(), 300);
