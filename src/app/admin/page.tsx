@@ -10,7 +10,7 @@ import { AppTabs } from "@/components/app-tabs";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { BillingAccountPricingType, BillingCustomerRow } from "@/lib/types";
-import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
 type RunSummary = {
   id: string;
