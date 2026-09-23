@@ -178,14 +178,14 @@ export function AlphaBillingAccountForm({
   }
 
   async function cancelPaymentMethod() {
-    if (!canManage || !account.providerPaymentMethodId) return;
-    if (!window.confirm("לבטל את אמצעי התשלום השמור אצל ספק הסליקה?")) return;
+    if (!canManage || !account.configured) return;
+    if (!window.confirm("לבטל את חשבון החיוב ואמצעי התשלום? הפעולה תנקה גם את פרטי החשבון השמורים.")) return;
     setCancelling(true);
     try {
       if (employerId) await alphaApi.cancelEmployerPaymentMethod(organizationId, employerId);
       else await alphaApi.cancelOrganizationPaymentMethod(organizationId);
       await load();
-      toast.success("אמצעי התשלום בוטל");
+      toast.success("חשבון החיוב ואמצעי התשלום בוטלו");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "ביטול אמצעי התשלום נכשל");
     } finally {
@@ -265,17 +265,15 @@ export function AlphaBillingAccountForm({
               : "Bank Debit עדיין לא חובר לספק התשלום."}
         </div> : null}
 
-        {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת חשבון ואמצעי תשלום"}</button></div> : null}
+        {canManage ? <div className="form-actions" style={{ gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {cardConnected ? <button className="btn btn-secondary" type="button" disabled={syncing} onClick={() => void syncPaymentMethod()}><RefreshCw size={17} />{syncing ? "מסנכרן..." : "רענון סטטוס"}</button> : null}
+            {account.configured ? <button className="btn btn-danger" type="button" disabled={cancelling} onClick={() => void cancelPaymentMethod()}><Trash2 size={16} />{cancelling ? "מבטל..." : "ביטול חשבון ואמצעי תשלום"}</button> : null}
+          </div>
+          <button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת חשבון ואמצעי תשלום"}</button>
+        </div> : null}
       </form>
     </section>
-
-    {account.configured && (cardConnected || bankConnected) ? <section className={embedded ? "billing-inline-secondary" : "card profile-card profile-payment-card payment-horizontal-shell"}>
-      <div className="card-head"><div><h2>אמצעי תשלום פעיל</h2><span style={{ color: "var(--muted)" }}>ניהול אמצעי התשלום שכבר מחובר לחשבון.</span></div><span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>{billingStatusLabel(account.paymentMethodStatus)}</span></div>
-      {cardConnected ? <div className="form-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
-        <button className="btn btn-secondary" type="button" disabled={syncing} onClick={() => void syncPaymentMethod()}><RefreshCw size={17} />{syncing ? "מסנכרן..." : "רענון סטטוס"}</button>
-        {canManage ? <button className="btn btn-danger" type="button" disabled={cancelling} onClick={() => void cancelPaymentMethod()}><Trash2 size={16} />{cancelling ? "מבטל..." : "ביטול אמצעי תשלום"}</button> : null}
-      </div> : <div className="billing-method-next bank-method"><div className="billing-source-icon"><Landmark size={22} /></div><div><b>הרשאה לחיוב חשבון</b><p>אמצעי התשלום מחובר לחשבון החיוב.</p></div></div>}
-    </section> : null}
 
     <div className="notice notice-info">ALPHA אינה מקבלת ואינה שומרת מספר כרטיס מלא או CVV.</div>
   </div>;
