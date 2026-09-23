@@ -144,6 +144,7 @@ export function AlphaBillingAccountForm({
       if (details.paymentMethodType === 1 && !value.providerPaymentMethodId) {
         const url = new URL(window.location.href);
         url.searchParams.delete("payment");
+        url.searchParams.set("tab", "billing");
         const returnPath = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "");
         const setup = employerId
           ? await alphaApi.startEmployerPaymentSetup(organizationId, employerId, returnPath)
