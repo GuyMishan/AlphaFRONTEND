@@ -19,7 +19,7 @@ import type {
   BillingPeriod,
   BillingCustomerContext,
 } from "@/lib/types";
-import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 const metricLabels: Record<string, string> = {
   "1": "מחיר בסיס",
