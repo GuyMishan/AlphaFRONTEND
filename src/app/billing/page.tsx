@@ -19,6 +19,7 @@ import type {
   BillingPeriod,
   BillingCustomerContext,
 } from "@/lib/types";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 const metricLabels: Record<string, string> = {
   "1": "מחיר בסיס",
@@ -40,7 +41,7 @@ function money(value: number, currency = "ILS") {
 }
 
 function date(value: string) {
-  return new Intl.DateTimeFormat("he-IL", { dateStyle: "medium" }).format(new Date(value));
+  return formatDateDDMMYYYY(value, "—");
 }
 
 function periodStatusLabel(status: string | number) {

@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, Clock3, Eye, FileClock, Plus, RefreshCw, X
 import { AppShell } from "@/components/app-shell";
 import { getEmployerSelection } from "@/lib/session";
 import { reportFeedbackApi, type ReportFeedbackDetails, type ReportFeedbackRow, type ReportFeedbackStatus } from "@/lib/report-feedback-api";
+import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
 const filters: Array<{ value: ReportFeedbackStatus; label: string }> = [
   { value: "all", label: "הכל" },
@@ -21,9 +22,7 @@ function formatMonth(value: string) {
 }
 
 function formatDate(value: string | null | undefined) {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" });
+  return formatDateTimeDDMMYYYY(value, "—");
 }
 
 function kindLabel(value: string | number) {

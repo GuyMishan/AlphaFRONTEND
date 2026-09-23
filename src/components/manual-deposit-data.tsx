@@ -1,6 +1,6 @@
 "use client";
 
-import { UiInput } from "@/components/ui-controls";
+import { UiDateInput, UiInput  } from "@/components/ui-controls";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, X } from "lucide-react";
@@ -12,6 +12,7 @@ import { bankReferenceApi, type BankBranchReference, type BankReference } from "
 import { employerInterfaceApi, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
 import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
 import type { Employer, PensionFundOption, PensionProductType } from "@/lib/types";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 const productNames: Record<number, string> = { 1: "קרן פנסיה", 2: "קרן השתלמות", 3: "ביטוח מנהלים", 4: "קופת גמל", 99: "אחר" };
 const emptyPreviousReference = (): EmployerInterfacePreviousReference => ({ previousIdentifier: "", previousClearingIdentifier: "", previousReferenceExceptionCode: null });
@@ -84,8 +85,7 @@ function formatEmployerAccount(row: ManualDepositRow) {
   return values.length ? values.join(" - ") : "—";
 }
 function formatDate(value: string) {
-  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("he-IL");
+  return formatDateDDMMYYYY(value, value);
 }
 function emptyMetadata(): EmployerInterfaceProductMetadataInput {
   return { operationCode: null, depositStatus: null, employeeStatus: null, statusStartDate: null, employmentPercentage: null, workDaysInMonth: null, lastDeposit: null, refundReason: null, paymentMethodCode: null, employerAccountType: null, receiverAccountType: null };
@@ -280,7 +280,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
 
           {!differences && !operation6 ? <section className="payment-panel"><h3>{negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" value={metadataForm.paymentMethodCode} required onChange={(value) => patchMetadata("paymentMethodCode", value)} /></div> : null}
-            {!negative ? <div className="field"><label>תאריך ערך</label><div className="payment-input-icon"><UiInput type="date" value={form.valueDate?.slice(0, 10) || ""} onChange={(e) => patch("valueDate", e.target.value || null)} /><CalendarDays size={14} /></div></div> : null}
+            {!negative ? <div className="field"><label>תאריך ערך</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={120} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
             <label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור"}</span><UiInput type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label>
             {bankRequired ? <>
@@ -298,7 +298,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             }} /></div>
             {!negative ? <div className="field"><label>מעמד הפקדה בקופה *</label><EmployerInterfaceOptionSelect category="deposit-status" value={metadataForm.depositStatus} required onChange={(value) => patchMetadata("depositStatus", value)} /></div> : null}
             {!negative ? <div className="field"><label>סטטוס עובד בחודש השכר *</label><EmployerInterfaceOptionSelect category="employee-status" value={metadataForm.employeeStatus} required onChange={(value) => patchMetadata("employeeStatus", value)} /></div> : null}
-            {!negative ? <div className="field"><label>תאריך תחילת סטטוס *</label><UiInput type="date" value={metadataForm.statusStartDate?.slice(0, 10) ?? ""} onChange={(e) => patchMetadata("statusStartDate", e.target.value || null)} /></div> : null}
+            {!negative ? <div className="field"><label>תאריך תחילת סטטוס *</label><UiDateInput value={metadataForm.statusStartDate?.slice(0, 10) ?? ""} onValueChange={(value) => patchMetadata("statusStartDate", value || null)} /></div> : null}
             {!negative ? <div className="field"><label>הפקדה אחרונה *</label><EmployerInterfaceOptionSelect category="last-deposit" value={metadataForm.lastDeposit} required onChange={(value) => patchMetadata("lastDeposit", value)} /></div> : null}
             {negative ? <div className="field"><label>סיבת בקשה להחזר/ביטול *</label><EmployerInterfaceOptionSelect category="refund-reason" scope="negative" value={metadataForm.refundReason} required onChange={(value) => patchMetadata("refundReason", value)} /></div> : null}
             {!negative ? <div className="field"><label>סוג חשבון מעסיק *</label><EmployerInterfaceOptionSelect category="employer-account-type" scope="current" value={metadataForm.employerAccountType} required onChange={(value) => patchMetadata("employerAccountType", value)} /></div> : null}
