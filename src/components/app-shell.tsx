@@ -8,6 +8,7 @@ import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
 import { UpgradeModal } from "./upgrade-modal";
 import { EmployerForm } from "./employer-form";
+import { AccessibilityMenu } from "./accessibility-menu";
 import { alphaApi } from "@/lib/api";
 import { clearSession, getSession, isPlatformAdminSession, setEmployerSelection, setOrganizationSelection, setSession } from "@/lib/session";
 import type { Employer, EmployerInput, Session } from "@/lib/types";
@@ -262,6 +263,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
           <main className="main">{children}</main>
         </div>
         <UpgradeModal detail={upgradeDetail} onClose={() => setUpgradeDetail(null)} />
+        <AccessibilityMenu />
         {onboardingRequired ? (
           <div className="onboarding-backdrop" role="presentation">
             <section className="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
