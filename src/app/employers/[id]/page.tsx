@@ -81,6 +81,14 @@ export default function EmployerProfilePage() {
       setTab(requestedTab as TabKey);
     }
   }, []);
+
+  function changeTab(nextTab: string) {
+    const next = nextTab as TabKey;
+    setTab(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", next);
+    window.history.replaceState(window.history.state, "", url.pathname + `?${url.searchParams.toString()}` + url.hash);
+  }
   const [employer, setEmployer] = useState<Employer>();
   const [capabilities, setCapabilities] = useState<EmployerCapabilities>(EMPTY_CAPABILITIES);
   const [settings, setSettings] = useState<EmployerProfileCenterSettings>(EMPTY_SETTINGS);
