@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, ExternalLink, Landmark, RefreshCw, Save, Trash2 } from "lucide-react";
+import { CreditCard, Landmark, RefreshCw, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { alphaApi } from "@/lib/api";
 import { UiChoiceCard, UiInput } from "@/components/ui-controls";
@@ -59,7 +59,6 @@ export function AlphaBillingAccountForm({
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -126,39 +125,34 @@ export function AlphaBillingAccountForm({
   async function saveDetails(event: React.FormEvent) {
     event.preventDefault();
     if (!canManage) return;
+
     setSaving(true);
     try {
       const value = employerId
         ? await alphaApi.saveEmployerBillingAccount(organizationId, employerId, details)
         : await alphaApi.saveOrganizationBillingAccount(organizationId, details);
+
       setAccount(value);
       if (onSaved) await onSaved();
-      toast.success("פרטי החיוב נשמרו");
+
+      if (details.paymentMethodType === 1 && !value.providerPaymentMethodId) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("payment");
+        const returnPath = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "");
+        const setup = employerId
+          ? await alphaApi.startEmployerPaymentSetup(organizationId, employerId, returnPath)
+          : await alphaApi.startOrganizationPaymentSetup(organizationId, returnPath);
+
+        toast.success("פרטי החיוב נשמרו. ממשיכים לחיבור הכרטיס...");
+        window.location.assign(setup.redirectUrl);
+        return;
+      }
+
+      toast.success("פרטי החיוב ואמצעי התשלום נשמרו");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת פרטי החיוב נכשלה");
+      toast.error(err instanceof Error ? err.message : "שמירת פרטי החיוב ואמצעי התשלום נכשלה");
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function connectPaymentMethod() {
-    if (!canManage || !account.configured) return;
-    if (account.paymentMethodType !== 1) {
-      toast.info("חיבור Bank Debit אוטומטי עדיין לא זמין ב-flow הנוכחי.");
-      return;
-    }
-    setConnecting(true);
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("payment");
-      const returnPath = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "");
-      const setup = employerId
-        ? await alphaApi.startEmployerPaymentSetup(organizationId, employerId, returnPath)
-        : await alphaApi.startOrganizationPaymentSetup(organizationId, returnPath);
-      window.location.assign(setup.redirectUrl);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "פתיחת דף הסליקה נכשלה");
-      setConnecting(false);
     }
   }
 
@@ -244,12 +238,12 @@ export function AlphaBillingAccountForm({
             <div>
               <b>{details.paymentMethodType === 1 ? "נבחר כרטיס אשראי" : "נבחרה הרשאה לחיוב חשבון"}</b>
               <p>{details.paymentMethodType === 1
-                ? account.configured
-                  ? "פרטי החיוב נשמרו. אפשר להמשיך לחיבור הכרטיס המאובטח."
-                  : "שמרו את פרטי החיוב, ולאחר מכן יופיע חיבור הכרטיס המאובטח."
-                : account.configured
-                  ? "פרטי החיוב נשמרו. חיבור Bank Debit אוטומטי עדיין דורש מסוף/הרשאת MASAV אצל ספק התשלום."
-                  : "שמרו את פרטי החיוב. חיבור Bank Debit אוטומטי יופעל לאחר חיבור תשתית הספק המתאימה."}</p>
+                ? cardConnected
+                  ? "הכרטיס המחובר יישאר פעיל. שמירה תעדכן גם את פרטי חשבון החיוב."
+                  : "בלחיצה על שמירה פרטי החשבון יישמרו ומיד תועברו לחיבור הכרטיס המאובטח."
+                : bankConnected
+                  ? "הרשאת החיוב המחוברת תישאר פעילה. שמירה תעדכן גם את פרטי חשבון החיוב."
+                  : "בלחיצה על שמירה פרטי החשבון ואמצעי התשלום יישמרו יחד. חיבור Bank Debit אוטומטי יופעל לאחר חיבור התשתית המתאימה."}</p>
             </div>
           </div>
         </div>
@@ -264,17 +258,16 @@ export function AlphaBillingAccountForm({
               : "Bank Debit עדיין לא חובר לספק התשלום."}
         </div> : null}
 
-        {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת פרטי חיוב"}</button></div> : null}
+        {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת חשבון ואמצעי תשלום"}</button></div> : null}
       </form>
     </section>
 
-    {account.configured ? <section className={embedded ? "billing-inline-secondary" : "card profile-card profile-payment-card payment-horizontal-shell"}>
-      <div className="card-head"><div><h2>אמצעי תשלום</h2><span style={{ color: "var(--muted)" }}>החיבור לאמצעי התשלום מתבצע בצורה מאובטחת, ללא שמירת מספר כרטיס מלא או CVV ב־ALPHA.</span></div><span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>{billingStatusLabel(account.paymentMethodStatus)}</span></div>
-      {details.paymentMethodType === 1 ? <div className="form-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
-        {canManage ? <button className="btn btn-primary" type="button" disabled={connecting} onClick={() => void connectPaymentMethod()}><ExternalLink size={17} />{connecting ? "פותח..." : cardConnected ? "החלפת כרטיס" : "חיבור כרטיס מאובטח"}</button> : null}
-        {cardConnected ? <button className="btn btn-secondary" type="button" disabled={syncing} onClick={() => void syncPaymentMethod()}><RefreshCw size={17} />{syncing ? "מסנכרן..." : "רענון סטטוס"}</button> : null}
-        {canManage && cardConnected ? <button className="btn btn-danger" type="button" disabled={cancelling} onClick={() => void cancelPaymentMethod()}><Trash2 size={16} />{cancelling ? "מבטל..." : "ביטול אמצעי תשלום"}</button> : null}
-      </div> : <div className="billing-method-next bank-method"><div className="billing-source-icon"><Landmark size={22} /></div><div><b>הרשאה לחיוב חשבון</b><p>המסלול נבחר, אבל חיבור mandate אוטומטי עדיין לא פעיל. נדרשת תשתית MASAV/Bank Debit אצל ספק התשלום לפני שניתן יהיה להשלים את החיבור מתוך ALPHA.</p></div></div>}
+    {account.configured && (cardConnected || bankConnected) ? <section className={embedded ? "billing-inline-secondary" : "card profile-card profile-payment-card payment-horizontal-shell"}>
+      <div className="card-head"><div><h2>אמצעי תשלום פעיל</h2><span style={{ color: "var(--muted)" }}>ניהול אמצעי התשלום שכבר מחובר לחשבון.</span></div><span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>{billingStatusLabel(account.paymentMethodStatus)}</span></div>
+      {cardConnected ? <div className="form-actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
+        <button className="btn btn-secondary" type="button" disabled={syncing} onClick={() => void syncPaymentMethod()}><RefreshCw size={17} />{syncing ? "מסנכרן..." : "רענון סטטוס"}</button>
+        {canManage ? <button className="btn btn-danger" type="button" disabled={cancelling} onClick={() => void cancelPaymentMethod()}><Trash2 size={16} />{cancelling ? "מבטל..." : "ביטול אמצעי תשלום"}</button> : null}
+      </div> : <div className="billing-method-next bank-method"><div className="billing-source-icon"><Landmark size={22} /></div><div><b>הרשאה לחיוב חשבון</b><p>אמצעי התשלום מחובר לחשבון החיוב.</p></div></div>}
     </section> : null}
 
     <div className="notice notice-info">ALPHA אינה מקבלת ואינה שומרת מספר כרטיס מלא או CVV.</div>
