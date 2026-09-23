@@ -6,7 +6,7 @@ import { ArrowLeft, Building2, Mail, ShieldCheck } from "lucide-react";
 import { AuthBrand } from "@/components/auth-brand";
 import { alphaApi } from "@/lib/api";
 import type { PublicInvitation } from "@/lib/types";
-import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 export default function InvitationPage() {
   const [token, setToken] = useState("");
