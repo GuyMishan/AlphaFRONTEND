@@ -58,8 +58,7 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "ללא תאריך סיום";
-  return new Intl.DateTimeFormat("he-IL", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
+  return formatDateTimeDDMMYYYY(value, "—");
 }
 
 function statusLabel(status?: string) {
