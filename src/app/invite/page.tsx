@@ -6,6 +6,7 @@ import { ArrowLeft, Building2, Mail, ShieldCheck } from "lucide-react";
 import { AuthBrand } from "@/components/auth-brand";
 import { alphaApi } from "@/lib/api";
 import type { PublicInvitation } from "@/lib/types";
+import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
 export default function InvitationPage() {
   const [token, setToken] = useState("");
@@ -54,7 +55,7 @@ export default function InvitationPage() {
           <Link className="btn btn-primary btn-lg wide" href={`/register?invitation=${encodeURIComponent(token)}`}>
             המשך להרשמה ואימות <ArrowLeft size={18} />
           </Link>
-          <div className="auth-footer">הקישור אישי וחד־פעמי ותוקפו עד {new Date(invitation.expiresAt).toLocaleDateString("he-IL")}.</div>
+          <div className="auth-footer">הקישור אישי וחד־פעמי ותוקפו עד {formatDateDDMMYYYY(invitation.expiresAt, "—")}.</div>
         </>}
       </div>
     </section>
