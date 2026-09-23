@@ -59,7 +59,7 @@ export type RefreshedSession = {
   displayName: string;
 };
 
-export type ReportMode = "manual" | "excel" | "correction";
+export type ReportMode = "manual" | "excel" | "xml" | "correction";
 export type ManualReportKind = 1 | 2 | 3;
 export type ReportDraft = {
   organizationId: string;
