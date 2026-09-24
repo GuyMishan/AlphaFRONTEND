@@ -117,8 +117,10 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
     if (!form.receiverAccountType) errors.push("סוג חשבון קולט תשלום הוא שדה חובה בדיווח שוטף.");
   } else {
     if (!form.refundReason) errors.push("סיבת בקשה להחזר כספים היא שדה חובה בדיווח שלילי.");
-    if (form.operationCode === 5 && !form.paymentMethodCode) errors.push("בבקשה להחזר תשלום יש לבחור את אופן החזר התשלום המבוקש.");
-    if (form.operationCode === 6 && form.paymentMethodCode != null) errors.push("בבקשה לביטול תנועה ללא החזר אין להעביר אמצעי תשלום.");
+    if ((form.operationCode === 5 || form.operationCode === 6) && !form.paymentMethodCode)
+      errors.push("יש לבחור קוד אמצעי תשלום בהתאם לסוג הפעולה.");
+    if (form.operationCode === 6 && form.paymentMethodCode != null && form.paymentMethodCode !== 1)
+      errors.push("בקוד פעולה 6 מותר קוד אמצעי תשלום 1 בלבד לפי טבלת גרסה 6.");
   }
   if (!negative && form.employmentPercentage != null && (form.employmentPercentage < 1 || form.employmentPercentage > 100)) errors.push("חלקיות משרה חייבת להיות בין 1 ל־100.");
   if (!negative && form.workDaysInMonth != null && (form.workDaysInMonth < 0 || form.workDaysInMonth > 31)) errors.push("ימי עבודה בחודש חייבים להיות בין 0 ל־31.");
@@ -243,7 +245,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const operation5 = negative && metadataForm.operationCode === 5;
   const operation6 = negative && metadataForm.operationCode === 6;
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
-  const showOfficialPaymentMethod = !differences && (!negative || operation5);
+  const showOfficialPaymentMethod = !differences && (!negative || operation5 || operation6);
   const bankRequired = !differences && (!negative || (operation5 && metadataForm.paymentMethodCode === 1));
 
   async function save() {
@@ -273,17 +275,17 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
-      {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מבטלים תנועה ללא החזר למעסיק, ולכן אין להזין אמצעי תשלום או פרטי החזר.</div> : null}
+      {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק. לפי טבלת גרסה 6 יש לדווח קוד אמצעי תשלום 1, ללא פרטי החזר נוספים.</div> : null}
       <div className="payment-layout">
         <aside className="payment-notes"><b>לתשומת לבך</b><p>פרטי חשבון היצרן נטענים אוטומטית מנתוני המוצר הקיימים במערכת.</p><p>יש לבחור את אמצעי התשלום ואת חשבון המעסיק שממנו בוצע התשלום.</p><p>בפעולות תיקון או ביטול יש לקשר לדיווח המקורי או לציין חריג מתאים כאשר אין קישור.</p></aside>
         <div className="payment-main">
           <section className="payment-panel"><h3>פרטי חשבון יצרן</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר</label><UiInput readOnly value={form.providerName} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי</label><UiInput readOnly value={providerAccount} placeholder="לא נמצאו פרטי חשבון בנתוני המוצר" /></div></div></section>
 
-          {!differences && !operation6 ? <section className="payment-panel"><h3>{negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
+          {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => patchMetadata("paymentMethodCode", value)} /></div> : null}
             {!negative ? <div className="field"><label>תאריך ערך</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={120} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
-            <label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור"}</span><UiInput type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label>
+            {!operation6 ? <label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור"}</span><UiInput type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label> : null}
             {bankRequired ? <>
               <div className="field"><label>בנק *</label><UiInput required list={`banks-${row.id}`} value={bankSelection} onChange={(e) => chooseBank(e.target.value)} placeholder="חיפוש לפי שם או מספר בנק" /><datalist id={`banks-${row.id}`}>{banks.map((bank) => <option key={bank.bankCode} value={bankLabel(bank)} />)}</datalist></div>
               <div className="field"><label>מס׳ בנק</label><UiInput readOnly value={form.employerBankCode} /></div>
