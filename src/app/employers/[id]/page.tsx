@@ -792,7 +792,6 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
             <option value="">לא הוגדר</option>
             <option value={1}>העברה בנקאית</option>
             <option value={3}>כרטיס אשראי</option>
-            <option value={4}>שובר תשלום</option>
             <option value={5}>סליקה באמצעות מסלקה פנסיונית</option>
             <option value={6}>הרשאה לחיוב חשבון / הוראת קבע</option>
             <option value={7}>סליקה באמצעות מס״ב</option>
