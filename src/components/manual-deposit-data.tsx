@@ -274,7 +274,6 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const reportAffidavit = attachments.find((item) => item.documentTypeCode === 3 && item.reportProductId == null) ?? null;
   const employeeApproval = attachments.find((item) => item.documentTypeCode === 4 && item.reportProductId === row.id) ?? null;
   const collectiveAgreementDeclaration = attachments.find((item) => item.documentTypeCode === 6 && item.reportProductId === row.id) ?? null;
-  const hasCurrentOperation5Support = Boolean(reportAffidavit || employeeApproval || collectiveAgreementDeclaration);
 
   async function refreshAttachments() {
     const list = await reportAttachmentsApi.list(organizationId, employerId, reportId);
@@ -314,8 +313,6 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   async function save() {
     setError("");
     const errors = [...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)), ...validate006Metadata(metadata, metadataForm, previousReference)];
-    if (operation5 && !hasCurrentOperation5Support)
-      errors.push("בקוד פעולה 5 יש לצרף אישור עובד או מעסיק בהתאם לממשק 006.");
     if (operation5 && !annualEmployerAffidavitSatisfied)
       errors.push("בקוד פעולה 5 נדרש תצהיר מעסיק שנתי (סוג מסמך 3) לפחות פעם אחת בשנה.");
     if (errors.length) { const message = shortError(errors.join(" ")); setError(message); notify.error(message); return; }
@@ -392,7 +389,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
           {operation5 ? <section className="payment-panel">
             <h3>מסמכים מצורפים לדיווח השלילי</h3>
             <div className="notice notice-info" style={{ marginBottom: 12 }}>
-              בקוד פעולה 5 יש להעביר אישור עובד או מעסיק. בנוסף, תצהיר מעסיק מסוג 3 נדרש לפחות פעם אחת בשנה.
+              בקוד פעולה 5 נדרש תצהיר מעסיק מסוג 3 לפחות פעם אחת בשנה. אישור עובד (4) או הצהרת הסכם קיבוצי (6) מצורפים רק כאשר הם רלוונטיים למקרה.
               המסמכים נשמרים כ-PDF ומצורפים לחבילת השידור לצד ה-XML.
             </div>
             {annualEmployerAffidavitSatisfied && !reportAffidavit ? <div className="notice notice-success" style={{ marginBottom: 12 }}>תצהיר המעסיק השנתי כבר הועבר בדיווח קודם השנה.</div> : null}
