@@ -12,7 +12,7 @@ export function EmployerInterfaceOptionSelect({
   disabled = false,
   required = false,
   placeholder = "בחירה",
-  allowedCodes,
+  operationCode,
 }: {
   category: string;
   scope?: string;
@@ -21,7 +21,7 @@ export function EmployerInterfaceOptionSelect({
   disabled?: boolean;
   required?: boolean;
   placeholder?: string;
-  allowedCodes?: number[];
+  operationCode?: number | null;
 }) {
   const [options, setOptions] = useState<EmployerInterfaceOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,18 +31,14 @@ export function EmployerInterfaceOptionSelect({
     let active = true;
     setLoading(true);
     setError("");
-    employerInterfaceApi.options(category, scope)
+    employerInterfaceApi.options(category, scope, operationCode)
       .then((items) => { if (active) setOptions(items); })
       .catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת האפשרויות נכשלה"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [category, scope]);
+  }, [category, operationCode, scope]);
 
-  const visibleOptions = useMemo(
-    () => allowedCodes?.length ? options.filter((item) => allowedCodes.includes(item.code)) : options,
-    [allowedCodes, options],
-  );
-  const hasCurrentValue = useMemo(() => value != null && visibleOptions.some((item) => item.code === Number(value)), [visibleOptions, value]);
+  const hasCurrentValue = useMemo(() => value != null && options.some((item) => item.code === Number(value)), [options, value]);
 
   return (
     <>
@@ -54,7 +50,7 @@ export function EmployerInterfaceOptionSelect({
       >
         <option value="">{loading ? "טוען אפשרויות..." : placeholder}</option>
         {!hasCurrentValue && value != null ? <option value={Number(value)}>קוד {Number(value)}</option> : null}
-        {visibleOptions.map((item) => <option key={`${item.scope}-${item.code}`} value={item.code}>{item.name} ({item.code})</option>)}
+        {options.map((item) => <option key={`${item.scope}-${item.code}`} value={item.code}>{item.name} ({item.code})</option>)}
       </UiSelect>
       {error ? <span className="field-error">{error}</span> : null}
     </>
