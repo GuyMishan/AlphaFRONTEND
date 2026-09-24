@@ -65,7 +65,11 @@ export function resolvePensionAllocations(monthlySalary: number, products: Pensi
     .filter(({ product }) => product.isActive !== false)
     .sort((a, b) => Number(a.product.allocationOrder ?? a.index) - Number(b.product.allocationOrder ?? b.index));
   if (!active.length) return { resolved, error: "" };
-  if (monthlySalary <= 0) return { resolved, error: "יש להזין שכר חודשי לעובד לפני שמירת מוצרים פעילים." };
+  if (monthlySalary < 0) return { resolved, error: "שכר חודשי לא יכול להיות שלילי." };
+  if (monthlySalary === 0) {
+    for (const { index } of active) resolved.set(index, 0);
+    return { resolved, error: "" };
+  }
   if (active.filter(({ product }) => Number(product.salaryAllocationType ?? 1) === 4).length > 1)
     return { resolved, error: "אפשר להגדיר מוצר אחד בלבד בשיטת יתרת שכר." };
   const orders = active.map(({ product, index }) => Number(product.allocationOrder ?? index));
