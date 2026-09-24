@@ -22,6 +22,7 @@ export type PensionEditorProduct = {
   fundCode?: string;
   fundName?: string;
   fundCompanyName?: string;
+  fundClassification?: string;
   salary: number;
   salaryMonth?: string;
   salaryAllocationType?: SalaryAllocationType;
@@ -136,7 +137,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
 
 export function createEmptyPensionEditorProduct(context: "employee" | "report", order: number, month?: string): PensionEditorProduct {
   const base: PensionEditorProduct = {
-    productType: 1, policyNumber: "", fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", salary: 0,
+    productType: 1, policyNumber: "", fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", fundClassification: "", salary: 0,
     salaryAllocationType: 1, salaryAllocationValue: null, allocationOrder: order, reportingType: "1", salaryLayer: "1", section14: false,
     section14Code: 3, section14StartDate: null, employerContributions: employerComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
     employeeContributions: employeeComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
@@ -203,7 +204,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
         <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <span className="status-pill-active"><CircleCheck size={13} /><span>פעיל</span></span>}{editable ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
         <div className="grid report-product-fields">
           {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
-          <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required onChange={(value) => updateProduct(index, { productType: Number(value) as PensionProductType, fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "" })} /></div>
+          <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required onChange={(value) => updateProduct(index, { productType: Number(value) as PensionProductType, fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", fundClassification: "" })} /></div>
           <PensionFundSelect disabled={!editable} productType={product.productType} value={product} onChange={(fund) => updateProduct(index, { ...fund, ...(context === "employee" ? { institutionalBody: fund.fundCompanyName || product.institutionalBody, manufacturer: fund.fundCompanyName || product.manufacturer } : {}) })} />
           <div className="field"><label>מספר פוליסה / חשבון</label><UiInput disabled={!editable} maxLength={20} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} placeholder="אופציונלי" /></div>
           {context === "report" ? <div className="field"><label>חודש שכר *</label><UiInput disabled={!editable} required type="month" value={(product.salaryMonth ?? month ?? "").slice(0, 7)} onChange={(e) => updateProduct(index, { salaryMonth: `${e.target.value}-01` })} /></div> : null}
