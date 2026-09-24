@@ -277,6 +277,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const reportAffidavit = attachments.find((item) => item.documentTypeCode === 3 && item.reportProductId == null) ?? null;
   const employeeApproval = attachments.find((item) => item.documentTypeCode === 4 && item.reportProductId === row.id) ?? null;
   const collectiveAgreementDeclaration = attachments.find((item) => item.documentTypeCode === 6 && item.reportProductId === row.id) ?? null;
+  const defaultFundJoinRequest = attachments.find((item) => item.documentTypeCode === 5 && item.reportProductId === row.id) ?? null;
 
   async function refreshAttachments() {
     const list = await reportAttachmentsApi.list(organizationId, employerId, reportId);
@@ -284,7 +285,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
     setAnnualEmployerAffidavitSatisfied(list.annualEmployerAffidavitSatisfied);
   }
 
-  async function uploadAttachment(documentTypeCode: 3 | 4 | 6, file: File | null) {
+  async function uploadAttachment(documentTypeCode: 3 | 4 | 5 | 6, file: File | null) {
     if (!file) return;
     setError("");
     setUploadingAttachment(documentTypeCode);
@@ -388,6 +389,24 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {!negative ? <div className="field"><label>חלקיות משרה (%)</label><UiInput type="number" min="1" max="100" step="0.01" value={metadataForm.employmentPercentage ?? ""} onChange={(e) => patchMetadata("employmentPercentage", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative ? <div className="field"><label>ימי עבודה בחודש</label><UiInput type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
           </div>}</section> : null}
+
+          {!negative && !differences ? <section className="payment-panel">
+            <h3>מסמך הצטרפות לקרן ברירת מחדל</h3>
+            <div className="notice notice-info" style={{ marginBottom: 12 }}>
+              סוג מסמך 5 מיועד לעובד קיים שמבקש להצטרף לקרן ברירת מחדל. יש לצרף אותו רק כאשר הוא רלוונטי למקרה.
+            </div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+              <div><b>בקשת עובד להצטרפות לקרן ברירת מחדל</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{defaultFundJoinRequest ? defaultFundJoinRequest.originalFileName : "לעובד/מוצר זה"}</div></div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {defaultFundJoinRequest ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(defaultFundJoinRequest.id)}><Trash2 size={14} />הסר</button> : null}
+                {!defaultFundJoinRequest ? <label className="btn btn-secondary" style={{ cursor: uploadingAttachment ? "not-allowed" : "pointer" }}>
+                  <FileUp size={14} />{uploadingAttachment === 5 ? "מעלה..." : "צרף PDF"}
+                  <UiInput type="file" hidden accept="application/pdf,.pdf" disabled={uploadingAttachment != null}
+                    onChange={(e) => { const file = e.target.files?.[0] ?? null; e.currentTarget.value = ""; void uploadAttachment(5, file); }} />
+                </label> : null}
+              </div>
+            </div>
+          </section> : null}
 
           {operation5 ? <section className="payment-panel">
             <h3>מסמכים מצורפים לדיווח השלילי</h3>
