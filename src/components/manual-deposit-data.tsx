@@ -116,6 +116,9 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
     if (!form.paymentMethodCode) errors.push("אמצעי תשלום הוא שדה חובה בדיווח שוטף.");
     if (!form.employerAccountType) errors.push("סוג חשבון מעסיק הוא שדה חובה בדיווח שוטף.");
     if (!form.receiverAccountType) errors.push("סוג חשבון קולט תשלום הוא שדה חובה בדיווח שוטף.");
+    if ((form.operationCode === 2 || form.operationCode === 7)
+      && (form.paymentMethodCode !== 1 || form.employerAccountType !== 1 || form.receiverAccountType !== 1))
+      errors.push("בקוד פעולה 2 או 7 יש להשתמש באמצעי תשלום 1, סוג חשבון מעסיק 1 וסוג חשבון קולט 1.");
   } else {
     if (!form.refundReason) errors.push("סיבת בקשה להחזר כספים היא שדה חובה בדיווח שלילי.");
     if (form.operationCode === 5 && !form.paymentMethodCode)
@@ -142,10 +145,15 @@ function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInte
   if (!form.providerName.trim()) errors.push("לא נמצאו פרטי יצרן למוצר.");
   if (!metadata || isDifferencesKind(metadata.reportKind)) return errors;
   const negative = isNegativeKind(metadata.reportKind);
-  const receiverAccountRequired = !negative && ((meta.paymentMethodCode === 1 && totalDeposit > 0) || meta.paymentMethodCode === 7);
+  const noMoneyCorrection = !negative && (meta.operationCode === 2 || meta.operationCode === 7);
+  const receiverAccountRequired = !negative && !noMoneyCorrection && ((meta.paymentMethodCode === 1 && totalDeposit > 0) || meta.paymentMethodCode === 7);
   if (receiverAccountRequired && !form.providerAccount.trim()) errors.push("לא נמצא חשבון יצרן לזיכוי בנתוני המוצר.");
-  const requireEmployerBank = !negative || (meta.operationCode === 5 && meta.paymentMethodCode === 1);
-  if (!negative && !form.referenceNumber.trim()) errors.push("מספר אסמכתא הוא שדה חובה בדיווח שוטף.");
+  const requireEmployerBank = (!negative && !noMoneyCorrection) || (meta.operationCode === 5 && meta.paymentMethodCode === 1);
+  if (!negative && !noMoneyCorrection && !form.referenceNumber.trim()) errors.push("מספר אסמכתא הוא שדה חובה בדיווח שוטף.");
+  if (!negative && !noMoneyCorrection && (meta.operationCode === 1 || meta.operationCode === 3) && !form.valueDate)
+    errors.push("תאריך ערך הפקדה לקופה הוא שדה חובה בפעולה זו.");
+  if (!negative && !noMoneyCorrection && meta.employerAccountType === 2 && !form.trustAccountValueDate)
+    errors.push("תאריך ערך הפקדה לחשבון נאמנות הוא שדה חובה כאשר סוג חשבון המעסיק הוא חשבון נאמנות.");
   if (form.referenceNumber.length > 50) errors.push("מספר אסמכתא יכול להכיל עד 50 תווים לפי ממשק 006.");
   if (requireEmployerBank) {
     if (!/^\d+$/.test(form.employerBankCode.trim())) errors.push("יש לבחור בנק.");
@@ -252,9 +260,10 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const operationScope = negative ? "negative" : "current";
   const operation5 = negative && metadataForm.operationCode === 5;
   const operation6 = negative && metadataForm.operationCode === 6;
+  const noMoneyCorrection = !negative && (metadataForm.operationCode === 2 || metadataForm.operationCode === 7);
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
   const showOfficialPaymentMethod = !differences && (!negative || operation5);
-  const bankRequired = !differences && (!negative || (operation5 && metadataForm.paymentMethodCode === 1));
+  const bankRequired = !differences && ((!negative && !noMoneyCorrection) || (operation5 && metadataForm.paymentMethodCode === 1));
   const reportAffidavit = attachments.find((item) => item.documentTypeCode === 3 && item.reportProductId == null) ?? null;
   const employeeApproval = attachments.find((item) => item.documentTypeCode === 4 && item.reportProductId === row.id) ?? null;
   const collectiveAgreementDeclaration = attachments.find((item) => item.documentTypeCode === 6 && item.reportProductId === row.id) ?? null;
@@ -334,9 +343,9 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
 
           {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => patchMetadata("paymentMethodCode", value)} /></div> : null}
-            {!negative ? <div className="field"><label>תאריך ערך הפקדה לקופה</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
-            {!negative && metadataForm.employerAccountType === 2 ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
-            {!negative ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
+            {!negative && !noMoneyCorrection ? <div className="field"><label>תאריך ערך הפקדה לקופה *</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
+            {!negative && !noMoneyCorrection && metadataForm.employerAccountType === 2 ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
+            {!negative && !noMoneyCorrection ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
             {!negative ? <label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור"}</span><UiInput type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label> : null}
             {bankRequired ? <>
               <div className="field"><label>בנק *</label><UiInput required list={`banks-${row.id}`} value={bankSelection} onChange={(e) => chooseBank(e.target.value)} placeholder="חיפוש לפי שם או מספר בנק" /><datalist id={`banks-${row.id}`}>{banks.map((bank) => <option key={bank.bankCode} value={bankLabel(bank)} />)}</datalist></div>
@@ -348,8 +357,15 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
 
           {!differences ? <section className="payment-panel"><h3>פרטי דיווח נוספים</h3>{loadingMetadata ? <div className="empty">טוען נתוני דיווח...</div> : <div className="payment-method-grid">
             <div className="field"><label>סוג פעולה *</label><EmployerInterfaceOptionSelect category="operation-code" scope={operationScope} value={metadataForm.operationCode} required onChange={(value) => {
-              patchMetadata("operationCode", value);
-              if (metadataForm.paymentMethodCode != null) patchMetadata("paymentMethodCode", null);
+              setMetadataForm((current) => {
+                if (!negative && (value === 2 || value === 7))
+                  return { ...current, operationCode: value, paymentMethodCode: 1, employerAccountType: 1, receiverAccountType: 1 };
+                if (negative && value === 6)
+                  return { ...current, operationCode: value, paymentMethodCode: null };
+                return { ...current, operationCode: value, paymentMethodCode: null };
+              });
+              if (!negative && (value === 2 || value === 7))
+                setForm((current) => ({ ...current, valueDate: null, trustAccountValueDate: null, referenceNumber: "", employerBankCode: "", employerBankName: "", employerBranch: "", employerAccount: "" }));
             }} /></div>
             {!negative ? <div className="field"><label>מעמד הפקדה בקופה *</label><EmployerInterfaceOptionSelect category="deposit-status" value={metadataForm.depositStatus} required onChange={(value) => patchMetadata("depositStatus", value)} /></div> : null}
             {!negative ? <div className="field"><label>סטטוס עובד בחודש השכר *</label><EmployerInterfaceOptionSelect category="employee-status" value={metadataForm.employeeStatus} required onChange={(value) => patchMetadata("employeeStatus", value)} /></div> : null}
