@@ -379,7 +379,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
                   {item ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(item.id)}><Trash2 size={14} />הסר</button> : null}
                   {!item ? <label className="btn btn-secondary" style={{ cursor: uploadingAttachment ? "not-allowed" : "pointer" }}>
                     <FileUp size={14} />{uploadingAttachment === code ? "מעלה..." : "צרף PDF"}
-                    <input type="file" hidden accept="application/pdf,.pdf" disabled={uploadingAttachment != null}
+                    <UiInput type="file" hidden accept="application/pdf,.pdf" disabled={uploadingAttachment != null}
                       onChange={(e) => { const file = e.target.files?.[0] ?? null; e.currentTarget.value = ""; void uploadAttachment(code, file); }} />
                   </label> : null}
                 </div>
