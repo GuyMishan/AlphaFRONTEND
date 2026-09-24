@@ -53,7 +53,7 @@ const roundMoney = (value: number) => Math.round((Number.isFinite(value) ? value
 const roundPercentage = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 10000) / 10000;
 
 export function inferPensionSection14Code(product: Pick<PensionEditorProduct, "section14" | "section14Code" | "section14StartDate">): Section14Code {
-  if (product.section14Code && [1, 2, 3, 4].includes(Number(product.section14Code))) return Number(product.section14Code) as Section14Code;
+  if (product.section14Code && [1, 2, 3, 4, 5].includes(Number(product.section14Code))) return Number(product.section14Code) as Section14Code;
   if (!product.section14 && product.section14StartDate) return 4;
   if (!product.section14) return 3;
   return product.section14StartDate ? 2 : 1;
