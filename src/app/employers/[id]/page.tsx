@@ -55,6 +55,7 @@ const EMPTY_SETTINGS: EmployerProfileCenterSettings = {
   pensionPayment: { mode: 2, modeOverridden: false, canChangeMode: false },
   reporting: {
     defaultSalaryPaymentDay: null,
+    defaultDepositorTypeCode: 1,
     defaultPaymentMethodCode: null,
     defaultEmployerAccountType: null,
     defaultReceiverAccountType: null,
@@ -775,6 +776,15 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
               {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => <button key={day} type="button" className={form.defaultSalaryPaymentDay === day ? "selected" : ""} onClick={() => { setForm({ ...form, defaultSalaryPaymentDay: day }); setDayMenuOpen(false); }}>{day} בחודש</button>)}
             </div> : null}
           </div>
+        </div>
+        <div className="field">
+          <label>סוג מפקיד</label>
+          <UiSelect disabled={!canEdit} value={form.defaultDepositorTypeCode} onChange={(e) => setForm({ ...form, defaultDepositorTypeCode: Number(e.target.value) as 1 | 2 | 3 })}>
+            <option value={1}>קוד 1</option>
+            <option value={2}>קוד 2</option>
+            <option value={3}>מעסיק קטן (קוד 3)</option>
+          </UiSelect>
+          <small style={{ color: "var(--muted)" }}>בכללי גרסה 6 מוגדר במפורש קוד 3 למעסיק קטן.</small>
         </div>
         <div className="field">
           <label>אמצעי תשלום</label>
