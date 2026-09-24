@@ -38,7 +38,11 @@ export function EmployerInterfaceOptionSelect({
     return () => { active = false; };
   }, [category, scope]);
 
-  const visibleOptions = useMemo(\n    () => allowedCodes?.length ? options.filter((item) => allowedCodes.includes(item.code)) : options,\n    [allowedCodes, options],\n  );\n  const hasCurrentValue = useMemo(() => value != null && visibleOptions.some((item) => item.code === Number(value)), [visibleOptions, value]);
+  const visibleOptions = useMemo(
+    () => allowedCodes?.length ? options.filter((item) => allowedCodes.includes(item.code)) : options,
+    [allowedCodes, options],
+  );
+  const hasCurrentValue = useMemo(() => value != null && visibleOptions.some((item) => item.code === Number(value)), [visibleOptions, value]);
 
   return (
     <>
