@@ -116,6 +116,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
   for (let index = 0; index < products.length; index++) {
     const product = products[index];
     if (product.isActive === false) continue;
+    if (context === "report" && product.productType === 99) return `מוצר ${index + 1}: סוג מוצר "אחר" אינו נתמך בממשק מעסיקים 006. יש לבחור סוג קופה רשמי.`;
     if (!product.policyNumber.trim()) return `מוצר ${index + 1}: מספר פוליסה הוא שדה חובה.`;
     if (product.productType !== 99 && !(product.fundExternalKey ?? "").trim()) return `מוצר ${index + 1}: יש לבחור קופה.`;
     if (!/^\d+$/.test(product.reportingType || "")) return `מוצר ${index + 1}: יש לבחור סוג תקבול תקין.`;
