@@ -94,6 +94,21 @@ function isNegativeKind(value: EmployerInterfaceProductMetadata["reportKind"] | 
 function isDifferencesKind(value: EmployerInterfaceProductMetadata["reportKind"] | null | undefined) { return value === 2 || value === "2" || value === "Differences"; }
 function isGuidV4(value: string) { return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim()); }
 function requiresPreviousReference(negative: boolean, operationCode: number | null) { return negative ? operationCode === 5 || operationCode === 6 : operationCode === 2 || operationCode === 3 || operationCode === 7; }
+function allowedPaymentMethods(operationCode: number | null, negative: boolean) {
+  if (negative && operationCode === 6) return [] as number[];
+  switch (operationCode) {
+    case 1:
+    case 3:
+      return [1, 3, 5, 6, 7, 9];
+    case 2:
+    case 7:
+      return [1];
+    case 5:
+      return [1, 3, 6, 7, 9];
+    default:
+      return [1, 3, 5, 6, 7, 9];
+  }
+}
 function providerAccountFromReference(product: PensionFundOption | null) {
   if (!product?.accountNumber) return "";
   return [product.bankCode, product.branchCode, product.accountNumber].filter((value) => value !== null && value !== undefined && value !== "").join(" - ");
@@ -243,6 +258,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const operation6 = negative && metadataForm.operationCode === 6;
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
   const showOfficialPaymentMethod = !differences && (!negative || operation5);
+  const allowedPaymentMethodCodes = allowedPaymentMethods(metadataForm.operationCode, negative);
   const bankRequired = !differences && (!negative || (operation5 && metadataForm.paymentMethodCode === 1));
 
   async function save() {
@@ -279,7 +295,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
           <section className="payment-panel"><h3>פרטי חשבון יצרן</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר</label><UiInput readOnly value={form.providerName} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי</label><UiInput readOnly value={providerAccount} placeholder="לא נמצאו פרטי חשבון בנתוני המוצר" /></div></div></section>
 
           {!differences && !operation6 ? <section className="payment-panel"><h3>{negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
-            {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" value={metadataForm.paymentMethodCode} required onChange={(value) => patchMetadata("paymentMethodCode", value)} /></div> : null}
+            {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" value={metadataForm.paymentMethodCode} allowedCodes={allowedPaymentMethodCodes} required onChange={(value) => patchMetadata("paymentMethodCode", value)} /></div> : null}
             {!negative ? <div className="field"><label>תאריך ערך</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={120} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
             <label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור"}</span><UiInput type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label>
@@ -294,7 +310,9 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
           {!differences ? <section className="payment-panel"><h3>פרטי דיווח נוספים</h3>{loadingMetadata ? <div className="empty">טוען נתוני דיווח...</div> : <div className="payment-method-grid">
             <div className="field"><label>סוג פעולה *</label><EmployerInterfaceOptionSelect category="operation-code" scope={operationScope} value={metadataForm.operationCode} required onChange={(value) => {
               patchMetadata("operationCode", value);
-              if (negative && value === 6) patchMetadata("paymentMethodCode", null);
+              const allowed = allowedPaymentMethods(value, negative);
+              if ((negative && value === 6) || (metadataForm.paymentMethodCode != null && !allowed.includes(metadataForm.paymentMethodCode)))
+                patchMetadata("paymentMethodCode", null);
             }} /></div>
             {!negative ? <div className="field"><label>מעמד הפקדה בקופה *</label><EmployerInterfaceOptionSelect category="deposit-status" value={metadataForm.depositStatus} required onChange={(value) => patchMetadata("depositStatus", value)} /></div> : null}
             {!negative ? <div className="field"><label>סטטוס עובד בחודש השכר *</label><EmployerInterfaceOptionSelect category="employee-status" value={metadataForm.employeeStatus} required onChange={(value) => patchMetadata("employeeStatus", value)} /></div> : null}
