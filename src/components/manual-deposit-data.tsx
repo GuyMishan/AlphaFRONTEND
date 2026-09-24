@@ -3,7 +3,7 @@
 import { UiDateInput, UiInput  } from "@/components/ui-controls";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
-import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, X } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, Trash2, X } from "lucide-react";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
 import { VirtualizedTable } from "@/components/virtualized-table";
 import { notify } from "@/components/notifications";
@@ -11,6 +11,7 @@ import { alphaApi } from "@/lib/api";
 import { bankReferenceApi, type BankBranchReference, type BankReference } from "@/lib/bank-reference-api";
 import { employerInterfaceApi, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
 import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
+import { reportAttachmentsApi, type ReportAttachment } from "@/lib/report-attachments-api";
 import type { Employer, PensionFundOption, PensionProductType } from "@/lib/types";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
 
@@ -171,6 +172,9 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const [bankSelection, setBankSelection] = useState(row.employerBankCode || row.employerBankName ? `${row.employerBankCode}${row.employerBankCode && row.employerBankName ? " - " : ""}${row.employerBankName}` : "");
   const [branchSelection, setBranchSelection] = useState(row.employerBranch || "");
   const [loadingMetadata, setLoadingMetadata] = useState(true);
+  const [attachments, setAttachments] = useState<ReportAttachment[]>([]);
+  const [annualEmployerAffidavitSatisfied, setAnnualEmployerAffidavitSatisfied] = useState(false);
+  const [uploadingAttachment, setUploadingAttachment] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -179,13 +183,16 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
     Promise.all([
       employerInterfaceApi.productMetadata(organizationId, employerId, reportId, row.id),
       employerInterfaceApi.previousReference(organizationId, employerId, reportId, row.id),
-    ]).then(([item, previous]) => {
+      reportAttachmentsApi.list(organizationId, employerId, reportId),
+    ]).then(([item, previous, attachmentList]) => {
       if (!active) return;
       setMetadata(item);
       setMetadataForm({ operationCode: item.operationCode, depositStatus: item.depositStatus, employeeStatus: item.employeeStatus, statusStartDate: item.statusStartDate,
         employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason,
         paymentMethodCode: item.paymentMethodCode, employerAccountType: item.employerAccountType, receiverAccountType: item.receiverAccountType });
       setPreviousReference(previous);
+      setAttachments(attachmentList.items);
+      setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
     }).catch((err) => { if (active) setError(shortError(err instanceof Error ? err.message : "טעינת נתוני הדיווח נכשלה")); })
       .finally(() => { if (active) setLoadingMetadata(false); });
     return () => { active = false; };
@@ -248,10 +255,53 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
   const showOfficialPaymentMethod = !differences && (!negative || operation5 || operation6);
   const bankRequired = !differences && (!negative || (operation5 && metadataForm.paymentMethodCode === 1));
+  const reportAffidavit = attachments.find((item) => item.documentTypeCode === 3 && item.reportProductId == null) ?? null;
+  const employeeApproval = attachments.find((item) => item.documentTypeCode === 4 && item.reportProductId === row.id) ?? null;
+  const collectiveAgreementDeclaration = attachments.find((item) => item.documentTypeCode === 6 && item.reportProductId === row.id) ?? null;
+  const hasCurrentOperation5Support = Boolean(reportAffidavit || employeeApproval || collectiveAgreementDeclaration);
+
+  async function refreshAttachments() {
+    const list = await reportAttachmentsApi.list(organizationId, employerId, reportId);
+    setAttachments(list.items);
+    setAnnualEmployerAffidavitSatisfied(list.annualEmployerAffidavitSatisfied);
+  }
+
+  async function uploadAttachment(documentTypeCode: 3 | 4 | 6, file: File | null) {
+    if (!file) return;
+    setError("");
+    setUploadingAttachment(documentTypeCode);
+    try {
+      await reportAttachmentsApi.upload(organizationId, employerId, reportId, documentTypeCode, file,
+        documentTypeCode === 3 ? null : row.id);
+      await refreshAttachments();
+      notify.success("המסמך צורף לדיווח.");
+    } catch (err) {
+      const message = shortError(err instanceof Error ? err.message : "צירוף המסמך נכשל");
+      setError(message); notify.error(message);
+    } finally {
+      setUploadingAttachment(null);
+    }
+  }
+
+  async function removeAttachment(attachmentId: string) {
+    setError("");
+    try {
+      await reportAttachmentsApi.remove(organizationId, employerId, reportId, attachmentId);
+      await refreshAttachments();
+      notify.success("המסמך הוסר מהדיווח.");
+    } catch (err) {
+      const message = shortError(err instanceof Error ? err.message : "מחיקת המסמך נכשלה");
+      setError(message); notify.error(message);
+    }
+  }
 
   async function save() {
     setError("");
     const errors = [...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)), ...validate006Metadata(metadata, metadataForm, previousReference)];
+    if (operation5 && !hasCurrentOperation5Support)
+      errors.push("בקוד פעולה 5 יש לצרף אישור עובד או מעסיק בהתאם לממשק 006.");
+    if (operation5 && !annualEmployerAffidavitSatisfied)
+      errors.push("בקוד פעולה 5 נדרש תצהיר מעסיק שנתי (סוג מסמך 3) לפחות פעם אחת בשנה.");
     if (errors.length) { const message = shortError(errors.join(" ")); setError(message); notify.error(message); return; }
     setSaving(true);
     try {
@@ -310,6 +360,32 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {!negative ? <div className="field"><label>חלקיות משרה (%)</label><UiInput type="number" min="1" max="100" step="0.01" value={metadataForm.employmentPercentage ?? ""} onChange={(e) => patchMetadata("employmentPercentage", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative ? <div className="field"><label>ימי עבודה בחודש</label><UiInput type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
           </div>}</section> : null}
+
+          {operation5 ? <section className="payment-panel">
+            <h3>מסמכים מצורפים לדיווח השלילי</h3>
+            <div className="notice notice-info" style={{ marginBottom: 12 }}>
+              בקוד פעולה 5 יש להעביר אישור עובד או מעסיק. בנוסף, תצהיר מעסיק מסוג 3 נדרש לפחות פעם אחת בשנה.
+              המסמכים נשמרים כ-PDF ומצורפים לחבילת השידור לצד ה-XML.
+            </div>
+            {annualEmployerAffidavitSatisfied && !reportAffidavit ? <div className="notice notice-success" style={{ marginBottom: 12 }}>תצהיר המעסיק השנתי כבר הועבר בדיווח קודם השנה.</div> : null}
+            <div style={{ display: "grid", gap: 10 }}>
+              {([
+                { code: 3 as const, label: "תצהיר מעסיק", item: reportAffidavit, scope: "שנתי ברמת הדיווח" },
+                { code: 4 as const, label: "אישור עובד להשבת כספים", item: employeeApproval, scope: "לעובד/מוצר זה" },
+                { code: 6 as const, label: "הצהרת מעסיק - הסכם קיבוצי", item: collectiveAgreementDeclaration, scope: "לעובד/מוצר זה" },
+              ]).map(({ code, label, item, scope }) => <div key={code} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                <div><b>{label}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div></div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  {item ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(item.id)}><Trash2 size={14} />הסר</button> : null}
+                  {!item ? <label className="btn btn-secondary" style={{ cursor: uploadingAttachment ? "not-allowed" : "pointer" }}>
+                    <FileUp size={14} />{uploadingAttachment === code ? "מעלה..." : "צרף PDF"}
+                    <input type="file" hidden accept="application/pdf,.pdf" disabled={uploadingAttachment != null}
+                      onChange={(e) => { const file = e.target.files?.[0] ?? null; e.currentTarget.value = ""; void uploadAttachment(code, file); }} />
+                  </label> : null}
+                </div>
+              </div>)}
+            </div>
+          </section> : null}
 
           {needsPrevious ? <section className="payment-panel"><h3>קישור לדיווח המקורי</h3><div className="notice notice-info" style={{ marginBottom: 12 }}>בפעולת תיקון או ביטול יש לקשר לדיווח המקורי. ניתן להזין אחד מהמזהים או לבחור חריג מתאים.</div><div className="payment-method-grid">
             <div className="field"><label>מספר זיהוי קודם (GUID)</label><UiInput maxLength={36} value={previousReference.previousIdentifier} onChange={(e) => patchPrevious("previousIdentifier", e.target.value)} placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" /></div>
