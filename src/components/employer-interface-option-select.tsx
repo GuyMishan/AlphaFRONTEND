@@ -12,6 +12,7 @@ export function EmployerInterfaceOptionSelect({
   disabled = false,
   required = false,
   placeholder = "בחירה",
+  allowedCodes,
 }: {
   category: string;
   scope?: string;
@@ -20,6 +21,7 @@ export function EmployerInterfaceOptionSelect({
   disabled?: boolean;
   required?: boolean;
   placeholder?: string;
+  allowedCodes?: number[];
 }) {
   const [options, setOptions] = useState<EmployerInterfaceOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ export function EmployerInterfaceOptionSelect({
     return () => { active = false; };
   }, [category, scope]);
 
-  const hasCurrentValue = useMemo(() => value != null && options.some((item) => item.code === Number(value)), [options, value]);
+  const visibleOptions = useMemo(\n    () => allowedCodes?.length ? options.filter((item) => allowedCodes.includes(item.code)) : options,\n    [allowedCodes, options],\n  );\n  const hasCurrentValue = useMemo(() => value != null && visibleOptions.some((item) => item.code === Number(value)), [visibleOptions, value]);
 
   return (
     <>
@@ -48,7 +50,7 @@ export function EmployerInterfaceOptionSelect({
       >
         <option value="">{loading ? "טוען אפשרויות..." : placeholder}</option>
         {!hasCurrentValue && value != null ? <option value={Number(value)}>קוד {Number(value)}</option> : null}
-        {options.map((item) => <option key={`${item.scope}-${item.code}`} value={item.code}>{item.name} ({item.code})</option>)}
+        {visibleOptions.map((item) => <option key={`${item.scope}-${item.code}`} value={item.code}>{item.name} ({item.code})</option>)}
       </UiSelect>
       {error ? <span className="field-error">{error}</span> : null}
     </>
