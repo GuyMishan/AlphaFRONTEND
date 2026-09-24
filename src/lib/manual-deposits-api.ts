@@ -12,6 +12,7 @@ export type ManualDepositRow = {
   fundCode: string;
   fundName: string;
   fundCompanyName: string;
+  fundClassification: string;
   salaryMonth: string;
   salary: number;
   reportingType: string;
