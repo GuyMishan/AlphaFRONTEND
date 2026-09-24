@@ -429,6 +429,7 @@ export type EmployerProfileCenterSettings = {
   reporting: {
     defaultSalaryPaymentDay: number | null;
     defaultDepositorTypeCode: 1 | 2 | 3;
+    defaultEmployerIdentifierTypeCode: 1 | 2 | 3 | 4 | 5 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
     defaultPaymentMethodCode: number | null;
     defaultEmployerAccountType: number | null;
     defaultReceiverAccountType: number | null;
