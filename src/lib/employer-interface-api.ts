@@ -69,6 +69,7 @@ export type EmployerInterfaceProductMetadata = {
   paymentMethodCode: number | null;
   employerAccountType: number | null;
   receiverAccountType: number | null;
+  oldPensionTypeCode: number | null;
 };
 
 export type EmployerInterfaceProductMetadataInput = Omit<EmployerInterfaceProductMetadata, "reportKind">;
