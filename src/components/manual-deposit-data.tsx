@@ -156,9 +156,10 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
 function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInterfaceProductMetadata | null, meta: EmployerInterfaceProductMetadataInput) {
   const errors: string[] = [];
   if (!form.providerName.trim()) errors.push("לא נמצאו פרטי יצרן למוצר.");
-  if (!form.providerAccount.trim()) errors.push("לא נמצא חשבון יצרן לזיכוי בנתוני המוצר.");
   if (!metadata || isDifferencesKind(metadata.reportKind)) return errors;
   const negative = isNegativeKind(metadata.reportKind);
+  const receiverAccountRequired = !negative && (meta.paymentMethodCode === 1 || meta.paymentMethodCode === 7);
+  if (receiverAccountRequired && !form.providerAccount.trim()) errors.push("לא נמצא חשבון יצרן לזיכוי בנתוני המוצר.");
   const requireEmployerBank = !negative || (meta.operationCode === 5 && meta.paymentMethodCode === 1);
   if (!negative && !form.referenceNumber.trim()) errors.push("מספר אסמכתא הוא שדה חובה בדיווח שוטף.");
   if (requireEmployerBank) {
