@@ -135,6 +135,10 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
     if (form.operationCode === 5 && !form.paymentMethodCode) errors.push("בבקשה להחזר תשלום יש לבחור את אופן החזר התשלום המבוקש.");
     if (form.operationCode === 6 && form.paymentMethodCode != null) errors.push("בבקשה לביטול תנועה ללא החזר אין להעביר אמצעי תשלום.");
   }
+  if (!negative && form.paymentMethodCode != null && form.operationCode != null && !allowedPaymentMethods(form.operationCode, false).includes(form.paymentMethodCode))
+    errors.push("אמצעי התשלום שנבחר אינו חוקי עבור סוג הפעולה לפי טבלת ממשק מעסיקים 006.");
+  if (negative && form.operationCode === 5 && form.paymentMethodCode != null && !allowedPaymentMethods(form.operationCode, true).includes(form.paymentMethodCode))
+    errors.push("אופן החזר התשלום שנבחר אינו חוקי עבור סוג הפעולה לפי טבלת ממשק מעסיקים 006.");
   if (!negative && form.employmentPercentage != null && (form.employmentPercentage < 1 || form.employmentPercentage > 100)) errors.push("חלקיות משרה חייבת להיות בין 1 ל־100.");
   if (!negative && form.workDaysInMonth != null && (form.workDaysInMonth < 0 || form.workDaysInMonth > 31)) errors.push("ימי עבודה בחודש חייבים להיות בין 0 ל־31.");
 
