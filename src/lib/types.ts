@@ -84,6 +84,7 @@ export type PensionFundOption = {
   companyName: string;
   domain: string;
   productType: string;
+  classification?: string;
   bankCode?: number | null;
   bankName?: string;
   branchCode?: number | null;
@@ -104,6 +105,7 @@ export type ManualProductInput = {
   fundCode?: string;
   fundName?: string;
   fundCompanyName?: string;
+  fundClassification?: string;
   salaryMonth: string;
   salary: number;
   salaryAllocationType?: SalaryAllocationType;
@@ -132,6 +134,7 @@ export type EmployeePensionProductInput = {
   fundCode?: string;
   fundName?: string;
   fundCompanyName?: string;
+  fundClassification?: string;
   salary: number;
   reportingType: string;
   salaryLayer: string;
@@ -167,6 +170,7 @@ export type EmployeePensionProduct = Omit<EmployeePensionProductInput, "isActive
   fundCode: string;
   fundName: string;
   fundCompanyName: string;
+  fundClassification: string;
   salaryAllocationType: SalaryAllocationType;
   salaryAllocationValue: number | null;
   allocationOrder: number;
