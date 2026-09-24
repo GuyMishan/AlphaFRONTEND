@@ -118,10 +118,10 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
     if (!form.receiverAccountType) errors.push("סוג חשבון קולט תשלום הוא שדה חובה בדיווח שוטף.");
   } else {
     if (!form.refundReason) errors.push("סיבת בקשה להחזר כספים היא שדה חובה בדיווח שלילי.");
-    if ((form.operationCode === 5 || form.operationCode === 6) && !form.paymentMethodCode)
-      errors.push("יש לבחור קוד אמצעי תשלום בהתאם לסוג הפעולה.");
-    if (form.operationCode === 6 && form.paymentMethodCode != null && form.paymentMethodCode !== 1)
-      errors.push("בקוד פעולה 6 מותר קוד אמצעי תשלום 1 בלבד לפי טבלת גרסה 6.");
+    if (form.operationCode === 5 && !form.paymentMethodCode)
+      errors.push("בקוד פעולה 5 יש לבחור את אופן החזר התשלום המבוקש.");
+    if (form.operationCode === 6 && form.paymentMethodCode != null)
+      errors.push("בקוד פעולה 6 אין להעביר אמצעי תשלום לפי ממשק מעסיקים 006.");
   }
   if (!negative && form.employmentPercentage != null && (form.employmentPercentage < 1 || form.employmentPercentage > 100)) errors.push("חלקיות משרה חייבת להיות בין 1 ל־100.");
   if (!negative && form.workDaysInMonth != null && (form.workDaysInMonth < 0 || form.workDaysInMonth > 31)) errors.push("ימי עבודה בחודש חייבים להיות בין 0 ל־31.");
@@ -253,7 +253,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const operation5 = negative && metadataForm.operationCode === 5;
   const operation6 = negative && metadataForm.operationCode === 6;
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
-  const showOfficialPaymentMethod = !differences && (!negative || operation5 || operation6);
+  const showOfficialPaymentMethod = !differences && (!negative || operation5);
   const bankRequired = !differences && (!negative || (operation5 && metadataForm.paymentMethodCode === 1));
   const reportAffidavit = attachments.find((item) => item.documentTypeCode === 3 && item.reportProductId == null) ?? null;
   const employeeApproval = attachments.find((item) => item.documentTypeCode === 4 && item.reportProductId === row.id) ?? null;
@@ -326,7 +326,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
-      {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק. לפי טבלת גרסה 6 יש לדווח קוד אמצעי תשלום 1, ללא פרטי החזר נוספים.</div> : null}
+      {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק, ולכן אין להעביר ערך בשדה אמצעי התשלום.</div> : null}
       <div className="payment-layout">
         <aside className="payment-notes"><b>לתשומת לבך</b><p>פרטי חשבון היצרן נטענים אוטומטית מנתוני המוצר הקיימים במערכת.</p><p>יש לבחור את אמצעי התשלום ואת חשבון המעסיק שממנו בוצע התשלום.</p><p>בפעולות תיקון או ביטול יש לקשר לדיווח המקורי או לציין חריג מתאים כאשר אין קישור.</p></aside>
         <div className="payment-main">
