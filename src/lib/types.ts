@@ -75,7 +75,7 @@ export type ReportDraft = {
 export type PensionProductType = 1 | 2 | 3 | 4 | 99;
 export type ContributionComponent = 1 | 2 | 3 | 4;
 export type SalaryAllocationType = 1 | 2 | 3 | 4;
-export type Section14Code = 1 | 2 | 3 | 4;
+export type Section14Code = 1 | 2 | 3 | 4 | 5;
 
 export type PensionFundOption = {
   externalKey: string;
