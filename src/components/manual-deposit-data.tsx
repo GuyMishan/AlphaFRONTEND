@@ -206,7 +206,8 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       setMetadata(item);
       setMetadataForm({ operationCode: item.operationCode, depositStatus: item.depositStatus, employeeStatus: item.employeeStatus, statusStartDate: item.statusStartDate,
         employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason,
-        paymentMethodCode: item.paymentMethodCode, employerAccountType: item.employerAccountType, receiverAccountType: item.receiverAccountType });
+        paymentMethodCode: item.paymentMethodCode, employerAccountType: item.employerAccountType, receiverAccountType: item.receiverAccountType,
+        oldPensionTypeCode: item.oldPensionTypeCode });
       setPreviousReference(previous);
       setAttachments(attachmentList.items);
       setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
@@ -272,6 +273,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const noMoneyCorrection = !negative && (metadataForm.operationCode === 2 || metadataForm.operationCode === 7);
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
   const showOfficialPaymentMethod = !differences && (!negative || operation5);
+  const isOldPensionFund = row.productType === 1 && (row.fundClassification || "").includes("ותיק");
   const bankRequired = !differences && ((!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 7))
     || (operation5 && metadataForm.paymentMethodCode === 1));
   const reportAffidavit = attachments.find((item) => item.documentTypeCode === 3 && item.reportProductId == null) ?? null;
@@ -386,6 +388,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {negative ? <div className="field"><label>סיבת בקשה להחזר/ביטול *</label><EmployerInterfaceOptionSelect category="refund-reason" scope="negative" value={metadataForm.refundReason} required onChange={(value) => patchMetadata("refundReason", value)} /></div> : null}
             {!negative ? <div className="field"><label>סוג חשבון מעסיק *</label><EmployerInterfaceOptionSelect category="employer-account-type" scope="current" value={metadataForm.employerAccountType} required onChange={(value) => patchMetadata("employerAccountType", value)} /></div> : null}
             {!negative ? <div className="field"><label>סוג חשבון קולט *</label><EmployerInterfaceOptionSelect category="receiver-account-type" scope="current" value={metadataForm.receiverAccountType} required onChange={(value) => patchMetadata("receiverAccountType", value)} /></div> : null}
+            {!negative && isOldPensionFund ? <div className="field"><label>סוג פנסיה בקרן ותיקה *</label><select className="ui-input" value={metadataForm.oldPensionTypeCode ?? ""} onChange={(e) => patchMetadata("oldPensionTypeCode", e.target.value === "" ? null : Number(e.target.value))}><option value="">יש לבחור</option><option value="1">מקיפה</option><option value="2">יסוד</option></select></div> : null}
             {!negative ? <div className="field"><label>חלקיות משרה (%)</label><UiInput type="number" min="1" max="100" step="0.01" value={metadataForm.employmentPercentage ?? ""} onChange={(e) => patchMetadata("employmentPercentage", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative ? <div className="field"><label>ימי עבודה בחודש</label><UiInput type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
           </div>}</section> : null}
