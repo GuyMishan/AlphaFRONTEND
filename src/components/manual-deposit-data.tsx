@@ -136,15 +136,16 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
   return errors;
 }
 
-function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInterfaceProductMetadata | null, meta: EmployerInterfaceProductMetadataInput) {
+function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInterfaceProductMetadata | null, meta: EmployerInterfaceProductMetadataInput, totalDeposit: number) {
   const errors: string[] = [];
   if (!form.providerName.trim()) errors.push("לא נמצאו פרטי יצרן למוצר.");
   if (!metadata || isDifferencesKind(metadata.reportKind)) return errors;
   const negative = isNegativeKind(metadata.reportKind);
-  const receiverAccountRequired = !negative && (meta.paymentMethodCode === 1 || meta.paymentMethodCode === 7);
+  const receiverAccountRequired = !negative && ((meta.paymentMethodCode === 1 && totalDeposit > 0) || meta.paymentMethodCode === 7);
   if (receiverAccountRequired && !form.providerAccount.trim()) errors.push("לא נמצא חשבון יצרן לזיכוי בנתוני המוצר.");
   const requireEmployerBank = !negative || (meta.operationCode === 5 && meta.paymentMethodCode === 1);
   if (!negative && !form.referenceNumber.trim()) errors.push("מספר אסמכתא הוא שדה חובה בדיווח שוטף.");
+  if (form.referenceNumber.length > 50) errors.push("מספר אסמכתא יכול להכיל עד 50 תווים לפי ממשק 006.");
   if (requireEmployerBank) {
     if (!/^\d+$/.test(form.employerBankCode.trim())) errors.push("יש לבחור בנק.");
     if (!/^\d{1,3}$/.test(form.employerBranch.trim())) errors.push("יש לבחור סניף.");
@@ -250,7 +251,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
 
   async function save() {
     setError("");
-    const errors = [...validatePaymentDetails(form, metadata, metadataForm), ...validate006Metadata(metadata, metadataForm, previousReference)];
+    const errors = [...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)), ...validate006Metadata(metadata, metadataForm, previousReference)];
     if (errors.length) { const message = shortError(errors.join(" ")); setError(message); notify.error(message); return; }
     setSaving(true);
     try {
@@ -284,7 +285,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
           {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => patchMetadata("paymentMethodCode", value)} /></div> : null}
             {!negative ? <div className="field"><label>תאריך ערך</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
-            {!negative ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={120} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
+            {!negative ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
             {!operation6 ? <label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור"}</span><UiInput type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label> : null}
             {bankRequired ? <>
               <div className="field"><label>בנק *</label><UiInput required list={`banks-${row.id}`} value={bankSelection} onChange={(e) => chooseBank(e.target.value)} placeholder="חיפוש לפי שם או מספר בנק" /><datalist id={`banks-${row.id}`}>{banks.map((bank) => <option key={bank.bankCode} value={bankLabel(bank)} />)}</datalist></div>
