@@ -319,6 +319,10 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   async function save() {
     setError("");
     const errors = [...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)), ...validate006Metadata(metadata, metadataForm, previousReference)];
+    if (!negative && isOldPensionFund && !metadataForm.oldPensionTypeCode)
+      errors.push("בקרן פנסיה ותיקה יש לבחור סוג פנסיה: מקיפה או יסוד.");
+    if (!negative && isOldPensionFund && metadataForm.employmentPercentage == null && metadataForm.workDaysInMonth == null)
+      errors.push("בקרן פנסיה ותיקה יש להזין חלקיות משרה או ימי עבודה בחודש.");
     if (operation5 && !annualEmployerAffidavitSatisfied)
       errors.push("בקוד פעולה 5 נדרש תצהיר מעסיק שנתי (סוג מסמך 3) לפחות פעם אחת בשנה.");
     if (errors.length) { const message = shortError(errors.join(" ")); setError(message); notify.error(message); return; }
@@ -388,7 +392,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {negative ? <div className="field"><label>סיבת בקשה להחזר/ביטול *</label><EmployerInterfaceOptionSelect category="refund-reason" scope="negative" value={metadataForm.refundReason} required onChange={(value) => patchMetadata("refundReason", value)} /></div> : null}
             {!negative ? <div className="field"><label>סוג חשבון מעסיק *</label><EmployerInterfaceOptionSelect category="employer-account-type" scope="current" value={metadataForm.employerAccountType} required onChange={(value) => patchMetadata("employerAccountType", value)} /></div> : null}
             {!negative ? <div className="field"><label>סוג חשבון קולט *</label><EmployerInterfaceOptionSelect category="receiver-account-type" scope="current" value={metadataForm.receiverAccountType} required onChange={(value) => patchMetadata("receiverAccountType", value)} /></div> : null}
-            {!negative && isOldPensionFund ? <div className="field"><label>סוג פנסיה בקרן ותיקה *</label><select className="ui-input" value={metadataForm.oldPensionTypeCode ?? ""} onChange={(e) => patchMetadata("oldPensionTypeCode", e.target.value === "" ? null : Number(e.target.value))}><option value="">יש לבחור</option><option value="1">מקיפה</option><option value="2">יסוד</option></select></div> : null}
+            {!negative && isOldPensionFund ? <div className="field"><label>סוג פנסיה בקרן ותיקה *</label><EmployerInterfaceOptionSelect category="old-pension-type" scope="current" value={metadataForm.oldPensionTypeCode} required onChange={(value) => patchMetadata("oldPensionTypeCode", value)} /></div> : null}
             {!negative ? <div className="field"><label>חלקיות משרה (%)</label><UiInput type="number" min="1" max="100" step="0.01" value={metadataForm.employmentPercentage ?? ""} onChange={(e) => patchMetadata("employmentPercentage", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative ? <div className="field"><label>ימי עבודה בחודש</label><UiInput type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
           </div>}</section> : null}
