@@ -3,7 +3,7 @@ import { getSession } from "@/lib/session";
 export type ReportAttachment = {
   id: string;
   reportProductId: string | null;
-  documentTypeCode: 3 | 4 | 6;
+  documentTypeCode: 3 | 4 | 5 | 6;
   originalFileName: string;
   transmissionFileName: string;
   contentType: string;
@@ -15,7 +15,7 @@ export type ReportAttachment = {
 export type ReportAttachmentList = {
   items: ReportAttachment[];
   annualEmployerAffidavitSatisfied: boolean;
-  documentTypes: { code: 3 | 4 | 6; name: string; scope: "report" | "product" }[];
+  documentTypes: { code: 3 | 4 | 5 | 6; name: string; scope: "report" | "product" }[];
 };
 
 async function authHeaders() {
@@ -45,7 +45,7 @@ export const reportAttachmentsApi = {
     return response.json() as Promise<ReportAttachmentList>;
   },
 
-  async upload(organizationId: string, employerId: string, reportId: string, documentTypeCode: 3 | 4 | 6,
+  async upload(organizationId: string, employerId: string, reportId: string, documentTypeCode: 3 | 4 | 5 | 6,
     file: File, reportProductId?: string | null) {
     const form = new FormData();
     form.set("file", file);
