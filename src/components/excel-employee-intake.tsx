@@ -239,6 +239,23 @@ function parseReportRow(raw: Record<string, unknown>, rowNumber: number, nationa
   if (!section14Code || ![1, 2, 3, 4, 5].includes(section14Code)) errors.push("סעיף 14");
   if ((section14Code === 2 || section14Code === 4) && !section14StartDate) errors.push("תאריך סעיף 14");
 
+  const operationCode = integer(pick(raw, reportAliases.operationCode));
+  const depositStatus = integer(pick(raw, reportAliases.depositStatus));
+  const employeeStatus = integer(pick(raw, reportAliases.employeeStatus));
+  const statusStartDate = parseDate(pick(raw, reportAliases.statusStartDate)) || null;
+  const lastDeposit = integer(pick(raw, reportAliases.lastDeposit));
+  const paymentMethodCode = integer(pick(raw, reportAliases.paymentMethodCode));
+  const employerAccountType = integer(pick(raw, reportAliases.employerAccountType));
+  const receiverAccountType = integer(pick(raw, reportAliases.receiverAccountType));
+  if (!operationCode || ![1, 2, 3, 7].includes(operationCode)) errors.push("סוג פעולה 1/2/3/7");
+  if (!depositStatus || ![1, 2, 3].includes(depositStatus)) errors.push("מעמד הפקדה");
+  if (!employeeStatus) errors.push("סטטוס עובד");
+  if (!statusStartDate) errors.push("תאריך תחילת סטטוס");
+  if (!lastDeposit || ![1, 2].includes(lastDeposit)) errors.push("הפקדה אחרונה");
+  if (!paymentMethodCode) errors.push("אמצעי תשלום");
+  if (!employerAccountType) errors.push("סוג חשבון מעסיק");
+  if (!receiverAccountType) errors.push("סוג חשבון קולט");
+
   const employerContributions = [
     contribution(raw, 1, "erSeverance"),
     contribution(raw, 2, "erBenefits"),
@@ -256,17 +273,17 @@ function parseReportRow(raw: Record<string, unknown>, rowNumber: number, nationa
   if (errors.length || !productType || !section14Code) return { errors };
 
   const metadata: EmployerInterfaceProductMetadataInput = {
-    operationCode: integer(pick(raw, reportAliases.operationCode)),
-    depositStatus: integer(pick(raw, reportAliases.depositStatus)),
-    employeeStatus: integer(pick(raw, reportAliases.employeeStatus)),
-    statusStartDate: parseDate(pick(raw, reportAliases.statusStartDate)) || null,
+    operationCode,
+    depositStatus,
+    employeeStatus,
+    statusStartDate,
     employmentPercentage: (() => { const n = numeric(pick(raw, reportAliases.employmentPercentage), Number.NaN); return Number.isFinite(n) ? n : null; })(),
     workDaysInMonth: integer(pick(raw, reportAliases.workDaysInMonth)),
-    lastDeposit: integer(pick(raw, reportAliases.lastDeposit)),
+    lastDeposit,
     refundReason: integer(pick(raw, reportAliases.refundReason)),
-    paymentMethodCode: integer(pick(raw, reportAliases.paymentMethodCode)),
-    employerAccountType: integer(pick(raw, reportAliases.employerAccountType)),
-    receiverAccountType: integer(pick(raw, reportAliases.receiverAccountType)),
+    paymentMethodCode,
+    employerAccountType,
+    receiverAccountType,
     oldPensionTypeCode: integer(pick(raw, reportAliases.oldPensionTypeCode)),
   };
 
