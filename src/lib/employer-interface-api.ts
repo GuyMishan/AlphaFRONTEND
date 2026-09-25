@@ -70,9 +70,6 @@ export type EmployerInterfaceProductMetadata = {
   employerAccountType: number | null;
   receiverAccountType: number | null;
   oldPensionTypeCode: number | null;
-  previousIdentifier: string;
-  previousClearingIdentifier: string;
-  previousReferenceExceptionCode: number | null;
 };
 
 export type EmployerInterfaceProductMetadataInput = Omit<EmployerInterfaceProductMetadata, "reportKind">;
