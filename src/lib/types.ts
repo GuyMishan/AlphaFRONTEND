@@ -75,7 +75,7 @@ export type ReportDraft = {
 export type PensionProductType = 1 | 2 | 3 | 4 | 99;
 export type ContributionComponent = 1 | 2 | 3 | 4;
 export type SalaryAllocationType = 1 | 2 | 3 | 4;
-export type Section14Code = 1 | 2 | 3 | 4;
+export type Section14Code = 1 | 2 | 3 | 4 | 5;
 
 export type PensionFundOption = {
   externalKey: string;
@@ -84,6 +84,7 @@ export type PensionFundOption = {
   companyName: string;
   domain: string;
   productType: string;
+  classification?: string;
   bankCode?: number | null;
   bankName?: string;
   branchCode?: number | null;
@@ -104,6 +105,7 @@ export type ManualProductInput = {
   fundCode?: string;
   fundName?: string;
   fundCompanyName?: string;
+  fundClassification?: string;
   salaryMonth: string;
   salary: number;
   salaryAllocationType?: SalaryAllocationType;
@@ -132,6 +134,7 @@ export type EmployeePensionProductInput = {
   fundCode?: string;
   fundName?: string;
   fundCompanyName?: string;
+  fundClassification?: string;
   salary: number;
   reportingType: string;
   salaryLayer: string;
@@ -167,6 +170,7 @@ export type EmployeePensionProduct = Omit<EmployeePensionProductInput, "isActive
   fundCode: string;
   fundName: string;
   fundCompanyName: string;
+  fundClassification: string;
   salaryAllocationType: SalaryAllocationType;
   salaryAllocationValue: number | null;
   allocationOrder: number;
@@ -428,6 +432,8 @@ export type EmployerProfileCenterSettings = {
   };
   reporting: {
     defaultSalaryPaymentDay: number | null;
+    defaultDepositorTypeCode: 1 | 2 | 3;
+    defaultEmployerIdentifierTypeCode: 1 | 2 | 3 | 4 | 5 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
     defaultPaymentMethodCode: number | null;
     defaultEmployerAccountType: number | null;
     defaultReceiverAccountType: number | null;

@@ -55,6 +55,8 @@ const EMPTY_SETTINGS: EmployerProfileCenterSettings = {
   pensionPayment: { mode: 2, modeOverridden: false, canChangeMode: false },
   reporting: {
     defaultSalaryPaymentDay: null,
+    defaultDepositorTypeCode: 1,
+    defaultEmployerIdentifierTypeCode: 1,
     defaultPaymentMethodCode: null,
     defaultEmployerAccountType: null,
     defaultReceiverAccountType: null,
@@ -777,12 +779,37 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
           </div>
         </div>
         <div className="field">
+          <label>סוג מפקיד</label>
+          <UiSelect disabled={!canEdit} value={form.defaultDepositorTypeCode} onChange={(e) => setForm({ ...form, defaultDepositorTypeCode: Number(e.target.value) as 1 | 2 | 3 })}>
+            <option value={1}>קוד 1</option>
+            <option value={2}>קוד 2</option>
+            <option value={3}>מעסיק קטן (קוד 3)</option>
+          </UiSelect>
+          <small style={{ color: "var(--muted)" }}>בכללי גרסה 6 מוגדר במפורש קוד 3 למעסיק קטן.</small>
+        </div>
+        <div className="field">
+          <label>סוג מזהה מעסיק בממשק 006</label>
+          <UiSelect disabled={!canEdit} value={form.defaultEmployerIdentifierTypeCode} onChange={(e) => setForm({ ...form, defaultEmployerIdentifierTypeCode: Number(e.target.value) as EmployerProfileCenterSettings["reporting"]["defaultEmployerIdentifierTypeCode"] })}>
+            <option value={1}>ח.פ</option>
+            <option value={2}>ח.צ</option>
+            <option value={3}>ת.ז</option>
+            <option value={4}>דרכון</option>
+            <option value={5}>עוסק מורשה</option>
+            <option value={7}>עמותה</option>
+            <option value={8}>אגודה שיתופית</option>
+            <option value={9}>חברה ממשלתית</option>
+            <option value={10}>איגוד</option>
+            <option value={11}>שותפות</option>
+            <option value={12}>מספר בעל רישיון</option>
+            <option value={13}>ישות ללא רשם</option>
+          </UiSelect>
+        </div>
+        <div className="field">
           <label>אמצעי תשלום</label>
           <UiSelect disabled={!canEdit} value={form.defaultPaymentMethodCode ?? ""} onChange={(e) => setForm({ ...form, defaultPaymentMethodCode: e.target.value ? Number(e.target.value) : null })}>
             <option value="">לא הוגדר</option>
             <option value={1}>העברה בנקאית</option>
             <option value={3}>כרטיס אשראי</option>
-            <option value={4}>שובר תשלום</option>
             <option value={5}>סליקה באמצעות מסלקה פנסיונית</option>
             <option value={6}>הרשאה לחיוב חשבון / הוראת קבע</option>
             <option value={7}>סליקה באמצעות מס״ב</option>

@@ -12,6 +12,7 @@ export type ManualDepositRow = {
   fundCode: string;
   fundName: string;
   fundCompanyName: string;
+  fundClassification: string;
   salaryMonth: string;
   salary: number;
   reportingType: string;
@@ -23,6 +24,9 @@ export type ManualDepositRow = {
   providerAccount: string;
   paymentMethod: string;
   valueDate: string | null;
+  trustAccountValueDate: string | null;
+  actualDepositAmount: number | null;
+  masavSenderCode: string;
   referenceNumber: string;
   employerBankName: string;
   employerBankCode: string;
@@ -32,7 +36,7 @@ export type ManualDepositRow = {
 };
 
 export type ManualPaymentInput = Pick<ManualDepositRow,
-  "providerName" | "providerAccount" | "paymentMethod" | "valueDate" | "referenceNumber" |
+  "providerName" | "providerAccount" | "paymentMethod" | "valueDate" | "trustAccountValueDate" | "actualDepositAmount" | "masavSenderCode" | "referenceNumber" |
   "employerBankName" | "employerBankCode" | "employerBranch" | "employerAccount" | "confirmationFileName">;
 
 export type DepositPage = { items: ManualDepositRow[]; hasMore: boolean };

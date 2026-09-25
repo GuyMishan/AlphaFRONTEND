@@ -22,6 +22,7 @@ export type PensionEditorProduct = {
   fundCode?: string;
   fundName?: string;
   fundCompanyName?: string;
+  fundClassification?: string;
   salary: number;
   salaryMonth?: string;
   salaryAllocationType?: SalaryAllocationType;
@@ -53,7 +54,7 @@ const roundMoney = (value: number) => Math.round((Number.isFinite(value) ? value
 const roundPercentage = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 10000) / 10000;
 
 export function inferPensionSection14Code(product: Pick<PensionEditorProduct, "section14" | "section14Code" | "section14StartDate">): Section14Code {
-  if (product.section14Code && [1, 2, 3, 4].includes(Number(product.section14Code))) return Number(product.section14Code) as Section14Code;
+  if (product.section14Code && [1, 2, 3, 4, 5].includes(Number(product.section14Code))) return Number(product.section14Code) as Section14Code;
   if (!product.section14 && product.section14StartDate) return 4;
   if (!product.section14) return 3;
   return product.section14StartDate ? 2 : 1;
@@ -65,7 +66,11 @@ export function resolvePensionAllocations(monthlySalary: number, products: Pensi
     .filter(({ product }) => product.isActive !== false)
     .sort((a, b) => Number(a.product.allocationOrder ?? a.index) - Number(b.product.allocationOrder ?? b.index));
   if (!active.length) return { resolved, error: "" };
-  if (monthlySalary <= 0) return { resolved, error: "יש להזין שכר חודשי לעובד לפני שמירת מוצרים פעילים." };
+  if (monthlySalary < 0) return { resolved, error: "שכר חודשי לא יכול להיות שלילי." };
+  if (monthlySalary === 0) {
+    for (const { index } of active) resolved.set(index, 0);
+    return { resolved, error: "" };
+  }
   if (active.filter(({ product }) => Number(product.salaryAllocationType ?? 1) === 4).length > 1)
     return { resolved, error: "אפשר להגדיר מוצר אחד בלבד בשיטת יתרת שכר." };
   const orders = active.map(({ product, index }) => Number(product.allocationOrder ?? index));
@@ -116,7 +121,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
   for (let index = 0; index < products.length; index++) {
     const product = products[index];
     if (product.isActive === false) continue;
-    if (!product.policyNumber.trim()) return `מוצר ${index + 1}: מספר פוליסה הוא שדה חובה.`;
+    if (context === "report" && product.productType === 99) return `מוצר ${index + 1}: סוג מוצר "אחר" אינו נתמך בממשק מעסיקים 006. יש לבחור סוג קופה רשמי.`;
     if (product.productType !== 99 && !(product.fundExternalKey ?? "").trim()) return `מוצר ${index + 1}: יש לבחור קופה.`;
     if (!/^\d+$/.test(product.reportingType || "")) return `מוצר ${index + 1}: יש לבחור סוג תקבול תקין.`;
     if (!/^\d+$/.test(product.salaryLayer || "")) return `מוצר ${index + 1}: יש לבחור רובד שכר תקין.`;
@@ -132,7 +137,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
 
 export function createEmptyPensionEditorProduct(context: "employee" | "report", order: number, month?: string): PensionEditorProduct {
   const base: PensionEditorProduct = {
-    productType: 1, policyNumber: "", fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", salary: 0,
+    productType: 1, policyNumber: "", fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", fundClassification: "", salary: 0,
     salaryAllocationType: 1, salaryAllocationValue: null, allocationOrder: order, reportingType: "1", salaryLayer: "1", section14: false,
     section14Code: 3, section14StartDate: null, employerContributions: employerComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
     employeeContributions: employeeComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
@@ -199,9 +204,9 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
         <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <span className="status-pill-active"><CircleCheck size={13} /><span>פעיל</span></span>}{editable ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
         <div className="grid report-product-fields">
           {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
-          <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required onChange={(value) => updateProduct(index, { productType: Number(value) as PensionProductType, fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "" })} /></div>
+          <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required onChange={(value) => updateProduct(index, { productType: Number(value) as PensionProductType, fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", fundClassification: "" })} /></div>
           <PensionFundSelect disabled={!editable} productType={product.productType} value={product} onChange={(fund) => updateProduct(index, { ...fund, ...(context === "employee" ? { institutionalBody: fund.fundCompanyName || product.institutionalBody, manufacturer: fund.fundCompanyName || product.manufacturer } : {}) })} />
-          <div className="field"><label>מספר פוליסה *</label><UiInput disabled={!editable} maxLength={100} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} /></div>
+          <div className="field"><label>מספר פוליסה / חשבון</label><UiInput disabled={!editable} maxLength={20} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} placeholder="אופציונלי" /></div>
           {context === "report" ? <div className="field"><label>חודש שכר *</label><UiInput disabled={!editable} required type="month" value={(product.salaryMonth ?? month ?? "").slice(0, 7)} onChange={(e) => updateProduct(index, { salaryMonth: `${e.target.value}-01` })} /></div> : null}
           <div className="field"><label>שיטת הקצאת שכר *</label><ReferenceOptionSelect category="salary-allocation-type" disabled={!editable} value={allocationType} required onChange={(value) => { const next = Number(value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: next, salaryAllocationValue: next === 4 ? null : product.salaryAllocationValue ?? product.salary ?? 0 }); }} /></div>
           {allocationType !== 4 ? <div className="field"><label>{allocationValueLabel(allocationType)} *</label><UiInput disabled={!editable} type="number" min="0" max={allocationType === 2 ? 100 : undefined} step="0.01" value={product.salaryAllocationValue ?? ""} onChange={(e) => updateProduct(index, { salaryAllocationValue: Number(e.target.value) })} /></div> : <div className="field"><label>ערך הקצאה</label><UiInput disabled value="מחושב אוטומטית" /></div>}
@@ -222,5 +227,5 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
 
 function ContributionEditor({ context, title, party, product, items, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
   const labels = party === "employee" ? employeeComponents : employerComponents;
-  return <div className="contribution-section"><h3>{title}</h3><div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>רכיב</th><th>סכום</th><th>אחוז</th><th>תשלומים פטורים</th></tr></thead><tbody>{labels.map(({ value, label }) => { const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 }; const max = maxPercentage(product.productType, party, value); return <tr key={value}><th>{label}</th><td><UiInput disabled={!editable} type="number" min="0" step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} /></td><td><UiInput disabled={!editable} type="number" min="0" max={max} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} /></td><td><UiInput disabled={!editable} type="number" min="0" step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} /></td></tr>; })}</tbody></table></div></div>;
+  return <div className="contribution-section"><h3>{title}</h3><div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>רכיב</th><th>סכום</th><th>אחוז</th><th>תשלומים פטורים</th></tr></thead><tbody>{labels.map(({ value, label }) => { const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 }; const max = context === "report" ? 99.99 : maxPercentage(product.productType, party, value); return <tr key={value}><th>{label}</th><td><UiInput disabled={!editable} type="number" min="0" step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} /></td><td><UiInput disabled={!editable} type="number" min="0" max={max} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} /></td><td><UiInput disabled={!editable} type="number" min="0" step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} /></td></tr>; })}</tbody></table></div></div>;
 }

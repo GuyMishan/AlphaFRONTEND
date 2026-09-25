@@ -12,6 +12,7 @@ export function EmployerInterfaceOptionSelect({
   disabled = false,
   required = false,
   placeholder = "בחירה",
+  operationCode,
 }: {
   category: string;
   scope?: string;
@@ -20,6 +21,7 @@ export function EmployerInterfaceOptionSelect({
   disabled?: boolean;
   required?: boolean;
   placeholder?: string;
+  operationCode?: number | null;
 }) {
   const [options, setOptions] = useState<EmployerInterfaceOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,12 +31,12 @@ export function EmployerInterfaceOptionSelect({
     let active = true;
     setLoading(true);
     setError("");
-    employerInterfaceApi.options(category, scope)
+    employerInterfaceApi.options(category, scope, operationCode)
       .then((items) => { if (active) setOptions(items); })
       .catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת האפשרויות נכשלה"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [category, scope]);
+  }, [category, operationCode, scope]);
 
   const hasCurrentValue = useMemo(() => value != null && options.some((item) => item.code === Number(value)), [options, value]);
 

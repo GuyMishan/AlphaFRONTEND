@@ -11,6 +11,7 @@ type FundValue = {
   fundCode?: string;
   fundName?: string;
   fundCompanyName?: string;
+  fundClassification?: string;
 };
 
 type Props = {
@@ -99,7 +100,7 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
             setQuery(next);
             setOpen(true);
             if (value.fundExternalKey) {
-              onChange({ fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "" });
+              onChange({ fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", fundClassification: "" });
             }
           }}
         />
@@ -134,6 +135,7 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
                     fundCode: item.fundCode,
                     fundName: item.fundName,
                     fundCompanyName: item.companyName,
+                    fundClassification: item.classification || "",
                   });
                   setQuery(optionLabel(item));
                   setOpen(false);
