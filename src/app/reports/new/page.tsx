@@ -10,16 +10,17 @@ import { AppShell } from "@/components/app-shell";
 import { BillingGateModal } from "@/components/billing-gate-modal";
 import { ExcelEmployeeIntake, type ExcelEmployeeIntakeResult } from "@/components/excel-employee-intake";
 import { EmployerInterfaceXmlIntake } from "@/components/employer-interface-xml-intake";
-import type { EmployerInterfaceImportResult } from "@/lib/employer-interface-api";
+import { employerInterfaceApi, type EmployerInterfaceImportResult } from "@/lib/employer-interface-api";
 import { ManualReportData } from "@/components/manual-report-data";
 import { ManualDepositData } from "@/components/manual-deposit-data";
+import { manualDepositsApi } from "@/lib/manual-deposits-api";
 import { alphaApi } from "@/lib/api";
 import { derivedReportsApi } from "@/lib/derived-reports-api";
 import { reportValidationApi } from "@/lib/report-validation-api";
 import { reportTransmissionApi } from "@/lib/report-transmission-api";
 import { getEmployerSelection } from "@/lib/session";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
-import type { BillingGateStatus, Employee, Employer, EmployerPaymentAccount, ManualReportKind, ReportMode, SourceManualReport } from "@/lib/types";
+import type { BillingGateStatus, Employee, EmployeePensionProductInput, Employer, EmployerPaymentAccount, ManualReportKind, ReportMode, SourceManualReport } from "@/lib/types";
 
 const manualSteps = ["פרטי הדיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
 const excelSteps = ["פרטי הדיווח", "העלאת קובץ שכר", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
@@ -176,28 +177,129 @@ export default function NewReportPage() {
   }
 
   async function processExcelEmployees() {
-    if (!scope || !excelIntake) throw new Error("יש להעלות ולבדוק קובץ שכר לפני שממשיכים.");
+    if (!scope || !excelIntake) throw new Error("יש להעלות ולבדוק קובץ Excel לפני שממשיכים.");
     if (excelIntake.blockedCount) throw new Error("יש שורות חסומות בקובץ. תקנו את הקובץ והעלו אותו מחדש לפני המשך.");
 
     const created: Employee[] = [];
-    const createdIds: string[] = [];
+    const employmentByNationalId = new Map<string, string>();
+
+    for (const matched of excelIntake.matchedEmployees) {
+      employmentByNationalId.set(matched.input.nationalId.replace(/\D/g, ""), matched.employmentId);
+      if (excelIntake.updateEmployeeProfiles)
+        await alphaApi.updateEmployee(scope.organizationId, scope.employerId, matched.employmentId, matched.input);
+    }
+
     for (const input of excelIntake.newEmployees) {
       const saved = await alphaApi.createEmployee(scope.organizationId, scope.employerId, input);
-      createdIds.push(saved.id);
+      employmentByNationalId.set(input.nationalId.replace(/\D/g, ""), saved.id);
       created.push({ id: saved.id, personId: saved.personId, ...input, status: 1, endDate: null });
     }
-    const employmentIds = Array.from(new Set([...excelIntake.matchedEmploymentIds, ...createdIds]));
+
+    const employmentIds = Array.from(new Set(employmentByNationalId.values()));
     if (!employmentIds.length) throw new Error("לא נמצאו עובדים תקינים להוספה לדיווח.");
 
-    if (!manualReportId) {
-      const report = await alphaApi.createManualReport(scope.organizationId, scope.employerId, { reportingMonth: `${month}-01`, salaryPaymentDate, employmentIds, paymentAccountId: selectedPaymentAccountId });
+    let reportId = manualReportId;
+    if (!reportId) {
+      const report = await alphaApi.createManualReport(scope.organizationId, scope.employerId, {
+        reportingMonth: `${month}-01`,
+        salaryPaymentDate,
+        employmentIds,
+        paymentAccountId: selectedPaymentAccountId,
+      });
+      reportId = report.id;
       setManualReportId(report.id);
     } else {
-      await alphaApi.syncManualReportEmployees(scope.organizationId, scope.employerId, manualReportId, employmentIds);
+      await alphaApi.syncManualReportEmployees(scope.organizationId, scope.employerId, reportId, employmentIds);
     }
+
+    const reportEmployees = [];
+    let skip = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const page = await alphaApi.manualReportEmployees(scope.organizationId, scope.employerId, reportId, "", skip, 100);
+      reportEmployees.push(...page.items);
+      hasMore = page.hasMore;
+      skip += page.items.length;
+      if (!page.items.length) break;
+    }
+    const reportEmployeeByEmploymentId = new Map(reportEmployees.map((item) => [item.employmentId, item]));
+
+    const rowsByEmploymentId = new Map<string, typeof excelIntake.reportRows>();
+    for (const row of excelIntake.reportRows) {
+      const employmentId = employmentByNationalId.get(row.nationalId.replace(/\D/g, ""));
+      if (!employmentId) continue;
+      const list = rowsByEmploymentId.get(employmentId) ?? [];
+      list.push(row);
+      rowsByEmploymentId.set(employmentId, list);
+    }
+
+    for (const [employmentId, rows] of rowsByEmploymentId) {
+      const reportEmployee = reportEmployeeByEmploymentId.get(employmentId);
+      if (!reportEmployee) throw new Error(`לא נמצא העובד ${employmentId} בתוך טיוטת הדיווח.`);
+      const sorted = [...rows].sort((a, b) => Number(a.product.allocationOrder ?? 0) - Number(b.product.allocationOrder ?? 0));
+      const employeeInput = excelIntake.matchedEmployees.find((x) => x.employmentId === employmentId)?.input
+        ?? excelIntake.newEmployees.find((x) => employmentByNationalId.get(x.nationalId.replace(/\D/g, "")) === employmentId);
+      const monthlySalary = employeeInput?.monthlySalary ?? Math.max(...sorted.map((x) => x.product.salary), 0);
+
+      await alphaApi.saveManualReportEmployee(
+        scope.organizationId, scope.employerId, reportId, reportEmployee.id, monthlySalary,
+        sorted.map((x) => x.product),
+      );
+
+      const detail = await alphaApi.manualReportEmployee(scope.organizationId, scope.employerId, reportId, reportEmployee.id);
+      for (const sourceRow of sorted) {
+        const product = detail.products.find((item) => Number(item.allocationOrder ?? 0) === Number(sourceRow.product.allocationOrder ?? 0)
+          && item.fundCode === sourceRow.product.fundCode
+          && item.policyNumber === sourceRow.product.policyNumber)
+          ?? detail.products.find((item) => Number(item.allocationOrder ?? 0) === Number(sourceRow.product.allocationOrder ?? 0));
+        if (!product) throw new Error(`לא ניתן היה להתאים את מוצר שורה ${sourceRow.rowNumber} לאחר הקליטה.`);
+
+        await employerInterfaceApi.updateProductMetadata(
+          scope.organizationId, scope.employerId, reportId, product.id, sourceRow.metadata,
+        );
+
+        if (sourceRow.metadata.operationCode !== 6) {
+          await manualDepositsApi.savePayment(
+            scope.organizationId, scope.employerId, reportId, product.id, sourceRow.payment,
+          );
+        }
+      }
+
+      if (excelIntake.updatePensionMix) {
+        const effectiveFrom = `${month}-01`;
+        const mixProducts: EmployeePensionProductInput[] = sorted.map(({ product }) => ({
+          productType: product.productType,
+          policyNumber: product.policyNumber,
+          fundExternalKey: product.fundExternalKey,
+          fundCode: product.fundCode,
+          fundName: product.fundName,
+          fundCompanyName: product.fundCompanyName,
+          fundClassification: product.fundClassification,
+          salary: product.salary,
+          reportingType: product.reportingType,
+          salaryLayer: product.salaryLayer,
+          section14: product.section14,
+          section14Code: product.section14Code,
+          section14StartDate: product.section14StartDate,
+          isActive: true,
+          effectiveFrom,
+          effectiveTo: null,
+          institutionalBody: product.fundCompanyName ?? "",
+          manufacturer: product.fundCompanyName ?? "",
+          salaryAllocationType: product.salaryAllocationType,
+          salaryAllocationValue: product.salaryAllocationValue,
+          allocationOrder: product.allocationOrder,
+          employerContributions: product.employerContributions,
+          employeeContributions: product.employeeContributions,
+        }));
+        await alphaApi.saveEmployeePensionMix(scope.organizationId, scope.employerId, employmentId, mixProducts);
+      }
+    }
+
     setEmployees((current) => [...created, ...current.filter((item) => !created.some((createdEmployee) => createdEmployee.id === item.id))]);
     setSelectedIds(employmentIds);
     setExcelIntake({ ...excelIntake, matchedEmploymentIds: employmentIds, newEmployees: [] });
+    toast.success(`קובץ ה־Excel נקלט במלואו: ${employmentIds.length} עובדים ו־${excelIntake.reportRows.length} מוצרי דיווח.`);
   }
 
   async function handleXmlImported(result: EmployerInterfaceImportResult) {
