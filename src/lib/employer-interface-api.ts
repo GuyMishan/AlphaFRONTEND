@@ -70,6 +70,9 @@ export type EmployerInterfaceProductMetadata = {
   employerAccountType: number | null;
   receiverAccountType: number | null;
   oldPensionTypeCode: number | null;
+  previousIdentifier: string;
+  previousClearingIdentifier: string;
+  previousReferenceExceptionCode: number | null;
 };
 
 export type EmployerInterfaceProductMetadataInput = Omit<EmployerInterfaceProductMetadata, "reportKind">;
@@ -144,8 +147,8 @@ function employerPath(organizationId: string, employerId: string) {
 export const employerInterfaceApi = {
   validateUpload: (organizationId: string, employerId: string, file: File) =>
     uploadEmployerInterface<EmployerInterfaceUploadValidation>(`${employerPath(organizationId, employerId)}/validate`, file),
-  importUpload: (organizationId: string, employerId: string, file: File, paymentAccountId: string) =>
-    uploadEmployerInterface<EmployerInterfaceImportResult>(`${employerPath(organizationId, employerId)}/import`, file, { paymentAccountId }),
+  importUpload: (organizationId: string, employerId: string, file: File, paymentAccountId: string, salaryPaymentDate: string) =>
+    uploadEmployerInterface<EmployerInterfaceImportResult>(`${employerPath(organizationId, employerId)}/import`, file, { paymentAccountId, salaryPaymentDate }),
   options: (category: string, scope = "all", operationCode?: number | null) => {
     const params = new URLSearchParams({ category, scope });
     if (operationCode != null) params.set("operationCode", String(operationCode));
