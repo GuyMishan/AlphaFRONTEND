@@ -257,6 +257,12 @@ export default function NewReportPage() {
         await employerInterfaceApi.updateProductMetadata(
           scope.organizationId, scope.employerId, reportId, product.id, sourceRow.metadata,
         );
+        if (sourceRow.previousReference.previousIdentifier || sourceRow.previousReference.previousClearingIdentifier
+          || sourceRow.previousReference.previousReferenceExceptionCode != null) {
+          await employerInterfaceApi.updatePreviousReference(
+            scope.organizationId, scope.employerId, reportId, product.id, sourceRow.previousReference,
+          );
+        }
 
         if (sourceRow.metadata.operationCode !== 6) {
           await manualDepositsApi.savePayment(
