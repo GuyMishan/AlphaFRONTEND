@@ -298,7 +298,7 @@ export default function NewReportPage() {
           employerContributions: product.employerContributions,
           employeeContributions: product.employeeContributions,
         }));
-        await alphaApi.saveEmployeePensionMix(scope.organizationId, scope.employerId, employmentId, mixProducts);
+        await alphaApi.saveEmployeePensionMix(scope.organizationId, scope.employerId, employmentId, mixProducts, monthlySalary);
       }
     }
 
