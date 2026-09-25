@@ -244,6 +244,7 @@ export default function NewReportPage() {
       await alphaApi.saveManualReportEmployee(
         scope.organizationId, scope.employerId, reportId, reportEmployee.id, monthlySalary,
         sorted.map((x) => x.product),
+        employeeInput,
       );
 
       const detail = await alphaApi.manualReportEmployee(scope.organizationId, scope.employerId, reportId, reportEmployee.id);
