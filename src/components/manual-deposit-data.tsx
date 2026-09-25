@@ -397,16 +397,17 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {!negative ? <div className="field"><label>ימי עבודה בחודש</label><UiInput type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
           </div>}</section> : null}
 
-          {!negative && !differences ? <section className="payment-panel">
+          {!negative && !differences && row.productType === 1 ? <section className="payment-panel">
             <h3>מסמך הצטרפות לקרן ברירת מחדל</h3>
             <div className="notice notice-info" style={{ marginBottom: 12 }}>
               סוג מסמך 5 מיועד לעובד קיים שמבקש להצטרף לקרן ברירת מחדל. יש לצרף אותו רק כאשר הוא רלוונטי למקרה.
             </div>
+            {metadataForm.employeeStatus === 14 ? <div className="notice notice-error" style={{ marginBottom: 12 }}>לעובד חדש (סטטוס 14) אין לצרף מסמך מסוג 5. אם כבר צורף מסמך, יש להסיר אותו לפני האימות הסופי.</div> : null}
             <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
               <div><b>בקשת עובד להצטרפות לקרן ברירת מחדל</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{defaultFundJoinRequest ? defaultFundJoinRequest.originalFileName : "לעובד/מוצר זה"}</div></div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 {defaultFundJoinRequest ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(defaultFundJoinRequest.id)}><Trash2 size={14} />הסר</button> : null}
-                {!defaultFundJoinRequest ? <label className="btn btn-secondary" style={{ cursor: uploadingAttachment ? "not-allowed" : "pointer" }}>
+                {!defaultFundJoinRequest && metadataForm.employeeStatus !== 14 ? <label className="btn btn-secondary" style={{ cursor: uploadingAttachment ? "not-allowed" : "pointer" }}>
                   <FileUp size={14} />{uploadingAttachment === 5 ? "מעלה..." : "צרף PDF"}
                   <UiInput type="file" hidden accept="application/pdf,.pdf" disabled={uploadingAttachment != null}
                     onChange={(e) => { const file = e.target.files?.[0] ?? null; e.currentTarget.value = ""; void uploadAttachment(5, file); }} />
