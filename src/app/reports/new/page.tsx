@@ -25,7 +25,7 @@ import type { BillingGateStatus, Employee, EmployeePensionProductInput, Employer
 const manualSteps = ["פרטי הדיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
 const excelSteps = ["פרטי הדיווח", "העלאת קובץ דיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
 const monthNow = new Date().toISOString().slice(0, 7);
-type IntakeMode = Extract<ReportMode, "manual" | "excel" | "xml">;
+type IntakeMode = Extract<ReportMode, "manual" | "excel" | "xml" | "correction">;
 
 const reportKindLabel: Record<ManualReportKind, string> = { 1: "דיווח שוטף", 2: "דיווח הפרשים", 3: "דיווח שלילי" };
 function kindLabel(value: string | number | undefined) { if (value === 2 || value === "2" || value === "Differences") return "הפרשים"; if (value === 3 || value === "3" || value === "Negative") return "שלילי"; return "שוטף"; }
@@ -77,6 +77,7 @@ export default function NewReportPage() {
   const [sourceHasMore, setSourceHasMore] = useState(false);
   const [loadingSources, setLoadingSources] = useState(false);
   const [selectedSourceReportId, setSelectedSourceReportId] = useState("");
+  const [correctionOperationCode, setCorrectionOperationCode] = useState<2 | 3>(2);
   const [canCreateReport, setCanCreateReport] = useState(false);
   const [canTransmitReport, setCanTransmitReport] = useState(false);
   const [canManageEmployerBilling, setCanManageEmployerBilling] = useState(false);
@@ -87,6 +88,8 @@ export default function NewReportPage() {
   const [showBillingGateModal, setShowBillingGateModal] = useState(false);
 
   const selectedSource = useMemo(() => sourceReports.find((report) => report.id === selectedSourceReportId) ?? null, [sourceReports, selectedSourceReportId]);
+  const eligibleCorrectionSources = useMemo(() => sourceReports.filter((report) => report.canBeCurrentCorrectionSource), [sourceReports]);
+  const isCorrection = reportKind === 1 && mode === "correction";
   const isExcel = reportKind === 1 && mode === "excel";
   const isXml = mode === "xml";
   const summaryStep = isExcel ? 5 : 4;
@@ -147,14 +150,20 @@ export default function NewReportPage() {
 
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
   useEffect(() => { const handler = (event: Event) => { if (step !== 1) return; const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail; if (detail.employerId) void loadScope({ organizationId: detail.organizationId, employerId: detail.employerId }); }; window.addEventListener("alpha:scope-change", handler); return () => window.removeEventListener("alpha:scope-change", handler); }, [step]);
-  useEffect(() => { if (reportKind === 1 || !scope || (mode === "xml" && manualReportId)) return; setMode("manual"); setManualReportId(""); setSourceSearch(""); setSentExternalId(""); void loadSources(true, ""); }, [reportKind, mode, manualReportId, scope?.organizationId, scope?.employerId]);
+  useEffect(() => {
+    const needsSources = reportKind !== 1 || mode === "correction";
+    if (!needsSources || !scope || (mode === "xml" && manualReportId)) return;
+    if (reportKind !== 1 && mode !== "manual") setMode("manual");
+    setManualReportId(""); setSourceSearch(""); setSentExternalId(""); void loadSources(true, "");
+  }, [reportKind, mode, manualReportId, scope?.organizationId, scope?.employerId]);
 
   function chooseSource(report: SourceManualReport) { setSelectedSourceReportId(report.id); setMonth(report.reportingMonth.slice(0, 7)); setSalaryPaymentDate(report.salaryPaymentDate?.slice(0, 10) ?? ""); setError(""); setSentExternalId(""); }
-  function chooseKind(kind: ManualReportKind) { setReportKind(kind); setManualReportId(""); setSelectedSourceReportId(""); setFileName(""); setExcelIntake(null); setError(""); setSentExternalId(""); if (kind !== 1) setMode("manual"); }
+  function chooseKind(kind: ManualReportKind) { setReportKind(kind); setManualReportId(""); setSelectedSourceReportId(""); setCorrectionOperationCode(2); setFileName(""); setExcelIntake(null); setError(""); setSentExternalId(""); if (kind !== 1) setMode("manual"); }
   function chooseMode(value: IntakeMode) { setMode(value); setManualReportId(""); setFileName(""); setExcelIntake(null); setError(""); setSentExternalId(""); setStep(1); }
 
   const canContinue = step === 1
-    ? Boolean(!isXml && employer && month && salaryPaymentDate && selectedPaymentAccountId && (reportKind === 1 || selectedSourceReportId))
+    ? Boolean(!isXml && employer && month && salaryPaymentDate && selectedPaymentAccountId
+        && (reportKind !== 1 ? selectedSourceReportId : !isCorrection || selectedSourceReportId))
     : isExcel && step === 2
       ? Boolean(excelIntake && excelIntake.blockedCount === 0 && excelIntake.matchedEmploymentIds.length + excelIntake.newEmployees.length > 0)
       : (isExcel ? step === 3 : step === 2)
@@ -166,7 +175,8 @@ export default function NewReportPage() {
     if (!/^\d{4}-\d{2}$/.test(month)) return "חודש דיווח הוא שדה חובה.";
     if (!salaryPaymentDate) return "תאריך תשלום שכר הוא שדה חובה.";
     if (!selectedPaymentAccountId) return "יש לבחור חשבון תשלום לדיווח.";
-    if (reportKind !== 1 && !selectedSourceReportId) return "יש לבחור את הדיווח הקודם שעליו מבוסס הדיווח.";
+    if ((reportKind !== 1 || isCorrection) && !selectedSourceReportId) return "יש לבחור את הדיווח הקודם שעליו מבוסס הדיווח.";
+    if (isCorrection && !selectedSource?.canBeCurrentCorrectionSource) return "יש לבחור דיווח שלילי קוד 6 שכבר נשלח או יובא ממקור חיצוני.";
     return "";
   }
 
@@ -353,6 +363,13 @@ export default function NewReportPage() {
           const report = await alphaApi.createManualReport(scope.organizationId, scope.employerId, { reportingMonth: `${month}-01`, salaryPaymentDate, employmentIds: selectedIds, paymentAccountId: selectedPaymentAccountId });
           setManualReportId(report.id);
         }
+        if (isCorrection && !manualReportId) {
+          const report = await derivedReportsApi.create(scope.organizationId, scope.employerId, {
+            sourceReportId: selectedSourceReportId, reportKind: 1, reportingMonth: `${month}-01`, salaryPaymentDate,
+            paymentAccountId: selectedPaymentAccountId, correctionOperationCode,
+          });
+          setManualReportId(report.id); setSelectedIds(await loadReportEmploymentIds(report.id));
+        }
         if (reportKind !== 1 && !manualReportId) {
           const report = await derivedReportsApi.create(scope.organizationId, scope.employerId, { sourceReportId: selectedSourceReportId, reportKind, reportingMonth: `${month}-01`, salaryPaymentDate, paymentAccountId: selectedPaymentAccountId });
           setManualReportId(report.id); setSelectedIds(await loadReportEmploymentIds(report.id));
@@ -404,14 +421,14 @@ export default function NewReportPage() {
   }
 
   const steps = isExcel ? excelSteps : manualSteps;
-  return <AppShell title="דיווח חדש" hideScopeController={step > 1}><div className="wizard"><div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer && scope ? <><Link className="profile-link" href={`/employers/${employer.id}?organizationId=${scope.organizationId}`}>{employer.legalName}</Link>{` · ח.פ. ${employer.registrationNumber}`}</> : "יש לבחור מעסיק בבורר העליון"}</p></div></div><ReportTypeBanner reportKind={reportKind} source={selectedSource} month={month} /><div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>{error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}{!loading && employer && !canCreateReport ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק, אך אין לך הרשאה ליצור או לערוך דיווחים.</div> : null}{loading ? <div className="card empty">טוען את המעסיק והעובדים...</div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : <section className="card">
-    {step === 1 ? <ReportDetails reportKind={reportKind} setReportKind={chooseKind} mode={mode} setMode={chooseMode} month={month} setMonth={setMonth} salaryPaymentDate={salaryPaymentDate} setSalaryPaymentDate={setSalaryPaymentDate} paymentAccounts={paymentAccounts} selectedPaymentAccountId={selectedPaymentAccountId} sourceReports={sourceReports} sourceSearch={sourceSearch} setSourceSearch={setSourceSearch} sourceHasMore={sourceHasMore} loadingSources={loadingSources} selectedSourceReportId={selectedSourceReportId} chooseSource={chooseSource} searchSources={() => void loadSources(true, sourceSearch)} loadMoreSources={() => void loadSources(false, sourceSearch)} /> : null}
+  return <AppShell title="דיווח חדש" hideScopeController={step > 1}><div className="wizard"><div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer && scope ? <><Link className="profile-link" href={`/employers/${employer.id}?organizationId=${scope.organizationId}`}>{employer.legalName}</Link>{` · ח.פ. ${employer.registrationNumber}`}</> : "יש לבחור מעסיק בבורר העליון"}</p></div></div><ReportTypeBanner reportKind={reportKind} source={selectedSource} month={month} correctionOperationCode={isCorrection ? correctionOperationCode : null} /><div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>{error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}{!loading && employer && !canCreateReport ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק, אך אין לך הרשאה ליצור או לערוך דיווחים.</div> : null}{loading ? <div className="card empty">טוען את המעסיק והעובדים...</div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : <section className="card">
+    {step === 1 ? <ReportDetails reportKind={reportKind} setReportKind={chooseKind} mode={mode} setMode={chooseMode} correctionOperationCode={correctionOperationCode} setCorrectionOperationCode={setCorrectionOperationCode} month={month} setMonth={setMonth} salaryPaymentDate={salaryPaymentDate} setSalaryPaymentDate={setSalaryPaymentDate} paymentAccounts={paymentAccounts} selectedPaymentAccountId={selectedPaymentAccountId} sourceReports={isCorrection ? eligibleCorrectionSources : sourceReports} sourceSearch={sourceSearch} setSourceSearch={setSourceSearch} sourceHasMore={sourceHasMore} loadingSources={loadingSources} selectedSourceReportId={selectedSourceReportId} chooseSource={chooseSource} searchSources={() => void loadSources(true, sourceSearch)} loadMoreSources={() => void loadSources(false, sourceSearch)} /> : null}
     {step === 1 && isXml && scope ? <EmployerInterfaceXmlIntake organizationId={scope.organizationId} employerId={scope.employerId} paymentAccountId={selectedPaymentAccountId} salaryPaymentDate={salaryPaymentDate} disabled={!canCreateReport || !selectedPaymentAccountId} onBeforeImport={ensureBillingAccess} onReportImported={handleXmlImported} /> : null}
     {step === 2 && isExcel && scope ? <ExcelEmployeeIntake organizationId={scope.organizationId} employerId={scope.employerId} reportingMonth={month} onChange={(result) => { setExcelIntake(result); setFileName(result?.fileName ?? ""); setError(""); }} /> : null}
     {((!isExcel && step === 2) || (isExcel && step === 3)) && manualReportId && scope ? <ManualReportData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} month={month} employees={employees} selectedIds={selectedIds} setSelectedIds={setSelectedIds} /> : null}
     {((!isExcel && step === 3) || (isExcel && step === 4)) && manualReportId && scope ? <ManualDepositData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} /> : null}
     {step === summaryStep ? <>
-      <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} paymentAccount={paymentAccounts.find((x) => x.id === selectedPaymentAccountId) ?? null} sentExternalId={sentExternalId} />
+      <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} correctionOperationCode={isCorrection ? correctionOperationCode : null} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} paymentAccount={paymentAccounts.find((x) => x.id === selectedPaymentAccountId) ?? null} sentExternalId={sentExternalId} />
       
       {reportKind === 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>דיווח הפרשים הוא טיוטת עבודה</b><div>לא ניתן לשדר אותו ישירות למסלקה. יש ליצור ממנו דיווח שוטף מתקן או דיווח שלילי בהתאם לכיוון ההפרש.</div></div> : null}
       {billingGate?.canTransmit && reportKind !== 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
