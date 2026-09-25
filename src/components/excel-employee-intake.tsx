@@ -193,10 +193,20 @@ function parseGender(value: string): number | null {
 
 function parseProductType(value: string): PensionProductType | null {
   const v = normalizeHeader(value);
-  if (["1", "קרןפנסיה", "פנסיה", "pension", "pensionfund"].includes(v)) return 1;
-  if (["2", "קרןהשתלמות", "השתלמות", "studyfund"].includes(v)) return 2;
-  if (["3", "ביטוחמנהלים", "מנהלים", "managersinsurance"].includes(v)) return 3;
-  if (["4", "קופתגמל", "גמל", "providentfund"].includes(v)) return 4;
+
+  // Numeric values in an Employer Interface 006 Excel are official SUG-KUPA codes,
+  // not Alpha's internal PensionProductType enum values.
+  // Official 006: 1=Managers insurance, 2=Pension fund, 3=Provident fund, 4=Study fund.
+  if (v === "1") return 3;
+  if (v === "2") return 1;
+  if (v === "3") return 4;
+  if (v === "4") return 2;
+
+  // Human-readable aliases map directly to Alpha's internal product types.
+  if (["קרןפנסיה", "פנסיה", "pension", "pensionfund"].includes(v)) return 1;
+  if (["קרןהשתלמות", "השתלמות", "studyfund"].includes(v)) return 2;
+  if (["ביטוחמנהלים", "מנהלים", "managersinsurance"].includes(v)) return 3;
+  if (["קופתגמל", "גמל", "providentfund"].includes(v)) return 4;
   return null;
 }
 

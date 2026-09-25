@@ -375,8 +375,37 @@ export const alphaApi = {
     request<PagedResult<ManualReportEmployeeSummary> | ManualReportEmployeeSummary[]>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees${qs({ search, skip, take })}`).then((result) => normalizePaged(result, take)),
   manualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string): Promise<ManualReportEmployeeDetail> =>
     request<ManualReportEmployeeDetail>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`),
-  saveManualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string, monthlySalary: number, products: ManualProductInput[]) =>
-    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`, { method: "PUT", body: JSON.stringify({ monthlySalary, products }) }),
+  saveManualReportEmployee: (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    reportEmployeeId: string,
+    monthlySalary: number,
+    products: ManualProductInput[],
+    snapshot?: EmployeeInput,
+  ) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        monthlySalary,
+        products,
+        snapshot: snapshot ? {
+          identifierType: 1,
+          identifier: snapshot.nationalId,
+          birthDate: snapshot.birthDate,
+          gender: snapshot.gender,
+          email: snapshot.email,
+          mobile: snapshot.mobile,
+          city: snapshot.city,
+          street: snapshot.street,
+          houseNumber: snapshot.houseNumber,
+          apartment: snapshot.apartment,
+          postalCode: snapshot.postalCode,
+          postOfficeBox: snapshot.postOfficeBox,
+          employmentStartDate: snapshot.startDate,
+        } : null,
+      }),
+    }),
 
   invitations: (organizationId: string): Promise<UserInvitation[]> =>
     request<UserInvitation[]>(`/api/organizations/${organizationId}/invitations/`),
