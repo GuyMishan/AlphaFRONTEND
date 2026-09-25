@@ -120,6 +120,8 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
       errors.push("בקוד פעולה 2 או 7 יש להשתמש באמצעי תשלום 1.");
     if (form.operationCode === 7 && form.employerAccountType !== 1)
       errors.push("בקוד פעולה 7, כאשר אין העברת כסף, סוג חשבון המעסיק חייב להיות 1.");
+    if (form.paymentMethodCode === 9 && (form.employerAccountType !== 1 || form.receiverAccountType !== 1))
+      errors.push("באמצעי תשלום 9 סוג חשבון המעסיק וסוג החשבון הקולט חייבים להיות 1.");
   } else {
     if (!form.refundReason) errors.push("סיבת בקשה להחזר כספים היא שדה חובה בדיווח שלילי.");
     if (form.operationCode === 5 && !form.paymentMethodCode)
@@ -155,8 +157,12 @@ function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInte
     errors.push("מספר האסמכתא בפועל הוא שדה חובה באמצעי תשלום זה.");
   if (!negative && !noMoneyCorrection && meta.receiverAccountType === 1 && meta.paymentMethodCode !== 6 && meta.paymentMethodCode !== 9 && !form.valueDate)
     errors.push("תאריך ערך הפקדה לקופה הוא שדה חובה כאשר החשבון הקולט הוא חשבון יצרן.");
-  if (!negative && !noMoneyCorrection && meta.employerAccountType === 2 && !form.trustAccountValueDate)
-    errors.push("תאריך ערך הפקדה לחשבון נאמנות הוא שדה חובה כאשר סוג חשבון המעסיק הוא חשבון נאמנות.");
+  if (!negative && !noMoneyCorrection
+    && (meta.employerAccountType === 2 || meta.receiverAccountType === 2)
+    && !form.trustAccountValueDate)
+    errors.push("תאריך ערך הפקדה לחשבון נאמנות הוא שדה חובה בכל העברה אל חשבון נאמנות או ממנו.");
+  if (!negative && meta.operationCode === 7 && Math.abs(totalDeposit) > 0.0001)
+    errors.push("בקוד פעולה 7 מתקנים תשלומים פטורים בלבד; סכום ההפרשה הרגיל חייב להיות 0.");
   if (!negative && meta.operationCode === 3 && (form.actualDepositAmount == null || form.actualDepositAmount <= 0))
     errors.push("בקוד פעולה 3 יש להזין סכום הפקדה נוספת בפועל הגדול מאפס.");
   if (!negative && meta.paymentMethodCode === 7 && !/^.{8,16}$/.test(form.masavSenderCode.trim()))
@@ -356,11 +362,16 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
           <section className="payment-panel"><h3>פרטי חשבון יצרן</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר</label><UiInput readOnly value={form.providerName} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי</label><UiInput readOnly value={providerAccount} placeholder="לא נמצאו פרטי חשבון בנתוני המוצר" /></div></div></section>
 
           {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
-            {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => patchMetadata("paymentMethodCode", value)} /></div> : null}
+            {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => {
+              setMetadataForm((current) => value === 9
+                ? { ...current, paymentMethodCode: value, employerAccountType: 1, receiverAccountType: 1 }
+                : { ...current, paymentMethodCode: value });
+              setError("");
+            }} /></div> : null}
             {!negative && !noMoneyCorrection && metadataForm.receiverAccountType === 1 && metadataForm.paymentMethodCode !== 6 && metadataForm.paymentMethodCode !== 9 ? <div className="field"><label>תאריך ערך הפקדה לקופה *</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative && metadataForm.operationCode === 3 ? <div className="field"><label>סכום הפקדה נוספת בפועל *</label><UiInput type="number" min="0" step="0.01" value={form.actualDepositAmount ?? ""} onChange={(e) => patch("actualDepositAmount", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative && metadataForm.paymentMethodCode === 7 ? <div className="field"><label>קוד פנימי של הגורם השולח במס״ב *</label><UiInput maxLength={16} value={form.masavSenderCode} onChange={(e) => patch("masavSenderCode", e.target.value)} placeholder="8–16 תווים" /></div> : null}
-            {!negative && !noMoneyCorrection && metadataForm.employerAccountType === 2 ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
+            {!negative && !noMoneyCorrection && (metadataForm.employerAccountType === 2 || metadataForm.receiverAccountType === 2) ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 3) ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
             {!negative ? <label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור"}</span><UiInput type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label> : null}
             {bankRequired ? <>

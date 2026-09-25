@@ -206,6 +206,7 @@ export type SourceManualReport = {
   updatedAt: string;
   employeeCount: number;
   productCount: number;
+  canBeCurrentCorrectionSource?: boolean;
 };
 
 export type ManualReportEmployeeSummary = {

@@ -29,7 +29,7 @@ export const derivedReportsApi = {
     const params = new URLSearchParams({ search, skip: String(skip), take: String(take) });
     return request<PagedResult<SourceManualReport>>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/source-reports?${params}`);
   },
-  create: (organizationId: string, employerId: string, payload: { sourceReportId: string; reportKind: ManualReportKind; reportingMonth: string; salaryPaymentDate: string | null; paymentAccountId?: string }) =>
+  create: (organizationId: string, employerId: string, payload: { sourceReportId: string; reportKind: ManualReportKind; reportingMonth: string; salaryPaymentDate: string | null; paymentAccountId?: string; correctionOperationCode?: 2 | 3 }) =>
     request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/derived`, {
       method: "POST",
       body: JSON.stringify(payload),
