@@ -6,7 +6,7 @@ import { CircleAlert, CircleCheck, UploadCloud, UserPlus } from "lucide-react";
 import * as XLSX from "xlsx";
 import { alphaApi } from "@/lib/api";
 import { isValidEmail } from "@/lib/validation";
-import type { EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
+import type { EmployerInterfacePreviousReference, EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
 import type { ManualPaymentInput } from "@/lib/manual-deposits-api";
 import type {
   ContributionComponent,
@@ -25,6 +25,7 @@ export type ExcelReportRow = {
   employeeNumber: string;
   product: ManualProductInput;
   metadata: EmployerInterfaceProductMetadataInput;
+  previousReference: EmployerInterfacePreviousReference;
   payment: ManualPaymentInput;
 };
 
@@ -267,6 +268,9 @@ function parseReportRow(raw: Record<string, unknown>, rowNumber: number, nationa
     employerAccountType: integer(pick(raw, reportAliases.employerAccountType)),
     receiverAccountType: integer(pick(raw, reportAliases.receiverAccountType)),
     oldPensionTypeCode: integer(pick(raw, reportAliases.oldPensionTypeCode)),
+  };
+
+  const previousReference: EmployerInterfacePreviousReference = {
     previousIdentifier: pick(raw, reportAliases.previousIdentifier),
     previousClearingIdentifier: pick(raw, reportAliases.previousClearingIdentifier),
     previousReferenceExceptionCode: integer(pick(raw, reportAliases.previousReferenceExceptionCode)),
@@ -316,6 +320,7 @@ function parseReportRow(raw: Record<string, unknown>, rowNumber: number, nationa
         employeeContributions,
       },
       metadata,
+      previousReference,
       payment,
     },
   };
