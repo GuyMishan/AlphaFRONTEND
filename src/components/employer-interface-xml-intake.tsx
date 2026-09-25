@@ -21,6 +21,7 @@ export function EmployerInterfaceXmlIntake({
   employerId,
   disabled = false,
   paymentAccountId,
+  salaryPaymentDate,
   onBeforeImport,
   onReportImported,
 }: {
@@ -28,6 +29,7 @@ export function EmployerInterfaceXmlIntake({
   employerId: string;
   disabled?: boolean;
   paymentAccountId: string;
+  salaryPaymentDate: string;
   onBeforeImport?: () => Promise<boolean>;
   onReportImported?: (result: EmployerInterfaceImportResult) => Promise<void> | void;
 }) {
@@ -71,7 +73,7 @@ export function EmployerInterfaceXmlIntake({
     setImporting(true);
     try {
       if (onBeforeImport && !await onBeforeImport()) return;
-      const result = await employerInterfaceApi.importUpload(organizationId, employerId, file, paymentAccountId);
+      const result = await employerInterfaceApi.importUpload(organizationId, employerId, file, paymentAccountId, salaryPaymentDate);
       if (result.reportId) {
         toast.success(`הדיווח נקלט בהצלחה. יובאו ${result.importedEmployees} עובדים${result.unmatchedRows ? `, ${result.unmatchedRows} רשומות לא הותאמו` : ""}.`);
         await onReportImported?.(result);
