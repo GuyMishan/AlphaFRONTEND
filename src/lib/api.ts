@@ -352,9 +352,9 @@ export const alphaApi = {
   employeePensionMix: (organizationId: string, employerId: string, employeeId: string): Promise<EmployeePensionProduct[]> => getSession()?.mode === "demo"
     ? Promise.resolve([])
     : request<EmployeePensionProduct[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix/`),
-  saveEmployeePensionMix: (organizationId: string, employerId: string, employeeId: string, products: EmployeePensionProductInput[]) => getSession()?.mode === "demo"
+  saveEmployeePensionMix: (organizationId: string, employerId: string, employeeId: string, products: EmployeePensionProductInput[], monthlySalary?: number) => getSession()?.mode === "demo"
     ? Promise.resolve()
-    : request<void>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix/`, { method: "PUT", body: JSON.stringify({ products }) }),
+    : request<void>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix/`, { method: "PUT", body: JSON.stringify({ products, monthlySalary }) }),
   pensionFunds: (productType: PensionProductType, search = "", take = 500): Promise<PensionFundOption[]> => getSession()?.mode === "demo"
     ? Promise.resolve([])
     : request<PensionFundOption[]>(`/api/reference-data/pension-funds${qs({ productType, search, take })}`),
