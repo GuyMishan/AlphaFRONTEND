@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Building2, CreditCard, Landmark, Save, Settings2, ShieldCheck, Users } from "lucide-react";
+import { Building2, CreditCard, Landmark, Save, Settings2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
@@ -21,7 +21,7 @@ import type {
   SubscriptionSummary,
 } from "@/lib/types";
 
-type TabKey = "general" | "employers" | "users" | "pension-payment" | "billing" | "subscription" | "employer-billing";
+type TabKey = "general" | "employers" | "users" | "pension-payment" | "billing" | "subscription";
 
 const tabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
   { key: "general", label: "פרטים כלליים", icon: Building2 },
@@ -30,7 +30,6 @@ const tabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
   { key: "pension-payment", label: "תשלום פנסיוני", icon: Landmark },
   { key: "billing", label: "חיוב ALPHA", icon: CreditCard },
   { key: "subscription", label: "מנוי", icon: Settings2 },
-  { key: "employer-billing", label: "חיוב למעסיקים", icon: ShieldCheck },
 ];
 
 export default function OrganizationProfilePage() {
@@ -98,12 +97,11 @@ export default function OrganizationProfilePage() {
     <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל ארגון" />
 
     {tab === "general" ? <GeneralTab profile={profile} onSaved={async () => { await load(); }} /> : null}
-    {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))} entitlements={entitlements} /> : null}
+    {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} employerBilling={employerBilling} canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))} entitlements={entitlements} /> : null}
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
     {tab === "pension-payment" ? <OrganizationPensionPaymentAccount organizationId={id} canManage={profile.canManageOrganization} /> : null}
     {tab === "billing" ? <AlphaBillingAccountForm organizationId={id} canManage={profile.canManageOrganization} /> : null}
     {tab === "subscription" && subscription && entitlements ? <SubscriptionTab subscription={subscription} entitlements={entitlements} /> : null}
-    {tab === "employer-billing" ? <EmployerBillingTab organizationId={id} items={employerBilling} canManage={profile.canManageOrganization} onChanged={setEmployerBilling} /> : null}
   </AppShell>;
 }
 
@@ -156,19 +154,30 @@ function GeneralTab({ profile, onSaved }: { profile: OrganizationProfileCenter; 
   </section>;
 }
 
-function EmployersTab({ organizationId, employers, canCreate, entitlements }: { organizationId: string; employers: Employer[]; canCreate: boolean; entitlements: EntitlementSnapshot | null }) {
+function EmployersTab({ organizationId, employers, employerBilling, canCreate, entitlements }: { organizationId: string; employers: Employer[]; employerBilling: OrganizationEmployerBilling[]; canCreate: boolean; entitlements: EntitlementSnapshot | null }) {
+  const billingByEmployer = new Map(employerBilling.map((item) => [item.employerId, item]));
+
   return <section className="card">
     <div className="card-head">
-      <div><h2>מעסיקים</h2><span style={{ color: "var(--muted)" }}>כל המעסיקים בארגון.</span></div>
+      <div><h2>מעסיקים</h2><span style={{ color: "var(--muted)" }}>כל המעסיקים בארגון ואופן החיוב שלהם. שינוי הגדרות החיוב מתבצע מתוך כרטיס המעסיק.</span></div>
       {canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}>מעסיק חדש</Link> : null}
     </div>
     {entitlements ? <div style={{ marginBottom: 18 }}><PlanUsage label="מעסיקים במסלול" usage={entitlements.employers} /></div> : null}
-    {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>מעסיק</th><th>מספר חברה</th><th>תיק ניכויים</th><th>סטטוס</th></tr></thead><tbody>
-      {employers.map((item) => <tr key={item.id}><td><Link className="profile-link" href={`/employers/${item.id}?organizationId=${organizationId}`}>{item.legalName}</Link></td><td>{item.registrationNumber}</td><td>{item.withholdingFileNumber}</td><td>{item.status === 2 ? "פעיל" : "בתהליך הקמה"}</td></tr>)}
+    {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>מעסיק</th><th>מספר חברה</th><th>תיק ניכויים</th><th>אופן חיוב</th><th>מחויב דרך</th><th>סטטוס</th></tr></thead><tbody>
+      {employers.map((item) => {
+        const billing = billingByEmployer.get(item.id);
+        return <tr key={item.id}>
+          <td><Link className="profile-link" href={`/employers/${item.id}?organizationId=${organizationId}`}>{item.legalName}</Link></td>
+          <td>{item.registrationNumber}</td>
+          <td>{item.withholdingFileNumber}</td>
+          <td>{billing ? (billing.billingMode === 2 ? "חיוב דרך הארגון" : "חיוב עצמאי") : "—"}</td>
+          <td>{billing?.billedThroughName || "—"}</td>
+          <td>{item.status === 2 ? "פעיל" : "בתהליך הקמה"}</td>
+        </tr>;
+      })}
     </tbody></table></div>}
   </section>;
 }
-
 function UsersTab({ organizationId, members, canManage }: { organizationId: string; members: OrganizationMemberSummary[]; canManage: boolean }) {
   const roleLabel = (role: number) => role === 1 ? "Admin" : role === 2 ? "Payroll Manager" : role === 3 ? "Operations Agent" : "Viewer";
   return <section className="card">
@@ -194,21 +203,3 @@ function SubscriptionTab({ subscription, entitlements }: { subscription: Subscri
   </div>;
 }
 
-function EmployerBillingTab({ organizationId, items, canManage, onChanged }: { organizationId: string; items: OrganizationEmployerBilling[]; canManage: boolean; onChanged: (items: OrganizationEmployerBilling[]) => void }) {
-  async function update(item: OrganizationEmployerBilling, mode: 1 | 2) {
-    try {
-      await alphaApi.updateEmployerBilling(organizationId, item.employerId, mode);
-      onChanged(await alphaApi.organizationEmployerBilling(organizationId));
-      toast.success("הגדרת החיוב של המעסיק עודכנה");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "עדכון החיוב נכשל");
-    }
-  }
-
-  return <section className="card">
-    <div className="card-head"><div><h2>הגדרות חיוב למעסיקים</h2><span style={{ color: "var(--muted)" }}>קובעים אם כל מעסיק מחויב ישירות או יורש את Billing הארגוני.</span></div></div>
-    {items.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>מעסיק</th><th>אופן חיוב</th><th>מחויב דרך</th></tr></thead><tbody>
-      {items.map((item) => <tr key={item.employerId}><td><b>{item.employerName}</b></td><td><UiSelect disabled={!canManage} value={item.billingMode} onChange={(e) => void update(item, Number(e.target.value) as 1 | 2)}><option value={1}>חיוב עצמאי</option><option value={2}>חיוב דרך הארגון</option></UiSelect></td><td><b>{item.billedThroughName}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{item.effectiveBillingConfigured ? "Billing Account מוגדר" : "Billing Account לא הוגדר"}{item.billingModeOverridden ? " · Override" : " · ברירת מחדל"}</div></td></tr>)}
-    </tbody></table></div>}
-  </section>;
-}
