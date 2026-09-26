@@ -179,3 +179,15 @@
 /* All pension product text/number controls, including optional policy number, are 40px. */
 .report-product-card .ui-control:not(textarea){height:40px!important;min-height:40px!important;max-height:40px!important}
 .contribution-table .contribution-input{height:40px!important;min-height:40px!important;max-height:40px!important}
+
+/* Payment details now uses the shared AppModal and a compact inferred-data summary. */
+.payment-modal.app-modal{height:min(820px,92vh);max-height:92vh}
+.payment-modal-body{overflow-y:auto;background:var(--bg)}
+.payment-modal .payment-layout{display:block}
+.payment-modal .payment-main{width:100%}
+.payment-modal .payment-provider-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(140px,1fr) minmax(0,1.4fr) minmax(0,1.4fr);gap:12px;align-items:center}
+.payment-modal .payment-provider-grid>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.payment-modal .payment-provider-grid small,.payment-modal .payment-summary-label{font-size:12px;color:var(--muted)}
+.payment-modal .payment-provider-grid b{overflow-wrap:anywhere}
+@media(max-width:900px){.payment-modal .payment-provider-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.payment-modal.app-modal{height:100dvh;max-height:100dvh}.payment-modal .payment-provider-grid{grid-template-columns:1fr}}

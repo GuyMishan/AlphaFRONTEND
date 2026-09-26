@@ -3,7 +3,8 @@
 import { UiDateInput, UiInput  } from "@/components/ui-controls";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
-import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, Trash2, X } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, Trash2 } from "lucide-react";
+import { AppModal } from "@/components/app-modal";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
 import { VirtualizedTable } from "@/components/virtualized-table";
 import { notify } from "@/components/notifications";
@@ -200,6 +201,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const [uploadingAttachment, setUploadingAttachment] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [resolvedPaymentAccount, setResolvedPaymentAccount] = useState<{ bankId: number; branchId: number; maskedAccountNumber: string } | null>(null);
 
   useEffect(() => {
     let active = true; setLoadingMetadata(true);
@@ -207,7 +209,8 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       employerInterfaceApi.productMetadata(organizationId, employerId, reportId, row.id),
       employerInterfaceApi.previousReference(organizationId, employerId, reportId, row.id),
       reportAttachmentsApi.list(organizationId, employerId, reportId),
-    ]).then(([item, previous, attachmentList]) => {
+      alphaApi.employerPaymentResolution(organizationId, employerId),
+    ]).then(([item, previous, attachmentList, paymentResolution]) => {
       if (!active) return;
       setMetadata(item);
       setMetadataForm({ operationCode: item.operationCode, depositStatus: item.depositStatus, employeeStatus: item.employeeStatus, statusStartDate: item.statusStartDate,
@@ -217,6 +220,13 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       setPreviousReference(previous);
       setAttachments(attachmentList.items);
       setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
+      const effectiveAccount = paymentResolution.account;
+      setResolvedPaymentAccount(effectiveAccount ? { bankId: effectiveAccount.bankId, branchId: effectiveAccount.branchId, maskedAccountNumber: effectiveAccount.maskedAccountNumber } : null);
+      if (effectiveAccount && !row.employerBankCode && !row.employerBranch && !row.employerAccount) {
+        setForm((current) => ({ ...current, employerBankCode: String(effectiveAccount.bankId), employerBranch: String(effectiveAccount.branchId), employerAccount: effectiveAccount.maskedAccountNumber }));
+        setBankSelection(String(effectiveAccount.bankId));
+        setBranchSelection(String(effectiveAccount.branchId));
+      }
     }).catch((err) => { if (active) setError(shortError(err instanceof Error ? err.message : "טעינת נתוני הדיווח נכשלה")); })
       .finally(() => { if (active) setLoadingMetadata(false); });
     return () => { active = false; };
@@ -348,18 +358,13 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
 
   const providerAccount = form.providerAccount || providerAccountFromReference(providerReference);
 
-  return <div className="report-modal-backdrop payment-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-    <div className="payment-modal" role="dialog" aria-modal="true" aria-label="פרטי תשלום">
-      <button className="payment-modal-close" onClick={onClose} aria-label="סגירה"><X size={20} /></button>
-      <div className="payment-modal-title">פרטי תשלום</div>
+  return <AppModal open title="פרטי תשלום" subtitle="השלמת הנתונים הנדרשים לדיווח בלבד" onClose={onClose} width="xl" className="payment-modal" bodyClassName="payment-modal-body" actions={<><button className="btn btn-primary" disabled={saving || loadingMetadata} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button><button className="btn btn-secondary" onClick={onClose}>ביטול</button></>}>
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק, ולכן אין להעביר ערך בשדה אמצעי התשלום.</div> : null}
-      <div className="payment-layout">
-        <aside className="payment-notes"><b>לתשומת לבך</b><p>פרטי חשבון היצרן נטענים אוטומטית מנתוני המוצר הקיימים במערכת.</p><p>יש לבחור את אמצעי התשלום ואת חשבון המעסיק שממנו בוצע התשלום.</p><p>בפעולות תיקון או ביטול יש לקשר לדיווח המקורי או לציין חריג מתאים כאשר אין קישור.</p></aside>
-        <div className="payment-main">
-          <section className="payment-panel"><h3>פרטי חשבון יצרן</h3><div className="payment-provider-grid"><div className="field payment-provider-name"><label>שם יצרן / מוצר</label><UiInput readOnly value={form.providerName} /></div><div className="payment-amount"><span>סכום</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div className="field payment-provider-account"><label>חשבון יצרן לזיכוי</label><UiInput readOnly value={providerAccount} placeholder="לא נמצאו פרטי חשבון בנתוני המוצר" /></div></div></section>
+      <div className="payment-layout"><div className="payment-main">
+          <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b>{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">חשבון מעסיק</span><b>{resolvedPaymentAccount ? `${resolvedPaymentAccount.bankId} - ${resolvedPaymentAccount.branchId} - ${resolvedPaymentAccount.maskedAccountNumber}` : "לא הוגדר חשבון פנסיוני"}</b></div></div></section>
 
           {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => {
@@ -460,7 +465,5 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
           </div></section> : null}
         </div>
       </div>
-      <div className="payment-modal-footer"><button className="btn btn-primary" disabled={saving || loadingMetadata} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button><button className="btn btn-secondary" onClick={onClose}>ביטול</button></div>
-    </div>
-  </div>;
+  </AppModal>;
 }
