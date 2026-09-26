@@ -191,3 +191,5 @@
 .payment-modal .payment-provider-grid b{overflow-wrap:anywhere}
 @media(max-width:900px){.payment-modal .payment-provider-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.payment-modal.app-modal{height:100dvh;max-height:100dvh}.payment-modal .payment-provider-grid{grid-template-columns:1fr}}
+
+.payment-auto-notice{display:flex;flex-direction:column;gap:4px;margin:0 0 14px}.payment-auto-notice span{font-size:13px;line-height:1.55}

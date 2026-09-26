@@ -201,7 +201,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const [uploadingAttachment, setUploadingAttachment] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [resolvedPaymentAccount, setResolvedPaymentAccount] = useState<{ bankId: number; branchId: number; maskedAccountNumber: string } | null>(null);
+  const [resolvedPaymentAccount, setResolvedPaymentAccount] = useState<{ bankId: number; branchId: number; maskedAccountNumber: string; mandateIsActive: boolean } | null>(null);
 
   useEffect(() => {
     let active = true; setLoadingMetadata(true);
@@ -213,17 +213,21 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
     ]).then(([item, previous, attachmentList, paymentResolution]) => {
       if (!active) return;
       setMetadata(item);
+      const automaticDebit = !isNegativeKind(item.reportKind) && !isDifferencesKind(item.reportKind)
+        && paymentResolution.account?.mandateIsActive === true && item.operationCode !== 2 && item.operationCode !== 7;
       setMetadataForm({ operationCode: item.operationCode, depositStatus: item.depositStatus, employeeStatus: item.employeeStatus, statusStartDate: item.statusStartDate,
         employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason,
-        paymentMethodCode: item.paymentMethodCode, employerAccountType: item.employerAccountType, receiverAccountType: item.receiverAccountType,
-        oldPensionTypeCode: item.oldPensionTypeCode });
+        paymentMethodCode: automaticDebit ? 6 : item.paymentMethodCode, employerAccountType: automaticDebit ? 1 : item.employerAccountType,
+        receiverAccountType: automaticDebit ? 1 : item.receiverAccountType, oldPensionTypeCode: item.oldPensionTypeCode });
       setPreviousReference(previous);
       setAttachments(attachmentList.items);
       setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
       const effectiveAccount = paymentResolution.account;
-      setResolvedPaymentAccount(effectiveAccount ? { bankId: effectiveAccount.bankId, branchId: effectiveAccount.branchId, maskedAccountNumber: effectiveAccount.maskedAccountNumber } : null);
-      if (effectiveAccount && !row.employerBankCode && !row.employerBranch && !row.employerAccount) {
-        setForm((current) => ({ ...current, employerBankCode: String(effectiveAccount.bankId), employerBranch: String(effectiveAccount.branchId), employerAccount: effectiveAccount.maskedAccountNumber }));
+      setResolvedPaymentAccount(effectiveAccount ? { bankId: effectiveAccount.bankId, branchId: effectiveAccount.branchId, maskedAccountNumber: effectiveAccount.maskedAccountNumber, mandateIsActive: effectiveAccount.mandateIsActive } : null);
+      if (automaticDebit) {
+        setForm((current) => ({ ...current, paymentMethod: "6", valueDate: null, trustAccountValueDate: null, referenceNumber: "",
+          employerBankName: "", employerBankCode: "0", employerBranch: "000", employerAccount: "00000000000000000000" }));
+      } else if (effectiveAccount && !row.employerBankCode && !row.employerBranch && !row.employerAccount) {
         setBankSelection(String(effectiveAccount.bankId));
         setBranchSelection(String(effectiveAccount.branchId));
       }
@@ -288,7 +292,8 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const operation6 = negative && metadataForm.operationCode === 6;
   const noMoneyCorrection = !negative && (metadataForm.operationCode === 2 || metadataForm.operationCode === 7);
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
-  const showOfficialPaymentMethod = !differences && (!negative || operation5);
+  const configuredPensionDebit = !negative && !differences && resolvedPaymentAccount?.mandateIsActive === true && !noMoneyCorrection;
+  const showOfficialPaymentMethod = !configuredPensionDebit && !differences && (!negative || operation5);
   const isOldPensionFund = row.productType === 1 && (row.fundClassification || "").includes("ותיק");
   const bankRequired = !differences && ((!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 7))
     || (operation5 && metadataForm.paymentMethodCode === 1));
@@ -366,7 +371,8 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       <div className="payment-layout"><div className="payment-main">
           <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b>{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">חשבון מעסיק</span><b>{resolvedPaymentAccount ? `${resolvedPaymentAccount.bankId} - ${resolvedPaymentAccount.branchId} - ${resolvedPaymentAccount.maskedAccountNumber}` : "לא הוגדר חשבון פנסיוני"}</b></div></div></section>
 
-          {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
+          {configuredPensionDebit ? <div className="notice notice-success payment-auto-notice"><b>התשלום הפנסיוני מוגדר אוטומטית</b><span>קיימת הרשאה פעילה לחיוב בחשבון הפנסיוני של המעסיק. ALPHA תדווח אמצעי תשלום 6 ותפיק את ערכי ממשק 006 הנדרשים ללא אסמכתא או פרטי העברה ידניים.</span></div> : null}
+          {!differences && (!configuredPensionDebit || negative) ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי העברה חיצונית"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => {
               setMetadataForm((current) => value === 9
                 ? { ...current, paymentMethodCode: value, employerAccountType: 1, receiverAccountType: 1 }
@@ -396,6 +402,8 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
                   return { ...current, operationCode: value, paymentMethodCode: 1, employerAccountType: 1 };
                 if (negative && value === 6)
                   return { ...current, operationCode: value, paymentMethodCode: null };
+                if (resolvedPaymentAccount?.mandateIsActive)
+                  return { ...current, operationCode: value, paymentMethodCode: 6, employerAccountType: 1, receiverAccountType: 1 };
                 return { ...current, operationCode: value, paymentMethodCode: null };
               });
               if (!negative && (value === 2 || value === 7))
