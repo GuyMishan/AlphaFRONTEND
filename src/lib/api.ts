@@ -35,6 +35,7 @@ import type {
   BillingCustomerRow,
   BillingAccountPricingProfile,
   BillingAccountPricingInput,
+  BillingAccountPricingType,
   SelfServiceBillingPricing,
   BillingPlan,
   BillingPlanInput,
