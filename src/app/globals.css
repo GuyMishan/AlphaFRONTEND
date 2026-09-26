@@ -1076,3 +1076,7 @@ td { font-size: 14px; }
 .ui-date-picker-button:hover:not(:disabled) { background: var(--blue-soft); color: var(--blue); }
 .ui-date-picker-button:disabled { cursor: default; opacity: .55; }
 .ui-date-native-picker { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; inset-inline-end: 20px; bottom: 0; }
+
+.billing-gate-modal { position: relative; }
+.billing-gate-close { position: absolute; inset-inline-end: 14px; top: 14px; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
+.billing-gate-close:hover { background: var(--blue-soft); color: var(--blue); }
