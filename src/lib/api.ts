@@ -35,6 +35,7 @@ import type {
   BillingCustomerRow,
   BillingAccountPricingProfile,
   BillingAccountPricingInput,
+  SelfServiceBillingPricing,
   BillingPlan,
   BillingPlanInput,
   BillingCalculation,
@@ -72,7 +73,6 @@ import type {
   PlatformSubscription,
   PlatformUser,
   SubscriptionSummary,
-  SelfServiceSubscriptionPlan,
   UserCandidate,
 } from "./types";
 import { demoEmployees, demoEmployers, demoOrganizations } from "./demo-data";
@@ -156,10 +156,6 @@ export const alphaApi = {
     request<SelfServiceOnboardingResult>("/api/onboarding/self-service", { method: "POST", body: JSON.stringify(payload) }),
   subscription: (organizationId: string): Promise<SubscriptionSummary> =>
     request<SubscriptionSummary>(`/api/organizations/${organizationId}/subscription`),
-  subscriptionPlans: (organizationId: string): Promise<SelfServiceSubscriptionPlan[]> =>
-    request<SelfServiceSubscriptionPlan[]>(`/api/organizations/${organizationId}/subscription/plans`),
-  changeSubscriptionPlan: (organizationId: string, planId: string): Promise<SubscriptionSummary> =>
-    request<SubscriptionSummary>(`/api/organizations/${organizationId}/subscription/plan`, { method: "PUT", body: JSON.stringify({ planId }) }),
   entitlements: (organizationId: string): Promise<EntitlementSnapshot> =>
     request<EntitlementSnapshot>(`/api/organizations/${organizationId}/entitlements`),
   platformPlans: (): Promise<Plan[]> =>
@@ -201,6 +197,14 @@ export const alphaApi = {
     }),
   refundBillingPayment: (paymentId: string, payload: { amount: number; reason: string; idempotencyKey: string }) =>
     request(`/api/platform/billing/payments/${paymentId}/refunds`, { method: "POST", body: JSON.stringify(payload) }),
+  organizationSelfServicePricing: (organizationId: string): Promise<SelfServiceBillingPricing> =>
+    request<SelfServiceBillingPricing>(`/api/organizations/${organizationId}/billing/pricing`),
+  updateOrganizationSelfServicePricing: (organizationId: string, billingType: BillingAccountPricingType): Promise<SelfServiceBillingPricing> =>
+    request<SelfServiceBillingPricing>(`/api/organizations/${organizationId}/billing/pricing`, { method: "PUT", body: JSON.stringify({ billingType }) }),
+  employerSelfServicePricing: (organizationId: string, employerId: string): Promise<SelfServiceBillingPricing> =>
+    request<SelfServiceBillingPricing>(`/api/organizations/${organizationId}/employers/${employerId}/billing/pricing`),
+  updateEmployerSelfServicePricing: (organizationId: string, employerId: string, billingType: BillingAccountPricingType): Promise<SelfServiceBillingPricing> =>
+    request<SelfServiceBillingPricing>(`/api/organizations/${organizationId}/employers/${employerId}/billing/pricing`, { method: "PUT", body: JSON.stringify({ billingType }) }),
   organizationBillingContext: (organizationId: string): Promise<BillingCustomerContext> =>
     request<BillingCustomerContext>(`/api/organizations/${organizationId}/billing/context`),
   organizationBillingPeriods: (organizationId: string): Promise<BillingPeriod[]> =>
