@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Building2, CreditCard, Landmark, Save, Settings2, Users } from "lucide-react";
+import { Building2, CreditCard, Landmark, Save, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
-import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
+import { SubscriptionBillingPanel } from "@/components/subscription-billing-panel";
 import { OrganizationPensionPaymentAccount } from "@/components/organization-pension-payment-account";
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
@@ -21,15 +21,14 @@ import type {
   SubscriptionSummary,
 } from "@/lib/types";
 
-type TabKey = "general" | "employers" | "users" | "pension-payment" | "billing" | "subscription";
+type TabKey = "general" | "employers" | "users" | "pension-payment" | "billing";
 
 const tabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
   { key: "general", label: "פרטים כלליים", icon: Building2 },
   { key: "employers", label: "מעסיקים", icon: Landmark },
   { key: "users", label: "משתמשים והרשאות", icon: Users },
   { key: "pension-payment", label: "תשלום פנסיוני", icon: Landmark },
-  { key: "billing", label: "חיוב ALPHA", icon: CreditCard },
-  { key: "subscription", label: "מנוי", icon: Settings2 },
+  { key: "billing", label: "מנוי וחיוב ALPHA", icon: CreditCard },
 ];
 
 export default function OrganizationProfilePage() {
@@ -100,8 +99,7 @@ export default function OrganizationProfilePage() {
     {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} employerBilling={employerBilling} canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))} entitlements={entitlements} /> : null}
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
     {tab === "pension-payment" ? <OrganizationPensionPaymentAccount organizationId={id} canManage={profile.canManageOrganization} /> : null}
-    {tab === "billing" ? <AlphaBillingAccountForm organizationId={id} canManage={profile.canManageOrganization} /> : null}
-    {tab === "subscription" && subscription && entitlements ? <SubscriptionTab subscription={subscription} entitlements={entitlements} /> : null}
+    {tab === "billing" && subscription && entitlements ? <SubscriptionBillingPanel organizationId={id} subscription={subscription} entitlements={entitlements} canManage={profile.canManageOrganization} onChanged={load} /> : null}
   </AppShell>;
 }
 
@@ -188,18 +186,3 @@ function UsersTab({ organizationId, members, canManage }: { organizationId: stri
     <div className="notice notice-info" style={{ marginTop: 18 }}>משתמש חדש מצטרף דרך הזמנה במייל, הרשמה ואימות OTP. ההרשאות נוצרות רק לאחר השלמת האימות.</div>
   </section>;
 }
-
-function SubscriptionTab({ subscription, entitlements }: { subscription: SubscriptionSummary; entitlements: EntitlementSnapshot }) {
-  return <div className="employer-profile-stack">
-    <section className="card">
-      <div className="card-head"><div><h2>מסלול {subscription.name}</h2><span style={{ color: "var(--muted)" }}>קוד מסלול: {subscription.code}</span></div><span className="badge badge-green">פעיל</span></div>
-      <div className="grid stats">
-        <PlanUsage label="מעסיקים" usage={entitlements.employers} />
-        <PlanUsage label="עובדים פעילים" usage={entitlements.activeEmployees} />
-        <PlanUsage label="משתמשים" usage={entitlements.users} />
-      </div>
-    </section>
-    <div className="notice notice-info">שינוי Plan מתבצע כרגע על ידי Platform Admin. מסך זה מציג לארגון את המסלול, המגבלות והשימוש בפועל.</div>
-  </div>;
-}
-
