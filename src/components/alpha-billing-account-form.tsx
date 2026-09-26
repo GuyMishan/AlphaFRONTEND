@@ -243,26 +243,19 @@ export function AlphaBillingAccountForm({
 
         <div className="field">
           <label>אמצעי תשלום *</label>
-          <div className="grid two-cols billing-method-choices">
-            <UiChoiceCard disabled={!canManage} className="billing-method-card" selected={details.paymentMethodType === 1} onClick={() => setDetails({ ...details, paymentMethodType: 1 })}>
+          <div className="billing-method-choices">
+            <UiChoiceCard disabled={!canManage} className="billing-method-card selected" selected>
               <CreditCard size={24} /><b>כרטיס אשראי</b><p>חיבור מאובטח דרך ספק הסליקה. ALPHA לא שומרת מספר כרטיס מלא או CVV.</p>
-            </UiChoiceCard>
-            <UiChoiceCard disabled={!canManage} className="billing-method-card" selected={details.paymentMethodType === 2} onClick={() => setDetails({ ...details, paymentMethodType: 2 })}>
-              <Landmark size={24} /><b>הרשאה לחיוב חשבון</b><p>חיוב באמצעות הרשאה בנקאית לאחר חיבור תשתית ה־Bank Debit.</p>
             </UiChoiceCard>
           </div>
 
-          <div className={`billing-method-next ${details.paymentMethodType === 1 ? "card-method" : "bank-method"}`}>
-            <div className="billing-source-icon">{details.paymentMethodType === 1 ? <CreditCard size={22} /> : <Landmark size={22} />}</div>
+          <div className="billing-method-next card-method">
+            <div className="billing-source-icon"><CreditCard size={22} /></div>
             <div>
-              <b>{details.paymentMethodType === 1 ? "נבחר כרטיס אשראי" : "נבחרה הרשאה לחיוב חשבון"}</b>
-              <p>{details.paymentMethodType === 1
-                ? cardConnected
-                  ? "הכרטיס המחובר יישאר פעיל. שמירה תעדכן גם את פרטי חשבון החיוב."
-                  : "בלחיצה על שמירה פרטי החשבון יישמרו ומיד תועברו לחיבור הכרטיס המאובטח."
-                : bankConnected
-                  ? "הרשאת החיוב המחוברת תישאר פעילה. שמירה תעדכן גם את פרטי חשבון החיוב."
-                  : "בלחיצה על שמירה פרטי החשבון ואמצעי התשלום יישמרו יחד. חיבור Bank Debit אוטומטי יופעל לאחר חיבור התשתית המתאימה."}</p>
+              <b>כרטיס אשראי</b>
+              <p>{cardConnected
+                ? "הכרטיס המחובר יישאר פעיל. שמירה תעדכן גם את פרטי חשבון החיוב."
+                : "בלחיצה על שמירה פרטי החשבון יישמרו ומיד תועברו לחיבור הכרטיס המאובטח."}</p>
             </div>
           </div>
         </div>
