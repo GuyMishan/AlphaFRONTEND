@@ -34,6 +34,8 @@ export function ScopeController() {
   const router = useRouter();
   const level = requiredScope(pathname);
   const isDashboard = pathname === "/dashboard";
+  const isAccessPage = pathname === "/access";
+  const isPlatformAdmin = Boolean(getSession()?.platformAdmin);
   const isAdminDashboard = isDashboard && Boolean(getSession()?.platformAdmin);
   const [scope, setScope] = useState<GlobalScopeContext | null>(null);
   const [organizationId, setOrganizationId] = useState("");
@@ -220,7 +222,7 @@ export function ScopeController() {
   const showOrganizationSelector =
     hasAnyOrganizationScope &&
     relevantOrganizations.length > 1 &&
-    (level === "organization" || selectedOrganizationHasScope);
+    (isPlatformAdmin || level === "organization" || selectedOrganizationHasScope);
 
   const employerOptions = selectedOrganizationHasScope
     ? organizationEmployers
@@ -230,6 +232,7 @@ export function ScopeController() {
     pathname !== "/employers" &&
     employerOptions.length > 1 &&
     (
+      isAccessPage ||
       (isDashboard && selectedOrganizationHasScope) ||
       level !== "organization" ||
       !hasAnyOrganizationScope
