@@ -91,7 +91,7 @@ export default function RegisterPage() {
       });
 
       if (!response.ok) {
-        if (response.status === 409) toast.error("כבר קיים משתמש עם אותו שילוב של תעודת זהות + מספר פלאפון. כרגע לא ניתן ליצור משתמש נוסף עם אותו שילוב; נטפל בתרחיש הזה בהמשך.");
+        if (response.status === 409) toast.error("כבר קיים משתמש עם תעודת הזהות הזו.");
         else if (response.status === 429) toast.error("ניתן לבקש קוד חדש בעוד דקה.");
         else toast.error("לא ניתן לשלוח קוד כרגע. נסו שוב מאוחר יותר.");
         return;
@@ -123,7 +123,7 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         if (response.status === 401) toast.error("הקוד שגוי, פג תוקף או נוצל. נסו שוב או בקשו קוד חדש.");
-        else if (response.status === 409) toast.error("כבר קיים משתמש עם אותו שילוב של תעודת זהות + מספר פלאפון. כרגע לא ניתן ליצור משתמש נוסף עם אותו שילוב; נטפל בתרחיש הזה בהמשך.");
+        else if (response.status === 409) toast.error("כבר קיים משתמש עם תעודת הזהות הזו.");
         else toast.error("לא ניתן להשלים את ההרשמה כרגע.");
         return;
       }
