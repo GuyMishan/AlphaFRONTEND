@@ -99,7 +99,7 @@ export default function OrganizationProfilePage() {
     {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} employerBilling={employerBilling} canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))} entitlements={entitlements} /> : null}
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
     {tab === "pension-payment" ? <OrganizationPensionPaymentAccount organizationId={id} canManage={profile.canManageOrganization} /> : null}
-    {tab === "billing" && subscription && entitlements ? <SubscriptionBillingPanel organizationId={id} subscription={subscription} entitlements={entitlements} canManage={profile.canManageOrganization} onChanged={load} /> : null}
+    {tab === "billing" && subscription && entitlements ? <SubscriptionBillingPanel organizationId={id} entitlements={entitlements} canManage={profile.canManageOrganization} onChanged={load} /> : null}
   </AppShell>;
 }
 
