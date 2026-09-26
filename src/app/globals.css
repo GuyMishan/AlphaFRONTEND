@@ -101,9 +101,9 @@ a { color: inherit; text-decoration: none; }
 .avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
 .main { padding: 32px 34px 60px; max-width: 1500px; margin: auto; }
 .scopebar { min-height: 67px; padding: 10px 34px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: flex-start; }
-.scope-selects { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.scope-selects { display: flex; align-items: flex-end; gap: 12px; flex-wrap: nowrap; min-width: 0; }
 .scope-selects label > span { display: block; font-size: 11px; color: var(--muted); font-weight: 650; margin: 0 2px 3px; }
-.scope-selects label { min-width: 180px; max-width: 280px; flex: 0 1 240px; }
+.scope-selects label { width: clamp(180px, 16vw, 280px); min-width: 180px; max-width: 280px; flex: 0 1 auto; }
 .scope-selects label > div { position: relative; min-width: 0; max-width: 100%; }
 .scope-selects label .ui-select { width: 100%; min-width: 180px; max-width: 280px; }
 .scope-selects label .ui-select-trigger { width: 100%; min-width: 0; max-width: 100%; }
