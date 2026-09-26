@@ -128,20 +128,33 @@ export function AlphaBillingAccountForm({
     }
   }, [organizationId, employerId]);
 
-  async function saveDetails(event: React.FormEvent) {
+  async function saveDetails(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canManage) return;
+    if (!event.currentTarget.reportValidity()) return;
+
+    const normalized = {
+      ...details,
+      billingName: details.billingName.trim(),
+      taxId: details.taxId.trim(),
+      invoiceEmail: details.invoiceEmail.trim(),
+      billingAddress: details.billingAddress.trim(),
+    };
+    if (!normalized.billingName || !normalized.taxId || !normalized.invoiceEmail || !normalized.billingAddress) {
+      toast.error("יש למלא את כל שדות החובה לפני שמירת חשבון החיוב.");
+      return;
+    }
 
     setSaving(true);
     try {
       const value = employerId
-        ? await alphaApi.saveEmployerBillingAccount(organizationId, employerId, details)
-        : await alphaApi.saveOrganizationBillingAccount(organizationId, details);
+        ? await alphaApi.saveEmployerBillingAccount(organizationId, employerId, normalized)
+        : await alphaApi.saveOrganizationBillingAccount(organizationId, normalized);
 
       setAccount(value);
       if (onSaved) await onSaved();
 
-      if (details.paymentMethodType === 1 && !value.providerPaymentMethodId) {
+      if (normalized.paymentMethodType === 1 && !value.providerPaymentMethodId) {
         const url = new URL(window.location.href);
         url.searchParams.delete("payment");
         url.searchParams.set("tab", "billing");
@@ -223,14 +236,14 @@ export function AlphaBillingAccountForm({
 
       <form className="form" onSubmit={saveDetails}>
         <div className="grid compact-payment-grid">
-          <div className="field"><label>שם לחיוב</label><UiInput disabled={!canManage} maxLength={200} value={details.billingName} onChange={(e) => setDetails({ ...details, billingName: e.target.value })} /></div>
-          <div className="field"><label>ח.פ. / עוסק</label><UiInput disabled={!canManage} maxLength={30} value={details.taxId} onChange={(e) => setDetails({ ...details, taxId: e.target.value })} /></div>
-          <div className="field"><label>אימייל לחשבוניות</label><UiInput disabled={!canManage} type="email" maxLength={320} value={details.invoiceEmail} onChange={(e) => setDetails({ ...details, invoiceEmail: e.target.value })} /></div>
-          <div className="field"><label>כתובת לחיוב</label><UiInput disabled={!canManage} maxLength={500} value={details.billingAddress} onChange={(e) => setDetails({ ...details, billingAddress: e.target.value })} /></div>
+          <div className="field"><label>שם לחיוב *</label><UiInput disabled={!canManage} required maxLength={200} value={details.billingName} onChange={(e) => setDetails({ ...details, billingName: e.target.value })} /></div>
+          <div className="field"><label>ח.פ. / עוסק *</label><UiInput disabled={!canManage} required maxLength={30} value={details.taxId} onChange={(e) => setDetails({ ...details, taxId: e.target.value })} /></div>
+          <div className="field"><label>אימייל לחשבוניות *</label><UiInput disabled={!canManage} required type="email" maxLength={320} value={details.invoiceEmail} onChange={(e) => setDetails({ ...details, invoiceEmail: e.target.value })} /></div>
+          <div className="field"><label>כתובת לחיוב *</label><UiInput disabled={!canManage} required maxLength={500} value={details.billingAddress} onChange={(e) => setDetails({ ...details, billingAddress: e.target.value })} /></div>
         </div>
 
         <div className="field">
-          <label>אמצעי תשלום</label>
+          <label>אמצעי תשלום *</label>
           <div className="grid two-cols billing-method-choices">
             <UiChoiceCard disabled={!canManage} className="billing-method-card" selected={details.paymentMethodType === 1} onClick={() => setDetails({ ...details, paymentMethodType: 1 })}>
               <CreditCard size={24} /><b>כרטיס אשראי</b><p>חיבור מאובטח דרך ספק הסליקה. ALPHA לא שומרת מספר כרטיס מלא או CVV.</p>
