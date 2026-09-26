@@ -33,6 +33,7 @@ export type ManualDepositRow = {
   employerBranch: string;
   employerAccount: string;
   confirmationFileName: string;
+  requiresCompletion?: boolean;
 };
 
 export type ManualPaymentInput = Pick<ManualDepositRow,

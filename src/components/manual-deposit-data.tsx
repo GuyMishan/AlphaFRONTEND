@@ -67,7 +67,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
       maxHeight={560}
       tableClassName="deposit-table"
       wrapperClassName="deposit-table-wrap"
-      columns={[{ key: "provider", label: "שם יצרן / מוצר" }, { key: "providerAccount", label: "חשבון יצרן" }, { key: "amount", label: "סכום" }, { key: "employerAccount", label: "חשבון מעסיק" }, { key: "reference", label: "אסמכתא" }, { key: "date", label: "תאריך ערך" }, { key: "type", label: "סוג תקבול" }, { key: "edit", label: "" }]}
+      columns={[{ key: "provider", label: "שם יצרן / מוצר" }, { key: "providerAccount", label: "חשבון יצרן" }, { key: "amount", label: "סכום" }, { key: "employerAccount", label: "חשבון מעסיק" }, { key: "reference", label: "אסמכתא" }, { key: "date", label: "תאריך ערך" }, { key: "type", label: "סוג תקבול" }, { key: "status", label: "סטטוס" }, { key: "edit", label: "" }]}
       renderCells={(row) => [
         <><b>{row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני"}</b><span>{row.employeeName} · {row.policyNumber || "ללא מס׳ פוליסה"}</span></>,
         <span className="account-number">{row.providerAccount || "—"}</span>,
@@ -76,6 +76,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
         row.referenceNumber || "—",
         row.valueDate ? formatDate(row.valueDate) : "—",
         row.reportingType ? `קוד ${row.reportingType}` : "—",
+        <span className={`badge ${row.requiresCompletion ? "badge-yellow" : "badge-green"}`}>{row.requiresCompletion ? "דורש השלמה" : "מוכן"}</span>,
         <button className="icon-button" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}
