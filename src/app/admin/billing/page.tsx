@@ -462,7 +462,7 @@ export default function AdminBillingPage() {
       }}
       style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,.48)", display: "grid", placeItems: "center", padding: 20 }}
     >
-      <section role="dialog" aria-modal="true" aria-label="עריכת חיוב לקוח" className="card" style={{ width: "min(500px,96vw)", padding: 22 }}>
+      <section role="dialog" aria-modal="true" aria-label="עריכת חיוב לקוח" className="card" style={{ width: "min(540px,96vw)", minHeight: 390, padding: 26, display: "flex", flexDirection: "column" }}>
         <div className="card-head">
           <div>
             <h2>עריכת מסלול ותעריף · {pricingCustomer.payerName}</h2>
@@ -484,7 +484,7 @@ export default function AdminBillingPage() {
           </label> : null}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: "auto", paddingTop: 28 }}>
           <button className="btn btn-secondary" type="button" onClick={() => setPricingCustomer(null)}>ביטול</button>
           <button className="btn btn-primary" type="button" disabled={saving} onClick={() => void savePricing()}>
             <Save size={16} />{saving ? "שומר..." : "שמירה"}
