@@ -27,7 +27,6 @@ export type PensionEditorProduct = {
   salaryMonth?: string;
   salaryAllocationType?: SalaryAllocationType;
   salaryAllocationValue?: number | null;
-  allocationOrder?: number;
   reportingType: string;
   salaryLayer: string;
   section14: boolean;
@@ -64,7 +63,7 @@ export function resolvePensionAllocations(monthlySalary: number, products: Pensi
   const resolved = new Map<number, number>();
   const active = products.map((product, index) => ({ product, index }))
     .filter(({ product }) => product.isActive !== false)
-    .sort((a, b) => Number(a.product.allocationOrder ?? a.index) - Number(b.product.allocationOrder ?? b.index));
+;
   if (!active.length) return { resolved, error: "" };
   if (monthlySalary < 0) return { resolved, error: "שכר חודשי לא יכול להיות שלילי." };
   if (monthlySalary === 0) {
@@ -73,8 +72,6 @@ export function resolvePensionAllocations(monthlySalary: number, products: Pensi
   }
   if (active.filter(({ product }) => Number(product.salaryAllocationType ?? 1) === 4).length > 1)
     return { resolved, error: "אפשר להגדיר מוצר אחד בלבד בשיטת יתרת שכר." };
-  const orders = active.map(({ product, index }) => Number(product.allocationOrder ?? index));
-  if (new Set(orders).size !== orders.length) return { resolved, error: "סדר החישוב חייב להיות ייחודי לכל מוצר פעיל." };
 
   let allocated = 0;
   for (const { product, index } of active) {
@@ -108,7 +105,6 @@ export function normalizePensionEditorProducts(monthlySalary: number, products: 
         section14Code,
         section14: section14Code === 1 || section14Code === 2,
         section14StartDate: section14Code === 2 || section14Code === 4 ? product.section14StartDate : null,
-        allocationOrder: Number(product.allocationOrder ?? index),
         salaryAllocationValue: Number(product.salaryAllocationType ?? 1) === 4 ? null : product.salaryAllocationValue,
         employerContributions: product.employerContributions.map(normalize),
         employeeContributions: product.employeeContributions.map(normalize),
@@ -168,7 +164,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
 export function createEmptyPensionEditorProduct(context: "employee" | "report", order: number, month?: string): PensionEditorProduct {
   const base: PensionEditorProduct = {
     productType: 1, policyNumber: "", fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", fundClassification: "", salary: 0,
-    salaryAllocationType: 1, salaryAllocationValue: null, allocationOrder: order, reportingType: "1", salaryLayer: "1", section14: false,
+    salaryAllocationType: 1, salaryAllocationValue: null, reportingType: "1", salaryLayer: "1", section14: false,
     section14Code: 3, section14StartDate: null, employerContributions: employerComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
     employeeContributions: employeeComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
   };
@@ -240,7 +236,6 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
           {context === "report" ? <div className="field"><label>חודש שכר *</label><UiDateInput mode="month" disabled={!editable} required value={(product.salaryMonth ?? month ?? "").slice(0, 7)} onValueChange={(value) => updateProduct(index, { salaryMonth: value ? `${value}-01` : "" })} /></div> : null}
           <div className="field"><label>שיטת הקצאת שכר *</label><ReferenceOptionSelect category="salary-allocation-type" disabled={!editable} value={allocationType} required onChange={(value) => { const next = Number(value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: next, salaryAllocationValue: next === 4 ? null : next === 1 ? monthlySalary : product.salaryAllocationValue ?? product.salary ?? 0 }); }} /></div>
           {allocationType !== 4 ? <div className="field"><label>{allocationValueLabel(allocationType)} *</label><UiInput disabled={!editable || allocationType === 1} type="number" min="0" max={allocationType === 2 ? 100 : undefined} step="0.01" value={allocationType === 1 ? monthlySalary : product.salaryAllocationValue ?? ""} onChange={(e) => updateProduct(index, { salaryAllocationValue: Number(e.target.value) })} /></div> : <div className="field"><label>ערך הקצאה</label><UiInput disabled value="מחושב אוטומטית" /></div>}
-          <div className="field"><label>סדר חישוב *</label><UiInput disabled={!editable} type="number" min="0" step="1" value={product.allocationOrder ?? index} onChange={(e) => updateProduct(index, { allocationOrder: Number(e.target.value) })} /></div>
           <div className="field"><label>שכר מבוטח מחושב</label><UiInput disabled value={`₪${insuredSalary.toLocaleString("he-IL")}`} /></div>
           {context === "employee" ? <><div className="field"><label>גוף מוסדי</label><UiInput disabled={!editable} maxLength={160} value={product.institutionalBody ?? ""} onChange={(e) => updateProduct(index, { institutionalBody: e.target.value })} /></div><div className="field"><label>יצרן</label><UiInput disabled={!editable} maxLength={160} value={product.manufacturer ?? ""} onChange={(e) => updateProduct(index, { manufacturer: e.target.value })} /></div><div className="field"><label>תחילת תוקף *</label><UiDateInput disabled={!editable} value={product.effectiveFrom ?? ""} onValueChange={(value) => updateProduct(index, { effectiveFrom: value })} /></div><div className="field"><label>סיום תוקף</label><UiDateInput disabled={!editable} min={product.effectiveFrom || undefined} value={product.effectiveTo ?? ""} onValueChange={(value) => updateProduct(index, { effectiveTo: value || null })} /></div></> : null}
           <div className="field"><label>{context === "employee" ? "סוג תקבול ברירת מחדל *" : "סוג תקבול *"}</label><EmployerInterfaceOptionSelect category="receipt-type" value={Number(product.reportingType) || null} disabled={!editable} required onChange={(value) => updateProduct(index, { reportingType: value == null ? "" : String(value) })} /></div>
