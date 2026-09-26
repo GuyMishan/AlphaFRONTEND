@@ -193,3 +193,8 @@
 @media(max-width:620px){.payment-modal.app-modal{height:100dvh;max-height:100dvh}.payment-modal .payment-provider-grid{grid-template-columns:1fr}}
 
 .payment-auto-notice{display:flex;flex-direction:column;gap:4px;margin:0 0 14px}.payment-auto-notice span{font-size:13px;line-height:1.55}
+
+/* Payment modal: fixed footer and readable LTR account identifiers inside RTL UI. */
+.payment-modal .app-modal-actions{margin-top:auto;flex:0 0 auto;background:var(--surface);z-index:2}
+.payment-modal-body{min-height:0}
+.account-number{direction:ltr;unicode-bidi:isolate;display:inline-block;text-align:left}

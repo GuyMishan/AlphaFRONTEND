@@ -27,6 +27,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<ManualDepositRow | null>(null);
   const [employer, setEmployer] = useState<Employer | null>(null);
+  const [paymentAccount, setPaymentAccount] = useState<{ bankId: number; branchId: number; maskedAccountNumber: string } | null>(null);
 
   async function load(search = query) {
     setLoading(true); setError("");
@@ -39,6 +40,10 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
     setQuery("");
     void load("");
     alphaApi.employer(organizationId, employerId).then(setEmployer).catch(() => setEmployer(null));
+    alphaApi.employerPaymentResolution(organizationId, employerId).then((resolution) => {
+      const account = resolution.account;
+      setPaymentAccount(account ? { bankId: account.bankId, branchId: account.branchId, maskedAccountNumber: account.maskedAccountNumber } : null);
+    }).catch(() => setPaymentAccount(null));
   }, [organizationId, employerId, reportId]);
 
   useEffect(() => {
@@ -65,9 +70,9 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
       columns={[{ key: "provider", label: "שם יצרן / מוצר" }, { key: "providerAccount", label: "חשבון יצרן" }, { key: "amount", label: "סכום" }, { key: "employerAccount", label: "חשבון מעסיק" }, { key: "reference", label: "אסמכתא" }, { key: "date", label: "תאריך ערך" }, { key: "type", label: "סוג תקבול" }, { key: "edit", label: "" }]}
       renderCells={(row) => [
         <><b>{row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני"}</b><span>{row.employeeName} · {row.policyNumber || "ללא מס׳ פוליסה"}</span></>,
-        row.providerAccount || "—",
+        <span className="account-number">{row.providerAccount || "—"}</span>,
         `₪${Number(row.totalDeposit).toLocaleString("he-IL")}`,
-        formatEmployerAccount(row),
+        <span className="account-number">{formatEmployerAccount(row, paymentAccount)}</span>,
         row.referenceNumber || "—",
         row.valueDate ? formatDate(row.valueDate) : "—",
         row.reportingType ? `קוד ${row.reportingType}` : "—",
@@ -82,9 +87,14 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
   </>;
 }
 
-function formatEmployerAccount(row: ManualDepositRow) {
+function formatEmployerAccount(row: ManualDepositRow, resolved: { bankId: number; branchId: number; maskedAccountNumber: string } | null) {
+  if (resolved) return formatAccount(resolved.bankId, resolved.branchId, resolved.maskedAccountNumber);
   const values = [row.employerBankCode, row.employerBranch, row.employerAccount].filter(Boolean);
-  return values.length ? values.join(" - ") : "—";
+  if (!values.length || values.every((value) => /^0+$/.test(String(value)))) return "—";
+  return values.join(" - ");
+}
+function formatAccount(bank: string | number, branch: string | number, account: string) {
+  return `${bank} - ${branch} - ${account}`;
 }
 function formatDate(value: string) {
   return formatDateDDMMYYYY(value, value);
@@ -369,7 +379,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק, ולכן אין להעביר ערך בשדה אמצעי התשלום.</div> : null}
       <div className="payment-layout"><div className="payment-main">
-          <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b>{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">חשבון מעסיק</span><b>{resolvedPaymentAccount ? `${resolvedPaymentAccount.bankId} - ${resolvedPaymentAccount.branchId} - ${resolvedPaymentAccount.maskedAccountNumber}` : "לא הוגדר חשבון פנסיוני"}</b></div></div></section>
+          <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">חשבון מעסיק</span><b className="account-number">{resolvedPaymentAccount ? formatAccount(resolvedPaymentAccount.bankId, resolvedPaymentAccount.branchId, resolvedPaymentAccount.maskedAccountNumber) : "לא הוגדר חשבון פנסיוני"}</b></div></div></section>
 
           {configuredPensionDebit ? <div className="notice notice-success payment-auto-notice"><b>התשלום הפנסיוני מוגדר אוטומטית</b><span>קיימת הרשאה פעילה לחיוב בחשבון הפנסיוני של המעסיק. ALPHA תדווח אמצעי תשלום 6 ותפיק את ערכי ממשק 006 הנדרשים ללא אסמכתא או פרטי העברה ידניים.</span></div> : null}
           {!differences && (!configuredPensionDebit || negative) ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי העברה חיצונית"}</h3><div className="payment-method-grid">
