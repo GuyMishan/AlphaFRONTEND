@@ -359,18 +359,6 @@ export type Plan = {
   isActive: boolean;
 };
 
-export type SelfServiceSubscriptionPlan = {
-  id: string;
-  code: string;
-  name: string;
-  maxEmployers: number;
-  maxEmployees: number;
-  maxUsers: number;
-  isActive: boolean;
-  employeeUnitPrice: number | null;
-  rowUnitPrice: number | null;
-};
-
 export type SubscriptionSummary = {
   id: string;
   organizationId: string;
@@ -781,6 +769,11 @@ export type BillingPlan = {
 };
 
 export type BillingAccountPricingType = "Free" | "PerEmployee" | "PerReportRow";
+export type SelfServiceBillingPricing = {
+  billingType: BillingAccountPricingType;
+  unitPrice: number;
+  accountValid: boolean;
+};
 
 export type BillingAccountPricingProfile = {
   billingAccountId: string;
