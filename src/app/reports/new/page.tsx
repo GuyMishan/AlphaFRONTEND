@@ -367,7 +367,7 @@ export default function NewReportPage() {
       if (step === 1) {
         setStepOneAttempted(true);
         const localError = validateStepOne();
-        if (localError) { setError(localError); toast.error(localError, { id: "report-step-one-validation" }); return; }
+        if (localError) { toast.error(localError, { id: "report-step-one-validation" }); return; }
         if (!await ensureBillingAccess()) return;
         if (reportKind === 1 && mode === "manual" && !manualReportId) {
           const report = await alphaApi.createManualReport(scope.organizationId, scope.employerId, { reportingMonth: `${month}-01`, salaryPaymentDate, employmentIds: selectedIds, paymentAccountId: selectedPaymentAccountId });
