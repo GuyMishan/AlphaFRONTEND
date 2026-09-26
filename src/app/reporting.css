@@ -12,7 +12,7 @@
 .manual-edit-btn { min-width: 86px; }
 
 .report-modal-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 18px; background: rgba(8, 22, 38, .52); backdrop-filter: blur(4px); }
-.report-modal { width: min(1080px, 95vw); max-height: 90vh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--surface); border-radius: 18px; box-shadow: 0 24px 70px rgba(5, 20, 36, .28); overflow: hidden; }
+.report-modal { width: min(1080px, 95vw); height: min(760px, 90vh); max-height: 90vh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--surface); border-radius: 18px; box-shadow: 0 24px 70px rgba(5, 20, 36, .28); overflow: hidden; }
 .report-modal-header, .report-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: white; }
 .report-modal-header h2 { margin: 0 0 2px; font-size: 18px; }
 .report-modal-header .report-modal-employee { display: inline-block; margin-inline-end: 7px; font-size: 13px; }
@@ -168,3 +168,10 @@
 [data-theme="dark"] .employee-report-summary>div{background:var(--surface);border-color:var(--line)}
 [data-theme="dark"] .employee-report-summary b{color:var(--text)}
 
+
+/* Pension product editor controls use a consistent 40px field height. */
+.report-product-fields .ui-control,
+.report-product-fields input,
+.report-product-fields select{height:40px;min-height:40px}
+.contribution-table input{height:40px!important;min-height:40px!important;padding:6px 8px;font-size:12px}
+@media(max-width:760px){.contribution-table input{height:40px!important;min-height:40px!important}}

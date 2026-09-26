@@ -101,10 +101,12 @@ export function UiDateInput({
         if (!commit(displayValue)) { onValueChange(""); setDisplayValue(""); }
         onBlur?.(event);
       }} />
-    <button type="button" className="ui-date-picker-button" onClick={openPicker} disabled={disabled} aria-label={isMonth ? "פתיחת בחירת חודש" : "פתיחת לוח שנה"}><CalendarDays size={18} /></button>
-    <input ref={pickerRef} type={isMonth ? "month" : "date"} tabIndex={-1} aria-hidden="true"
-      className="ui-date-native-picker" value={value ?? ""} min={min} max={max} disabled={disabled}
-      onChange={(event) => onValueChange(event.target.value)} />
+    {!disabled ? <>
+      <button type="button" className="ui-date-picker-button" onClick={openPicker} aria-label={isMonth ? "פתיחת בחירת חודש" : "פתיחת לוח שנה"}><CalendarDays size={18} /></button>
+      <input ref={pickerRef} type={isMonth ? "month" : "date"} tabIndex={-1} aria-hidden="true"
+        className="ui-date-native-picker" value={value ?? ""} min={min} max={max}
+        onChange={(event) => onValueChange(event.target.value)} />
+    </> : null}
   </div>;
 }
 
