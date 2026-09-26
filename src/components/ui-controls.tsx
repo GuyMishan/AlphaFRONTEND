@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  Children,
   forwardRef,
+  isValidElement,
   useRef,
   useEffect,
   useState,
@@ -111,8 +113,40 @@ export function UiDateInput({
 }
 
 export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement> & { controlSize?: ControlSize }>(
-  function UiSelect({ className, controlSize = "default", ...props }, ref) {
-    return <select ref={ref} className={controlClass("ui-control", controlSize, className)} {...props} />;
+  function UiSelect({ className, controlSize = "default", children, value, defaultValue, disabled, onChange, ...props }, forwardedRef) {
+    const nativeRef = useRef<HTMLSelectElement | null>(null);
+    const [open, setOpen] = useState(false);
+    const options = Children.toArray(children).filter(isValidElement).map((child) => {
+      const optionProps = child.props as { value?: string | number; children?: ReactNode; disabled?: boolean };
+      return { value: String(optionProps.value ?? ""), label: optionProps.children, disabled: Boolean(optionProps.disabled) };
+    });
+    const selectedValue = String(value ?? defaultValue ?? "");
+    const selected = options.find((option) => option.value === selectedValue);
+    function assignRef(node: HTMLSelectElement | null) {
+      nativeRef.current = node;
+      if (typeof forwardedRef === "function") forwardedRef(node);
+      else if (forwardedRef) forwardedRef.current = node;
+    }
+    function choose(nextValue: string) {
+      const select = nativeRef.current;
+      if (!select) return;
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(select, nextValue);
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      setOpen(false);
+    }
+    return <div className={["ui-select", open ? "is-open" : "", disabled ? "is-disabled" : "", className].filter(Boolean).join(" ")}
+      onBlur={(event) => { const next = event.relatedTarget as Node | null; if (!next || !event.currentTarget.contains(next)) setOpen(false); }}>
+      <select ref={assignRef} value={value} defaultValue={value === undefined ? defaultValue : undefined} disabled={disabled} onChange={onChange}
+        className="ui-select-native" tabIndex={-1} aria-hidden="true" {...props}>{children}</select>
+      <button type="button" className={controlClass("ui-control ui-select-trigger", controlSize)} disabled={disabled}
+        aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+        <span>{selected?.label ?? ""}</span><ChevronDown size={17} />
+      </button>
+      {open && !disabled ? <div className="ui-select-menu" role="listbox">
+        {options.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === selectedValue}
+          disabled={option.disabled} className={option.value === selectedValue ? "selected" : ""} onClick={() => choose(option.value)}>{option.label}</button>)}
+      </div> : null}
+    </div>;
   },
 );
 
