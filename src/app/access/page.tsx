@@ -21,7 +21,6 @@ import type {
   Organization,
   OrganizationRole,
   PlatformUser,
-  ScopeOrganization,
   UserInvitation,
 } from "@/lib/types";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
@@ -85,8 +84,6 @@ export default function AccessPage() {
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationId, setOrganizationId] = useState("");
-  const [scopeOrganizations, setScopeOrganizations] = useState<ScopeOrganization[]>([]);
-  const [employerFilterId, setEmployerFilterId] = useState("");
   const [users, setUsers] = useState<AccessUser[]>([]);
   const [selected, setSelected] = useState<AccessUser | null>(null);
   const [search, setSearch] = useState("");
@@ -132,7 +129,6 @@ export default function AccessPage() {
   const [platformSaving, setPlatformSaving] = useState(false);
 
   useEffect(() => {
-    void alphaApi.scope().then((scope) => setScopeOrganizations(scope.organizations)).catch(() => setScopeOrganizations([]));
     alphaApi.organizations().then((items) => {
       setOrganizations(items);
       const saved = getOrganizationSelection();
@@ -493,16 +489,7 @@ export default function AccessPage() {
 
       <section className="card">
         <div className="toolbar">
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", flex: "1 1 auto" }}>
-            {isPlatformAdmin ? <UiSelect value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); setEmployerFilterId(""); setSkip(0); }}>
-              {scopeOrganizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
-            </UiSelect> : null}
-            {(scopeOrganizations.find((org) => org.id === organizationId)?.employers.length ?? 0) > 1 ? <UiSelect value={employerFilterId} onChange={(event) => setEmployerFilterId(event.target.value)}>
-              <option value="">כל המעסיקים</option>
-              {(scopeOrganizations.find((org) => org.id === organizationId)?.employers ?? []).map((employer) => <option key={employer.id} value={employer.id}>{employer.legalName}</option>)}
-            </UiSelect> : null}
-            <div className="search"><Search size={17} /><UiInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="חיפוש משתמש לפי שם או אימייל" /></div>
-          </div>
+          <div className="search"><Search size={17} /><UiInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="חיפוש משתמש לפי שם או אימייל" /></div>
           <span className="badge badge-blue">{organizations.find((x) => x.id === organizationId)?.name ?? "ארגון"}</span>
         </div>
         {loading ? <div className="empty">טוען משתמשים...</div> : users.length ? <VirtualizedTable
