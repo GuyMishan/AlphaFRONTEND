@@ -35,6 +35,7 @@ export function ScopeController() {
   const level = requiredScope(pathname);
   const isDashboard = pathname === "/dashboard";
   const isAccessPage = pathname === "/access";
+  const isNewReportPage = pathname === "/reports/new";
   const isPlatformAdmin = Boolean(getSession()?.platformAdmin);
   const isAdminDashboard = isDashboard && Boolean(getSession()?.platformAdmin);
   const [scope, setScope] = useState<GlobalScopeContext | null>(null);
@@ -230,12 +231,15 @@ export function ScopeController() {
 
   const showEmployerSelector =
     pathname !== "/employers" &&
-    employerOptions.length > 1 &&
+    employerOptions.length > 0 &&
     (
+      isNewReportPage ||
+      (employerOptions.length > 1 && (
       isAccessPage ||
       (isDashboard && selectedOrganizationHasScope) ||
       level !== "organization" ||
       !hasAnyOrganizationScope
+      ))
     );
 
   const showEmployeeSelector = level === "employee" && employees.length > 1;
