@@ -393,52 +393,18 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             </> : null}
           </div></section> : null}
 
-          {!differences ? <section className="payment-panel"><h3>פרטי דיווח נוספים</h3>{loadingMetadata ? <div className="empty">טוען נתוני דיווח...</div> : <div className="payment-method-grid">
-            <div className="field"><label>סוג פעולה *</label><EmployerInterfaceOptionSelect category="operation-code" scope={operationScope} value={metadataForm.operationCode} required onChange={(value) => {
-              setMetadataForm((current) => {
-                if (!negative && value === 2)
-                  return { ...current, operationCode: value, paymentMethodCode: 1 };
-                if (!negative && value === 7)
-                  return { ...current, operationCode: value, paymentMethodCode: 1, employerAccountType: 1 };
-                if (negative && value === 6)
-                  return { ...current, operationCode: value, paymentMethodCode: null };
-                if (resolvedPaymentAccount?.mandateIsActive)
-                  return { ...current, operationCode: value, paymentMethodCode: 6, employerAccountType: 1, receiverAccountType: 1 };
-                return { ...current, operationCode: value, paymentMethodCode: null };
-              });
-              if (!negative && (value === 2 || value === 7))
-                setForm((current) => ({ ...current, valueDate: null, trustAccountValueDate: null, referenceNumber: "", employerBankCode: "", employerBankName: "", employerBranch: "", employerAccount: "" }));
-            }} /></div>
-            {!negative ? <div className="field"><label>מעמד הפקדה בקופה *</label><EmployerInterfaceOptionSelect category="deposit-status" value={metadataForm.depositStatus} required onChange={(value) => patchMetadata("depositStatus", value)} /></div> : null}
-            {!negative ? <div className="field"><label>סטטוס עובד בחודש השכר *</label><EmployerInterfaceOptionSelect category="employee-status" value={metadataForm.employeeStatus} required onChange={(value) => patchMetadata("employeeStatus", value)} /></div> : null}
-            {!negative ? <div className="field"><label>תאריך תחילת סטטוס *</label><UiDateInput value={metadataForm.statusStartDate?.slice(0, 10) ?? ""} onValueChange={(value) => patchMetadata("statusStartDate", value || null)} /></div> : null}
-            {!negative ? <div className="field"><label>הפקדה אחרונה *</label><EmployerInterfaceOptionSelect category="last-deposit" value={metadataForm.lastDeposit} required onChange={(value) => patchMetadata("lastDeposit", value)} /></div> : null}
-            {negative ? <div className="field"><label>סיבת בקשה להחזר/ביטול *</label><EmployerInterfaceOptionSelect category="refund-reason" scope="negative" value={metadataForm.refundReason} required onChange={(value) => patchMetadata("refundReason", value)} /></div> : null}
-            {!negative ? <div className="field"><label>סוג חשבון מעסיק *</label><EmployerInterfaceOptionSelect category="employer-account-type" scope="current" value={metadataForm.employerAccountType} required onChange={(value) => patchMetadata("employerAccountType", value)} /></div> : null}
-            {!negative ? <div className="field"><label>סוג חשבון קולט *</label><EmployerInterfaceOptionSelect category="receiver-account-type" scope="current" value={metadataForm.receiverAccountType} required onChange={(value) => patchMetadata("receiverAccountType", value)} /></div> : null}
-            {!negative && isOldPensionFund ? <div className="field"><label>סוג פנסיה בקרן ותיקה *</label><EmployerInterfaceOptionSelect category="old-pension-type" scope="current" value={metadataForm.oldPensionTypeCode} required onChange={(value) => patchMetadata("oldPensionTypeCode", value)} /></div> : null}
-            {!negative ? <div className="field"><label>חלקיות משרה (%)</label><UiInput type="number" min="1" max="100" step="0.01" value={metadataForm.employmentPercentage ?? ""} onChange={(e) => patchMetadata("employmentPercentage", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
-            {!negative ? <div className="field"><label>ימי עבודה בחודש</label><UiInput type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
-          </div>}</section> : null}
-
-          {!negative && !differences && row.productType === 1 ? <section className="payment-panel">
-            <h3>מסמך הצטרפות לקרן ברירת מחדל</h3>
-            <div className="notice notice-info" style={{ marginBottom: 12 }}>
-              סוג מסמך 5 מיועד לעובד קיים שמבקש להצטרף לקרן ברירת מחדל. יש לצרף אותו רק כאשר הוא רלוונטי למקרה.
-            </div>
-            {metadataForm.employeeStatus === 14 ? <div className="notice notice-error" style={{ marginBottom: 12 }}>לעובד חדש (סטטוס 14) אין לצרף מסמך מסוג 5. אם כבר צורף מסמך, יש להסיר אותו לפני האימות הסופי.</div> : null}
-            <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-              <div><b>בקשת עובד להצטרפות לקרן ברירת מחדל</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{defaultFundJoinRequest ? defaultFundJoinRequest.originalFileName : "לעובד/מוצר זה"}</div></div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                {defaultFundJoinRequest ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(defaultFundJoinRequest.id)}><Trash2 size={14} />הסר</button> : null}
-                {!defaultFundJoinRequest && metadataForm.employeeStatus !== 14 ? <label className="btn btn-secondary" style={{ cursor: uploadingAttachment ? "not-allowed" : "pointer" }}>
-                  <FileUp size={14} />{uploadingAttachment === 5 ? "מעלה..." : "צרף PDF"}
-                  <UiInput type="file" hidden accept="application/pdf,.pdf" disabled={uploadingAttachment != null}
-                    onChange={(e) => { const file = e.target.files?.[0] ?? null; e.currentTarget.value = ""; void uploadAttachment(5, file); }} />
-                </label> : null}
-              </div>
-            </div>
+          {!differences && !negative && isOldPensionFund ? <section className="payment-panel"><h3>השלמה נדרשת לקרן ותיקה</h3><div className="payment-method-grid">
+            <div className="field"><label>סוג פנסיה *</label><EmployerInterfaceOptionSelect category="old-pension-type" scope="current" value={metadataForm.oldPensionTypeCode} required onChange={(value) => patchMetadata("oldPensionTypeCode", value)} /></div>
+            <div className="field"><label>חלקיות משרה (%)</label><UiInput type="number" min="1" max="100" step="0.01" value={metadataForm.employmentPercentage ?? ""} onChange={(e) => patchMetadata("employmentPercentage", e.target.value === "" ? null : Number(e.target.value))} /></div>
+            <div className="field"><label>ימי עבודה בחודש</label><UiInput type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div>
           </section> : null}
+
+          {negative ? <section className="payment-panel"><h3>פרטי הבקשה</h3><div className="payment-method-grid">
+            <div className="field"><label>סוג פעולה *</label><EmployerInterfaceOptionSelect category="operation-code" scope="negative" value={metadataForm.operationCode} required onChange={(value) => patchMetadata("operationCode", value)} /></div>
+            <div className="field"><label>סיבת בקשה להחזר/ביטול *</label><EmployerInterfaceOptionSelect category="refund-reason" scope="negative" value={metadataForm.refundReason} required onChange={(value) => patchMetadata("refundReason", value)} /></div>
+          </div></section> : null}
+
+
 
           {operation5 ? <section className="payment-panel">
             <h3>מסמכים מצורפים לדיווח השלילי</h3>
