@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Save, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { alphaApi } from "@/lib/api";
-import { UiChoiceCard, UiInput, UiSelect } from "@/components/ui-controls";
+import { UiAutocomplete, UiChoiceCard, UiInput, UiSelect } from "@/components/ui-controls";
 import type {
   BankBranchOption,
   BankDebitMandateStatus,
@@ -185,24 +185,11 @@ export function OrganizationPensionPaymentAccount({
           <div className="grid compact-payment-grid">
             <div className="field">
               <label>בנק *</label>
-              <UiInput list="organization-payment-banks" placeholder="שם או מספר בנק" value={bankSearch} onChange={(e) => {
-                const value = e.target.value;
-                setBankSearch(value);
-                const code = Number(value.split(" - ")[0]);
-                setForm((current) => ({ ...current, bankId: Number.isFinite(code) ? code : 0, branchId: 0 }));
-                setBranchSearch("");
-              }} />
-              <datalist id="organization-payment-banks">{banks.map((bank) => <option key={bank.bankCode} value={`${bank.bankCode} - ${bank.bankName}`} />)}</datalist>
+              <UiAutocomplete required value={bankSearch} ariaLabel="בחירת בנק" placeholder="שם או מספר בנק" emptyText="לא נמצאו בנקים." options={banks.map((bank) => ({ value: String(bank.bankCode), label: `${bank.bankCode} - ${bank.bankName}` }))} onClear={() => { setForm((current) => ({ ...current, bankId: 0, branchId: 0 })); setBranchSearch(""); setBranches([]); }} onValueChange={(value) => { setBankSearch(value); const selected = banks.find((bank) => value === `${bank.bankCode} - ${bank.bankName}`); setForm((current) => ({ ...current, bankId: selected?.bankCode ?? 0, branchId: 0 })); setBranchSearch(""); }} />
             </div>
             <div className="field">
               <label>סניף *</label>
-              <UiInput list="organization-payment-branches" disabled={!form.bankId} placeholder="סניף או עיר" value={branchSearch} onChange={(e) => {
-                const value = e.target.value;
-                setBranchSearch(value);
-                const code = Number(value.split(" - ")[0]);
-                setForm((current) => ({ ...current, branchId: Number.isFinite(code) ? code : 0 }));
-              }} />
-              <datalist id="organization-payment-branches">{branches.map((branch) => <option key={branch.branchCode} value={`${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`} />)}</datalist>
+              <UiAutocomplete required disabled={!form.bankId} value={branchSearch} ariaLabel="בחירת סניף" placeholder="סניף או עיר" emptyText="לא נמצאו סניפים." options={branches.map((branch) => ({ value: String(branch.branchCode), label: `${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}` }))} onClear={() => setForm((current) => ({ ...current, branchId: 0 }))} onValueChange={(value) => { setBranchSearch(value); const selected = branches.find((branch) => value === `${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`); setForm((current) => ({ ...current, branchId: selected?.branchCode ?? 0 })); }} />
             </div>
             <div className="field"><label>מספר חשבון *</label><UiInput required inputMode="numeric" maxLength={30} value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })} /></div>
             <div className="field"><label>שם בעל החשבון *</label><UiInput required maxLength={150} value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} /></div>
