@@ -6,6 +6,7 @@ import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form
 import { UiInput, UiSelect } from "@/components/ui-controls";
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi, ApiError } from "@/lib/api";
+import { openUpgradeDialog } from "@/lib/upgrade";
 import type { BillingAccountPricingType, EntitlementSnapshot, SelfServiceBillingPricing } from "@/lib/types";
 
 const OPTIONS: { value: BillingAccountPricingType; title: string; description: string }[] = [
@@ -61,7 +62,10 @@ export function SubscriptionBillingPanel({ organizationId, employerId, entitleme
   const price = pricing?.unitPrice ?? 0;
   return <div className="employer-profile-stack">
     <section className="card profile-card">
-      <div className="card-head"><div><h2>מנוי וחיוב ALPHA</h2><span style={{ color: "var(--muted)" }}>בחרו את שיטת החיוב. בתוכנית בתשלום אין מגבלת משתמשים, מעסיקים או עובדים.</span></div></div>
+      <div className="card-head">
+        <div><h2>מנוי וחיוב ALPHA</h2><span style={{ color: "var(--muted)" }}>בחרו את שיטת החיוב. בתוכנית בתשלום אין מגבלת משתמשים, מעסיקים או עובדים.</span></div>
+        <button className="btn btn-secondary" type="button" onClick={() => openUpgradeDialog({ reason: "feature", feature: "billing_support", planName: pricing?.billingType ?? selected })}>יצירת קשר</button>
+      </div>
 
       {pricing?.billingType === "Free" ? <div className="grid stats">
         <PlanUsage label="מעסיקים" usage={entitlements.employers} />
