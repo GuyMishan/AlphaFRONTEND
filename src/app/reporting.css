@@ -175,3 +175,7 @@
 .report-product-fields select{height:40px;min-height:40px}
 .contribution-table input{height:40px!important;min-height:40px!important;padding:6px 8px;font-size:12px}
 @media(max-width:760px){.contribution-table input{height:40px!important;min-height:40px!important}}
+
+/* All pension product text/number controls, including optional policy number, are 40px. */
+.report-product-card .ui-control:not(textarea){height:40px!important;min-height:40px!important;max-height:40px!important}
+.contribution-table .contribution-input{height:40px!important;min-height:40px!important;max-height:40px!important}
