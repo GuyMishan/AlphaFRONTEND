@@ -36,6 +36,7 @@ export function UiDateInput({
   controlSize = "default",
   onBlur,
   disabled,
+  mode = "day",
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "defaultValue" | "onChange" | "min" | "max"> & {
   value?: string | null;
@@ -43,23 +44,39 @@ export function UiDateInput({
   min?: string;
   max?: string;
   controlSize?: ControlSize;
+  mode?: "day" | "month";
 }) {
-  const [displayValue, setDisplayValue] = useState(() => formatDateDDMMYYYY(value));
   const pickerRef = useRef<HTMLInputElement>(null);
+  const isMonth = mode === "month";
+  const formatValue = (raw?: string | null) => {
+    if (!raw) return "";
+    if (isMonth) {
+      const [year, month] = raw.slice(0, 7).split("-");
+      return year && month ? `${month}/${year}` : "";
+    }
+    return formatDateDDMMYYYY(raw);
+  };
+  const [displayValue, setDisplayValue] = useState(() => formatValue(value));
 
-  useEffect(() => {
-    setDisplayValue(formatDateDDMMYYYY(value));
-  }, [value]);
+  useEffect(() => { setDisplayValue(formatValue(value)); }, [value, mode]);
 
   function commit(nextDisplay: string) {
-    if (!nextDisplay) {
-      onValueChange("");
-      return true;
+    if (!nextDisplay) { onValueChange(""); return true; }
+    if (isMonth) {
+      const match = nextDisplay.match(/^(0[1-9]|1[0-2])\/(\d{4})$/);
+      if (!match) return false;
+      const iso = `${match[2]}-${match[1]}`;
+      if ((min && iso < min.slice(0, 7)) || (max && iso > max.slice(0, 7))) return false;
+      onValueChange(iso); return true;
     }
     const iso = parseDDMMYYYY(nextDisplay);
     if (!iso || (min && iso < min) || (max && iso > max)) return false;
-    onValueChange(iso);
-    return true;
+    onValueChange(iso); return true;
+  }
+
+  function normalizeMonthInput(raw: string) {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    return digits.length <= 2 ? digits : `${digits.slice(0, 2)}/${digits.slice(2)}`;
   }
 
   function openPicker() {
@@ -71,44 +88,23 @@ export function UiDateInput({
   }
 
   return <div className={["ui-date-control", disabled ? "is-disabled" : "", className].filter(Boolean).join(" ")}>
-    <input
-      {...props}
-      type="text"
-      inputMode="numeric"
-      dir="ltr"
-      disabled={disabled}
-      placeholder={props.placeholder ?? "DD/MM/YYYY"}
-      maxLength={10}
-      value={displayValue}
+    <input {...props} type="text" inputMode="numeric" dir="ltr" disabled={disabled}
+      placeholder={props.placeholder ?? (isMonth ? "חודש/שנה" : "יום/חודש/שנה")}
+      maxLength={isMonth ? 7 : 10} value={displayValue}
       className={controlClass("ui-control ui-date-text", controlSize)}
       onChange={(event) => {
-        const nextDisplay = normalizeDDMMYYYYInput(event.target.value);
+        const nextDisplay = isMonth ? normalizeMonthInput(event.target.value) : normalizeDDMMYYYYInput(event.target.value);
         setDisplayValue(nextDisplay);
-        if (nextDisplay === "" || nextDisplay.length === 10) commit(nextDisplay);
+        if (nextDisplay === "" || nextDisplay.length === (isMonth ? 7 : 10)) commit(nextDisplay);
       }}
       onBlur={(event) => {
-        if (!commit(displayValue)) {
-          onValueChange("");
-          setDisplayValue("");
-        }
+        if (!commit(displayValue)) { onValueChange(""); setDisplayValue(""); }
         onBlur?.(event);
-      }}
-    />
-    <button type="button" className="ui-date-picker-button" onClick={openPicker} disabled={disabled} aria-label="פתיחת לוח שנה">
-      <CalendarDays size={18} />
-    </button>
-    <input
-      ref={pickerRef}
-      type="date"
-      tabIndex={-1}
-      aria-hidden="true"
-      className="ui-date-native-picker"
-      value={value ?? ""}
-      min={min}
-      max={max}
-      disabled={disabled}
-      onChange={(event) => onValueChange(event.target.value)}
-    />
+      }} />
+    <button type="button" className="ui-date-picker-button" onClick={openPicker} disabled={disabled} aria-label={isMonth ? "פתיחת בחירת חודש" : "פתיחת לוח שנה"}><CalendarDays size={18} /></button>
+    <input ref={pickerRef} type={isMonth ? "month" : "date"} tabIndex={-1} aria-hidden="true"
+      className="ui-date-native-picker" value={value ?? ""} min={min} max={max} disabled={disabled}
+      onChange={(event) => onValueChange(event.target.value)} />
   </div>;
 }
 
