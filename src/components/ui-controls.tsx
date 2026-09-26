@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  useRef,
   useEffect,
   useState,
   type ButtonHTMLAttributes,
@@ -10,6 +11,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
+import { CalendarDays } from "lucide-react";
 import { Tooltip } from "@/components/tooltip";
 import { formatDateDDMMYYYY, normalizeDDMMYYYYInput, parseDDMMYYYY } from "@/lib/date-format";
 
@@ -33,6 +35,7 @@ export function UiDateInput({
   className,
   controlSize = "default",
   onBlur,
+  disabled,
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "defaultValue" | "onChange" | "min" | "max"> & {
   value?: string | null;
@@ -42,6 +45,7 @@ export function UiDateInput({
   controlSize?: ControlSize;
 }) {
   const [displayValue, setDisplayValue] = useState(() => formatDateDDMMYYYY(value));
+  const pickerRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setDisplayValue(formatDateDDMMYYYY(value));
@@ -52,37 +56,60 @@ export function UiDateInput({
       onValueChange("");
       return true;
     }
-
     const iso = parseDDMMYYYY(nextDisplay);
-    if (!iso) return false;
-    if (min && iso < min) return false;
-    if (max && iso > max) return false;
+    if (!iso || (min && iso < min) || (max && iso > max)) return false;
     onValueChange(iso);
     return true;
   }
 
-  return <input
-    {...props}
-    type="text"
-    inputMode="numeric"
-    dir="ltr"
-    placeholder={props.placeholder ?? "DD/MM/YYYY"}
-    maxLength={10}
-    value={displayValue}
-    className={controlClass("ui-control", controlSize, className)}
-    onChange={(event) => {
-      const nextDisplay = normalizeDDMMYYYYInput(event.target.value);
-      setDisplayValue(nextDisplay);
-      if (nextDisplay === "" || nextDisplay.length === 10) commit(nextDisplay);
-    }}
-    onBlur={(event) => {
-      if (!commit(displayValue)) {
-        onValueChange("");
-        setDisplayValue("");
-      }
-      onBlur?.(event);
-    }}
-  />;
+  function openPicker() {
+    if (disabled) return;
+    const picker = pickerRef.current;
+    if (!picker) return;
+    if (typeof picker.showPicker === "function") picker.showPicker();
+    else picker.click();
+  }
+
+  return <div className={["ui-date-control", disabled ? "is-disabled" : "", className].filter(Boolean).join(" ")}>
+    <input
+      {...props}
+      type="text"
+      inputMode="numeric"
+      dir="ltr"
+      disabled={disabled}
+      placeholder={props.placeholder ?? "DD/MM/YYYY"}
+      maxLength={10}
+      value={displayValue}
+      className={controlClass("ui-control ui-date-text", controlSize)}
+      onChange={(event) => {
+        const nextDisplay = normalizeDDMMYYYYInput(event.target.value);
+        setDisplayValue(nextDisplay);
+        if (nextDisplay === "" || nextDisplay.length === 10) commit(nextDisplay);
+      }}
+      onBlur={(event) => {
+        if (!commit(displayValue)) {
+          onValueChange("");
+          setDisplayValue("");
+        }
+        onBlur?.(event);
+      }}
+    />
+    <button type="button" className="ui-date-picker-button" onClick={openPicker} disabled={disabled} aria-label="פתיחת לוח שנה">
+      <CalendarDays size={18} />
+    </button>
+    <input
+      ref={pickerRef}
+      type="date"
+      tabIndex={-1}
+      aria-hidden="true"
+      className="ui-date-native-picker"
+      value={value ?? ""}
+      min={min}
+      max={max}
+      disabled={disabled}
+      onChange={(event) => onValueChange(event.target.value)}
+    />
+  </div>;
 }
 
 export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement> & { controlSize?: ControlSize }>(
