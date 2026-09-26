@@ -1,7 +1,7 @@
 "use client";
 
-import { X } from "lucide-react";
 import type { ReactNode } from "react";
+import { AppModal } from "@/components/app-modal";
 
 export function UserEditorModal({
   title,
@@ -16,17 +16,5 @@ export function UserEditorModal({
   actions?: ReactNode;
   onClose: () => void;
 }) {
-  return <div className="user-modal-backdrop" role="presentation" onMouseDown={onClose}>
-    <section className="user-modal" role="dialog" aria-modal="true" aria-labelledby="user-modal-title" onMouseDown={(event) => event.stopPropagation()}>
-      <div className="user-modal-head">
-        <div>
-          <h2 id="user-modal-title">{title}</h2>
-          {subtitle ? <p>{subtitle}</p> : null}
-        </div>
-        <button className="user-modal-close" type="button" onClick={onClose} aria-label="סגירה"><X size={20} /></button>
-      </div>
-      <div className="user-modal-body">{children}</div>
-      {actions ? <div className="user-modal-actions">{actions}</div> : null}
-    </section>
-  </div>;
+  return <AppModal title={title} subtitle={subtitle} onClose={onClose} width="lg" actions={actions}>{children}</AppModal>;
 }

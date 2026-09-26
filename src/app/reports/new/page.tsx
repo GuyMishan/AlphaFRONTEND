@@ -117,7 +117,7 @@ export default function NewReportPage() {
       setSelectedPaymentAccountId(accountRows.find((x) => x.isDefault)?.id ?? accountRows[0]?.id ?? "");
       const initialBillingGate = await alphaApi.employerBillingGate(nextScope.organizationId, nextScope.employerId);
       setBillingGate(initialBillingGate);
-      setShowBillingGateModal(!initialBillingGate.canTransmit);
+      setShowBillingGateModal(accountRows.length === 0);
       if (!salaryPaymentDate) {
         setSalaryPaymentDate(defaultSalaryDate(month, profileSettings.reporting.defaultSalaryPaymentDay));
       }
@@ -341,6 +341,13 @@ export default function NewReportPage() {
 
   async function ensureBillingAccess() {
     if (!scope) return false;
+    const freshAccounts = await alphaApi.employerPaymentAccounts(scope.organizationId, scope.employerId);
+    setPaymentAccounts(freshAccounts);
+    setSelectedPaymentAccountId((current) => current || freshAccounts.find((x) => x.isDefault)?.id || freshAccounts[0]?.id || "");
+    if (freshAccounts.length === 0) {
+      setShowBillingGateModal(true);
+      return false;
+    }
     const freshBillingGate = await alphaApi.employerBillingGate(scope.organizationId, scope.employerId);
     setBillingGate(freshBillingGate);
     if (freshBillingGate.canTransmit) {
@@ -434,9 +441,9 @@ export default function NewReportPage() {
       {reportKind === 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>דיווח הפרשים הוא טיוטת עבודה</b><div>לא ניתן לשדר אותו ישירות למסלקה. יש ליצור ממנו דיווח שוטף מתקן או דיווח שלילי בהתאם לכיוון ההפרש.</div></div> : null}
       {billingGate?.canTransmit && reportKind !== 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
     </> : null}
-    {!(isXml && step === 1) ? <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={advancing || !canCreateReport} onClick={() => { if (!selectedPaymentAccountId) { void ensureBillingAccess(); return; } if (canContinue) void next(); }}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={reportKind === 2 || sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{reportKind === 2 ? "יש לממש את ההפרש לפני שליחה" : sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div> : null}
-  </section>}</div>{scope && billingGate && showBillingGateModal && !billingGate.canTransmit ? <BillingGateModal
-    gate={billingGate}
+    {!(isXml && step === 1) ? <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={advancing || !canCreateReport} onClick={() => { if (!selectedPaymentAccountId) { setShowBillingGateModal(true); return; } if (canContinue) void next(); }}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <button className="btn btn-primary" disabled={reportKind === 2 || sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{reportKind === 2 ? "יש לממש את ההפרש לפני שליחה" : sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button>}</div> : null}
+  </section>}</div>{scope && showBillingGateModal && paymentAccounts.length === 0 ? <BillingGateModal
+    gate={billingGate ?? { canTransmit: false, error: "pension_payment_account_required", billingMode: null, source: null, billedThroughName: null, paymentMethodType: null, paymentMethodStatus: null, configured: false }}
     organizationId={scope.organizationId}
     employerId={scope.employerId}
     canManageOrganizationBilling={canManageOrganizationBilling}

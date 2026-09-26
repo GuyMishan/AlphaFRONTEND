@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
-import { AlertTriangle, Building2, CreditCard, House, X } from "lucide-react";
+import { AlertTriangle, Building2, CreditCard, House } from "lucide-react";
+import { AppModal } from "@/components/app-modal";
 import type { BillingGateStatus } from "@/lib/types";
 
 function messageForGate(gate: BillingGateStatus) {
+  if (gate.error === "pension_payment_account_required") return "לא הוגדר אמצעי תשלום פנסיוני. יש להגדיר חשבון לתשלום ההפקדות לפני המשך הדיווח.";
   if (gate.error === "billing_account_required")
     return "לא הוגדרו עדיין פרטי חיוב עבור החשבון שמחויב על השימוש במערכת.";
   if (gate.error === "billing_payment_method_not_active")
@@ -30,21 +31,13 @@ export function BillingGateModal({
   canManageEmployerBilling: boolean;
   onClose?: () => void;
 }) {
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previous; };
-  }, []);
-
   const employerBillingHref = `/employers/${employerId}?organizationId=${organizationId}&tab=billing`;
   const organizationBillingHref = `/organizations/${organizationId}?tab=billing`;
   const hasBillingAction = canManageOrganizationBilling || canManageEmployerBilling;
 
   return (
-    <div className="billing-gate-backdrop" role="presentation">
-      <section className="billing-gate-modal" role="dialog" aria-modal="true" aria-labelledby="billing-gate-title" aria-describedby="billing-gate-description">
-        {onClose ? <button type="button" className="billing-gate-close" onClick={onClose} aria-label="סגירה"><X size={20} /></button> : null}\n        <div className="billing-gate-icon"><AlertTriangle size={26} /></div>
-        <h2 id="billing-gate-title">נדרשת השלמת פרטי חיוב</h2>
+    <AppModal title="נדרשת השלמת פרטי חיוב" onClose={onClose} width="md">
+        <div className="billing-gate-icon"><AlertTriangle size={26} /></div>
         <p id="billing-gate-description">{messageForGate(gate)}</p>
         {gate.billedThroughName ? <div className="billing-gate-source">החיוב עבור המעסיק מתבצע דרך <b>{gate.billedThroughName}</b>.</div> : null}
 
@@ -65,7 +58,6 @@ export function BillingGateModal({
           {canManageEmployerBilling ? <Link className={canManageOrganizationBilling ? "btn btn-secondary" : "btn btn-primary"} href={employerBillingHref}><CreditCard size={17} />להגדיר חיוב למעסיק הזה</Link> : null}
           {onClose ? <button type="button" className="btn btn-secondary" onClick={onClose}>המשך מאוחר יותר</button> : <Link className="btn btn-secondary" href="/dashboard"><House size={17} />חזרה לדף הבית</Link>}
         </div>
-      </section>
-    </div>
+    </AppModal>
   );
 }

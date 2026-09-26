@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Boxes, UserPlus, X } from "lucide-react";
+import { Boxes, UserPlus } from "lucide-react";
+import { AppModal } from "@/components/app-modal";
 import { EmployeeForm } from "@/components/employee-form";
 import { EmployeePensionMix } from "@/components/employee-pension-mix";
 import type { Employee } from "@/lib/types";
@@ -43,13 +44,7 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
       ? "לפני הוספת העובד לדיווח אפשר לערוך את התמהיל שלו, כדי שהמוצרים ייכנסו לדיווח כברירת מחדל."
       : createdEmployee ? `${createdEmployee.firstName} ${createdEmployee.lastName} · המוצרים נשמרים בתמהיל העובד כברירת מחדל לדיווחים.` : "";
 
-  return <div className="report-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !working) onClose(); }}>
-    <div className="report-modal report-modal-wide" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="report-modal-header">
-        <div><h2>{title}</h2><span>{subtitle}</span></div>
-        <button type="button" className="icon-button" disabled={working} onClick={onClose} aria-label="סגירה"><X size={18} /></button>
-      </div>
-      <div className="report-modal-body">
+  return <AppModal title={title} subtitle={subtitle} onClose={working ? undefined : onClose} closeOnBackdrop={!working} width="xl" bodyClassName="report-modal-body">
         {stage === "create" ? <EmployeeForm
           organizationId={organizationId}
           employerId={employerId}
@@ -78,7 +73,5 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
             <button type="button" className="btn btn-primary" disabled={working} onClick={() => void addToReportAndClose()}>{working ? "מוסיף לדיווח..." : "סיום, הוספה לדיווח וחזרה"}</button>
           </div>
         </> : null}
-      </div>
-    </div>
-  </div>;
+      </AppModal>;
 }
