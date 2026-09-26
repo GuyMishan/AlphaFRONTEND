@@ -27,7 +27,7 @@ import type {
   SubscriptionSummary,
 } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
-import { UiAutocomplete, UiAutocomplete, UiChoiceCard, UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
+import { UiAutocomplete, UiChoiceCard, UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
 import { Tooltip } from "@/components/tooltip";
 
 type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting" | "subscription";
