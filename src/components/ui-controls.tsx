@@ -11,7 +11,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronDown, Search, X } from "lucide-react";
 import { Tooltip } from "@/components/tooltip";
 import { formatDateDDMMYYYY, normalizeDDMMYYYYInput, parseDDMMYYYY } from "@/lib/date-format";
 
@@ -155,4 +155,19 @@ export function UiCard({
   className?: string;
 }) {
   return <section className={["card", className].filter(Boolean).join(" ")}>{children}</section>;
+}
+
+export type UiAutocompleteOption = { value: string; label: string; disabled?: boolean };
+export function UiAutocomplete({value,onValueChange,options,loading=false,disabled=false,required=false,placeholder="התחילו להקליד",emptyText="לא נמצאו תוצאות.",loadingText="טוען...",ariaLabel="בחירה",maxLength,onClear}:{value:string;onValueChange:(value:string)=>void;options:UiAutocompleteOption[];loading?:boolean;disabled?:boolean;required?:boolean;placeholder?:string;emptyText?:string;loadingText?:string;ariaLabel?:string;maxLength?:number;onClear?:()=>void}) {
+ const [open,setOpen]=useState(false); const [active,setActive]=useState(-1); const inputRef=useRef<HTMLInputElement>(null);
+ useEffect(()=>{setActive(-1)},[options,open]);
+ function choose(option:UiAutocompleteOption){if(option.disabled)return;onValueChange(option.label);setOpen(false);setActive(-1);inputRef.current?.focus()}
+ function clear(){onValueChange("");onClear?.();setOpen(true);setActive(-1);requestAnimationFrame(()=>inputRef.current?.focus())}
+ function keyDown(e:React.KeyboardEvent<HTMLInputElement>){if(e.key==="ArrowDown"){e.preventDefault();setOpen(true);setActive(i=>Math.min(i+1,options.length-1))}else if(e.key==="ArrowUp"){e.preventDefault();setActive(i=>Math.max(i-1,0))}else if(e.key==="Enter"&&open&&active>=0){e.preventDefault();choose(options[active])}else if(e.key==="Escape"){setOpen(false)}}
+ return <div className="pension-fund-autocomplete" onBlur={e=>{const n=e.relatedTarget as Node|null;if(!n||!e.currentTarget.contains(n))setOpen(false)}}>
+  <div className="pension-fund-search"><Search size={16} aria-hidden="true"/><UiInput ref={inputRef} disabled={disabled} required={required} autoComplete="off" maxLength={maxLength} value={value} placeholder={placeholder} role="combobox" aria-label={ariaLabel} aria-autocomplete="list" aria-expanded={open} onFocus={()=>setOpen(true)} onClick={()=>setOpen(true)} onKeyDown={keyDown} onChange={e=>{onValueChange(e.target.value);setOpen(true)}}/>
+   <div className="autocomplete-actions">{value&&!disabled?<button type="button" className="autocomplete-action autocomplete-clear" aria-label="ניקוי" onMouseDown={e=>e.preventDefault()} onClick={clear}><X size={16}/></button>:null}<button type="button" className="autocomplete-action autocomplete-toggle" disabled={disabled} aria-label={open?"סגירת רשימה":"פתיחת רשימה"} aria-expanded={open} onMouseDown={e=>e.preventDefault()} onClick={()=>setOpen(v=>!v)}><ChevronDown size={17}/></button></div>
+  </div>
+  {open&&!disabled?<div className="pension-fund-options" role="listbox" aria-busy={loading}>{loading?<div className="pension-fund-loading" role="status">{loadingText}</div>:options.length===0?<div className="pension-fund-empty">{emptyText}</div>:options.map((o,i)=><button type="button" key={o.value} role="option" aria-selected={i===active} disabled={o.disabled} className={`pension-fund-option${i===active?" selected":""}`} onMouseDown={e=>e.preventDefault()} onMouseEnter={()=>setActive(i)} onClick={()=>choose(o)}>{o.label}</button>)}</div>:null}
+ </div>
 }

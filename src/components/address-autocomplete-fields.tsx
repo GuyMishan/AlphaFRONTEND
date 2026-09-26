@@ -1,8 +1,7 @@
 "use client";
 
-import { UiInput } from "@/components/ui-controls";
+import { UiAutocomplete } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
-import { ChevronDown, Search, X } from "lucide-react";
 import { Field } from "@/components/form-feedback";
 import { addressReferenceApi, type CityOption, type StreetOption } from "@/lib/address-reference-api";
 
@@ -66,80 +65,6 @@ export function AddressAutocompleteFields({ city, street, cityError, streetError
     return () => window.clearTimeout(timer);
   }, [cityCode, street, disabled]);
 
-  return <>
-    <Field label="יישוב *" error={cityError}>
-      <div className="pension-fund-autocomplete" onBlur={(event) => {
-        const nextTarget = event.relatedTarget as Node | null;
-        if (!nextTarget || !event.currentTarget.contains(nextTarget)) setCityOpen(false);
-      }}>
-        <div className="pension-fund-search">
-          <Search size={16} aria-hidden="true" />
-          <UiInput
-            disabled={disabled}
-            required
-            autoComplete="off"
-            maxLength={100}
-            value={city}
-            placeholder="התחילו להקליד יישוב"
-            onFocus={() => setCityOpen(true)}
-            onClick={() => setCityOpen(true)}
-            onChange={(event) => {
-              setCityCode(null);
-              setCityOpen(true);
-              onCityChange(event.target.value);
-              if (street) onStreetChange("");
-            }}
-          />
-          <div className="autocomplete-actions">{city && !disabled ? <button type="button" className="autocomplete-action autocomplete-clear" aria-label="ניקוי יישוב" onMouseDown={(e) => e.preventDefault()} onClick={() => { setCityCode(null); onCityChange(""); if (street) onStreetChange(""); setCityOpen(true); }}><X size={16}/></button> : null}<button type="button" className="autocomplete-action autocomplete-toggle" disabled={disabled} aria-label={cityOpen ? "סגירת רשימת יישובים" : "פתיחת רשימת יישובים"} aria-expanded={cityOpen} onMouseDown={(e) => e.preventDefault()} onClick={() => setCityOpen((v) => !v)}><ChevronDown size={17}/></button></div>
-        </div>
-        {cityOpen && !disabled ? <div className="pension-fund-options" role="listbox" aria-busy={cityLoading}>
-          {cityLoading ? <div className="pension-fund-loading">טוען יישובים...</div> : cityOptions.length === 0 ? <div className="pension-fund-empty">לא נמצאו יישובים.</div> : cityOptions.map((item) => <button
-            type="button"
-            key={item.cityCode}
-            className="pension-fund-option"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              const changed = item.cityName !== city;
-              setCityCode(item.cityCode);
-              onCityChange(item.cityName);
-              if (changed) onStreetChange("");
-              setCityOpen(false);
-            }}
-          >{item.cityName}{item.regionName ? ` · ${item.regionName}` : ""}</button>)}
-        </div> : null}
-      </div>
-    </Field>
-
-    <Field label="רחוב *" error={streetError}>
-      <div className="pension-fund-autocomplete" onBlur={(event) => {
-        const nextTarget = event.relatedTarget as Node | null;
-        if (!nextTarget || !event.currentTarget.contains(nextTarget)) setStreetOpen(false);
-      }}>
-        <div className="pension-fund-search">
-          <Search size={16} aria-hidden="true" />
-          <UiInput
-            disabled={disabled || !cityCode}
-            required
-            autoComplete="off"
-            maxLength={100}
-            value={street}
-            placeholder={cityCode ? "התחילו להקליד רחוב" : "בחרו קודם יישוב"}
-            onFocus={() => setStreetOpen(true)}
-            onClick={() => setStreetOpen(true)}
-            onChange={(event) => { setStreetOpen(true); onStreetChange(event.target.value); }}
-          />
-          <div className="autocomplete-actions">{street && !disabled ? <button type="button" className="autocomplete-action autocomplete-clear" aria-label="ניקוי רחוב" onMouseDown={(e) => e.preventDefault()} onClick={() => { onStreetChange(""); setStreetOpen(true); }}><X size={16}/></button> : null}<button type="button" className="autocomplete-action autocomplete-toggle" disabled={disabled || !cityCode} aria-label={streetOpen ? "סגירת רשימת רחובות" : "פתיחת רשימת רחובות"} aria-expanded={streetOpen} onMouseDown={(e) => e.preventDefault()} onClick={() => setStreetOpen((v) => !v)}><ChevronDown size={17}/></button></div>
-        </div>
-        {streetOpen && cityCode && !disabled ? <div className="pension-fund-options" role="listbox" aria-busy={streetLoading}>
-          {streetLoading ? <div className="pension-fund-loading">טוען רחובות...</div> : streetOptions.length === 0 ? <div className="pension-fund-empty">לא נמצאו רחובות ביישוב שנבחר.</div> : streetOptions.map((item) => <button
-            type="button"
-            key={item.streetCode}
-            className="pension-fund-option"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => { onStreetChange(item.streetName); setStreetOpen(false); }}
-          >{item.streetName}</button>)}
-        </div> : null}
-      </div>
-    </Field>
-  </>;
+  return <><Field label="יישוב *" error={cityError}><UiAutocomplete value={city} disabled={disabled} required loading={cityLoading} maxLength={100} ariaLabel="בחירת יישוב" placeholder="התחילו להקליד יישוב" loadingText="טוען יישובים..." emptyText="לא נמצאו יישובים." options={cityOptions.map(item=>({value:String(item.cityCode),label:item.cityName+(item.regionName?` · ${item.regionName}`:"")}))} onClear={()=>{setCityCode(null);if(street)onStreetChange("")}} onValueChange={(next)=>{const item=cityOptions.find(x=>next===x.cityName+(x.regionName?` · ${x.regionName}`:""));if(item){const changed=item.cityName!==city;setCityCode(item.cityCode);onCityChange(item.cityName);if(changed)onStreetChange("")}else{setCityCode(null);onCityChange(next);if(street)onStreetChange("")}}}/></Field>
+<Field label="רחוב *" error={streetError}><UiAutocomplete value={street} disabled={disabled||!cityCode} required loading={streetLoading} maxLength={100} ariaLabel="בחירת רחוב" placeholder={cityCode?"התחילו להקליד רחוב":"בחרו קודם יישוב"} loadingText="טוען רחובות..." emptyText="לא נמצאו רחובות ביישוב שנבחר." options={streetOptions.map(item=>({value:String(item.streetCode),label:item.streetName}))} onValueChange={onStreetChange}/></Field></>
 }

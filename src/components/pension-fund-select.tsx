@@ -1,8 +1,7 @@
 "use client";
 
-import { UiInput } from "@/components/ui-controls";
+import { UiAutocomplete, UiInput } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
-import { ChevronDown, Search, X } from "lucide-react";
 import { alphaApi } from "@/lib/api";
 import type { PensionFundOption, PensionProductType } from "@/lib/types";
 
@@ -77,76 +76,4 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
     return <div className="field"><label>קופה</label><UiInput disabled value="לא נדרש עבור מוצר מסוג אחר" /></div>;
   }
 
-  return (
-    <div
-      className="field pension-fund-autocomplete"
-      onBlur={(event) => {
-        const nextTarget = event.relatedTarget as Node | null;
-        if (!nextTarget || !event.currentTarget.contains(nextTarget)) setOpen(false);
-      }}
-    >
-      <label>קופה *</label>
-      <div className="pension-fund-search">
-        <Search size={16} aria-hidden="true" />
-        <UiInput
-          disabled={disabled}
-          value={query}
-          autoComplete="off"
-          placeholder="חיפוש לפי שם / מספר קופה"
-          onFocus={() => setOpen(true)}
-          onClick={() => setOpen(true)}
-          onChange={(event) => {
-            const next = event.target.value;
-            setQuery(next);
-            setOpen(true);
-            if (value.fundExternalKey) {
-              onChange({ fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", fundClassification: "" });
-            }
-          }}
-        />
-      </div>
-
-      {open && !disabled ? (
-        <div className="pension-fund-options" role="listbox" aria-busy={loading}>
-          {loading ? (
-            <div className="pension-fund-loading" role="status" aria-live="polite">
-              <span>בטעינה</span>
-              <span className="loading-dots" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
-            </div>
-          ) : error ? null : options.length === 0 ? (
-            <div className="pension-fund-empty">לא נמצאו קופות מהסוג שנבחר.</div>
-          ) : options.map((item) => {
-            const selected = item.externalKey === value.fundExternalKey;
-            return (
-              <button
-                type="button"
-                key={item.externalKey}
-                role="option"
-                aria-selected={selected}
-                className={`pension-fund-option${selected ? " selected" : ""}`}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onChange({
-                    fundExternalKey: item.externalKey,
-                    fundCode: item.fundCode,
-                    fundName: item.fundName,
-                    fundCompanyName: item.companyName,
-                    fundClassification: item.classification || "",
-                  });
-                  setQuery(optionLabel(item));
-                  setOpen(false);
-                }}
-              >
-                {optionLabel(item)}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
-  );
-}
+  return <div className="field"><label>קופה *</label><UiAutocomplete value={query} disabled={disabled} loading={loading} ariaLabel="בחירת קופה" placeholder="חיפוש לפי שם / מספר קופה" loadingText="טוען קופות..." emptyText={error || "לא נמצאו קופות מהסוג שנבחר."} options={options.map(item=>({value:item.externalKey,label:optionLabel(item)}))} onClear={()=>{setOptions([]);onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}} onValueChange={(next)=>{setQuery(next);const item=options.find(x=>optionLabel(x)===next);if(item){onChange({fundExternalKey:item.externalKey,fundCode:item.fundCode,fundName:item.fundName,fundCompanyName:item.companyName,fundClassification:item.classification||""})}else if(value.fundExternalKey){onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}}}/></div>}
