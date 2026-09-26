@@ -1067,3 +1067,12 @@ td { font-size: 14px; }
 [data-a11y-contrast="true"]{filter:contrast(1.25)}
 [data-a11y-links="true"] a{text-decoration:underline!important;text-underline-offset:3px}
 [data-a11y-motion="true"] *,[data-a11y-motion="true"] *::before,[data-a11y-motion="true"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+
+
+/* Shared date control: typed DD/MM/YYYY input + native calendar picker */
+.ui-date-control { position: relative; width: 100%; }
+.ui-date-text { width: 100%; padding-inline-end: 44px !important; }
+.ui-date-picker-button { position: absolute; inset-inline-end: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
+.ui-date-picker-button:hover:not(:disabled) { background: var(--blue-soft); color: var(--blue); }
+.ui-date-picker-button:disabled { cursor: default; opacity: .55; }
+.ui-date-native-picker { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; inset-inline-end: 20px; bottom: 0; }
