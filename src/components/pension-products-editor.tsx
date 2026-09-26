@@ -125,7 +125,8 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
     for (const item of populated) {
       const pct = Number(item.percentage || 0), amount = Number(item.amount || 0), exempt = Number(item.exemptPayments || 0);
       if (pct <= 0 || amount <= 0) return `מוצר ${productIndex + 1}: בכל שורת ${label} שמדווחת נדרשים גם אחוז וגם סכום גדולים מאפס.`;
-      if (pct > 99.99) return `מוצר ${productIndex + 1}: אחוז ב${label} לא יכול לעבור 99.99%.`;
+      const max = maxPercentage(product.productType, party, item.component);
+      if (pct > max) return `מוצר ${productIndex + 1}: אחוז ב${label} עבור הרכיב שנבחר לא יכול לעבור ${max}%.`;
       if (insuredSalary > 0 && amount > insuredSalary + 0.01) return `מוצר ${productIndex + 1}: סכום הפקדה ב${label} לא יכול להיות גבוה מהשכר המבוטח.`;
       if (exempt < 0 || exempt > amount) return `מוצר ${productIndex + 1}: תשלומים פטורים ב${label} חייבים להיות בין 0 לסכום ההפקדה.`;
       const expected = roundMoney(insuredSalary * pct / 100);
@@ -133,7 +134,15 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
     }
     return "";
   };
-  return validateParty(product.employerContributions, "employer", "הפקדות מעסיק") || validateParty(product.employeeContributions, "employee", "הפקדות עובד");
+  const employerError = validateParty(product.employerContributions, "employer", "הפקדות מעסיק");
+  if (employerError) return employerError;
+  const employeeError = validateParty(product.employeeContributions, "employee", "הפקדות עובד");
+  if (employeeError) return employeeError;
+  const employerRewards = Number(product.employerContributions.find((item) => item.component === 2)?.percentage || 0);
+  const disability = Number(product.employerContributions.find((item) => item.component === 3)?.percentage || 0);
+  if (employerRewards + disability > 7.5 + 0.0001)
+    return `מוצר ${productIndex + 1}: תגמולי מעסיק ואכ״ע יחד לא יכולים לעבור 7.5%.`;
+  return "";
 }
 
 export function validatePensionEditorProducts(products: PensionEditorProduct[], context: "employee" | "report") {
@@ -248,5 +257,5 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
 
 function ContributionEditor({ context, title, party, product, items, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
   const labels = party === "employee" ? employeeComponents : employerComponents;
-  return <div className="contribution-section"><h3>{title}</h3><div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>רכיב</th><th>סכום</th><th>אחוז</th><th>תשלומים פטורים</th></tr></thead><tbody>{labels.map(({ value, label }) => { const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 }; const max = Math.min(99.99, context === "report" ? 99.99 : maxPercentage(product.productType, party, value)); return <tr key={value}><th>{label}</th><td><UiInput className="contribution-input" disabled={!editable} type="number" min="0" max={product.salary || undefined} step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} /></td><td><UiInput className="contribution-input" disabled={!editable} type="number" min="0" max={max} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} /></td><td><UiInput className="contribution-input" disabled={!editable} type="number" min="0" max={item.amount || undefined} step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} /></td></tr>; })}</tbody></table></div></div>;
+  return <div className="contribution-section"><h3>{title}</h3><div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>רכיב</th><th>סכום</th><th>אחוז</th><th>תשלומים פטורים</th></tr></thead><tbody>{labels.map(({ value, label }) => { const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 }; const max = maxPercentage(product.productType, party, value); return <tr key={value}><th>{label}</th><td><UiInput className="contribution-input" disabled={!editable} type="number" min="0" max={product.salary || undefined} step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} /></td><td><UiInput className="contribution-input" disabled={!editable} type="number" min="0" max={max} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} /></td><td><UiInput className="contribution-input" disabled={!editable} type="number" min="0" max={item.amount || undefined} step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} /></td></tr>; })}</tbody></table></div></div>;
 }
