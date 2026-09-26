@@ -367,7 +367,15 @@ export default function NewReportPage() {
       if (step === 1) {
         setStepOneAttempted(true);
         const localError = validateStepOne();
-        if (localError) { toast.error(localError, { id: "report-step-one-validation" }); return; }
+        if (localError) {
+          if (!selectedPaymentAccountId) {
+            await ensureBillingAccess();
+            setShowBillingGateModal(true);
+            return;
+          }
+          toast.error(localError, { id: "report-step-one-validation" });
+          return;
+        }
         if (!await ensureBillingAccess()) return;
         if (reportKind === 1 && mode === "manual" && !manualReportId) {
           const report = await alphaApi.createManualReport(scope.organizationId, scope.employerId, { reportingMonth: `${month}-01`, salaryPaymentDate, employmentIds: selectedIds, paymentAccountId: selectedPaymentAccountId });
@@ -444,7 +452,7 @@ export default function NewReportPage() {
       {billingGate?.canTransmit && reportKind !== 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
     </> : null}
     {!(isXml && step === 1) ? <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={advancing || !canCreateReport} onClick={() => { if (step === 1) { void next(); return; } if (!selectedPaymentAccountId) { setShowBillingGateModal(true); return; } if (canContinue) void next(); }}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <>{sentExternalId ? <button className="btn btn-secondary" onClick={() => router.push("/reports")}>יציאה</button> : null}<button className="btn btn-primary" disabled={reportKind === 2 || sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{reportKind === 2 ? "יש לממש את ההפרש לפני שליחה" : sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button></>}</div> : null}
-  </section>}</div>{scope && showBillingGateModal && paymentAccounts.length === 0 ? <BillingGateModal
+  </section>}</div>{scope && showBillingGateModal ? <BillingGateModal
     gate={billingGate ?? { canTransmit: false, error: "pension_payment_account_required", billingMode: null, source: null, billedThroughName: null, paymentMethodType: null, paymentMethodStatus: null, configured: false }}
     organizationId={scope.organizationId}
     employerId={scope.employerId}
