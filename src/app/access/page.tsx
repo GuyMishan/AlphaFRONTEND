@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Building2, Mail, Plus, Save, Search, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { AppTabs } from "@/components/app-tabs";
 import { VirtualizedTable } from "@/components/virtualized-table";
 import { PlanUsage } from "@/components/plan-usage";
 import { UserEditorModal } from "@/components/user-editor-modal";
@@ -22,6 +21,7 @@ import type {
   Organization,
   OrganizationRole,
   PlatformUser,
+  ScopeOrganization,
   UserInvitation,
 } from "@/lib/types";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
@@ -82,10 +82,11 @@ function roleDefaults(role: OrganizationRole, accessMode: EmployerAccessMode): P
 export default function AccessPage() {
   const session = getSession();
   const isPlatformAdmin = Boolean(session?.platformAdmin);
-  const [tab, setTab] = useState<"platform" | "organization">(isPlatformAdmin ? "platform" : "organization");
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationId, setOrganizationId] = useState("");
+  const [scopeOrganizations, setScopeOrganizations] = useState<ScopeOrganization[]>([]);
+  const [employerFilterId, setEmployerFilterId] = useState("");
   const [users, setUsers] = useState<AccessUser[]>([]);
   const [selected, setSelected] = useState<AccessUser | null>(null);
   const [search, setSearch] = useState("");
@@ -131,6 +132,7 @@ export default function AccessPage() {
   const [platformSaving, setPlatformSaving] = useState(false);
 
   useEffect(() => {
+    void alphaApi.scope().then((scope) => setScopeOrganizations(scope.organizations)).catch(() => setScopeOrganizations([]));
     alphaApi.organizations().then((items) => {
       setOrganizations(items);
       const saved = getOrganizationSelection();
@@ -149,12 +151,12 @@ export default function AccessPage() {
   }, []);
 
   useEffect(() => {
-    if (!isPlatformAdmin || tab !== "platform") return;
+    if (!isPlatformAdmin) return;
     void loadPlatformUsers();
-  }, [isPlatformAdmin, tab]);
+  }, [isPlatformAdmin]);
 
   useEffect(() => {
-    if (!organizationId || tab !== "organization") return;
+    if (!organizationId) return;
     void Promise.all([
       alphaApi.entitlements(organizationId),
       alphaApi.invitations(organizationId),
@@ -183,7 +185,7 @@ export default function AccessPage() {
         .finally(() => setLoading(false));
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [organizationId, search, skip, tab]);
+  }, [organizationId, search, skip]);
 
   useEffect(() => { setSkip(0); }, [search]);
 
@@ -448,55 +450,24 @@ export default function AccessPage() {
     }
   }
 
-  const tabs = isPlatformAdmin ? [
-    { key: "platform", label: "כל משתמשי המערכת", icon: UserPlus },
-    { key: "organization", label: "משתמשים והרשאות בארגון", icon: ShieldCheck },
-  ] as const : [];
-
   return <AppShell title="משתמשים והרשאות">
     <div className="page-head">
       <div>
         <h1>משתמשים והרשאות</h1>
-        <p>{tab === "platform" ? "ניהול כלל המשתמשים במערכת, כולל אדמינים." : "ניהול משתמשים והרשאות בתוך הארגון בלבד."}</p>
+        <p>ניהול משתמשים והרשאות לפי הארגון והמעסיק שנבחרו.</p>
       </div>
-      {tab === "platform" ? <button className="btn btn-primary" type="button" onClick={() => openPlatformEditor("new")}><Plus size={18} />משתמש חדש</button> :
-        <button className="btn btn-primary" type="button" onClick={() => {
+      <button className="btn btn-primary" type="button" onClick={() => {
           if (entitlements && entitlements.users.maximum !== null && entitlements.users.current >= entitlements.users.maximum) {
             openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum ?? undefined });
             return;
           }
           setInviteOpen(true);
-        }}><Mail size={18} />משתמש חדש</button>}
+        }}><Mail size={18} />משתמש חדש</button>
     </div>
 
-    {isPlatformAdmin ? <AppTabs items={[...tabs]} activeKey={tab} onChange={setTab} ariaLabel="ניהול משתמשים" /> : null}
     {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
 
-    {tab === "platform" ? <>
-      <section className="card">
-        <div className="toolbar">
-          <div className="search"><Search size={17} /><UiInput value={platformSearch} onChange={(event) => setPlatformSearch(event.target.value)} placeholder="חיפוש לפי שם, אימייל, תעודת זהות או טלפון" /></div>
-          <span className="badge badge-blue">{filteredPlatformUsers.length} משתמשים</span>
-        </div>
-        {platformLoading ? <div className="empty">טוען משתמשים...</div> : filteredPlatformUsers.length ? <VirtualizedTable
-          items={filteredPlatformUsers}
-          rowKey={(item) => item.id}
-          onRowClick={(item) => openPlatformEditor(item)}
-          columns={[
-            { key: "user", label: "משתמש" },
-            { key: "email", label: "אימייל" },
-            { key: "admin", label: "אדמין מערכת" },
-            { key: "status", label: "סטטוס" },
-          ]}
-          renderCells={(item) => [
-            <button className="table-entity-link" type="button" onClick={(event) => { event.stopPropagation(); openPlatformEditor(item); }}>{item.displayName}</button>,
-            item.email,
-            item.isPlatformAdmin ? <span className="badge badge-blue">כן</span> : "לא",
-            item.isActive ? <span className="badge badge-green">פעיל</span> : <span className="badge badge-gray">לא פעיל</span>,
-          ]}
-        /> : <div className="empty">לא נמצאו משתמשים.</div>}
-      </section>
-    </> : <>
+
       {entitlements ? <section className="card" style={{ marginBottom: 18 }}>
         <div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.plan.name}</h3></div></div>
         <PlanUsage label="משתמשים" usage={entitlements.users} />
@@ -522,7 +493,16 @@ export default function AccessPage() {
 
       <section className="card">
         <div className="toolbar">
-          <div className="search"><Search size={17} /><UiInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="חיפוש משתמש לפי שם או אימייל" /></div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", flex: "1 1 auto" }}>
+            {isPlatformAdmin ? <UiSelect value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); setEmployerFilterId(""); setSkip(0); }}>
+              {scopeOrganizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
+            </UiSelect> : null}
+            {(scopeOrganizations.find((org) => org.id === organizationId)?.employers.length ?? 0) > 1 ? <UiSelect value={employerFilterId} onChange={(event) => setEmployerFilterId(event.target.value)}>
+              <option value="">כל המעסיקים</option>
+              {(scopeOrganizations.find((org) => org.id === organizationId)?.employers ?? []).map((employer) => <option key={employer.id} value={employer.id}>{employer.legalName}</option>)}
+            </UiSelect> : null}
+            <div className="search"><Search size={17} /><UiInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="חיפוש משתמש לפי שם או אימייל" /></div>
+          </div>
           <span className="badge badge-blue">{organizations.find((x) => x.id === organizationId)?.name ?? "ארגון"}</span>
         </div>
         {loading ? <div className="empty">טוען משתמשים...</div> : users.length ? <VirtualizedTable
@@ -547,7 +527,6 @@ export default function AccessPage() {
           <button className="btn btn-secondary" disabled={!hasMore} onClick={() => setSkip(skip + PAGE_SIZE)}>הבא</button>
         </div>
       </section>
-    </>}
 
     {platformEditor ? <UserEditorModal
       title={platformEditor === "new" ? "משתמש חדש" : platformEditor.displayName}
