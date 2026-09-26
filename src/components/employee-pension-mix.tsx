@@ -8,7 +8,7 @@ import type { Employee, EmployeePensionProductInput, PensionProductType, SalaryA
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-function toEditorProduct(item: EmployeePensionProductInput, index: number): PensionEditorProduct {
+function toEditorProduct(item: EmployeePensionProductInput): PensionEditorProduct {
   return {
     productType: Number(item.productType) as PensionProductType,
     policyNumber: item.policyNumber,
@@ -19,7 +19,6 @@ function toEditorProduct(item: EmployeePensionProductInput, index: number): Pens
     salary: Number(item.salary || 0),
     salaryAllocationType: Number(item.salaryAllocationType ?? 1) as SalaryAllocationType,
     salaryAllocationValue: Number(item.salaryAllocationType ?? 1) === 4 ? null : Number(item.salaryAllocationValue ?? item.salary ?? 0),
-    allocationOrder: Number(item.allocationOrder ?? index),
     reportingType: item.reportingType,
     salaryLayer: item.salaryLayer,
     section14: item.section14,
@@ -56,7 +55,6 @@ function toEmployeeProduct(product: PensionEditorProduct): EmployeePensionProduc
     manufacturer: product.manufacturer ?? "",
     salaryAllocationType: Number(product.salaryAllocationType ?? 1) as SalaryAllocationType,
     salaryAllocationValue: product.salaryAllocationValue ?? null,
-    allocationOrder: Number(product.allocationOrder ?? 0),
     employerContributions: product.employerContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0), amount: Number(entry.amount ?? 0), exemptPayments: Number(entry.exemptPayments ?? 0) })),
     employeeContributions: product.employeeContributions.map((entry) => ({ component: entry.component, percentage: Number(entry.percentage || 0), amount: Number(entry.amount ?? 0), exemptPayments: Number(entry.exemptPayments ?? 0) })),
   };
