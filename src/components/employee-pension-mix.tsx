@@ -62,7 +62,16 @@ function toEmployeeProduct(product: PensionEditorProduct): EmployeePensionProduc
   };
 }
 
-export function EmployeePensionMix({ organizationId, employerId, employeeId, editable, saveLabel, onSaved }: { organizationId: string; employerId: string; employeeId: string; editable: boolean }) {
+type EmployeePensionMixProps = {
+  organizationId: string;
+  employerId: string;
+  employeeId: string;
+  editable: boolean;
+  saveLabel?: string;
+  onSaved?: () => void | Promise<void>;
+};
+
+export function EmployeePensionMix({ organizationId, employerId, employeeId, editable, saveLabel, onSaved }: EmployeePensionMixProps) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [monthlySalary, setMonthlySalary] = useState(0);
   const [products, setProducts] = useState<PensionEditorProduct[]>([]);
