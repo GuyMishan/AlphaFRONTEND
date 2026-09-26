@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, type ReactNode } from "react";
 import { X } from "lucide-react";
-export function AppModal({open=true,title,subtitle,children,actions,onClose,width="md",closeOnBackdrop=true,ariaLabel}:{open?:boolean;title?:string;subtitle?:string;children:ReactNode;actions?:ReactNode;onClose?:()=>void;width?:"sm"|"md"|"lg"|"xl";closeOnBackdrop?:boolean;ariaLabel?:string}) {
+export function AppModal({open=true,title,subtitle,children,actions,onClose,width="md",closeOnBackdrop=true,ariaLabel,className,bodyClassName}:{open?:boolean;title?:string;subtitle?:string;children:ReactNode;actions?:ReactNode;onClose?:()=>void;width?:"sm"|"md"|"lg"|"xl";closeOnBackdrop?:boolean;ariaLabel?:string;className?:string;bodyClassName?:string}) {
   useEffect(()=>{if(!open)return;const prev=document.body.style.overflow;document.body.style.overflow="hidden";const key=(e:KeyboardEvent)=>{if(e.key==="Escape")onClose?.()};window.addEventListener("keydown",key);return()=>{document.body.style.overflow=prev;window.removeEventListener("keydown",key)}},[open,onClose]);
   if(!open)return null;
   return <div className="app-modal-backdrop" role="presentation" onMouseDown={e=>{if(closeOnBackdrop&&e.target===e.currentTarget)onClose?.()}}><section className={`app-modal app-modal-${width} ${className ?? ""}`} role="dialog" aria-modal="true" aria-label={ariaLabel??title}>
