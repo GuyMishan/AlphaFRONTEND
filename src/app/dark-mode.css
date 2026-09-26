@@ -56,6 +56,9 @@ html[data-theme="dark"] .btn-secondary,
 html[data-theme="dark"] .icon-button,
 html[data-theme="dark"] .payment-upload { background: #111b28; color: var(--text); border-color: var(--line); }
 
+html[data-theme="dark"] .ui-select-trigger,
+html[data-theme="dark"] .ui-select-menu { background: #111b28 !important; color: var(--text); border-color: var(--line); }
+
 html[data-theme="dark"] input:disabled,
 html[data-theme="dark"] select:disabled,
 html[data-theme="dark"] textarea:disabled { background: #0d1621; color: #aebdcd; opacity: 1; }
