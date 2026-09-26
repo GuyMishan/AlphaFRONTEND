@@ -1111,3 +1111,12 @@ td { font-size: 14px; }
 .status-pill-active{display:flex!important;flex-direction:row;align-items:center;justify-content:center;gap:5px}
 .status-pill-active>svg{display:block;flex:0 0 13px}
 .status-pill-active>div{display:block;line-height:1}
+
+/* Date controls: RTL text, calendar isolated on the left, never overlapping typed value. */
+.ui-date-control{position:relative;width:100%;direction:rtl}
+.ui-date-control .ui-date-text{width:100%;box-sizing:border-box;text-align:right!important;direction:ltr;padding-right:14px!important;padding-left:50px!important}
+.ui-date-control .ui-date-picker-button{position:absolute;left:7px!important;right:auto!important;top:50%;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;padding:0;z-index:3}
+.ui-date-control .ui-date-native-picker{position:absolute;left:22px!important;right:auto!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;opacity:0;pointer-events:none}
+
+/* Product status matches the adjacent trash button height. */
+.report-product-title .status-pill-active{height:36px;min-height:36px;padding:0 11px;display:flex!important;align-items:center;justify-content:center}

@@ -168,7 +168,3 @@
 [data-theme="dark"] .employee-report-summary>div{background:var(--surface);border-color:var(--line)}
 [data-theme="dark"] .employee-report-summary b{color:var(--text)}
 
-/* Date/month fields in report editor keep the shared UiDateInput dimensions and calendar affordance. */
-.report-modal .ui-date-control .ui-date-text{min-height:var(--control-height);height:var(--control-height);padding-left:44px!important;padding-right:12px!important;border-radius:9px;font-size:inherit}
-.report-modal .ui-date-control .ui-date-picker-button{width:32px;height:32px;display:flex;align-items:center;justify-content:center}
-.report-modal .ui-date-control .ui-date-native-picker{width:1px!important;height:1px!important;min-height:0!important;padding:0!important}
