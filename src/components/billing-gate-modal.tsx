@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { AlertTriangle, Building2, CreditCard, House } from "lucide-react";
+import { AlertTriangle, Building2, CreditCard, House, X } from "lucide-react";
 import type { BillingGateStatus } from "@/lib/types";
 
 function messageForGate(gate: BillingGateStatus) {
@@ -21,12 +21,14 @@ export function BillingGateModal({
   employerId,
   canManageOrganizationBilling,
   canManageEmployerBilling,
+  onClose,
 }: {
   gate: BillingGateStatus;
   organizationId: string;
   employerId: string;
   canManageOrganizationBilling: boolean;
   canManageEmployerBilling: boolean;
+  onClose?: () => void;
 }) {
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -41,7 +43,7 @@ export function BillingGateModal({
   return (
     <div className="billing-gate-backdrop" role="presentation">
       <section className="billing-gate-modal" role="dialog" aria-modal="true" aria-labelledby="billing-gate-title" aria-describedby="billing-gate-description">
-        <div className="billing-gate-icon"><AlertTriangle size={26} /></div>
+        {onClose ? <button type="button" className="billing-gate-close" onClick={onClose} aria-label="סגירה"><X size={20} /></button> : null}\n        <div className="billing-gate-icon"><AlertTriangle size={26} /></div>
         <h2 id="billing-gate-title">נדרשת השלמת פרטי חיוב</h2>
         <p id="billing-gate-description">{messageForGate(gate)}</p>
         {gate.billedThroughName ? <div className="billing-gate-source">החיוב עבור המעסיק מתבצע דרך <b>{gate.billedThroughName}</b>.</div> : null}
@@ -61,7 +63,7 @@ export function BillingGateModal({
         <div className="billing-gate-actions">
           {canManageOrganizationBilling ? <Link className="btn btn-primary" href={organizationBillingHref}><Building2 size={17} />לפרטי החיוב של הארגון</Link> : null}
           {canManageEmployerBilling ? <Link className={canManageOrganizationBilling ? "btn btn-secondary" : "btn btn-primary"} href={employerBillingHref}><CreditCard size={17} />להגדיר חיוב למעסיק הזה</Link> : null}
-          <Link className="btn btn-secondary" href="/dashboard"><House size={17} />חזרה לדף הבית</Link>
+          {onClose ? <button type="button" className="btn btn-secondary" onClick={onClose}>המשך מאוחר יותר</button> : <Link className="btn btn-secondary" href="/dashboard"><House size={17} />חזרה לדף הבית</Link>}
         </div>
       </section>
     </div>
