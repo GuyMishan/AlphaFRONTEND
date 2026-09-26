@@ -62,7 +62,7 @@ function toEmployeeProduct(product: PensionEditorProduct): EmployeePensionProduc
   };
 }
 
-export function EmployeePensionMix({ organizationId, employerId, employeeId, editable }: { organizationId: string; employerId: string; employeeId: string; editable: boolean }) {
+export function EmployeePensionMix({ organizationId, employerId, employeeId, editable, saveLabel, onSaved }: { organizationId: string; employerId: string; employeeId: string; editable: boolean }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [monthlySalary, setMonthlySalary] = useState(0);
   const [products, setProducts] = useState<PensionEditorProduct[]>([]);
@@ -121,6 +121,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
       setEmployee({ ...employee, monthlySalary });
       setProducts(normalized.products);
       setSaved(true);
+      if (onSaved) await onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "שמירת תמהיל העובד נכשלה");
     } finally {
@@ -133,7 +134,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
   return <div className="card">
     <div className="card-head">
       <div><h2>תמהיל העובד</h2><span style={{ color: "var(--muted)" }}>המוצרים נשמרים כברירת המחדל של העובד ומשמשים ליצירת דיווחים חדשים.</span></div>
-      {editable ? <button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={17} />{saving ? "שומר..." : "שמירת תמהיל"}</button> : null}
+      {editable ? <button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={17} />{saving ? "שומר..." : saveLabel ?? "שמירת תמהיל"}</button> : null}
     </div>
     <div className="manual-report-badges" style={{ marginBottom: 14 }}><span className="badge badge-blue">{products.length} מוצרים</span><span className="badge badge-green">{activeCount} פעילים</span></div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}

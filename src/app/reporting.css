@@ -152,3 +152,10 @@
   .deposit-table tr.virtual-spacer { display: block; border: 0; padding: 0; background: transparent; }
   .deposit-table tr.virtual-spacer td { display: block !important; width: 1px !important; }
 }
+
+/* Inline employee flow */
+.employee-form-embedded .profile-summary{display:flex;flex-direction:row;align-items:center;gap:14px}
+.employee-form-embedded .profile-summary>div:last-child{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.employee-created-next-step{display:flex;flex-direction:row;align-items:center;gap:14px;flex-wrap:wrap}
+.employee-created-icon{width:44px;height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:var(--blue-soft);color:var(--blue)}
+.employee-created-next-step>div:nth-child(2){flex:1;min-width:220px}.employee-created-next-step h3,.employee-created-next-step p{margin-top:0}.employee-created-next-step p{margin-bottom:0}.employee-created-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}

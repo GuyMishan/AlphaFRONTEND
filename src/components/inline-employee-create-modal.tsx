@@ -67,10 +67,10 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
         </div> : null}
 
         {stage === "products" && createdEmployee ? <>
-          <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={createdEmployee.id} editable />
+          <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={createdEmployee.id} editable saveLabel="סיום, הוספה לדיווח וחזרה" onSaved={addToReportAndClose} />
           <div className="employee-created-actions employee-products-finish">
             <button type="button" className="btn btn-secondary" disabled={working} onClick={() => setStage("confirm-products")}>חזרה</button>
-            <button type="button" className="btn btn-primary" disabled={working} onClick={() => void addToReportAndClose()}>{working ? "מוסיף לדיווח..." : "סיום, הוספה לדיווח וחזרה"}</button>
+            
           </div>
         </> : null}
       </AppModal>;

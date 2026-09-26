@@ -96,6 +96,7 @@ export default function EmployerProfilePage() {
   const [settings, setSettings] = useState<EmployerProfileCenterSettings>(EMPTY_SETTINGS);
   const [accounts, setAccounts] = useState<EmployerPaymentAccount[]>([]);
   const [singleEmployerUser, setSingleEmployerUser] = useState(false);
+  const [hasOrganizationContext, setHasOrganizationContext] = useState(true);
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
   const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,6 +126,8 @@ export default function EmployerProfilePage() {
         && accessibleEmployers[0].organizationId === organizationId
         && accessibleEmployers[0].employerId === id;
       setSingleEmployerUser(isSingleEmployerUser);
+      const currentOrganization = scope.organizations.find((organization) => organization.id === organizationId);
+      setHasOrganizationContext(Boolean(currentOrganization?.hasOrganizationScope));
 
       if (isSingleEmployerUser) {
         const [subscriptionRow, entitlementRow] = await Promise.all([
@@ -188,6 +191,7 @@ export default function EmployerProfilePage() {
       accounts={accounts}
       setAccounts={setAccounts}
       pensionPayment={settings.pensionPayment}
+      hasOrganizationContext={hasOrganizationContext}
       onModeSaved={(pensionPayment) => setSettings((current) => ({ ...current, pensionPayment }))}
     /> : null}
 
@@ -196,6 +200,7 @@ export default function EmployerProfilePage() {
       employer={employer}
       canManageEmployer={capabilities.canManageEmployer}
       billing={settings.billing}
+      hasOrganizationContext={hasOrganizationContext}
       onModeSaved={(billing) => setSettings((current) => ({ ...current, billing }))}
     /> : null}
 
@@ -364,13 +369,14 @@ function EmployeesTab({ organizationId, employer, canCreate }: { organizationId:
   return <EmployerEmployeesPanel organizationId={organizationId} employer={employer} canCreate={canCreate} />;
 }
 
-function PensionPaymentTab({ organizationId, employerId, canManage, accounts, setAccounts, pensionPayment, onModeSaved }: {
+function PensionPaymentTab({ organizationId, employerId, canManage, accounts, setAccounts, pensionPayment, hasOrganizationContext, onModeSaved }: {
   organizationId: string;
   employerId: string;
   canManage: boolean;
   accounts: EmployerPaymentAccount[];
   setAccounts: React.Dispatch<React.SetStateAction<EmployerPaymentAccount[]>>;
   pensionPayment: EmployerProfileCenterSettings["pensionPayment"];
+  hasOrganizationContext: boolean;
   onModeSaved: (value: EmployerProfileCenterSettings["pensionPayment"]) => void;
 }) {
   const [resolution, setResolution] = useState<PensionPaymentResolution | null>(null);
@@ -520,7 +526,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
 
     <div className="payment-horizontal-layout">
       <aside className="payment-source-column">
-        <UiChoiceCard
+        {hasOrganizationContext ?         <UiChoiceCard
           compact
           disabled={!canManage || !organizationAccount}
           selected={selectedMode === 2}
@@ -531,7 +537,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           <b>חשבון הארגון</b>
           <p>{organizationAccount ? "שימוש בחשבון הפנסיוני שמנוהל ברמת הארגון." : "לא קיים כרגע חשבון ארגוני זמין."}</p>
           {organizationAccount ? <Tooltip content="קיים חשבון ארגוני זמין למעסיק הזה"><span className="option-hint">ⓘ קיים חשבון ארגוני</span></Tooltip> : null}
-        </UiChoiceCard>
+        </UiChoiceCard> : null}
 
         <UiChoiceCard
           compact
@@ -596,11 +602,12 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   </section>;
 }
 
-function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmployer, billing, onModeSaved }: {
+function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmployer, billing, hasOrganizationContext, onModeSaved }: {
   organizationId: string;
   employer: Employer;
   canManageEmployer: boolean;
   billing: EmployerProfileCenterSettings["billing"];
+  hasOrganizationContext: boolean;
   onModeSaved: (value: EmployerProfileCenterSettings["billing"]) => void;
 }) {
   const [resolution, setResolution] = useState<EmployerBillingResolution | null>(null);
@@ -652,7 +659,7 @@ function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmpl
 
     <div className="payment-horizontal-layout">
       <aside className="payment-source-column">
-        <UiChoiceCard
+        {hasOrganizationContext ?         <UiChoiceCard
           compact
           disabled={!billing.canChangeMode || !organizationAvailable}
           selected={selectedMode === 2}
@@ -663,7 +670,7 @@ function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmpl
           <b>חיוב דרך הארגון</b>
           <p>{organizationAvailable ? "שימוש בפרטי החיוב המרכזיים של הארגון." : "לא הוגדרו עדיין פרטי חיוב בארגון."}</p>
           {organizationAvailable ? <Tooltip content="קיימים פרטי חיוב ארגוניים זמינים למעסיק הזה"><span className="option-hint">ⓘ קיים חיוב ארגוני</span></Tooltip> : null}
-        </UiChoiceCard>
+        </UiChoiceCard> : null}
 
         <UiChoiceCard
           compact
