@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
+import { UiInput, UiSelect } from "@/components/ui-controls";
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi, ApiError } from "@/lib/api";
 import type { BillingAccountPricingType, EntitlementSnapshot, SelfServiceBillingPricing } from "@/lib/types";
@@ -68,14 +69,19 @@ export function SubscriptionBillingPanel({ organizationId, employerId, entitleme
         <PlanUsage label="משתמשים" usage={entitlements.users} />
       </div> : null}
 
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", marginTop: 18 }}>
-        {OPTIONS.map((option) => <button key={option.value} type="button" className={`card ${selected === option.value ? "selected" : ""}`} style={{ textAlign: "right", cursor: canManage ? "pointer" : "default" }} disabled={!canManage || saving} onClick={() => setSelected(option.value)}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><b>{option.title}</b>{pricing?.billingType === option.value ? <span className="badge badge-green">נוכחית</span> : null}</div>
-          <p style={{ color: "var(--muted)", fontSize: 13 }}>{option.description}</p>
-          {option.value !== "Free" ? <strong>{pricing?.billingType === option.value && price > 0 ? `₪${price.toLocaleString("he-IL")} ${option.value === "PerEmployee" ? "לעובד" : "לשורה"}` : "התעריף יוצג לפי ההגדרה במערכת"}</strong> : <strong>ללא עלות</strong>}
-        </button>)}
+      <div className="grid" style={{ gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, marginTop: 18 }}>
+        <label className="field">
+          <span>סוג התוכנית</span>
+          <UiSelect value={selected} disabled={!canManage || saving} onChange={(event) => setSelected(event.target.value as BillingAccountPricingType)}>
+            {OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.title}</option>)}
+          </UiSelect>
+        </label>
+        {selected !== "Free" ? <label className="field">
+          <span>{selected === "PerEmployee" ? "תעריף לעובד" : "תעריף לשורה"}</span>
+          <UiInput readOnly value={pricing?.billingType === selected && price > 0 ? price.toFixed(2) : ""} placeholder="התעריף מוגדר על ידי ALPHA" />
+          <small style={{ color: "var(--muted)" }}>{pricing?.billingType === selected && price > 0 ? "₪" : "אם לא מופיע תעריף, יש ליצור קשר עם התמיכה."}</small>
+        </label> : null}
       </div>
-
       <div className="notice notice-info" style={{ marginTop: 16 }}>התעריף נקבע לפי התמחור שהוגדר עבורכם במערכת. אם התעריף אינו תואם למה שסוכם, יש ליצור קשר עם התמיכה.</div>
       {!canManage ? <div className="notice notice-info" style={{ marginTop: 12 }}>אין לך הרשאה לשנות את התוכנית.</div> : null}
       {!showBillingAccount && canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="button" disabled={saving || !pricing || selected === pricing.billingType} onClick={() => void savePricing()}>{saving ? "שומר..." : "שמירת תוכנית וחיוב"}</button></div> : null}
