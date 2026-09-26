@@ -766,7 +766,6 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
 }) {
   const [form, setForm] = useState(value);
   const [saving, setSaving] = useState(false);
-  const [dayMenuOpen, setDayMenuOpen] = useState(false);
   useEffect(() => setForm(value), [value]);
 
   async function save(event: React.FormEvent) {
@@ -788,17 +787,12 @@ function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
     {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הגדרות הדיווח מוצגות לקריאה בלבד לפי ההרשאה שלך.</div> : null}
     <form className="form" onSubmit={save}>
       <div className="grid two-cols">
-        <div className="field compact-day-field">
+        <div className="field">
           <label>יום תשלום שכר</label>
-          <div className="compact-day-picker">
-            <button className="compact-day-trigger" type="button" disabled={!canEdit} onClick={() => setDayMenuOpen((open) => !open)}>
-              {form.defaultSalaryPaymentDay ? `${form.defaultSalaryPaymentDay} בחודש` : "לא הוגדר"}
-            </button>
-            {dayMenuOpen && canEdit ? <div className="compact-day-menu">
-              <button type="button" onClick={() => { setForm({ ...form, defaultSalaryPaymentDay: null }); setDayMenuOpen(false); }}>לא הוגדר</button>
-              {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => <button key={day} type="button" className={form.defaultSalaryPaymentDay === day ? "selected" : ""} onClick={() => { setForm({ ...form, defaultSalaryPaymentDay: day }); setDayMenuOpen(false); }}>{day} בחודש</button>)}
-            </div> : null}
-          </div>
+          <UiSelect disabled={!canEdit} value={form.defaultSalaryPaymentDay ?? ""} onChange={(e) => setForm({ ...form, defaultSalaryPaymentDay: e.target.value ? Number(e.target.value) : null })}>
+            <option value="">לא הוגדר</option>
+            {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => <option key={day} value={day}>{day} בחודש</option>)}
+          </UiSelect>
         </div>
         <div className="field">
           <label>סוג מפקיד</label>
