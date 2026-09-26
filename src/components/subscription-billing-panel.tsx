@@ -78,8 +78,8 @@ export function SubscriptionBillingPanel({ organizationId, employerId, entitleme
         </label>
         {selected !== "Free" ? <label className="field">
           <span>{selected === "PerEmployee" ? "תעריף לעובד" : "תעריף לשורה"}</span>
-          <UiInput readOnly value={pricing?.billingType === selected && price > 0 ? price.toFixed(2) : ""} placeholder="התעריף מוגדר על ידי ALPHA" />
-          <small style={{ color: "var(--muted)" }}>{pricing?.billingType === selected && price > 0 ? "₪" : "אם לא מופיע תעריף, יש ליצור קשר עם התמיכה."}</small>
+          <UiInput disabled value={pricing ? String(selected === "PerEmployee" ? pricing.employeeUnitPrice : pricing.rowUnitPrice) : ""} />
+          <small style={{ color: "var(--muted)" }}>₪ {selected === "PerEmployee" ? "לעובד" : "לשורה"} · התעריף נקבע על ידי ALPHA. לשינוי יש ליצור קשר עם התמיכה.</small>
         </label> : null}
       </div>
       <div className="notice notice-info" style={{ marginTop: 16 }}>התעריף נקבע לפי התמחור שהוגדר עבורכם במערכת. אם התעריף אינו תואם למה שסוכם, יש ליצור קשר עם התמיכה.</div>
