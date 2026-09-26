@@ -27,21 +27,18 @@
 
 .pension-fund-options {
   position: absolute;
-  z-index: 40;
-  top: calc(100% + 4px);
+  z-index: 120;
+  top: calc(100% + 6px);
   right: 0;
-  left: auto;
-  min-width: 100%;
-  width: max-content;
-  max-width: min(720px, calc(100vw - 32px));
-  max-height: 280px;
+  left: 0;
+  max-height: 240px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px;
+  padding: 6px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 12px 30px rgba(16, 38, 64, 0.14);
+  background: var(--surface);
+  box-shadow: 0 14px 35px rgba(16, 38, 64, 0.16);
 }
 
 .pension-fund-option,
@@ -49,36 +46,28 @@
 .pension-fund-loading {
   display: block;
   width: 100%;
-  min-width: max-content;
   margin: 0;
   border: 0;
   border-radius: 7px;
-  background: #fff;
-  color: #111827;
-  padding: 10px 12px;
+  background: transparent;
+  color: var(--text);
+  padding: 9px 10px;
   text-align: right;
   direction: rtl;
-  white-space: nowrap;
-  line-height: 1.35;
+  line-height: normal;
 }
 
 .pension-fund-option {
   cursor: pointer;
-  transition: background 0.15s ease;
+  font: inherit;
 }
 
 .pension-fund-option:hover,
-.pension-fund-option:focus-visible {
-  background: #f1f4f8;
+.pension-fund-option:focus-visible,
+.pension-fund-option.selected {
   outline: none;
-}
-
-.pension-fund-option.selected,
-.pension-fund-option.selected:hover,
-.pension-fund-option.selected:focus-visible {
   background: var(--blue-soft);
-  color: var(--text);
-  font-weight: 650;
+  color: var(--blue);
 }
 
 .pension-fund-empty {
@@ -90,8 +79,12 @@
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  min-height: 42px;
+  min-height: 38px;
   color: var(--muted);
+}
+
+html[data-theme="dark"] .pension-fund-options {
+  background: #111b28;
 }
 
 .loading-dots {
