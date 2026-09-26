@@ -72,6 +72,7 @@ import type {
   PlatformSubscription,
   PlatformUser,
   SubscriptionSummary,
+  SelfServiceSubscriptionPlan,
   UserCandidate,
 } from "./types";
 import { demoEmployees, demoEmployers, demoOrganizations } from "./demo-data";
@@ -155,6 +156,10 @@ export const alphaApi = {
     request<SelfServiceOnboardingResult>("/api/onboarding/self-service", { method: "POST", body: JSON.stringify(payload) }),
   subscription: (organizationId: string): Promise<SubscriptionSummary> =>
     request<SubscriptionSummary>(`/api/organizations/${organizationId}/subscription`),
+  subscriptionPlans: (organizationId: string): Promise<SelfServiceSubscriptionPlan[]> =>
+    request<SelfServiceSubscriptionPlan[]>(`/api/organizations/${organizationId}/subscription/plans`),
+  changeSubscriptionPlan: (organizationId: string, planId: string): Promise<SubscriptionSummary> =>
+    request<SubscriptionSummary>(`/api/organizations/${organizationId}/subscription/plan`, { method: "PUT", body: JSON.stringify({ planId }) }),
   entitlements: (organizationId: string): Promise<EntitlementSnapshot> =>
     request<EntitlementSnapshot>(`/api/organizations/${organizationId}/entitlements`),
   platformPlans: (): Promise<Plan[]> =>
