@@ -772,6 +772,8 @@ export type BillingAccountPricingType = "Free" | "PerEmployee" | "PerReportRow";
 export type SelfServiceBillingPricing = {
   billingType: BillingAccountPricingType;
   unitPrice: number;
+  employeeUnitPrice: number;
+  rowUnitPrice: number;
   accountValid: boolean;
 };
 
