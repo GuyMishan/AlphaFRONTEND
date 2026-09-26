@@ -197,7 +197,6 @@ export default function EmployerProfilePage() {
       {singleEmployerUser && subscription && entitlements ? <SubscriptionBillingPanel
         organizationId={organizationId}
         employerId={employer.id}
-        subscription={subscription}
         entitlements={entitlements}
         canManage={capabilities.canManageEmployer}
         onChanged={load}
