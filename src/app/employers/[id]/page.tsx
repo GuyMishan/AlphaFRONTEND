@@ -398,8 +398,26 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     try {
       const value = await alphaApi.employerPaymentResolution(organizationId, employerId);
       setResolution(value);
-      setSelectedMode(pensionPayment.modeOverridden ? pensionPayment.mode : null);
+      const effectiveMode: 1 | 2 = value.source === "Organization" ? 2 : 1;
+      setSelectedMode(effectiveMode);
       setAccounts(value.account ? [value.account] : []);
+      if (effectiveMode === 1 && value.employerAccount) {
+        const full = await alphaApi.employerPaymentAccount(organizationId, employerId, value.employerAccount.id);
+        setEditingId(value.employerAccount.id);
+        setForm({
+          bankId: full.bankId,
+          branchId: full.branchId,
+          accountNumber: full.accountNumber,
+          accountHolderName: full.accountHolderName,
+          accountHolderId: full.accountHolderId,
+          isDefault: true,
+        });
+        setBankSearch(String(full.bankId));
+        setBranchSearch(String(full.branchId));
+        setMandateStatus(full.mandate?.status ?? 1);
+        setExternalMandateId(full.mandate?.externalMandateId ?? "");
+        setDocumentId(full.mandate?.documentId ?? "");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "טעינת חשבון התשלום נכשלה");
     } finally {
@@ -417,12 +435,22 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   }, [bankSearch]);
 
   useEffect(() => {
+    const bank = banks.find((item) => item.bankCode === form.bankId);
+    if (bank && /^\d+$/.test(bankSearch)) setBankSearch(`${bank.bankCode} - ${bank.bankName}`);
+  }, [banks, form.bankId, bankSearch]);
+
+  useEffect(() => {
     if (!form.bankId) { setBranches([]); return; }
     const timer = window.setTimeout(() => {
       alphaApi.bankBranches(form.bankId, branchSearch.trim(), 100).then(setBranches).catch(() => setBranches([]));
     }, 200);
     return () => window.clearTimeout(timer);
   }, [form.bankId, branchSearch]);
+
+  useEffect(() => {
+    const branch = branches.find((item) => item.branchCode === form.branchId);
+    if (branch && /^\d+$/.test(branchSearch)) setBranchSearch(`${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`);
+  }, [branches, form.branchId, branchSearch]);
 
   async function selectEmployerMode() {
     setSelectedMode(1);
@@ -620,7 +648,7 @@ function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmpl
     try {
       const value = await alphaApi.employerBillingResolution(organizationId, employer.id);
       setResolution(value);
-      setSelectedMode(billing.modeOverridden ? billing.mode : null);
+      setSelectedMode(value.source === "Organization" ? 2 : 1);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "טעינת הגדרת החיוב נכשלה");
     } finally {

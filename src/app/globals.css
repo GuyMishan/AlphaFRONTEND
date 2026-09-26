@@ -1102,3 +1102,12 @@ td { font-size: 14px; }
 /* Employee forms keep text controls visually consistent even when labels wrap. */
 .employee-details-grid .ui-control:not(textarea){height:40px;min-height:40px;max-height:40px}
 .employee-details-grid .field{align-content:start}
+
+/* Quick actions: icon tile is a real flex box and owns SVG centering. */
+.quick-action-icon{display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important}
+.quick-action-icon>svg{display:block!important;flex:0 0 19px!important;width:19px!important;height:19px!important;margin:0!important;transform:none!important;vertical-align:middle}
+
+/* Status pill: icon and text share one flex row. */
+.status-pill-active{display:flex!important;flex-direction:row;align-items:center;justify-content:center;gap:5px}
+.status-pill-active>svg{display:block;flex:0 0 13px}
+.status-pill-active>div{display:block;line-height:1}

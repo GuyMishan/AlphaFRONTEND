@@ -283,8 +283,10 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
   const [products, setProducts] = useState<PensionEditorProduct[]>(() => employee.products.map(toEditorProduct));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [validationAttempted, setValidationAttempted] = useState(false);
 
   async function save() {
+    setValidationAttempted(true);
     const normalized = normalizePensionEditorProducts(monthlySalary, products);
     const validationError = normalized.error || validatePensionEditorProducts(normalized.products, "report");
     if (validationError) {
@@ -320,8 +322,9 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
           month={month}
           monthlySalary={monthlySalary}
           products={products}
-          onMonthlySalaryChange={(value) => { setMonthlySalary(value); setError(""); }}
-          onProductsChange={(value) => { setProducts(value); setError(""); }}
+          showAllocationError={validationAttempted}
+          onMonthlySalaryChange={(value) => { setMonthlySalary(value); setError(""); setValidationAttempted(false); }}
+          onProductsChange={(value) => { setProducts(value); setError(""); setValidationAttempted(false); }}
         />
       </div>
       <div className="report-modal-footer"><button className="btn btn-secondary" onClick={onClose}>ביטול</button><button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={15} />{saving ? "שומר..." : "שמירת נתוני העובד"}</button></div>

@@ -159,3 +159,16 @@
 .employee-created-next-step{display:flex;flex-direction:row;align-items:center;gap:14px;flex-wrap:wrap}
 .employee-created-icon{width:44px;height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:var(--blue-soft);color:var(--blue)}
 .employee-created-next-step>div:nth-child(2){flex:1;min-width:220px}.employee-created-next-step h3,.employee-created-next-step p{margin-top:0}.employee-created-next-step p{margin-bottom:0}.employee-created-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* Report editor uses theme tokens instead of hard-coded light surfaces. */
+.report-modal,.report-modal-header,.report-modal-footer,.manual-employee-row,.employee-report-summary>div,.report-product-card{background:var(--surface);color:var(--text)}
+.report-modal-body{background:var(--bg)}
+.employee-report-summary>div{border-color:var(--line)}
+.employee-report-summary span{color:var(--muted)}
+[data-theme="dark"] .employee-report-summary>div{background:var(--surface);border-color:var(--line)}
+[data-theme="dark"] .employee-report-summary b{color:var(--text)}
+
+/* Date/month fields in report editor keep the shared UiDateInput dimensions and calendar affordance. */
+.report-modal .ui-date-control .ui-date-text{min-height:var(--control-height);height:var(--control-height);padding-left:44px!important;padding-right:12px!important;border-radius:9px;font-size:inherit}
+.report-modal .ui-date-control .ui-date-picker-button{width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.report-modal .ui-date-control .ui-date-native-picker{width:1px!important;height:1px!important;min-height:0!important;padding:0!important}

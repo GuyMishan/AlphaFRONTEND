@@ -305,17 +305,17 @@ export default function DashboardPage() {
 
   const quickActions = mode === "admin" ? (
     <aside className="card"><div className="card-head"><h2>פעולות ניהול</h2></div><div className="quick-actions">
-      <Link className="quick-action" href="/admin"><span className="quick-action-icon"><ShieldCheck size={19} /></span><span><b>ניהול מערכת</b><span>משתמשים והגדרות מערכת</span></span><ArrowLeft size={17} /></Link>
-      <Link className="quick-action" href="/employers"><span className="quick-action-icon"><Building2 size={19} /></span><span><b>מעסיקים</b><span>מעבר לרשימת המעסיקים</span></span><ArrowLeft size={17} /></Link>
-      <Link className="quick-action" href="/reports"><span className="quick-action-icon"><CircleCheck size={19} /></span><span><b>דיווחים</b><span>צפייה בדיווחים במערכת</span></span><ArrowLeft size={17} /></Link>
+      <Link className="quick-action" href="/admin"><div className="quick-action-icon"><ShieldCheck size={19} /></div><span><b>ניהול מערכת</b><span>משתמשים והגדרות מערכת</span></span><ArrowLeft size={17} /></Link>
+      <Link className="quick-action" href="/employers"><div className="quick-action-icon"><Building2 size={19} /></div><span><b>מעסיקים</b><span>מעבר לרשימת המעסיקים</span></span><ArrowLeft size={17} /></Link>
+      <Link className="quick-action" href="/reports"><div className="quick-action-icon"><CircleCheck size={19} /></div><span><b>דיווחים</b><span>צפייה בדיווחים במערכת</span></span><ArrowLeft size={17} /></Link>
     </div></aside>
   ) : (
     <aside className="card"><div className="card-head"><h2>פעולות מהירות</h2></div><div className="quick-actions">
-      <Link className="quick-action" href="/reports/new"><span className="quick-action-icon"><FilePlus2 size={19} /></span><span><b>דיווח חודשי חדש</b><span>יצירת דיווח חדש</span></span><ArrowLeft size={17} /></Link>
-      <Link className="quick-action" href="/reports/new?mode=correction"><span className="quick-action-icon"><FilePenLine size={19} /></span><span><b>תיקון דיווח</b><span>תיקון או דיווח הפרשים</span></span><ArrowLeft size={17} /></Link>
-      <Link className="quick-action" href="/employees"><span className="quick-action-icon"><Users size={19} /></span><span><b>רשימת עובדים</b><span>צפייה וניהול עובדים</span></span><ArrowLeft size={17} /></Link>
-      {mode === "organization" && hasOrganizationScope && organizationId ? <Link className="quick-action" href={`/organizations/${organizationId}`}><span className="quick-action-icon"><Building2 size={19} /></span><span><b>פרופיל ארגון</b><span>פרטים, מנוי, Billing והרשאות</span></span><ArrowLeft size={17} /></Link> : null}
-      {mode === "organization" && hasOrganizationScope ? <Link className="quick-action" href="/access"><span className="quick-action-icon"><UserCog size={19} /></span><span><b>הרשאות משתמשים</b><span>ניהול גישה בארגון</span></span><ArrowLeft size={17} /></Link> : null}
+      <Link className="quick-action" href="/reports/new"><div className="quick-action-icon"><FilePlus2 size={19} /></div><span><b>דיווח חודשי חדש</b><span>יצירת דיווח חדש</span></span><ArrowLeft size={17} /></Link>
+      <Link className="quick-action" href="/reports/new?mode=correction"><div className="quick-action-icon"><FilePenLine size={19} /></div><span><b>תיקון דיווח</b><span>תיקון או דיווח הפרשים</span></span><ArrowLeft size={17} /></Link>
+      <Link className="quick-action" href="/employees"><div className="quick-action-icon"><Users size={19} /></div><span><b>רשימת עובדים</b><span>צפייה וניהול עובדים</span></span><ArrowLeft size={17} /></Link>
+      {mode === "organization" && hasOrganizationScope && organizationId ? <Link className="quick-action" href={`/organizations/${organizationId}`}><div className="quick-action-icon"><Building2 size={19} /></div><span><b>פרופיל ארגון</b><span>פרטים, מנוי, Billing והרשאות</span></span><ArrowLeft size={17} /></Link> : null}
+      {mode === "organization" && hasOrganizationScope ? <Link className="quick-action" href="/access"><div className="quick-action-icon"><UserCog size={19} /></div><span><b>הרשאות משתמשים</b><span>ניהול גישה בארגון</span></span><ArrowLeft size={17} /></Link> : null}
     </div></aside>
   );
 
