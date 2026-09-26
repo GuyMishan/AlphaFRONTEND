@@ -7,13 +7,14 @@ import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi, ApiError } from "@/lib/api";
 import type { EntitlementSnapshot, SelfServiceSubscriptionPlan, SubscriptionSummary } from "@/lib/types";
 
-export function SubscriptionBillingPanel({ organizationId, employerId, subscription, entitlements, canManage, onChanged }: {
+export function SubscriptionBillingPanel({ organizationId, employerId, subscription, entitlements, canManage, onChanged, showBillingAccount = true }: {
   organizationId: string;
   employerId?: string;
   subscription: SubscriptionSummary;
   entitlements: EntitlementSnapshot;
   canManage: boolean;
   onChanged: () => Promise<void>;
+  showBillingAccount?: boolean;
 }) {
   const [plans, setPlans] = useState<SelfServiceSubscriptionPlan[]>([]);
   const [changing, setChanging] = useState(false);
@@ -72,6 +73,6 @@ export function SubscriptionBillingPanel({ organizationId, employerId, subscript
       </div>
     </section>
 
-    <AlphaBillingAccountForm organizationId={organizationId} employerId={employerId} canManage={canManage} />
+    {showBillingAccount ? <AlphaBillingAccountForm organizationId={organizationId} employerId={employerId} canManage={canManage} /> : null}
   </div>;
 }
