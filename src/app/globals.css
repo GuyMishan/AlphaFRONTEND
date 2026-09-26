@@ -1120,3 +1120,6 @@ td { font-size: 14px; }
 
 /* Product status matches the adjacent trash button height. */
 .report-product-title .status-pill-active{height:36px;min-height:36px;padding:0 11px;display:flex!important;align-items:center;justify-content:center}
+
+.field-error .ui-date-control{border-color:var(--danger,#dc2626)!important;box-shadow:0 0 0 1px var(--danger,#dc2626)}
+.field-error-text{display:block;color:var(--danger,#dc2626);margin-top:6px;font-size:12px}
