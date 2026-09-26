@@ -397,7 +397,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             <div className="field"><label>סוג פנסיה *</label><EmployerInterfaceOptionSelect category="old-pension-type" scope="current" value={metadataForm.oldPensionTypeCode} required onChange={(value) => patchMetadata("oldPensionTypeCode", value)} /></div>
             <div className="field"><label>חלקיות משרה (%)</label><UiInput type="number" min="1" max="100" step="0.01" value={metadataForm.employmentPercentage ?? ""} onChange={(e) => patchMetadata("employmentPercentage", e.target.value === "" ? null : Number(e.target.value))} /></div>
             <div className="field"><label>ימי עבודה בחודש</label><UiInput type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div>
-          </section> : null}
+          </div></section> : null}
 
           {negative ? <section className="payment-panel"><h3>פרטי הבקשה</h3><div className="payment-method-grid">
             <div className="field"><label>סוג פעולה *</label><EmployerInterfaceOptionSelect category="operation-code" scope="negative" value={metadataForm.operationCode} required onChange={(value) => patchMetadata("operationCode", value)} /></div>
