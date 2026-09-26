@@ -1080,3 +1080,9 @@ td { font-size: 14px; }
 .billing-gate-modal { position: relative; }
 .billing-gate-close { position: absolute; inset-inline-end: 14px; top: 14px; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
 .billing-gate-close:hover { background: var(--blue-soft); color: var(--blue); }
+
+/* Date picker layout: reserve icon space so text can never overlap it. */
+.ui-date-control { display: block; direction: ltr; }
+.ui-date-control .ui-date-text { box-sizing: border-box; padding-left: 44px !important; padding-right: 12px !important; text-align: left; }
+.ui-date-control .ui-date-picker-button { left: 6px; right: auto; z-index: 2; }
+.ui-date-control .ui-date-native-picker { left: 20px; right: auto; }
