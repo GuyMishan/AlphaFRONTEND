@@ -2,7 +2,7 @@
 
 import { UiInput } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { alphaApi } from "@/lib/api";
 import type { PensionFundOption, PensionProductType } from "@/lib/types";
 
