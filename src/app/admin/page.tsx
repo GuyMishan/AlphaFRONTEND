@@ -394,7 +394,7 @@ export default function AdminPage() {
     </section>}
 
     {editingBillingCustomer ? <div style={backdropStyle} onClick={() => setEditingBillingCustomer(null)}>
-      <div style={{ ...modalStyle, maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ ...modalStyle, maxWidth: 520, minHeight: 400, display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
         <div style={modalHeaderStyle}>
           <div>
             <h2 style={{ margin: 0 }}>עריכת מסלול ותעריף</h2>
@@ -419,7 +419,7 @@ export default function AdminPage() {
             <UiInput type="number" min={0.01} step="0.01" value={unitPriceDraft} onChange={(event) => setUnitPriceDraft(event.target.value)} />
           </label> : null}
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: "auto", paddingTop: 24 }}>
           <button className="btn btn-secondary" type="button" onClick={() => setEditingBillingCustomer(null)}>ביטול</button>
           <button className="btn btn-primary" type="button" disabled={savingPricing} onClick={() => void saveBillingEdit()}><Save size={15} />{savingPricing ? "שומר..." : "שמירה"}</button>
         </div>
