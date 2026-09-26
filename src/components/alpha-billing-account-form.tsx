@@ -61,6 +61,7 @@ export function AlphaBillingAccountForm({
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -131,7 +132,7 @@ export function AlphaBillingAccountForm({
   async function saveDetails(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canManage) return;
-    if (!event.currentTarget.reportValidity()) return;
+    setValidationAttempted(true);
 
     const normalized = {
       ...details,
@@ -140,10 +141,8 @@ export function AlphaBillingAccountForm({
       invoiceEmail: details.invoiceEmail.trim(),
       billingAddress: details.billingAddress.trim(),
     };
-    if (!normalized.billingName || !normalized.taxId || !normalized.invoiceEmail || !normalized.billingAddress) {
-      toast.error("יש למלא את כל שדות החובה לפני שמירת חשבון החיוב.");
-      return;
-    }
+    const emailValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalized.invoiceEmail);
+    if (!normalized.billingName || !normalized.taxId || !normalized.invoiceEmail || !emailValid || !normalized.billingAddress) return;
 
     setSaving(true);
     try {
@@ -236,10 +235,10 @@ export function AlphaBillingAccountForm({
 
       <form className="form" onSubmit={saveDetails}>
         <div className="grid compact-payment-grid">
-          <div className="field"><label>שם לחיוב *</label><UiInput disabled={!canManage} required maxLength={200} value={details.billingName} onChange={(e) => setDetails({ ...details, billingName: e.target.value })} /></div>
-          <div className="field"><label>ח.פ. / עוסק *</label><UiInput disabled={!canManage} required maxLength={30} value={details.taxId} onChange={(e) => setDetails({ ...details, taxId: e.target.value })} /></div>
-          <div className="field"><label>אימייל לחשבוניות *</label><UiInput disabled={!canManage} required type="email" maxLength={320} value={details.invoiceEmail} onChange={(e) => setDetails({ ...details, invoiceEmail: e.target.value })} /></div>
-          <div className="field"><label>כתובת לחיוב *</label><UiInput disabled={!canManage} required maxLength={500} value={details.billingAddress} onChange={(e) => setDetails({ ...details, billingAddress: e.target.value })} /></div>
+          <div className={`field${validationAttempted && !details.billingName.trim() ? " field-error" : ""}`}><label>שם לחיוב *</label><UiInput disabled={!canManage} maxLength={200} value={details.billingName} onChange={(e) => setDetails({ ...details, billingName: e.target.value })} />{validationAttempted && !details.billingName.trim() ? <span className="field-error-text">שם לחיוב הוא שדה חובה.</span> : null}</div>
+          <div className={`field${validationAttempted && !details.taxId.trim() ? " field-error" : ""}`}><label>ח.פ. / עוסק *</label><UiInput disabled={!canManage} maxLength={30} value={details.taxId} onChange={(e) => setDetails({ ...details, taxId: e.target.value })} />{validationAttempted && !details.taxId.trim() ? <span className="field-error-text">ח.פ. / עוסק הוא שדה חובה.</span> : null}</div>
+          <div className={`field${validationAttempted && (!details.invoiceEmail.trim() || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(details.invoiceEmail.trim())) ? " field-error" : ""}`}><label>אימייל לחשבוניות *</label><UiInput disabled={!canManage} type="email" maxLength={320} value={details.invoiceEmail} onChange={(e) => setDetails({ ...details, invoiceEmail: e.target.value })} />{validationAttempted && !details.invoiceEmail.trim() ? <span className="field-error-text">אימייל לחשבוניות הוא שדה חובה.</span> : validationAttempted && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(details.invoiceEmail.trim()) ? <span className="field-error-text">יש להזין כתובת אימייל תקינה.</span> : null}</div>
+          <div className={`field${validationAttempted && !details.billingAddress.trim() ? " field-error" : ""}`}><label>כתובת לחיוב *</label><UiInput disabled={!canManage} maxLength={500} value={details.billingAddress} onChange={(e) => setDetails({ ...details, billingAddress: e.target.value })} />{validationAttempted && !details.billingAddress.trim() ? <span className="field-error-text">כתובת לחיוב היא שדה חובה.</span> : null}</div>
         </div>
 
         <div className="field">
