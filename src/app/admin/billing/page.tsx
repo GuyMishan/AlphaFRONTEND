@@ -33,8 +33,6 @@ const customerBillingTypeOptions = [
 ];
 
 const allMonthsOption = [{ value: "all", label: "כל החודשים" }];
-const allOrganizationsOption = [{ value: "all", label: "כל הארגונים" }];
-const allEmployersOption = [{ value: "all", label: "כל המעסיקים" }];
 
 function money(value: number, currency = "ILS") {
   return new Intl.NumberFormat("he-IL", { style: "currency", currency }).format(value);
@@ -319,7 +317,9 @@ export default function AdminBillingPage() {
             לכל ארגון או מעסיק מוגדר מסלול אחד: חינם, פר עובד או פר שורה — והתעריף שלו.
           </p>
         </div>
-      </div>\n\n      {visibleCustomers.length ? <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      </div>
+
+      {visibleCustomers.length ? <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead><tr>{["ארגון", "מעסיק", "מסלול", "תעריף", "אמצעי תשלום", "פעולות"].map((item) => <th key={item} style={th}>{item}</th>)}</tr></thead>
         <tbody>{visibleCustomers.map((row) => {
           const href = row.payerType === "Organization"
