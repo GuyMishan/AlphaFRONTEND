@@ -486,12 +486,12 @@ export default function AccessPage() {
     {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
 
 
-      {entitlements ? <section className="card" style={{ marginBottom: 18 }}>
+      {entitlements?.plan.code === "FREE" ? <section className="card" style={{ marginBottom: 18 }}>
         <div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.plan.name}</h3></div></div>
         <PlanUsage label="משתמשים" usage={entitlements.users} />
       </section> : null}
 
-      {entitlements && entitlements.users.maximum !== null && entitlements.users.current >= entitlements.users.maximum ? <div className="notice notice-info" style={{ marginBottom: 18 }}>
+      {entitlements?.plan.code === "FREE" && entitlements.users.maximum !== null && entitlements.users.current >= entitlements.users.maximum ? <div className="notice notice-info" style={{ marginBottom: 18 }}>
         <b>הגעתם למגבלת המשתמשים במסלול.</b>
         <div style={{ marginTop: 10 }}><button className="btn btn-primary" type="button" onClick={() => openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum ?? undefined })}>יצירת קשר לשדרוג</button></div>
       </div> : null}
