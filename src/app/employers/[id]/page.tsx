@@ -604,9 +604,9 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           </div>
           <div className="payment-account-details payment-account-details-wide compact-account-details">
             <span><b>בנק וסניף</b><small>בנק {organizationAccount.bankId} · סניף {organizationAccount.branchId}</small></span>
-            <span><b>מספר חשבון</b><small>{organizationAccount.maskedAccountNumber}</small></span>
+            <span><b>מספר חשבון</b><small dir="ltr">{organizationAccount.maskedAccountNumber}</small></span>
             <span><b>בעל החשבון</b><small>{organizationAccount.accountHolderName}</small></span>
-            <span><b>מזהה בעל החשבון</b><small>{organizationAccount.maskedAccountHolderId}</small></span>
+            <span><b>מזהה בעל החשבון</b><small dir="ltr">{organizationAccount.maskedAccountHolderId}</small></span>
           </div>
           {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="button" disabled={saving} onClick={() => void saveOrganizationMode()}><Save size={17} />{saving ? "שומר..." : "שמירת בחירה"}</button></div> : null}
         </> : null}
@@ -618,9 +618,9 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           </div>
           <div className="payment-account-details payment-account-details-wide compact-account-details">
             <span><b>בנק וסניף</b><small>בנק {directAccount.bankId} · סניף {directAccount.branchId}</small></span>
-            <span><b>מספר חשבון</b><small>{directAccount.maskedAccountNumber}</small></span>
+            <span><b>מספר חשבון</b><small dir="ltr">{directAccount.maskedAccountNumber}</small></span>
             <span><b>בעל החשבון</b><small>{directAccount.accountHolderName}</small></span>
-            <span><b>מזהה בעל החשבון</b><small>{directAccount.maskedAccountHolderId}</small></span>
+            <span><b>מזהה בעל החשבון</b><small dir="ltr">{directAccount.maskedAccountHolderId}</small></span>
           </div>
           {canManage ? <div className="form-actions"><span /><button className="btn btn-secondary" type="button" onClick={() => void startEmployerAccountEdit()}>עריכת החשבון</button></div> : null}
         </> : null}
