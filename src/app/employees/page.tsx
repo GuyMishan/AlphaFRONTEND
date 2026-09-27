@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmployerEmployeesPanel } from "@/components/employer-employees-panel";
+import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
 import { getEmployerSelection } from "@/lib/session";
 import type { Employer, EntitlementSnapshot } from "@/lib/types";
@@ -64,10 +65,7 @@ export default function EmployeesPage() {
   return <AppShell title="עובדים">
     {loading ? <div className="empty">טוען עובדים...</div> : error ? <div className="notice notice-error">{error}</div> : employer && organizationId && employerId
       ? <>
-          {entitlements?.plan.code?.toLowerCase() === "free" ? <div className="card" style={{ marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>שימוש במסלול Free</div>
-            <div>עובדים פעילים <strong>{entitlements.activeEmployees.current}/{entitlements.activeEmployees.maximum ?? "∞"}</strong></div>
-          </div> : null}
+          {entitlements ? <section className="card" style={{ marginBottom: 18 }}><div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.plan.name}</h3></div></div><PlanUsage label="עובדים פעילים" usage={entitlements.activeEmployees} /></section> : null}
           <EmployerEmployeesPanel organizationId={organizationId} employer={employer} canCreate={canCreateEmployee} showHeader />
         </>
       : <div className="empty">בחרו ארגון ומעסיק בסרגל העליון</div>}
