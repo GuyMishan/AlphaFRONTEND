@@ -25,7 +25,6 @@ import type {
   EmployerProfileCenterSettings,
   EntitlementSnapshot,
   PensionPaymentResolution,
-  SubscriptionSummary,
 } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
 import { UiAutocomplete, UiChoiceCard, UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
@@ -98,7 +97,6 @@ export default function EmployerProfilePage() {
   const [accounts, setAccounts] = useState<EmployerPaymentAccount[]>([]);
   const [singleEmployerUser, setSingleEmployerUser] = useState(false);
   const [hasOrganizationContext, setHasOrganizationContext] = useState(true);
-  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
   const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -131,14 +129,9 @@ export default function EmployerProfilePage() {
       setHasOrganizationContext(Boolean(currentOrganization?.hasOrganizationScope));
 
       if (isSingleEmployerUser) {
-        const [subscriptionRow, entitlementRow] = await Promise.all([
-          alphaApi.subscription(organizationId),
-          alphaApi.entitlements(organizationId),
-        ]);
-        setSubscription(subscriptionRow);
+        const entitlementRow = await alphaApi.entitlements(organizationId);
         setEntitlements(entitlementRow);
       } else {
-        setSubscription(null);
         setEntitlements(null);
       }
     } catch (err) {
@@ -194,7 +187,7 @@ export default function EmployerProfilePage() {
     /> : null}
 
     {tab === "billing" ? <div className="employer-profile-stack">
-      {singleEmployerUser && subscription && entitlements ? <SubscriptionBillingPanel
+      {singleEmployerUser && entitlements ? <SubscriptionBillingPanel
         organizationId={organizationId}
         employerId={employer.id}
         entitlements={entitlements}
