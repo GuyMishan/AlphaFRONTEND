@@ -426,8 +426,8 @@ export const alphaApi = {
   publicInvitation: (token: string): Promise<PublicInvitation> =>
     request<PublicInvitation>(`/api/invitations/${encodeURIComponent(token)}`),
 
-  accessUsers: (organizationId: string, search = "", skip = 0, take = 30): Promise<PagedResult<AccessUser>> =>
-    getSession()?.mode === "demo" ? Promise.resolve({ items: [], hasMore: false }) : request<PagedResult<AccessUser>>(`/api/organizations/${organizationId}/access/users${qs({ search, skip, take })}`),
+  accessUsers: (organizationId: string, search = "", skip = 0, take = 30, employerId = ""): Promise<PagedResult<AccessUser>> =>
+    getSession()?.mode === "demo" ? Promise.resolve({ items: [], hasMore: false }) : request<PagedResult<AccessUser>>(`/api/organizations/${organizationId}/access/users${qs({ search, skip, take, employerId })}`),
   accessUserCandidates: (organizationId: string, search: string, take = 20): Promise<UserCandidate[]> =>
     getSession()?.mode === "demo" ? Promise.resolve([]) : request<UserCandidate[]>(`/api/organizations/${organizationId}/access/user-candidates${qs({ search, take })}`),
   addAccessUser: (organizationId: string, payload: { userId: string; role: OrganizationRole; employerAccessMode: EmployerAccessMode }) =>
