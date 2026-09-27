@@ -67,7 +67,7 @@ export function SubscriptionBillingPanel({ organizationId, employerId, entitleme
         <button className="btn btn-secondary" type="button" onClick={() => openUpgradeDialog({ reason: "feature", feature: "billing_support", planName: pricing?.billingType ?? selected })}>יצירת קשר</button>
       </div>
 
-      {pricing?.billingType === "Free" ? <div className="grid stats">
+      {entitlements.plan.code === "FREE" ? <div className="grid stats">
         <PlanUsage label="מעסיקים" usage={entitlements.employers} />
         <PlanUsage label="עובדים פעילים" usage={entitlements.activeEmployees} />
         <PlanUsage label="משתמשים" usage={entitlements.users} />
