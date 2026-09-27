@@ -18,7 +18,6 @@ import type {
   OrganizationEmployerBilling,
   OrganizationMemberSummary,
   OrganizationProfileCenter,
-  SubscriptionSummary,
 } from "@/lib/types";
 
 type TabKey = "general" | "employers" | "users" | "pension-payment" | "billing";
@@ -50,7 +49,6 @@ export default function OrganizationProfilePage() {
   const [profile, setProfile] = useState<OrganizationProfileCenter | null>(null);
   const [employers, setEmployers] = useState<Employer[]>([]);
   const [members, setMembers] = useState<OrganizationMemberSummary[]>([]);
-  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
   const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [employerBilling, setEmployerBilling] = useState<OrganizationEmployerBilling[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,18 +59,16 @@ export default function OrganizationProfilePage() {
     setLoading(true);
     setError("");
     try {
-      const [profileRow, employerRows, memberRows, subscriptionRow, entitlementRow, billingRows] = await Promise.all([
+      const [profileRow, employerRows, memberRows, entitlementRow, billingRows] = await Promise.all([
         alphaApi.organizationProfile(id),
         alphaApi.employers(id),
         alphaApi.organizationMembers(id),
-        alphaApi.subscription(id),
         alphaApi.entitlements(id),
         alphaApi.organizationEmployerBilling(id),
       ]);
       setProfile(profileRow);
       setEmployers(employerRows);
       setMembers(memberRows);
-      setSubscription(subscriptionRow);
       setEntitlements(entitlementRow);
       setEmployerBilling(billingRows);
     } catch (err) {
@@ -99,7 +95,7 @@ export default function OrganizationProfilePage() {
     {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} employerBilling={employerBilling} canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))} entitlements={entitlements} /> : null}
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
     {tab === "pension-payment" ? <OrganizationPensionPaymentAccount organizationId={id} canManage={profile.canManageOrganization} /> : null}
-    {tab === "billing" && subscription && entitlements ? <SubscriptionBillingPanel organizationId={id} entitlements={entitlements} canManage={profile.canManageOrganization} onChanged={load} /> : null}
+    {tab === "billing" && entitlements ? <SubscriptionBillingPanel organizationId={id} entitlements={entitlements} canManage={profile.canManageOrganization} onChanged={load} /> : null}
   </AppShell>;
 }
 
