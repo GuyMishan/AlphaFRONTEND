@@ -219,12 +219,12 @@ export default function AccessPage() {
   }, [organizationId, selected, accessMode, assignedSearch, assignedSkip]);
 
   useEffect(() => {
-    if (!organizationId || !selected || employerSearch.trim().length < 2) {
+    if (!organizationId || !selected) {
       setEmployerOptions([]);
       return;
     }
     const timer = window.setTimeout(() => {
-      alphaApi.employerAccessOptions(organizationId, selected.userId, employerSearch.trim())
+      alphaApi.employerAccessOptions(organizationId, selected.userId, employerSearch.trim(), 10)
         .then(setEmployerOptions)
         .catch((err) => setError(err instanceof Error ? err.message : "חיפוש המעסיקים נכשל"));
     }, 250);
@@ -626,7 +626,7 @@ export default function AccessPage() {
             </div>
           </div>
           <div>
-            <div className="toolbar"><div className="search"><Search size={16} /><UiInput value={employerSearch} onChange={(event) => setEmployerSearch(event.target.value)} placeholder="חיפוש מעסיק להקצאה — לפחות 2 תווים" /></div></div>
+            <div className="toolbar"><div className="search"><Search size={16} /><UiInput value={employerSearch} onChange={(event) => setEmployerSearch(event.target.value)} placeholder="חיפוש מעסיק להקצאה" /></div></div>
             {employerOptions.length ? <VirtualizedTable
               items={employerOptions}
               maxHeight={340}
