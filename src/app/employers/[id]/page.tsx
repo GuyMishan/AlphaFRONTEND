@@ -366,6 +366,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   const [resolution, setResolution] = useState<PensionPaymentResolution | null>(null);
   const [selectedMode, setSelectedMode] = useState<1 | 2 | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingEmployerAccount, setEditingEmployerAccount] = useState(false);
   const [form, setForm] = useState<EmployerPaymentAccountInput>({ ...EMPTY_ACCOUNT, isDefault: true });
   const [banks, setBanks] = useState<BankOption[]>([]);
   const [branches, setBranches] = useState<BankBranchOption[]>([]);
@@ -385,6 +386,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
       const effectiveMode: 1 | 2 = value.source === "Organization" ? 2 : 1;
       setSelectedMode(effectiveMode);
       setAccounts(value.account ? [value.account] : []);
+      setEditingEmployerAccount(false);
       if (effectiveMode === 1 && value.employerAccount) {
         const full = await alphaApi.employerPaymentAccount(organizationId, employerId, value.employerAccount.id);
         setEditingId(value.employerAccount.id);
@@ -441,6 +443,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
     const direct = resolution?.employerAccount;
     if (!direct) {
       setEditingId(null);
+      setEditingEmployerAccount(true);
       setForm({ ...EMPTY_ACCOUNT, isDefault: true });
       setBankSearch("");
       setBranchSearch("");
@@ -467,6 +470,30 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
       setDocumentId(full.mandate?.documentId ?? "");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "טעינת חשבון המעסיק נכשלה");
+    }
+  }
+
+  async function startEmployerAccountEdit() {
+    if (!canManage || !resolution?.employerAccount) return;
+    try {
+      const full = await alphaApi.employerPaymentAccount(organizationId, employerId, resolution.employerAccount.id);
+      setEditingId(resolution.employerAccount.id);
+      setForm({
+        bankId: full.bankId,
+        branchId: full.branchId,
+        accountNumber: full.accountNumber,
+        accountHolderName: full.accountHolderName,
+        accountHolderId: full.accountHolderId,
+        isDefault: true,
+      });
+      setBankSearch(String(full.bankId));
+      setBranchSearch(String(full.branchId));
+      setMandateStatus(full.mandate?.status ?? 1);
+      setExternalMandateId(full.mandate?.externalMandateId ?? "");
+      setDocumentId(full.mandate?.documentId ?? "");
+      setEditingEmployerAccount(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "טעינת חשבון המעסיק לעריכה נכשלה");
     }
   }
 
@@ -584,7 +611,21 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="button" disabled={saving} onClick={() => void saveOrganizationMode()}><Save size={17} />{saving ? "שומר..." : "שמירת בחירה"}</button></div> : null}
         </> : null}
 
-        {selectedMode === 1 ? <form className="form compact-payment-form" onSubmit={saveEmployerMode}>
+        {selectedMode === 1 && directAccount && !editingEmployerAccount ? <>
+          <div className="account-context-head">
+            <div><span>מקור החשבון</span><strong>המעסיק</strong><small>{directAccount.accountHolderName}</small></div>
+            <span className={directAccount.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{mandateLabel(directAccount.mandate?.status)}</span>
+          </div>
+          <div className="payment-account-details payment-account-details-wide compact-account-details">
+            <span><b>בנק וסניף</b><small>בנק {directAccount.bankId} · סניף {directAccount.branchId}</small></span>
+            <span><b>מספר חשבון</b><small>{directAccount.maskedAccountNumber}</small></span>
+            <span><b>בעל החשבון</b><small>{directAccount.accountHolderName}</small></span>
+            <span><b>מזהה בעל החשבון</b><small>{directAccount.maskedAccountHolderId}</small></span>
+          </div>
+          {canManage ? <div className="form-actions"><span /><button className="btn btn-secondary" type="button" onClick={() => void startEmployerAccountEdit()}>עריכת החשבון</button></div> : null}
+        </> : null}
+
+        {selectedMode === 1 && (!directAccount || editingEmployerAccount) ? <form className="form compact-payment-form" onSubmit={saveEmployerMode}>
           <div className="account-context-head">
             <div><span>מקור החשבון</span><strong>המעסיק</strong></div>
             {directAccount ? <span className={directAccount.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{mandateLabel(directAccount.mandate?.status)}</span> : <span className="badge badge-gray">טרם נשמר</span>}
@@ -605,7 +646,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
             <div className="field"><label>מזהה הרשאה</label><UiInput maxLength={120} value={externalMandateId} onChange={(e) => setExternalMandateId(e.target.value)} /></div>
             <div className="field"><label>מסמך הרשאה</label><UiInput maxLength={200} value={documentId} onChange={(e) => setDocumentId(e.target.value)} /></div>
           </div>
-          {canManage ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : directAccount ? "שמירת שינויים" : "שמירת חשבון"}</button></div> : null}
+          {canManage ? <div className="form-actions">{directAccount ? <button className="btn btn-secondary" type="button" onClick={() => setEditingEmployerAccount(false)}>ביטול</button> : <span />}<button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : directAccount ? "שמירת שינויים" : "שמירת חשבון"}</button></div> : null}
         </form> : null}
 
         {!canManage && activeAccount ? <div className="notice notice-info">החשבון מוצג לקריאה בלבד לפי ההרשאה שלך.</div> : null}
