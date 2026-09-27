@@ -163,9 +163,9 @@ export function OrganizationPensionPaymentAccount({
           </div>
           <div className="payment-account-details payment-account-details-wide compact-account-details">
             <span><b>בנק וסניף</b><small>בנק {account.bankId} · סניף {account.branchId}</small></span>
-            <span><b>מספר חשבון</b><small>{account.maskedAccountNumber}</small></span>
+            <span><b>מספר חשבון</b><small dir="ltr">{account.maskedAccountNumber}</small></span>
             <span><b>בעל החשבון</b><small>{account.accountHolderName}</small></span>
-            <span><b>מזהה בעל החשבון</b><small>{account.maskedAccountHolderId}</small></span>
+            <span><b>מזהה בעל החשבון</b><small dir="ltr">{account.maskedAccountHolderId}</small></span>
           </div>
           {canManage ? <div className="form-actions"><span /><button className="btn btn-secondary" type="button" onClick={() => void startEdit()}>עריכת החשבון</button></div> : null}
         </> : null}
