@@ -7,7 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
 import { UiInput, UiSelect } from "@/components/ui-controls";
 import { alphaApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getEmployerSelection, getOrganizationSelection, getSession } from "@/lib/session";
 import type {
   BillingAccountPricingType,
   BillingCustomerRow,
@@ -96,8 +96,12 @@ export default function AdminBillingPage() {
   const [refunds, setRefunds] = useState<BillingRefund[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [organizationFilter, setOrganizationFilter] = useState("all");
-  const [employerFilter, setEmployerFilter] = useState("all");
+  const [organizationFilter, setOrganizationFilter] = useState(() => getOrganizationSelection() || "all");
+  const [employerFilter, setEmployerFilter] = useState(() => {
+    const organizationId = getOrganizationSelection();
+    const employer = getEmployerSelection();
+    return employer?.organizationId === organizationId ? employer.employerId : "all";
+  });
   const [monthFilter, setMonthFilter] = useState("all");
   const [pricingCustomer, setPricingCustomer] = useState<BillingCustomerRow | null>(null);
   const [customerBillingType, setCustomerBillingType] = useState<BillingAccountPricingType>("Free");
@@ -131,6 +135,14 @@ export default function AdminBillingPage() {
   useEffect(() => {
     if (!getSession()?.platformAdmin) return;
     void load();
+
+    const onScopeChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail;
+      setOrganizationFilter(detail.organizationId || "all");
+      setEmployerFilter(detail.employerId || "all");
+    };
+    window.addEventListener("alpha:scope-change", onScopeChange);
+    return () => window.removeEventListener("alpha:scope-change", onScopeChange);
   }, []);
 
   function openPricing(customer: BillingCustomerRow) {
@@ -249,22 +261,6 @@ export default function AdminBillingPage() {
     }
   }
 
-  const organizationOptions = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const row of customers) seen.set(row.organizationId, row.organizationName);
-    return Array.from(seen.entries()).sort((a, b) => a[1].localeCompare(b[1], "he"));
-  }, [customers]);
-
-  const employerOptions = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const row of customers) {
-      if (!row.employerId || !row.employerName) continue;
-      if (organizationFilter !== "all" && row.organizationId !== organizationFilter) continue;
-      seen.set(row.employerId, row.employerName);
-    }
-    return Array.from(seen.entries()).sort((a, b) => a[1].localeCompare(b[1], "he"));
-  }, [customers, organizationFilter]);
-
   const visibleCustomers = useMemo(
     () => customers.filter((row) => {
       if (organizationFilter !== "all" && row.organizationId !== organizationFilter) return false;
@@ -301,7 +297,7 @@ export default function AdminBillingPage() {
     </AppShell>;
   }
 
-  return <AppShell title="חיובים" hideScopeController>
+  return <AppShell title="חיובים">
     <div className="page-head">
       <div>
         <h1>ניהול גבייה ותמחור</h1>
@@ -323,28 +319,7 @@ export default function AdminBillingPage() {
             לכל ארגון או מעסיק מוגדר מסלול אחד: חינם, פר עובד או פר שורה — והתעריף שלו.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <label className="field" style={{ minWidth: 220 }}>
-            <span>ארגון</span>
-            <UiSelect value={organizationFilter} onChange={(event) => {
-              setOrganizationFilter(event.target.value);
-              setEmployerFilter("all");
-            }}>
-              {allOrganizationsOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              {organizationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-            </UiSelect>
-          </label>
-          <label className="field" style={{ minWidth: 220 }}>
-            <span>מעסיק</span>
-            <UiSelect value={employerFilter} onChange={(event) => setEmployerFilter(event.target.value)}>
-              {allEmployersOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              {employerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-            </UiSelect>
-          </label>
-        </div>
-      </div>
-
-      {visibleCustomers.length ? <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      </div>\n\n      {visibleCustomers.length ? <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead><tr>{["ארגון", "מעסיק", "מסלול", "תעריף", "אמצעי תשלום", "פעולות"].map((item) => <th key={item} style={th}>{item}</th>)}</tr></thead>
         <tbody>{visibleCustomers.map((row) => {
           const href = row.payerType === "Organization"
@@ -380,19 +355,7 @@ export default function AdminBillingPage() {
       <section className="card" style={{ overflowX: "auto" }}>
         <div className="card-head">
           <div><h2>סיכום חודשי</h2></div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <UiSelect value={organizationFilter} onChange={(event) => {
-              setOrganizationFilter(event.target.value);
-              setEmployerFilter("all");
-            }}>
-              {allOrganizationsOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              {organizationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-            </UiSelect>
-            <UiSelect value={employerFilter} onChange={(event) => setEmployerFilter(event.target.value)}>
-              {allEmployersOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              {employerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-            </UiSelect>
-            <UiSelect value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
+          <div style={{ display: "flex", gap: 10 }}>\n            <UiSelect value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
               {allMonthsOption.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               {months.map((month) => <option key={month} value={month}>{month}</option>)}
             </UiSelect>
