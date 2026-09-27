@@ -8,7 +8,7 @@ import { PlanUsage } from "@/components/plan-usage";
 import { UserEditorModal } from "@/components/user-editor-modal";
 import { UiChoiceCard, UiInput, UiSelect } from "@/components/ui-controls";
 import { alphaApi } from "@/lib/api";
-import { getOrganizationSelection, getSession } from "@/lib/session";
+import { getEmployerSelection, getOrganizationSelection, getSession } from "@/lib/session";
 import { openUpgradeDialog } from "@/lib/upgrade";
 import type {
   AccessEmployer,
@@ -84,6 +84,7 @@ export default function AccessPage() {
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationId, setOrganizationId] = useState("");
+  const [employerId, setEmployerId] = useState("");
   const [users, setUsers] = useState<AccessUser[]>([]);
   const [selected, setSelected] = useState<AccessUser | null>(null);
   const [search, setSearch] = useState("");
@@ -134,12 +135,16 @@ export default function AccessPage() {
     alphaApi.organizations().then((items) => {
       setOrganizations(items);
       const saved = getOrganizationSelection();
-      setOrganizationId(saved && items.some((x) => x.id === saved) ? saved : items[0]?.id ?? "");
+      const nextOrganizationId = saved && items.some((x) => x.id === saved) ? saved : items[0]?.id ?? "";
+      setOrganizationId(nextOrganizationId);
+      const employer = getEmployerSelection();
+      setEmployerId(employer?.organizationId === nextOrganizationId ? employer.employerId : "");
     }).catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגונים נכשלה"));
 
     const handler = (event: Event) => {
-      const detail = (event as CustomEvent<{ organizationId: string }>).detail;
+      const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail;
       setOrganizationId(detail.organizationId);
+      setEmployerId(detail.employerId ?? "");
       setSelected(null);
       setSearch("");
       setSkip(0);
@@ -173,7 +178,7 @@ export default function AccessPage() {
     const timer = window.setTimeout(() => {
       setLoading(true);
       setError("");
-      alphaApi.accessUsers(organizationId, search.trim(), skip, PAGE_SIZE)
+      alphaApi.accessUsers(organizationId, search.trim(), skip, PAGE_SIZE, employerId)
         .then((result) => {
           setUsers(result.items);
           setHasMore(result.hasMore);
@@ -183,7 +188,7 @@ export default function AccessPage() {
         .finally(() => setLoading(false));
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [organizationId, search, skip]);
+  }, [organizationId, employerId, search, skip]);
 
   useEffect(() => { setSkip(0); }, [search]);
 
@@ -416,7 +421,7 @@ export default function AccessPage() {
         ? { ...identity, organizationRole: inviteOrganizationRole, expiresInDays: 7 }
         : { ...identity, employerId: inviteEmployerId, employerRole: inviteEmployerRole, expiresInDays: 7 });
       setInvitations(await alphaApi.invitations(organizationId));
-      const refreshedUsers = await alphaApi.accessUsers(organizationId, search.trim(), skip, PAGE_SIZE);
+      const refreshedUsers = await alphaApi.accessUsers(organizationId, search.trim(), skip, PAGE_SIZE, employerId);
       setUsers(refreshedUsers.items);
       setHasMore(refreshedUsers.hasMore);
       setEntitlements(await alphaApi.entitlements(organizationId));
