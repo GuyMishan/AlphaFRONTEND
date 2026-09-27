@@ -102,6 +102,8 @@ export default function AccessPage() {
   const [assignedHasMore, setAssignedHasMore] = useState(false);
   const [employerSearch, setEmployerSearch] = useState("");
   const [employerOptions, setEmployerOptions] = useState<EmployerOption[]>([]);
+  const [initialAssigned, setInitialAssigned] = useState<AccessEmployer[]>([]);
+  const [assignedLoaded, setAssignedLoaded] = useState(false);
 
   const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -199,6 +201,8 @@ export default function AccessPage() {
     setAssignedSearch("");
     setEmployerSearch("");
     setEmployerOptions([]);
+    setInitialAssigned([]);
+    setAssignedLoaded(false);
   }, [selected]);
 
   useEffect(() => {
@@ -210,13 +214,17 @@ export default function AccessPage() {
     const timer = window.setTimeout(() => {
       alphaApi.assignedEmployers(organizationId, selected.userId, assignedSearch.trim(), assignedSkip, PAGE_SIZE)
         .then((result) => {
-          setAssigned(result.items);
+          if (!assignedLoaded && !assignedSearch.trim() && assignedSkip === 0) {
+            setAssigned(result.items);
+            setInitialAssigned(result.items);
+            setAssignedLoaded(true);
+          }
           setAssignedHasMore(result.hasMore);
         })
         .catch((err) => setError(err instanceof Error ? err.message : "טעינת המעסיקים המורשים נכשלה"));
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [organizationId, selected, accessMode, assignedSearch, assignedSkip]);
+  }, [organizationId, selected, accessMode, assignedSearch, assignedSkip, assignedLoaded]);
 
   useEffect(() => {
     if (!organizationId || !selected) {
@@ -225,11 +233,11 @@ export default function AccessPage() {
     }
     const timer = window.setTimeout(() => {
       alphaApi.employerAccessOptions(organizationId, selected.userId, employerSearch.trim(), 10)
-        .then(setEmployerOptions)
+        .then((items) => setEmployerOptions(items.map((item) => ({ ...item, assigned: assigned.some((x) => x.id === item.id) }))))
         .catch((err) => setError(err instanceof Error ? err.message : "חיפוש המעסיקים נכשל"));
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [organizationId, selected, employerSearch]);
+  }, [organizationId, selected, employerSearch, assigned]);
 
   const filteredPlatformUsers = useMemo(() => {
     const term = platformSearch.trim().toLowerCase();
@@ -338,9 +346,32 @@ export default function AccessPage() {
         employerAccessMode: accessMode,
         ...permissions,
       });
+
+      if (accessMode === 2) {
+        const initialById = new Map(initialAssigned.map((item) => [item.id, item]));
+        const draftById = new Map(assigned.map((item) => [item.id, item]));
+
+        for (const item of initialAssigned) {
+          if (!draftById.has(item.id)) {
+            await alphaApi.revokeEmployerAccess(organizationId, selected.userId, item.id);
+          }
+        }
+        for (const item of assigned) {
+          const initial = initialById.get(item.id);
+          if (!initial) {
+            await alphaApi.grantEmployerAccess(organizationId, selected.userId, item.id);
+            if (item.role !== 3) {
+              await alphaApi.updateEmployerAccessRole(organizationId, selected.userId, item.id, item.role);
+            }
+          } else if (initial.role !== item.role) {
+            await alphaApi.updateEmployerAccessRole(organizationId, selected.userId, item.id, item.role);
+          }
+        }
+      }
+
       const next = { ...selected, role, employerAccessMode: accessMode, ...permissions };
       setUsers((items) => items.map((item) => item.userId === selected.userId ? next : item));
-      setSelected(next);
+      setSelected(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "שמירת ההרשאות נכשלה");
     } finally {
@@ -412,38 +443,24 @@ export default function AccessPage() {
     }
   }
 
-  async function grantEmployer(item: EmployerOption) {
-    if (!selected) return;
-    try {
-      await alphaApi.grantEmployerAccess(organizationId, selected.userId, item.id);
-      setEmployerOptions((items) => items.map((x) => x.id === item.id ? { ...x, assigned: true } : x));
-      const result = await alphaApi.assignedEmployers(organizationId, selected.userId, assignedSearch, assignedSkip, PAGE_SIZE);
-      setAssigned(result.items);
-      setAssignedHasMore(result.hasMore);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "הקצאת המעסיק נכשלה");
-    }
+  function grantEmployer(item: EmployerOption) {
+    if (assigned.some((x) => x.id === item.id)) return;
+    setAssigned((items) => [...items, {
+      id: item.id,
+      legalName: item.legalName,
+      registrationNumber: item.registrationNumber,
+      role: 3,
+    }]);
+    setEmployerOptions((items) => items.map((x) => x.id === item.id ? { ...x, assigned: true } : x));
   }
 
-  async function updateEmployerRole(employerId: string, nextRole: EmployerRole) {
-    if (!selected) return;
-    try {
-      await alphaApi.updateEmployerAccessRole(organizationId, selected.userId, employerId, nextRole);
-      setAssigned((items) => items.map((x) => x.id === employerId ? { ...x, role: nextRole } : x));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "עדכון תפקיד המעסיק נכשל");
-    }
+  function updateEmployerRole(employerId: string, nextRole: EmployerRole) {
+    setAssigned((items) => items.map((x) => x.id === employerId ? { ...x, role: nextRole } : x));
   }
 
-  async function revokeEmployer(employerId: string) {
-    if (!selected) return;
-    try {
-      await alphaApi.revokeEmployerAccess(organizationId, selected.userId, employerId);
-      setAssigned((items) => items.filter((x) => x.id !== employerId));
-      setEmployerOptions((items) => items.map((x) => x.id === employerId ? { ...x, assigned: false } : x));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "הסרת המעסיק נכשלה");
-    }
+  function revokeEmployer(employerId: string) {
+    setAssigned((items) => items.filter((x) => x.id !== employerId));
+    setEmployerOptions((items) => items.map((x) => x.id === employerId ? { ...x, assigned: false } : x));
   }
 
   return <AppShell title="משתמשים והרשאות">
