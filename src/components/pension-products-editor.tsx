@@ -87,11 +87,27 @@ export function resolvePensionAllocations(monthlySalary: number, products: Pensi
   return { resolved, error: "" };
 }
 
+export function sanitizePensionProductContributions(product: PensionEditorProduct): PensionEditorProduct {
+  const allowed = (party: "employer" | "employee", component: ContributionComponent) => {
+    if (product.productType === 2) return party === "employee" ? component === 1 : component === 2;
+    if (product.productType === 1 || product.productType === 4) return component !== 3 && component !== 4;
+    return true;
+  };
+  const sanitize = (items: PensionEditorContribution[], party: "employer" | "employee") =>
+    items.map((item) => allowed(party, item.component) ? item : { ...item, percentage: 0, amount: 0, exemptPayments: 0 });
+  return {
+    ...product,
+    employerContributions: sanitize(product.employerContributions, "employer"),
+    employeeContributions: sanitize(product.employeeContributions, "employee"),
+  };
+}
+
 export function normalizePensionEditorProducts(monthlySalary: number, products: PensionEditorProduct[]) {
   const allocation = resolvePensionAllocations(monthlySalary, products);
   return {
     error: allocation.error,
-    products: products.map((product, index) => {
+    products: products.map((rawProduct, index) => {
+      const product = sanitizePensionProductContributions(rawProduct);
       const section14Code = inferPensionSection14Code(product);
       const salary = allocation.resolved.get(index) ?? 0;
       const normalize = (item: PensionEditorContribution): PensionEditorContribution => ({
@@ -211,17 +227,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
 }) {
   const allocation = resolvePensionAllocations(monthlySalary, products);
   const updateProduct = (index: number, patch: Partial<PensionEditorProduct>) => onProductsChange(products.map((product, i) => i === index ? { ...product, ...patch } : product));
-  const clearContribution = (item: PensionEditorContribution): PensionEditorContribution => ({ ...item, percentage: 0, amount: 0, exemptPayments: 0 });
-  const contributionsForProductType = (items: PensionEditorContribution[], party: "employer" | "employee", productType: PensionProductType) =>
-    items.map((item) => {
-      const allowed = productType === 2
-        ? (party === "employee" ? item.component === 1 : item.component === 2)
-        : (productType === 1 || productType === 4)
-          ? item.component !== 3 && item.component !== 4
-          : true;
-      return allowed ? item : clearContribution(item);
-    });
-  const changeProductType = (index: number, productType: PensionProductType) => onProductsChange(products.map((product, i) => i !== index ? product : {
+  const changeProductType = (index: number, productType: PensionProductType) => onProductsChange(products.map((product, i) => i !== index ? product : sanitizePensionProductContributions({
     ...product,
     productType,
     fundExternalKey: "",
@@ -229,9 +235,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
     fundName: "",
     fundCompanyName: "",
     fundClassification: "",
-    employerContributions: contributionsForProductType(product.employerContributions, "employer", productType),
-    employeeContributions: contributionsForProductType(product.employeeContributions, "employee", productType),
-  }));
+  })));
   const updateContribution = (index: number, party: "employerContributions" | "employeeContributions", component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => {
     const salary = allocation.resolved.get(index) ?? 0;
     onProductsChange(products.map((product, i) => i !== index ? product : {
