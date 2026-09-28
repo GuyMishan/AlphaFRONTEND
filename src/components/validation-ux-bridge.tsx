@@ -128,11 +128,13 @@ export function ValidationUxBridge() {
     };
     document.addEventListener("input", clear, true);
     document.addEventListener("change", clear, true);
+    document.addEventListener("alpha:field-valid", clear, true);
 
     return () => {
       observer.disconnect();
       document.removeEventListener("input", clear, true);
       document.removeEventListener("change", clear, true);
+      document.removeEventListener("alpha:field-valid", clear, true);
     };
   }, []);
   return null;
