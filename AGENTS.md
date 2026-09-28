@@ -32,5 +32,12 @@ npm run verify
 ```
 Do not claim a build passed unless it was actually run or CI confirms it.
 
-## Documentation
-Update `docs/CODEMAP.md` when a major flow moves or a new shared subsystem is introduced. Keep detailed business rules in backend/domain documentation rather than duplicating volatile values here.
+## Documentation — part of every change
+Documentation maintenance is part of implementation, not a separate optional task. Before completing any change, ask whether it changed architecture, file ownership, a major flow, API/integration behavior, verification commands, shared UI conventions or developer setup.
+
+- Update `docs/CODEMAP.md` when files/flows move, a new shared subsystem is introduced, or ownership between modules changes.
+- Update `README.md` when stack versions, setup, environment variables, major capabilities, repository relationships or verification instructions change.
+- Update architectural/specification documentation when contracts or architectural boundaries change.
+- Do not edit documentation for trivial internal refactors that do not change how the system is understood or operated.
+- A change that requires documentation is not complete until the relevant Markdown is updated in the same work.
+- Keep detailed business rules in backend/domain documentation rather than duplicating volatile values here.
