@@ -89,13 +89,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
   if (init?.body) headers.set("Content-Type", "application/json");
-  if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
   if (session?.mode === "development" && session.userId) {
     headers.set("X-Alpha-User-Id", session.userId);
     if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
   }
 
-  const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
+  const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store", credentials: "same-origin" });
   if (!response.ok) {
     let problem: ApiProblem | undefined;
     try { problem = await response.json(); } catch { /* empty response */ }
