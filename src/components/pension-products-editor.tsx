@@ -151,7 +151,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
     if (!/^\d+$/.test(product.salaryLayer || "")) return `מוצר ${index + 1}: יש לבחור רובד שכר תקין.`;
     const code = inferPensionSection14Code(product);
     if ((code === 2 || code === 4) && !product.section14StartDate) return `מוצר ${index + 1}: יש להזין תאריך תחולה/ביטול לסעיף 14.`;
-    if (context === "report" && (product.productType === 1 || product.productType === 4)) {
+    if (product.productType === 1 || product.productType === 4) {
       const forbiddenEmployer = product.employerContributions.some((item) => (item.component === 3 || item.component === 4) && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
       const forbiddenEmployee = product.employeeContributions.some((item) => (item.component === 3 || item.component === 4) && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
       if (forbiddenEmployer || forbiddenEmployee) return `מוצר ${index + 1}: בקרן פנסיה ובקופת גמל ניתן לדווח בממשק מעסיקים 006 רק רכיבי פיצויים ותגמולים. יש להסיר אכ״ע/שונות.`;
@@ -257,7 +257,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
 
 function ContributionEditor({ context, title, party, product, items, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
   const allLabels = party === "employee" ? employeeComponents : employerComponents;
-  const labels = context === "report" && (product.productType === 1 || product.productType === 4)
+  const labels = (product.productType === 1 || product.productType === 4)
     ? allLabels.filter(({ value }) => value !== 3 && value !== 4)
     : allLabels;
   return <div className="contribution-section"><h3>{title}</h3><div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>רכיב</th><th>סכום</th><th>אחוז</th><th>תשלומים פטורים</th></tr></thead><tbody>{labels.map(({ value, label }) => { const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 }; const max = maxPercentage(product.productType, party, value); return <tr key={value}><th>{label}</th><td><UiInput className="contribution-input" disabled={!editable} type="number" min="0" max={product.salary || undefined} step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} /></td><td><UiInput className="contribution-input" disabled={!editable} type="number" min="0" max={max} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} /></td><td><UiInput className="contribution-input" disabled={!editable} type="number" min="0" max={item.amount || undefined} step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} /></td></tr>; })}</tbody></table></div></div>;
