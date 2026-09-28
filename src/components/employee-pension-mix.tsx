@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Save } from "lucide-react";
-import { PensionProductsEditor, normalizePensionEditorProducts, validatePensionEditorProducts, type PensionEditorProduct } from "@/components/pension-products-editor";
+import { PensionProductsEditor, normalizePensionEditorProducts, sanitizePensionProductContributions, validatePensionEditorProducts, type PensionEditorProduct } from "@/components/pension-products-editor";
 import { alphaApi } from "@/lib/api";
 import type { Employee, EmployeePensionProductInput, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
 
@@ -88,7 +88,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
     ]).then(([employeeResult, items]) => {
       setEmployee(employeeResult);
       setMonthlySalary(Number(employeeResult.monthlySalary ?? 0));
-      setProducts(items.map(toEditorProduct));
+      setProducts(items.map(toEditorProduct).map(sanitizePensionProductContributions));
     }).catch((err) => setError(err instanceof Error ? err.message : "טעינת תמהיל העובד נכשלה"))
       .finally(() => setLoading(false));
   }, [organizationId, employerId, employeeId]);
@@ -154,7 +154,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
       editable={editable}
       showAllocationError={validationAttempted}
       onMonthlySalaryChange={(value) => { setMonthlySalary(value); setSaved(false); setError(""); setValidationAttempted(false); }}
-      onProductsChange={(value) => { setProducts(value); setSaved(false); setError(""); setValidationAttempted(false); }}
+      onProductsChange={(value) => { setProducts(value.map(sanitizePensionProductContributions)); setSaved(false); setError(""); setValidationAttempted(false); }}
     />
   </div>;
 }
