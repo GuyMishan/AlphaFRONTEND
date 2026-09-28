@@ -134,8 +134,7 @@ export default function RegisterPage() {
       if (invitationToken) {
         router.replace("/dashboard");
       } else {
-        const onboarding = await alphaApi.onboardingStatus();
-        router.replace(onboarding.needsOnboarding ? "/onboarding" : "/dashboard");
+        router.replace("/dashboard");
       }
     } catch {
       toast.error("לא ניתן להשלים את ההרשמה כרגע.");
