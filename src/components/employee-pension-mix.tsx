@@ -153,6 +153,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
       products={products}
       editable={editable}
       showAllocationError={validationAttempted}
+      onFieldInteraction={() => { setError(""); setValidationAttempted(false); }}
       onMonthlySalaryChange={(value) => { setMonthlySalary(value); setSaved(false); setError(""); setValidationAttempted(false); }}
       onProductsChange={(value) => { setProducts(value.map(sanitizePensionProductContributions)); setSaved(false); setError(""); setValidationAttempted(false); }}
     />
