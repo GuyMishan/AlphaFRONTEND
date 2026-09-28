@@ -23,7 +23,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   try {
     const response = await fetch(url, { method: request.method, headers, body, cache: "no-store" });
     // Auth verification is the only endpoint allowed to convert a bearer token into an HttpOnly session cookie.
-    if (path.join("/") === "api/auth/otp/verify" && response.ok) {
+    if ((path.join("/") === "api/auth/otp/verify" || path.join("/") === "api/auth/register/verify") && response.ok) {
       const payload = await response.json() as { accessToken?: string; [key: string]: unknown };
       if (payload.accessToken) {
         const { accessToken, ...safePayload } = payload;
