@@ -102,8 +102,7 @@ export default function LoginPage() {
       };
       setSession({ mode: "oidc", ...result });
       toast.success("התחברת בהצלחה");
-      const onboarding = await alphaApi.onboardingStatus();
-      router.replace(onboarding.needsOnboarding ? "/onboarding" : "/dashboard");
+      router.replace("/dashboard");
     } catch {
       toast.error("לא ניתן להתחבר כרגע.");
     } finally {
