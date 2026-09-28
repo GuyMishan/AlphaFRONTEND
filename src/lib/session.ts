@@ -13,8 +13,8 @@ export function getSession(): Session | null {
   try {
     const parsed = JSON.parse(value) as Session;
     // Migrate legacy sessions: never retain bearer tokens in browser storage.
-    if (parsed.accessToken) {
-      const { accessToken: _token, ...safe } = parsed;
+    if ((parsed as Session & { accessToken?: string }).accessToken) {
+      const { accessToken: _token, ...safe } = parsed as Session & { accessToken?: string };
       window.localStorage.removeItem(SESSION_KEY);
   window.sessionStorage.removeItem(SESSION_META_KEY);
       window.sessionStorage.setItem(SESSION_META_KEY, JSON.stringify(safe));
@@ -25,7 +25,7 @@ export function getSession(): Session | null {
 }
 
 export function setSession(session: Session) {
-  const { accessToken: _token, ...safe } = session;
+  const safe = session;
   window.localStorage.removeItem(SESSION_KEY);
   window.sessionStorage.setItem(SESSION_META_KEY, JSON.stringify(safe));
 }
@@ -75,20 +75,5 @@ export function getEmployeeSelection(): string | null {
 
 
 export function isPlatformAdminSession(session: Session | null): boolean {
-  if (!session) return false;
-  if (session.platformAdmin === true) return true;
-  if (session.platformAdmin === true) return true;
-  return false;
-
-  /* legacy token parsing removed; auth token is HttpOnly and unavailable to JS.
-  try {
-    const payloadPart = session.accessToken.split(".")[1];
-    if (!payloadPart) return false;
-    const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const payload = JSON.parse(window.atob(padded)) as Record<string, unknown>;
-    return payload["alpha:platform_admin"] === "true" || payload["alpha:platform_admin"] === true;
-  } catch {
-    return false;
-  }*/
+  return session?.platformAdmin === true;
 }
