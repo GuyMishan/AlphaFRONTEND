@@ -198,6 +198,12 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
   async function changeEmployer(value: string) {
     if (!scope) return;
 
+    if (isAdminBilling && !value) {
+      setEmployerId("");
+      emitScopeChange({ organizationId, employerId: "" });
+      return;
+    }
+
     const entry = allEmployers.find((item) => item.employer.id === value);
     if (!entry) return;
 
