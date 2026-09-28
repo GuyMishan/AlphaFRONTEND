@@ -7,7 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
 import { UiInput, UiSelect } from "@/components/ui-controls";
 import { alphaApi } from "@/lib/api";
-import { getEmployerSelection, getOrganizationSelection, getSession } from "@/lib/session";
+import { getSession } from "@/lib/session";
 import type {
   BillingAccountPricingType,
   BillingCustomerRow,
@@ -94,12 +94,8 @@ export default function AdminBillingPage() {
   const [refunds, setRefunds] = useState<BillingRefund[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [organizationFilter, setOrganizationFilter] = useState(() => getOrganizationSelection() || "all");
-  const [employerFilter, setEmployerFilter] = useState(() => {
-    const organizationId = getOrganizationSelection();
-    const employer = getEmployerSelection();
-    return employer?.organizationId === organizationId ? employer.employerId : "all";
-  });
+  const [organizationFilter, setOrganizationFilter] = useState("all");
+  const [employerFilter, setEmployerFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [pricingCustomer, setPricingCustomer] = useState<BillingCustomerRow | null>(null);
   const [customerBillingType, setCustomerBillingType] = useState<BillingAccountPricingType>("Free");
