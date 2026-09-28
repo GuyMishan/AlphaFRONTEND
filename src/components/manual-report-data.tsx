@@ -288,41 +288,62 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
     {showCreate ? <InlineEmployeeCreateModal organizationId={organizationId} employerId={employerId} onClose={() => setShowCreate(false)} onCreated={employeeCreated} /> : null}
     {editing ? <EmployeeProductsModal employee={editing} month={month} onClose={() => setEditing(null)} onSave={async (monthlySalary, products) => {
       const currentEditing = editing;
+      let mixChanged = true;
+      try {
+        const employeeMix = await alphaApi.employeePensionMix(organizationId, employerId, currentEditing.employmentId);
+        mixChanged = mixSignature(employeeMix) !== mixSignature(products);
+      } catch {
+        mixChanged = true;
+      }
+
+      if (mixChanged) {
+        setMixPrompt({ employeeId: currentEditing.employmentId, employeeName: currentEditing.firstName + " " + currentEditing.lastName, monthlySalary, products });
+        return;
+      }
+
       await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, currentEditing.id, monthlySalary, products);
       setEditing(null);
       await loadRows(query.trim());
       notify.success("נתוני העובד והקצאות השכר נשמרו בהצלחה");
-      try {
-        const employeeMix = await alphaApi.employeePensionMix(organizationId, employerId, currentEditing.employmentId);
-        if (mixSignature(employeeMix) !== mixSignature(products)) {
-          setMixPrompt({ employeeId: currentEditing.employmentId, employeeName: currentEditing.firstName + " " + currentEditing.lastName, monthlySalary, products });
-        }
-      } catch {
-        setMixPrompt({ employeeId: currentEditing.employmentId, employeeName: currentEditing.firstName + " " + currentEditing.lastName, monthlySalary, products });
-      }
     }} /> : null}
-    {mixPrompt ? <div className="report-modal-backdrop" role="presentation">
+    {mixPrompt && editing ? <div className="report-modal-backdrop" role="presentation" style={{ zIndex: 1100 }}>
       <div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="mix-update-title" style={{ maxWidth: 540 }}>
         <div className="report-modal-header"><div><h2 id="mix-update-title">לעדכן את תמהיל המוצרים בכרטיס העובד?</h2><b className="report-modal-employee">{mixPrompt.employeeName}</b></div></div>
         <div className="report-modal-body">
-          <p style={{ marginTop: 0 }}>המוצרים שהגדרת עכשיו נשמרו לדיווח הנוכחי.</p>
-          <p>האם לעדכן גם את תמהיל המוצרים הקבוע בכרטיס העובד בהתאם?</p>
-          <div className="notice notice-info">כך, בדיווחים הבאים המוצרים האלה ייטענו אוטומטית עבור העובד ולא תצטרכו להזין אותם מחדש.</div>
+          <p style={{ marginTop: 0 }}>התמהיל שהגדרת שונה מהתמהיל השמור כרגע בכרטיס העובד.</p>
+          <p>האם לשמור את המוצרים האלה גם כתמהיל הקבוע של העובד?</p>
+          <div className="notice notice-info">עדכון כרטיס העובד יעזור בדיווחים הבאים: המוצרים והנתונים שהגדרת ייטענו אוטומטית ולא תצטרכו להזין אותם מחדש.</div>
         </div>
         <div className="report-modal-footer">
-          <button className="btn btn-secondary" disabled={savingMix} onClick={() => setMixPrompt(null)}>לא, רק לדיווח הזה</button>
+          <button className="btn btn-secondary" disabled={savingMix} onClick={() => void (async () => {
+            const pending = mixPrompt;
+            if (!pending) return;
+            setSavingMix(true);
+            try {
+              await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, pending.monthlySalary, pending.products);
+              setMixPrompt(null);
+              setEditing(null);
+              await loadRows(query.trim());
+              notify.success("הנתונים נשמרו לדיווח הנוכחי");
+            } catch (err) {
+              notify.error(err instanceof Error ? err.message : "שמירת נתוני העובד בדיווח נכשלה");
+            } finally { setSavingMix(false); }
+          })()}>{savingMix ? "שומר..." : "לא, רק לדיווח הזה"}</button>
           <button className="btn btn-primary" disabled={savingMix} onClick={() => void (async () => {
             const pending = mixPrompt;
             if (!pending) return;
             setSavingMix(true);
             try {
+              await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, pending.monthlySalary, pending.products);
               await alphaApi.saveEmployeePensionMix(organizationId, employerId, pending.employeeId, pending.products.map(toEmployeeMixProduct), pending.monthlySalary);
               setMixPrompt(null);
-              notify.success("תמהיל המוצרים בכרטיס העובד עודכן בהצלחה");
+              setEditing(null);
+              await loadRows(query.trim());
+              notify.success("הנתונים נשמרו לדיווח ותמהיל העובד עודכן");
             } catch (err) {
-              notify.error(err instanceof Error ? err.message : "עדכון תמהיל העובד נכשל");
+              notify.error(err instanceof Error ? err.message : "שמירת הנתונים נכשלה");
             } finally { setSavingMix(false); }
-          })()}><Save size={15} />{savingMix ? "מעדכן..." : "כן, עדכן את כרטיס העובד"}</button>
+          })()}><Save size={15} />{savingMix ? "שומר..." : "כן, שמור גם בכרטיס העובד"}</button>
         </div>
       </div>
     </div> : null}
