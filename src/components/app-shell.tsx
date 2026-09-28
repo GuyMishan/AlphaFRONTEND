@@ -257,9 +257,10 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
               <button className="mobile-menu" onClick={() => setMobileMenuOpen(true)} aria-label="פתיחת תפריט"><Menu size={23} /></button>
               <div className="topbar-title"><b>{pageConfig.title}</b><span>מערכת תפעול פנסיוני</span></div>
             </div>
+            {pathname === "/admin/billing" ? <ScopeController placement="topbar" /> : null}
             <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className={`dot${session.mode === "demo" ? "" : " online"}`} />{session.mode === "demo" ? "מצב הדגמה" : "המערכת מחוברת"}</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
           </header>
-          {pageConfig.hideScopeController ? null : <ScopeController />}
+          {pageConfig.hideScopeController || pathname === "/admin/billing" ? null : <ScopeController />}
           <main className="main">{children}</main>
         </div>
         <UpgradeModal detail={upgradeDetail} onClose={() => setUpgradeDetail(null)} />
