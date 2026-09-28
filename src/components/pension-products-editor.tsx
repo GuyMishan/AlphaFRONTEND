@@ -211,6 +211,27 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
 }) {
   const allocation = resolvePensionAllocations(monthlySalary, products);
   const updateProduct = (index: number, patch: Partial<PensionEditorProduct>) => onProductsChange(products.map((product, i) => i === index ? { ...product, ...patch } : product));
+  const clearContribution = (item: PensionEditorContribution): PensionEditorContribution => ({ ...item, percentage: 0, amount: 0, exemptPayments: 0 });
+  const contributionsForProductType = (items: PensionEditorContribution[], party: "employer" | "employee", productType: PensionProductType) =>
+    items.map((item) => {
+      const allowed = productType === 2
+        ? (party === "employee" ? item.component === 1 : item.component === 2)
+        : (productType === 1 || productType === 4)
+          ? item.component !== 3 && item.component !== 4
+          : true;
+      return allowed ? item : clearContribution(item);
+    });
+  const changeProductType = (index: number, productType: PensionProductType) => onProductsChange(products.map((product, i) => i !== index ? product : {
+    ...product,
+    productType,
+    fundExternalKey: "",
+    fundCode: "",
+    fundName: "",
+    fundCompanyName: "",
+    fundClassification: "",
+    employerContributions: contributionsForProductType(product.employerContributions, "employer", productType),
+    employeeContributions: contributionsForProductType(product.employeeContributions, "employee", productType),
+  }));
   const updateContribution = (index: number, party: "employerContributions" | "employeeContributions", component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => {
     const salary = allocation.resolved.get(index) ?? 0;
     onProductsChange(products.map((product, i) => i !== index ? product : {
@@ -240,7 +261,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
         <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <div className="status-pill-active"><CircleCheck size={13} /><div>פעיל</div></div>}{editable ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
         <div className="grid report-product-fields">
           {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
-          <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required onChange={(value) => updateProduct(index, { productType: Number(value) as PensionProductType, fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", fundClassification: "" })} /></div>
+          <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required onChange={(value) => changeProductType(index, Number(value) as PensionProductType)} /></div>
           <PensionFundSelect disabled={!editable} productType={product.productType} value={product} onChange={(fund) => updateProduct(index, { ...fund, ...(context === "employee" ? { institutionalBody: fund.fundCompanyName || product.institutionalBody, manufacturer: fund.fundCompanyName || product.manufacturer } : {}) })} />
           <div className="field"><label>מספר פוליסה / חשבון</label><UiInput disabled={!editable} maxLength={20} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} placeholder="אופציונלי" /></div>
           {context === "report" ? <div className="field"><label>חודש שכר *</label><UiDateInput mode="month" disabled={!editable} required value={(product.salaryMonth ?? month ?? "").slice(0, 7)} onValueChange={(value) => updateProduct(index, { salaryMonth: value ? `${value}-01` : "" })} /></div> : null}
