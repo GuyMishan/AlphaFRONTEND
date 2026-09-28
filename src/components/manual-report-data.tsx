@@ -351,7 +351,8 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
             setSavingMix(true);
             try {
               await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, pending.monthlySalary, pending.products);
-              await alphaApi.saveEmployeePensionMix(organizationId, employerId, pending.employeeId, pending.products.map((product) => toEmployeeMixProduct(product, await alphaApi.employeePensionMix(organizationId, employerId, pending.employeeId))), pending.monthlySalary);
+              const existingMix = await alphaApi.employeePensionMix(organizationId, employerId, pending.employeeId);
+              await alphaApi.saveEmployeePensionMix(organizationId, employerId, pending.employeeId, pending.products.map((product) => toEmployeeMixProduct(product, existingMix)), pending.monthlySalary);
               setMixPrompt(null);
               setEditing(null);
               await loadRows(query.trim());
