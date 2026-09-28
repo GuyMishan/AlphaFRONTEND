@@ -1,19 +1,33 @@
 import type { Session } from "./types";
 
 const SESSION_KEY = "alpha.session.v1";
+const SESSION_META_KEY = "alpha.session.meta.v2";
 const EMPLOYER_KEY = "alpha.employer.v1";
 const ORGANIZATION_KEY = "alpha.organization.v1";
 const EMPLOYEE_KEY = "alpha.employee.v1";
 
 export function getSession(): Session | null {
   if (typeof window === "undefined") return null;
-  const value = window.localStorage.getItem(SESSION_KEY);
+  const value = window.sessionStorage.getItem(SESSION_META_KEY) ?? window.localStorage.getItem(SESSION_KEY);
   if (!value) return null;
-  try { return JSON.parse(value) as Session; } catch { return null; }
+  try {
+    const parsed = JSON.parse(value) as Session;
+    // Migrate legacy sessions: never retain bearer tokens in browser storage.
+    if (parsed.accessToken) {
+      const { accessToken: _token, ...safe } = parsed;
+      window.localStorage.removeItem(SESSION_KEY);
+  window.sessionStorage.removeItem(SESSION_META_KEY);
+      window.sessionStorage.setItem(SESSION_META_KEY, JSON.stringify(safe));
+      return safe as Session;
+    }
+    return parsed;
+  } catch { return null; }
 }
 
 export function setSession(session: Session) {
-  window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  const { accessToken: _token, ...safe } = session;
+  window.localStorage.removeItem(SESSION_KEY);
+  window.sessionStorage.setItem(SESSION_META_KEY, JSON.stringify(safe));
 }
 
 export function clearSession() {
@@ -63,8 +77,10 @@ export function getEmployeeSelection(): string | null {
 export function isPlatformAdminSession(session: Session | null): boolean {
   if (!session) return false;
   if (session.platformAdmin === true) return true;
-  if (!session.accessToken) return false;
+  if (session.platformAdmin === true) return true;
+  return false;
 
+  /* legacy token parsing removed; auth token is HttpOnly and unavailable to JS.
   try {
     const payloadPart = session.accessToken.split(".")[1];
     if (!payloadPart) return false;
@@ -74,5 +90,5 @@ export function isPlatformAdminSession(session: Session | null): boolean {
     return payload["alpha:platform_admin"] === "true" || payload["alpha:platform_admin"] === true;
   } catch {
     return false;
-  }
+  }*/
 }
