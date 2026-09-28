@@ -1151,3 +1151,19 @@ td { font-size: 14px; }
 /* Keep regular select typography compact; autocomplete typography is intentionally unchanged. */
 .ui-select-trigger,
 .ui-select-menu button { font-size: 12px !important; }
+
+
+/* Session timeout */
+.session-timeout-page{min-height:100vh;position:relative;overflow:hidden;display:grid;place-items:center;padding:96px 24px 48px;background:radial-gradient(circle at 50% 36%,rgba(82,137,236,.12),transparent 32%),linear-gradient(145deg,var(--bg),color-mix(in srgb,var(--blue-soft) 52%,var(--bg)));isolation:isolate}
+.session-timeout-brand{position:absolute;top:30px;right:36px;z-index:2}
+.session-timeout-orb{position:absolute;border-radius:50%;z-index:-1;pointer-events:none;background:color-mix(in srgb,var(--blue) 8%,transparent)}
+.session-timeout-orb-top{width:470px;height:470px;top:-285px;left:-120px;box-shadow:0 0 0 58px color-mix(in srgb,var(--blue) 3%,transparent)}
+.session-timeout-orb-bottom{width:390px;height:390px;right:-210px;bottom:-230px;box-shadow:0 0 0 54px color-mix(in srgb,var(--blue) 3%,transparent)}
+.session-timeout-card{width:min(570px,100%);padding:48px 54px 38px;text-align:center;background:color-mix(in srgb,var(--surface) 96%,transparent);border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:24px;box-shadow:0 28px 70px rgba(24,51,84,.12);backdrop-filter:blur(12px)}
+.session-timeout-icon{width:88px;height:88px;margin:0 auto 24px;border-radius:26px;display:grid;place-items:center;position:relative;color:var(--blue);background:var(--blue-soft);border:1px solid color-mix(in srgb,var(--blue) 16%,transparent)}
+.session-timeout-icon>span{position:absolute;left:-5px;bottom:-5px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surface);color:#d84a56;border:4px solid var(--surface);box-shadow:0 5px 16px rgba(16,38,64,.12)}
+.session-timeout-card h1{margin:0 0 12px;font-size:clamp(29px,4vw,38px);letter-spacing:-.025em}
+.session-timeout-card>p{max-width:450px;margin:0 auto 28px;color:var(--muted);font-size:16px;line-height:1.75}
+.session-timeout-login{width:100%;min-height:50px;font-size:15px}
+.session-timeout-security{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:7px;color:var(--muted);font-size:12px;line-height:1.5}
+@media(max-width:640px){.session-timeout-page{padding:86px 16px 28px}.session-timeout-brand{top:22px;right:20px}.session-timeout-card{padding:38px 22px 28px;border-radius:20px}.session-timeout-icon{width:76px;height:76px;border-radius:22px}.session-timeout-card>p{font-size:14px}.session-timeout-orb-top{left:-300px}.session-timeout-orb-bottom{right:-270px}}
