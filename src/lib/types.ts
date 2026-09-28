@@ -47,13 +47,11 @@ export type Employee = {
 export type Session = {
   mode: "development" | "oidc" | "demo";
   userId?: string;
-  accessToken?: string;
   platformAdmin: boolean;
   displayName: string;
 };
 
 export type RefreshedSession = {
-  accessToken: string;
   userId: string;
   platformAdmin: boolean;
   displayName: string;
