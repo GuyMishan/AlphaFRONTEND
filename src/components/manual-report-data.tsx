@@ -307,7 +307,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       notify.success("נתוני העובד והקצאות השכר נשמרו בהצלחה");
     }} /> : null}
     {mixPrompt && editing ? <div className="report-modal-backdrop" role="presentation" style={{ zIndex: 1100 }}>
-      <div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="mix-update-title" style={{ maxWidth: 540 }}>
+      <div className="report-modal report-modal-auto-height" role="dialog" aria-modal="true" aria-labelledby="mix-update-title" style={{ maxWidth: 540 }}>
         <div className="report-modal-header"><div><h2 id="mix-update-title">לעדכן את תמהיל המוצרים בכרטיס העובד?</h2><b className="report-modal-employee">{mixPrompt.employeeName}</b></div></div>
         <div className="report-modal-body">
           <p style={{ marginTop: 0 }}>התמהיל שהגדרת שונה מהתמהיל השמור כרגע בכרטיס העובד.</p>
