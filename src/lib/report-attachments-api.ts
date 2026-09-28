@@ -22,7 +22,6 @@ async function authHeaders() {
   const session = getSession();
   const headers = new Headers();
   headers.set("Accept", "application/json");
-  if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
   return headers;
 }
 
