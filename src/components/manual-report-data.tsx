@@ -71,13 +71,13 @@ function toEditorProduct(product: ManualProductInput, index: number): PensionEdi
   };
 }
 
-function toEmployeeMixProduct(product: ManualProductInput): EmployeePensionProductInput {
+function toEmployeeMixProduct(product: ManualProductInput, reportingMonth: string): EmployeePensionProductInput {
   return {
     productType: product.productType, policyNumber: product.policyNumber,
     fundExternalKey: product.fundExternalKey ?? "", fundCode: product.fundCode ?? "", fundName: product.fundName ?? "", fundCompanyName: product.fundCompanyName ?? "",
     salary: Number(product.salary || 0), reportingType: product.reportingType, salaryLayer: product.salaryLayer,
     section14: product.section14, section14Code: product.section14Code, section14StartDate: product.section14StartDate,
-    isActive: true, effectiveFrom: new Date().toISOString().slice(0, 10), effectiveTo: null,
+    isActive: true, effectiveFrom: `${reportingMonth.slice(0, 7)}-01`, effectiveTo: null,
     salaryAllocationType: product.salaryAllocationType, salaryAllocationValue: product.salaryAllocationValue ?? null,
     employerContributions: product.employerContributions.map((entry) => ({ component: entry.component, amount: Number(entry.amount || 0), percentage: Number(entry.percentage || 0), exemptPayments: Number(entry.exemptPayments || 0) })),
     employeeContributions: product.employeeContributions.map((entry) => ({ component: entry.component, amount: Number(entry.amount || 0), percentage: Number(entry.percentage || 0), exemptPayments: Number(entry.exemptPayments || 0) })),
@@ -335,7 +335,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
             setSavingMix(true);
             try {
               await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, pending.monthlySalary, pending.products);
-              await alphaApi.saveEmployeePensionMix(organizationId, employerId, pending.employeeId, pending.products.map(toEmployeeMixProduct), pending.monthlySalary);
+              await alphaApi.saveEmployeePensionMix(organizationId, employerId, pending.employeeId, pending.products.map((product) => toEmployeeMixProduct(product, month)), pending.monthlySalary);
               setMixPrompt(null);
               setEditing(null);
               await loadRows(query.trim());
