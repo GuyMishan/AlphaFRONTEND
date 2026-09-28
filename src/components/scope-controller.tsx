@@ -38,6 +38,7 @@ export function ScopeController() {
   const isNewReportPage = pathname === "/reports/new";
   const isPlatformAdmin = Boolean(getSession()?.platformAdmin);
   const isAdminDashboard = isDashboard && Boolean(getSession()?.platformAdmin);
+  const isAdminBilling = pathname === "/admin/billing";
   const [scope, setScope] = useState<GlobalScopeContext | null>(null);
   const [organizationId, setOrganizationId] = useState("");
   const [employerId, setEmployerId] = useState("");
@@ -82,11 +83,12 @@ export function ScopeController() {
         if (!active) return;
         setScope(context);
 
-        if (isAdminDashboard) {
+        if (isAdminDashboard || isAdminBilling) {
           setOrganizationId("");
           setEmployerId("");
           setEmployees([]);
           setEmployeeId("");
+          if (isAdminBilling) emitScopeChange({ organizationId: "", employerId: "" });
           return;
         }
 
@@ -150,7 +152,7 @@ export function ScopeController() {
 
     void load();
     return () => { active = false; };
-  }, [level, isAdminDashboard]);
+  }, [level, isAdminDashboard, isAdminBilling]);
 
   async function changeOrganization(value: string) {
     if (!scope) return;
@@ -158,7 +160,15 @@ export function ScopeController() {
     setEmployerId("");
     setOrganizationSelection(value);
 
-    if (level === "organization") {
+    if (level === "organization" && !isAdminBilling) {
+      emitScopeChange({ organizationId: value });
+      return;
+    }
+
+    if (isAdminBilling) {
+      const organization = scope.organizations.find((item) => item.id === value);
+      const nextEmployer = organization?.employers[0];
+      setEmployerId("");
       emitScopeChange({ organizationId: value });
       return;
     }
@@ -234,6 +244,7 @@ export function ScopeController() {
     employerOptions.length > 0 &&
     (
       isNewReportPage ||
+      isAdminBilling ||
       (employerOptions.length > 1 && (
       isAccessPage ||
       (isDashboard && selectedOrganizationHasScope) ||
@@ -252,6 +263,7 @@ export function ScopeController() {
       {showOrganizationSelector ? <label>
         <span>ארגון</span>
         <div><Building2 size={16} /><UiSelect controlSize="compact" value={organizationId} disabled={loading} onChange={(event) => void changeOrganization(event.target.value)}>
+          {isAdminBilling ? <option value="">כל הארגונים</option> : null}
           {relevantOrganizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </UiSelect></div>
       </label> : null}
@@ -259,6 +271,7 @@ export function ScopeController() {
       {showEmployerSelector ? <label>
         <span>מעסיק</span>
         <div><Building2 size={16} /><UiSelect controlSize="compact" value={employerId} disabled={loading} onChange={(event) => void changeEmployer(event.target.value)}>
+          {isAdminBilling ? <option value="">כל המעסיקים</option> : null}
           {selectedOrganizationHasScope
             ? (isDashboard
                 ? [{ id: "", legalName: "בחר מעסיק" }, ...employerOptions].map((item) => <option key={item.id || "empty"} value={item.id}>{item.legalName}</option>)
