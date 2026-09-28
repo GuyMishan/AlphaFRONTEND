@@ -29,7 +29,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const session = getSession();
   const headers = new Headers({ Accept: "application/json" });
   if (init?.body) headers.set("Content-Type", "application/json");
-  if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
   if (session?.mode === "development" && session.userId) {
     headers.set("X-Alpha-User-Id", session.userId);
     if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
