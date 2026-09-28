@@ -262,9 +262,15 @@ function parseReportRow(raw: Record<string, unknown>, rowNumber: number, nationa
   if (!employeeStatus) errors.push("סטטוס עובד");
   if (!statusStartDate) errors.push("תאריך תחילת סטטוס");
   if (!lastDeposit || ![1, 2].includes(lastDeposit)) errors.push("הפקדה אחרונה");
-  if (!paymentMethodCode) errors.push("אמצעי תשלום");
-  if (!employerAccountType) errors.push("סוג חשבון מעסיק");
-  if (!receiverAccountType) errors.push("סוג חשבון קולט");
+  const allowedPaymentMethodsByOperation: Record<number, number[]> = { 1: [1, 3, 5, 6, 7, 9], 2: [1], 3: [1, 3, 5, 6, 7, 9], 7: [1] };
+  if (operationCode) {
+    const allowed = allowedPaymentMethodsByOperation[operationCode] ?? [];
+    if (!paymentMethodCode || !allowed.includes(paymentMethodCode)) errors.push(`אמצעי תשלום חוקי לפעולה ${operationCode}`);
+  }
+  // Account types are conditionally required by Version 006. The authoritative
+  // preflight/export validator applies the exact rule after the report is persisted.
+  if (paymentMethodCode === 9 && employerAccountType !== 1) errors.push("סוג חשבון מעסיק 1 באמצעי תשלום 9");
+  if (paymentMethodCode === 9 && receiverAccountType !== 1) errors.push("סוג חשבון קולט 1 באמצעי תשלום 9");
 
   const employerContributions = [
     contribution(raw, 1, "erSeverance"),
