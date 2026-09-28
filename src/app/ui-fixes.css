@@ -323,3 +323,18 @@ body:has(.report-modal-backdrop) {
     margin-top: 8px;
   }
 }
+
+/* Autocomplete action gutter must win over dense report-modal input padding. */
+.pension-fund-search > input.ui-control,
+.report-modal .report-product-fields .pension-fund-search > input.ui-control {
+  padding-inline-start: 14px !important;
+  padding-inline-end: 78px !important;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pension-fund-search .autocomplete-actions {
+  inset-inline-end: 7px;
+  max-width: 66px;
+}
