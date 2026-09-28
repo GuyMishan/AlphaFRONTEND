@@ -143,12 +143,20 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
+    const onScopeChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ organizationId?: string; employerId?: string }>).detail;
+      setOrganizationFilter(detail?.organizationId || "all");
+      setEmployerFilter(detail?.employerId || "all");
+    };
+    window.addEventListener("alpha:scope-change", onScopeChange);
+
     const session = getSession();
     if (!session?.platformAdmin) {
       router.replace("/dashboard");
-      return;
+      return () => window.removeEventListener("alpha:scope-change", onScopeChange);
     }
     void load();
+    return () => window.removeEventListener("alpha:scope-change", onScopeChange);
   }, [router]);
 
   async function runInterface(key: string) {
@@ -277,7 +285,7 @@ export default function AdminPage() {
     return true;
   });
 
-  return <AppShell title="מסך אדמין" hideScopeController>
+  return <AppShell title="מסך אדמין" hideScopeController={tab !== "subscriptions"}>
     <div className="page-head">
       <div><h1>מסך אדמין</h1><p>ניהול ממשקי המערכת וניהול הגבייה והתמחור</p></div>
       <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={loading || Boolean(running)}><RefreshCw size={16} />רענון</button>
@@ -323,20 +331,6 @@ export default function AdminPage() {
             <span>סוג ישות</span>
             <UiSelect value={entityTypeFilter} onChange={(event) => setEntityTypeFilter(event.target.value)}>
               {entityTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </UiSelect>
-          </label>
-          <label className="field" style={{ minWidth: 220 }}>
-            <span>ארגון</span>
-            <UiSelect value={organizationFilter} onChange={(event) => { setOrganizationFilter(event.target.value); setEmployerFilter("all"); }}>
-              {[{ value: "all", label: "כל הארגונים" }].map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              {organizationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-            </UiSelect>
-          </label>
-          <label className="field" style={{ minWidth: 220 }}>
-            <span>מעסיק</span>
-            <UiSelect value={employerFilter} onChange={(event) => setEmployerFilter(event.target.value)}>
-              {[{ value: "all", label: "כל המעסיקים" }].map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              {employerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
             </UiSelect>
           </label>
           <label className="field" style={{ minWidth: 180 }}>
