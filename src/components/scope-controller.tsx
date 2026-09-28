@@ -38,7 +38,7 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
   const isNewReportPage = pathname === "/reports/new";
   const isPlatformAdmin = Boolean(getSession()?.platformAdmin);
   const isAdminDashboard = isDashboard && Boolean(getSession()?.platformAdmin);
-  const isAdminBilling = pathname === "/admin/billing";
+  const isAdminBilling = pathname === "/admin/billing" || pathname === "/admin";
   const [scope, setScope] = useState<GlobalScopeContext | null>(null);
   const [organizationId, setOrganizationId] = useState("");
   const [employerId, setEmployerId] = useState("");
