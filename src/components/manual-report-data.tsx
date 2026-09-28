@@ -7,7 +7,7 @@ import { InlineEmployeeCreateModal } from "@/components/inline-employee-create-m
 import { PensionProductsEditor, normalizePensionEditorProducts, validatePensionEditorProducts, type PensionEditorProduct } from "@/components/pension-products-editor";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
-import type { Employee, EmployeePensionProductInput, ManualProductInput, ManualReportEmployeeDetail, ManualReportEmployeeSummary, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
+import type { Employee, EmployeePensionProduct, EmployeePensionProductInput, ManualProductInput, ManualReportEmployeeDetail, ManualReportEmployeeSummary, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
 
 type Props = {
   organizationId: string;
@@ -71,14 +71,30 @@ function toEditorProduct(product: ManualProductInput, index: number): PensionEdi
   };
 }
 
-function toEmployeeMixProduct(product: ManualProductInput, reportingMonth: string): EmployeePensionProductInput {
+function sameMixProduct(a: { productType: PensionProductType; policyNumber: string; fundExternalKey?: string }, b: { productType: PensionProductType; policyNumber: string; fundExternalKey?: string }) {
+  return Number(a.productType) === Number(b.productType)
+    && (a.policyNumber.trim()
+      ? a.policyNumber.trim().toLowerCase() === b.policyNumber.trim().toLowerCase()
+      : Boolean(a.fundExternalKey) && a.fundExternalKey === b.fundExternalKey);
+}
+
+function toEmployeeMixProduct(product: ManualProductInput, existingProducts: EmployeePensionProduct[]): EmployeePensionProductInput {
+  const existing = existingProducts.find((item) => sameMixProduct(product, item));
   return {
     productType: product.productType, policyNumber: product.policyNumber,
     fundExternalKey: product.fundExternalKey ?? "", fundCode: product.fundCode ?? "", fundName: product.fundName ?? "", fundCompanyName: product.fundCompanyName ?? "",
     salary: Number(product.salary || 0), reportingType: product.reportingType, salaryLayer: product.salaryLayer,
     section14: product.section14, section14Code: product.section14Code, section14StartDate: product.section14StartDate,
-    isActive: true, effectiveFrom: `${reportingMonth.slice(0, 7)}-01`, effectiveTo: null,
+    // A report snapshot has no product effective-from field. Preserve the real profile dates for
+    // existing products; for a genuinely new product, let the employee-mix API use its normal
+    // creation default rather than inventing the first day of the reporting month.
+    isActive: existing?.isActive ?? true,
+    effectiveFrom: existing?.effectiveFrom,
+    effectiveTo: existing?.effectiveTo ?? null,
+    institutionalBody: existing?.institutionalBody,
+    manufacturer: existing?.manufacturer,
     salaryAllocationType: product.salaryAllocationType, salaryAllocationValue: product.salaryAllocationValue ?? null,
+    allocationOrder: existing?.allocationOrder,
     employerContributions: product.employerContributions.map((entry) => ({ component: entry.component, amount: Number(entry.amount || 0), percentage: Number(entry.percentage || 0), exemptPayments: Number(entry.exemptPayments || 0) })),
     employeeContributions: product.employeeContributions.map((entry) => ({ component: entry.component, amount: Number(entry.amount || 0), percentage: Number(entry.percentage || 0), exemptPayments: Number(entry.exemptPayments || 0) })),
   };
@@ -335,7 +351,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
             setSavingMix(true);
             try {
               await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, pending.monthlySalary, pending.products);
-              await alphaApi.saveEmployeePensionMix(organizationId, employerId, pending.employeeId, pending.products.map((product) => toEmployeeMixProduct(product, month)), pending.monthlySalary);
+              await alphaApi.saveEmployeePensionMix(organizationId, employerId, pending.employeeId, pending.products.map((product) => toEmployeeMixProduct(product, await alphaApi.employeePensionMix(organizationId, employerId, pending.employeeId))), pending.monthlySalary);
               setMixPrompt(null);
               setEditing(null);
               await loadRows(query.trim());
