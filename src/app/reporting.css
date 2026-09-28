@@ -198,3 +198,10 @@
 .payment-modal .app-modal-actions{margin-top:auto;flex:0 0 auto;background:var(--surface);z-index:2}
 .payment-modal-body{min-height:0}
 .account-number{direction:ltr;unicode-bidi:isolate;display:inline-block;text-align:left}
+
+/* The pension-mix confirmation is a compact decision modal and should grow only with its content. */
+.report-modal.report-modal-auto-height { height: auto; max-height: none; grid-template-rows: auto auto auto; }
+.report-modal.report-modal-auto-height .report-modal-body { overflow-y: visible; }
+@media (max-width: 720px) {
+  .report-modal.report-modal-auto-height { height: auto; max-height: none; align-self: center; border-radius: 18px; }
+}
