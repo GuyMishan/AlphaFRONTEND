@@ -6,6 +6,7 @@ import { PersistentAppLayout } from "@/components/persistent-app-layout";
 import { SalaryFileUploadEnhancer } from "@/components/salary-file-upload-enhancer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ValidationUxBridge } from "@/components/validation-ux-bridge";
+import { SessionTimeoutGuard } from "@/components/session-timeout-guard";
 import "./globals.css";
 import "./mobile.css";
 import "./reporting.css";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <NotificationCenter />
           <ValidationUxBridge />
           <SalaryFileUploadEnhancer />
+          <SessionTimeoutGuard />
         </ThemeProvider>
       </body>
     </html>
