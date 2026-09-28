@@ -1146,3 +1146,8 @@ td { font-size: 14px; }
   .topbar-scope label { flex:1 1 180px; }
   .topbar-scope label > div, .topbar-scope select { width:100%; }
 }
+
+
+/* Keep regular select typography compact; autocomplete typography is intentionally unchanged. */
+.ui-select-trigger,
+.ui-select-menu button { font-size: 12px !important; }
