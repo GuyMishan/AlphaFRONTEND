@@ -10,13 +10,11 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   url.search = request.nextUrl.search;
 
   const headers = new Headers();
-  const authorization = request.headers.get("authorization");
   const cookieToken = request.cookies.get("alpha_access")?.value;
   const userId = request.headers.get("x-alpha-user-id");
   const platformAdmin = request.headers.get("x-alpha-platform-admin");
   const contentType = request.headers.get("content-type");
-  if (authorization) headers.set("Authorization", authorization);
-  else if (cookieToken) headers.set("Authorization", `Bearer ${cookieToken}`);
+  if (cookieToken) headers.set("Authorization", `Bearer ${cookieToken}`);
   if (userId) headers.set("X-User-Id", userId);
   if (platformAdmin) headers.set("X-Platform-Admin", platformAdmin);
   if (contentType) headers.set("Content-Type", contentType);
