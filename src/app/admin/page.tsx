@@ -40,7 +40,6 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const session = getSession();
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
-  if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
   if (session?.mode === "development" && session.userId) {
     headers.set("X-Alpha-User-Id", session.userId);
     if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
