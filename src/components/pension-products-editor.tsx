@@ -105,7 +105,7 @@ export function normalizePensionEditorProducts(monthlySalary: number, products: 
         section14Code,
         section14: section14Code === 1 || section14Code === 2,
         section14StartDate: section14Code === 2 || section14Code === 4 ? product.section14StartDate : null,
-        salaryAllocationValue: Number(product.salaryAllocationType ?? 1) === 4 ? null : product.salaryAllocationValue,
+        salaryAllocationValue: Number(product.salaryAllocationType ?? 1) === 4 ? null : Number(product.salaryAllocationType ?? 1) === 1 ? monthlySalary : product.salaryAllocationValue,
         employerContributions: product.employerContributions.map(normalize),
         employeeContributions: product.employeeContributions.map(normalize),
       };
