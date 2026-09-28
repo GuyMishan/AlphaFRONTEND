@@ -6,7 +6,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
   if (init?.body) headers.set("Content-Type", "application/json");
-  if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
   const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
     let message = `אירעה שגיאה (${response.status})`;
