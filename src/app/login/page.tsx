@@ -96,7 +96,6 @@ export default function LoginPage() {
       }
 
       const result = await response.json() as {
-        accessToken: string;
         userId: string;
         platformAdmin: boolean;
         displayName: string;
