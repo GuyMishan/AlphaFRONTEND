@@ -1133,3 +1133,16 @@ td { font-size: 14px; }
 .ui-select{position:relative;width:100%;min-width:0}.ui-select-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}.ui-select-trigger{width:100%;display:flex!important;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;text-align:right;direction:rtl;cursor:pointer;background:var(--surface)!important;color:var(--text)!important;padding-inline:12px!important}.ui-select-trigger>span{order:1;flex:1 1 auto;text-align:right}.ui-select-trigger>svg{order:2;margin-inline-start:auto}.ui-select-trigger>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ui-select-trigger svg{flex:0 0 auto;color:var(--muted);transition:transform .15s ease}.ui-select.is-open .ui-select-trigger{border-color:var(--blue);box-shadow:0 0 0 3px rgba(40,101,216,.1)}.ui-select.is-open .ui-select-trigger svg{transform:rotate(180deg)}.ui-select-menu{position:absolute;z-index:120;top:calc(100% + 6px);right:0;left:0;max-height:240px;overflow-y:auto;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 35px rgba(16,38,64,.16)}.ui-select-menu button{width:100%;border:0;background:transparent;color:var(--text);padding:9px 10px;text-align:right;border-radius:7px;cursor:pointer;font:inherit}.ui-select-menu button:hover,.ui-select-menu button:focus-visible,.ui-select-menu button.selected{outline:none;background:var(--blue-soft);color:var(--blue)}.ui-select-menu button:disabled{opacity:.5;cursor:not-allowed}.ui-select.is-disabled{opacity:.6}
 
 .session-timeout-warning{position:fixed;z-index:10000;inset:auto 24px 24px 24px;max-width:440px;margin-inline:auto;padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:0 16px 48px rgba(0,0,0,.22);display:grid;gap:10px}.session-timeout-warning strong{font-size:1.05rem}.session-timeout-warning span{line-height:1.5}
+
+/* Global header scope controls (admin billing). */
+.topbar-scope { display:flex; align-items:center; margin-inline-start:auto; margin-inline-end:18px; }
+.topbar-scope .scope-selects { display:flex; align-items:center; gap:10px; }
+.topbar-scope label { display:flex; align-items:center; gap:7px; margin:0; font-size:12px; color:var(--muted); white-space:nowrap; }
+.topbar-scope label > div { display:flex; align-items:center; gap:6px; }
+.topbar-scope select { min-width:150px; }
+@media (max-width: 900px) {
+  .topbar-scope { order:3; width:100%; margin:8px 0 0; }
+  .topbar-scope .scope-selects { width:100%; flex-wrap:wrap; }
+  .topbar-scope label { flex:1 1 180px; }
+  .topbar-scope label > div, .topbar-scope select { width:100%; }
+}
