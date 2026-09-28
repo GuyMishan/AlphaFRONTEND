@@ -15,7 +15,6 @@ export function SalaryLayerSelect({ value, disabled = false, onChange }: { value
     let active = true;
     const session = getSession();
     const headers = new Headers({ Accept: "application/json" });
-    if (session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
     if (session?.mode === "development" && session.userId) {
       headers.set("X-Alpha-User-Id", session.userId);
       if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
