@@ -11,11 +11,12 @@ const EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
 export function SessionTimeoutGuard() {
   const pathname = usePathname();
   const router = useRouter();
-  const lastActivity = useRef(Date.now());
+  const lastActivity = useRef(0);
   const [remaining, setRemaining] = useState<number | null>(null);
 
   useEffect(() => {
     if (!getSession() || pathname === "/login" || pathname === "/register" || pathname === "/session-timeout") return;
+    lastActivity.current = Date.now();
     const activity = () => { lastActivity.current = Date.now(); setRemaining(null); };
     EVENTS.forEach((event) => window.addEventListener(event, activity, { passive: true }));
     const timer = window.setInterval(() => {
