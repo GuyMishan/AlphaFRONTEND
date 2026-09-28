@@ -7,7 +7,7 @@ import { InlineEmployeeCreateModal } from "@/components/inline-employee-create-m
 import { PensionProductsEditor, normalizePensionEditorProducts, validatePensionEditorProducts, type PensionEditorProduct } from "@/components/pension-products-editor";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
-import type { Employee, ManualProductInput, ManualReportEmployeeDetail, ManualReportEmployeeSummary, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
+import type { Employee, EmployeePensionProductInput, ManualProductInput, ManualReportEmployeeDetail, ManualReportEmployeeSummary, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
 
 type Props = {
   organizationId: string;
@@ -71,6 +71,23 @@ function toEditorProduct(product: ManualProductInput, index: number): PensionEdi
   };
 }
 
+function toEmployeeMixProduct(product: ManualProductInput): EmployeePensionProductInput {
+  return {
+    productType: product.productType, policyNumber: product.policyNumber,
+    fundExternalKey: product.fundExternalKey ?? "", fundCode: product.fundCode ?? "", fundName: product.fundName ?? "", fundCompanyName: product.fundCompanyName ?? "",
+    salary: Number(product.salary || 0), reportingType: product.reportingType, salaryLayer: product.salaryLayer,
+    section14: product.section14, section14Code: product.section14Code, section14StartDate: product.section14StartDate,
+    isActive: true, effectiveFrom: new Date().toISOString().slice(0, 10), effectiveTo: null,
+    salaryAllocationType: product.salaryAllocationType, salaryAllocationValue: product.salaryAllocationValue ?? null,
+    employerContributions: product.employerContributions.map((entry) => ({ component: entry.component, amount: Number(entry.amount || 0), percentage: Number(entry.percentage || 0), exemptPayments: Number(entry.exemptPayments || 0) })),
+    employeeContributions: product.employeeContributions.map((entry) => ({ component: entry.component, amount: Number(entry.amount || 0), percentage: Number(entry.percentage || 0), exemptPayments: Number(entry.exemptPayments || 0) })),
+  };
+}
+
+function mixSignature(products: Array<{ productType: PensionProductType; policyNumber: string; fundExternalKey?: string; fundCode?: string; salaryAllocationType?: SalaryAllocationType; salaryAllocationValue?: number | null; employerContributions: Array<{ component: string | number; percentage: number }>; employeeContributions: Array<{ component: string | number; percentage: number }> }>) {
+  return JSON.stringify(products.map((p) => ({ type: Number(p.productType), policy: p.policyNumber.trim(), fund: p.fundExternalKey || p.fundCode || "", allocationType: Number(p.salaryAllocationType ?? 1), allocationValue: Number(p.salaryAllocationValue ?? 0), employer: p.employerContributions.map((x) => [String(x.component), Number(x.percentage || 0)]), employee: p.employeeContributions.map((x) => [String(x.component), Number(x.percentage || 0)]) })).sort((a, b) => `${a.type}:${a.policy}:${a.fund}`.localeCompare(`${b.type}:${b.policy}:${b.fund}`)));
+}
+
 function toManualProduct(product: PensionEditorProduct, month: string): ManualProductInput {
   return {
     productType: product.productType,
@@ -113,6 +130,8 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<ManualReportEmployeeDetail | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [mixPrompt, setMixPrompt] = useState<{ employeeId: string; employeeName: string; monthlySalary: number; products: ManualProductInput[] } | null>(null);
+  const [savingMix, setSavingMix] = useState(false);
   const selectionQueue = useRef<string[] | null>(null);
   const selectionSyncRunning = useRef(false);
   const selectedIdsRef = useRef(selectedIds);
@@ -268,11 +287,45 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
     </div>
     {showCreate ? <InlineEmployeeCreateModal organizationId={organizationId} employerId={employerId} onClose={() => setShowCreate(false)} onCreated={employeeCreated} /> : null}
     {editing ? <EmployeeProductsModal employee={editing} month={month} onClose={() => setEditing(null)} onSave={async (monthlySalary, products) => {
-      await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, monthlySalary, products);
+      const currentEditing = editing;
+      await alphaApi.saveManualReportEmployee(organizationId, employerId, reportId, currentEditing.id, monthlySalary, products);
       setEditing(null);
       await loadRows(query.trim());
       notify.success("נתוני העובד והקצאות השכר נשמרו בהצלחה");
+      try {
+        const employeeMix = await alphaApi.employeePensionMix(organizationId, employerId, currentEditing.employmentId);
+        if (mixSignature(employeeMix) !== mixSignature(products)) {
+          setMixPrompt({ employeeId: currentEditing.employmentId, employeeName: currentEditing.firstName + " " + currentEditing.lastName, monthlySalary, products });
+        }
+      } catch {
+        setMixPrompt({ employeeId: currentEditing.employmentId, employeeName: currentEditing.firstName + " " + currentEditing.lastName, monthlySalary, products });
+      }
     }} /> : null}
+    {mixPrompt ? <div className="report-modal-backdrop" role="presentation">
+      <div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="mix-update-title" style={{ maxWidth: 540 }}>
+        <div className="report-modal-header"><div><h2 id="mix-update-title">לעדכן את תמהיל המוצרים בכרטיס העובד?</h2><b className="report-modal-employee">{mixPrompt.employeeName}</b></div></div>
+        <div className="report-modal-body">
+          <p style={{ marginTop: 0 }}>המוצרים שהגדרת עכשיו נשמרו לדיווח הנוכחי.</p>
+          <p>האם לעדכן גם את תמהיל המוצרים הקבוע בכרטיס העובד בהתאם?</p>
+          <div className="notice notice-info">כך, בדיווחים הבאים המוצרים האלה ייטענו אוטומטית עבור העובד ולא תצטרכו להזין אותם מחדש.</div>
+        </div>
+        <div className="report-modal-footer">
+          <button className="btn btn-secondary" disabled={savingMix} onClick={() => setMixPrompt(null)}>לא, רק לדיווח הזה</button>
+          <button className="btn btn-primary" disabled={savingMix} onClick={() => void (async () => {
+            const pending = mixPrompt;
+            if (!pending) return;
+            setSavingMix(true);
+            try {
+              await alphaApi.saveEmployeePensionMix(organizationId, employerId, pending.employeeId, pending.products.map(toEmployeeMixProduct), pending.monthlySalary);
+              setMixPrompt(null);
+              notify.success("תמהיל המוצרים בכרטיס העובד עודכן בהצלחה");
+            } catch (err) {
+              notify.error(err instanceof Error ? err.message : "עדכון תמהיל העובד נכשל");
+            } finally { setSavingMix(false); }
+          })()}><Save size={15} />{savingMix ? "מעדכן..." : "כן, עדכן את כרטיס העובד"}</button>
+        </div>
+      </div>
+    </div> : null}
   </>;
 }
 
