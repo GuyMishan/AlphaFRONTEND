@@ -19,6 +19,7 @@ type Props = {
   disabled?: boolean;
   onChange: (value: Required<FundValue>) => void;
   onInteraction?: () => void;
+  showValidation?: boolean;
 };
 
 function optionLabel(item: PensionFundOption) {
@@ -29,7 +30,7 @@ function valueLabel(value: FundValue) {
   return [value.fundCode, value.fundName, value.fundCompanyName].filter(Boolean).join(" · ");
 }
 
-export function PensionFundSelect({ productType, value, disabled = false, onChange, onInteraction }: Props) {
+export function PensionFundSelect({ productType, value, disabled = false, onChange, onInteraction, showValidation = false }: Props) {
   const [query, setQuery] = useState(valueLabel(value));
   const [options, setOptions] = useState<PensionFundOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,4 +78,4 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
     return <div className="field"><label>קופה</label><UiInput disabled value="לא נדרש עבור מוצר מסוג אחר" /></div>;
   }
 
-  return <div className="field"><label>קופה *</label><UiAutocomplete value={query} disabled={disabled} required loading={loading} ariaLabel="בחירת קופה" placeholder="חיפוש לפי שם / מספר קופה" loadingText="טוען קופות..." emptyText={error || "לא נמצאו קופות מהסוג שנבחר."} options={options.map(item=>({value:item.externalKey,label:optionLabel(item)}))} onClear={()=>{setOptions([]);onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}} onValueChange={(next)=>{onInteraction?.();setQuery(next);const item=options.find(x=>optionLabel(x)===next);if(item){setError("");onChange({fundExternalKey:item.externalKey,fundCode:item.fundCode,fundName:item.fundName,fundCompanyName:item.companyName,fundClassification:item.classification||""})}else if(value.fundExternalKey){onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}}}/></div>}
+  return <div className="field"><label>קופה *</label><UiAutocomplete value={query} disabled={disabled} required invalid={showValidation && !(value.fundExternalKey ?? "").trim()} loading={loading} ariaLabel="בחירת קופה" placeholder="חיפוש לפי שם / מספר קופה" loadingText="טוען קופות..." emptyText={error || "לא נמצאו קופות מהסוג שנבחר."} options={options.map(item=>({value:item.externalKey,label:optionLabel(item)}))} onClear={()=>{setOptions([]);onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}} onValueChange={(next)=>{onInteraction?.();setQuery(next);const item=options.find(x=>optionLabel(x)===next);if(item){setError("");onChange({fundExternalKey:item.externalKey,fundCode:item.fundCode,fundName:item.fundName,fundCompanyName:item.companyName,fundClassification:item.classification||""})}else if(value.fundExternalKey){onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}}}/></div>}
