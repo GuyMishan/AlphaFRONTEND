@@ -29,7 +29,7 @@ function emitScopeChange(detail: { organizationId: string; employerId?: string; 
   window.dispatchEvent(new CustomEvent("alpha:scope-change", { detail }));
 }
 
-export function ScopeController() {
+export function ScopeController({ placement = "bar" }: { placement?: "bar" | "topbar" }) {
   const pathname = usePathname();
   const router = useRouter();
   const level = requiredScope(pathname);
@@ -258,7 +258,7 @@ export function ScopeController() {
   if (!showOrganizationSelector && !showEmployerSelector && !showEmployeeSelector)
     return null;
 
-  return <div className="scopebar" aria-label="בחירת הקשר עבודה">
+  return <div className={placement === "topbar" ? "topbar-scope" : "scopebar"} aria-label="בחירת הקשר עבודה">
     <div className="scope-selects">
       {showOrganizationSelector ? <label>
         <span>ארגון</span>
