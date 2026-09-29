@@ -25,7 +25,9 @@ export function EmployerEmployeesPanel({
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);\n  const [loadingMore, setLoadingMore] = useState(false);\n  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -71,7 +73,22 @@ export function EmployerEmployeesPanel({
           { key: "endDate", label: "תאריך סיום" },
           { key: "status", label: "סטטוס" },
         ]}
-        hasMore={hasMore}\n        loadingMore={loadingMore}\n        onLoadMore={async () => {\n          if (loadingMore || !hasMore) return;\n          setLoadingMore(true);\n          try {\n            const result = await alphaApi.employeeSearch(organizationId, employer.id, query.trim(), employees.length, PAGE_SIZE);\n            setEmployees((current) => [...current, ...result.items]);\n            setHasMore(result.hasMore);\n          } catch (err) {\n            setError(err instanceof Error ? err.message : "טעינת עובדים נוספים נכשלה");\n          } finally {\n            setLoadingMore(false);\n          }\n        }}\n        renderCells={(employee) => [
+        hasMore={hasMore}
+        loadingMore={loadingMore}
+        onLoadMore={async () => {
+          if (loadingMore || !hasMore) return;
+          setLoadingMore(true);
+          try {
+            const result = await alphaApi.employeeSearch(organizationId, employer.id, query.trim(), employees.length, PAGE_SIZE);
+            setEmployees((current) => [...current, ...result.items]);
+            setHasMore(result.hasMore);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "טעינת עובדים נוספים נכשלה");
+          } finally {
+            setLoadingMore(false);
+          }
+        }}
+        renderCells={(employee) => [
           <Link key="name" className="profile-link" href={`/employees/${employee.id}?organizationId=${organizationId}&employerId=${employer.id}`}><b>{employee.firstName} {employee.lastName}</b></Link>,
           employee.nationalId,
           employee.employeeNumber,
