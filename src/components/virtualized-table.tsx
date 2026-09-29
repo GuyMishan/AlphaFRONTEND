@@ -4,6 +4,14 @@ import { ReactNode, useMemo, useState } from "react";
 
 type Column = { key: string; label: ReactNode; width?: string };
 
+type Pagination = {
+  page: number;
+  pageSize: number;
+  totalItems?: number;
+  hasMore?: boolean;
+  onPageChange: (page: number) => void;
+};
+
 type Props<T> = {
   items: T[];
   columns: Column[];
@@ -15,9 +23,28 @@ type Props<T> = {
   tableClassName?: string;
   wrapperClassName?: string;
   onRowClick?: (item: T) => void;
+  loading?: boolean;
+  loadingLabel?: ReactNode;
+  emptyState?: ReactNode;
+  pagination?: Pagination;
 };
 
-export function VirtualizedTable<T>({ items, columns, rowKey, renderCells, rowHeight = 56, maxHeight = 520, overscan = 6, tableClassName = "", wrapperClassName = "", onRowClick }: Props<T>) {
+export function VirtualizedTable<T>({
+  items,
+  columns,
+  rowKey,
+  renderCells,
+  rowHeight = 56,
+  maxHeight = 520,
+  overscan = 6,
+  tableClassName = "",
+  wrapperClassName = "",
+  onRowClick,
+  loading = false,
+  loadingLabel = "טוען נתונים...",
+  emptyState = "לא נמצאו נתונים.",
+  pagination,
+}: Props<T>) {
   const [scrollTop, setScrollTop] = useState(0);
   const viewportRows = Math.ceil(maxHeight / rowHeight);
   const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
@@ -25,15 +52,35 @@ export function VirtualizedTable<T>({ items, columns, rowKey, renderCells, rowHe
   const visible = useMemo(() => items.slice(start, end), [items, start, end]);
   const top = start * rowHeight;
   const bottom = Math.max(0, (items.length - end) * rowHeight);
+  const canGoBack = Boolean(pagination && pagination.page > 0);
+  const canGoNext = Boolean(pagination && (
+    pagination.hasMore ?? (
+      pagination.totalItems !== undefined &&
+      (pagination.page + 1) * pagination.pageSize < pagination.totalItems
+    )
+  ));
 
-  return <div className={`table-wrap virtual-table-wrap ${wrapperClassName}`.trim()} style={{ maxHeight, overflowY: "auto" }} onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}>
-    <table className={tableClassName}>
-      <thead><tr>{columns.map((column) => <th key={column.key} style={column.width ? { width: column.width } : undefined}>{column.label}</th>)}</tr></thead>
-      <tbody>
-        {top > 0 ? <tr aria-hidden="true" className="virtual-spacer"><td colSpan={columns.length} style={{ height: top, padding: 0, border: 0 }} /></tr> : null}
-        {visible.map((item) => <tr key={rowKey(item)} onClick={() => onRowClick?.(item)} style={{ height: rowHeight, cursor: onRowClick ? "pointer" : undefined }}>{renderCells(item).map((cell, index) => <td key={columns[index]?.key ?? index}>{cell}</td>)}</tr>)}
-        {bottom > 0 ? <tr aria-hidden="true" className="virtual-spacer"><td colSpan={columns.length} style={{ height: bottom, padding: 0, border: 0 }} /></tr> : null}
-      </tbody>
-    </table>
+  return <div className="data-table">
+    <div
+      className={`table-wrap virtual-table-wrap ${wrapperClassName}`.trim()}
+      style={{ maxHeight, overflowY: "auto" }}
+      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+    >
+      <table className={tableClassName}>
+        <thead><tr>{columns.map((column) => <th key={column.key} style={column.width ? { width: column.width } : undefined}>{column.label}</th>)}</tr></thead>
+        <tbody>
+          {loading ? <tr><td colSpan={columns.length}><div className="empty">{loadingLabel}</div></td></tr> : items.length === 0 ? <tr><td colSpan={columns.length}><div className="empty">{emptyState}</div></td></tr> : <>
+            {top > 0 ? <tr aria-hidden="true" className="virtual-spacer"><td colSpan={columns.length} style={{ height: top, padding: 0, border: 0 }} /></tr> : null}
+            {visible.map((item) => <tr key={rowKey(item)} onClick={() => onRowClick?.(item)} style={{ height: rowHeight, cursor: onRowClick ? "pointer" : undefined }}>{renderCells(item).map((cell, index) => <td key={columns[index]?.key ?? index}>{cell}</td>)}</tr>)}
+            {bottom > 0 ? <tr aria-hidden="true" className="virtual-spacer"><td colSpan={columns.length} style={{ height: bottom, padding: 0, border: 0 }} /></tr> : null}
+          </>}
+        </tbody>
+      </table>
+    </div>
+    {pagination ? <div className="form-actions data-table-pagination" style={{ marginTop: 14 }}>
+      <button className="btn btn-secondary" type="button" disabled={!canGoBack || loading} onClick={() => pagination.onPageChange(pagination.page - 1)}>הקודם</button>
+      <span className="badge badge-gray">עמוד {pagination.page + 1}{pagination.totalItems !== undefined ? ` מתוך ${Math.max(1, Math.ceil(pagination.totalItems / pagination.pageSize))}` : ""}</span>
+      <button className="btn btn-secondary" type="button" disabled={!canGoNext || loading} onClick={() => pagination.onPageChange(pagination.page + 1)}>הבא</button>
+    </div> : null}
   </div>;
 }
