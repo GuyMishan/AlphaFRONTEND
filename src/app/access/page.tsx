@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Building2, Mail, Plus, Save, Search, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { VirtualizedTable } from "@/components/virtualized-table";
+import { DataTable } from "@/components/data-table";
 import { PlanUsage } from "@/components/plan-usage";
 import { UserEditorModal } from "@/components/user-editor-modal";
 import { UiChoiceCard, UiInput, UiSelect } from "@/components/ui-controls";
@@ -504,7 +504,7 @@ export default function AccessPage() {
 
       {invitations.length ? <section className="card" style={{ marginBottom: 18 }}>
         <div className="card-head"><div><h2>הזמנות</h2><span style={{ color: "var(--muted)" }}>הזמנות שנשלחו מהארגון ועדיין מנוהלות כאן.</span></div></div>
-        <VirtualizedTable
+        <DataTable
           items={invitations}
           rowKey={(item) => item.id}
           maxHeight={360}
@@ -530,7 +530,7 @@ export default function AccessPage() {
           <div className="search"><Search size={17} /><UiInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="חיפוש משתמש לפי שם או אימייל" /></div>
           <span className="badge badge-blue">{organizations.find((x) => x.id === organizationId)?.name ?? "ארגון"}</span>
         </div>
-        {loading ? <div className="empty">טוען משתמשים...</div> : users.length ? <VirtualizedTable
+        {loading ? <div className="empty">טוען משתמשים...</div> : users.length ? <DataTable
           items={users}
           rowKey={(item) => item.userId}
           onRowClick={setSelected}
@@ -546,7 +546,7 @@ export default function AccessPage() {
             organizationRoleLabels[item.role],
             employerAccessLabels[item.employerAccessMode],
           ]}
-          pagination={{ page: Math.floor(skip / PAGE_SIZE), pageSize: PAGE_SIZE, hasMore, onPageChange: (page) => setSkip(page * PAGE_SIZE) }}
+          hasMore={hasMore}\n          loadingMore={loading && skip > 0}\n          onLoadMore={() => { if (!loading && hasMore) setSkip(users.length); }}
         /> : <div className="empty"><ShieldCheck size={34} /><div>לא נמצאו משתמשים.</div></div>}
       </section>
 
@@ -644,7 +644,7 @@ export default function AccessPage() {
         <div className="grid two-cols">
           <div>
             <div className="toolbar"><div className="search"><Search size={16} /><UiInput value={assignedSearch} onChange={(event) => { setAssignedSearch(event.target.value); setAssignedSkip(0); }} placeholder="חיפוש במעסיקים שהוקצו" /></div></div>
-            {assigned.length ? <VirtualizedTable
+            {assigned.length ? <DataTable
               items={assigned}
               maxHeight={340}
               rowHeight={54}
@@ -656,12 +656,12 @@ export default function AccessPage() {
                 <UiSelect aria-label={`תפקיד אצל ${item.legalName}`} value={item.role} onClick={(event) => event.stopPropagation()} onChange={(event) => void updateEmployerRole(item.id, Number(event.target.value) as EmployerRole)}>{(Object.keys(employerRoleLabels) as unknown as EmployerRole[]).map((value) => <option key={value} value={value}>{employerRoleLabels[value]}</option>)}</UiSelect>,
                 <button className="btn btn-secondary" type="button" onClick={() => void revokeEmployer(item.id)}>הסר</button>,
               ]}
-              pagination={{ page: Math.floor(assignedSkip / PAGE_SIZE), pageSize: PAGE_SIZE, hasMore: assignedHasMore, onPageChange: (page) => setAssignedSkip(page * PAGE_SIZE) }}
+              hasMore={assignedHasMore}\n              onLoadMore={() => { if (assignedHasMore) setAssignedSkip(assigned.length); }}
             /> : <div className="empty">לא הוקצו מעסיקים למשתמש.</div>}
           </div>
           <div>
             <div className="toolbar"><div className="search"><Search size={16} /><UiInput value={employerSearch} onChange={(event) => setEmployerSearch(event.target.value)} placeholder="חיפוש מעסיק להקצאה" /></div></div>
-            {employerOptions.length ? <VirtualizedTable
+            {employerOptions.length ? <DataTable
               items={employerOptions}
               maxHeight={340}
               rowHeight={58}
