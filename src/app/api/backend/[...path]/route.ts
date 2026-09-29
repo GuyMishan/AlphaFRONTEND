@@ -11,12 +11,8 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
 
   const headers = new Headers();
   const cookieToken = request.cookies.get("alpha_access")?.value;
-  const userId = request.headers.get("x-alpha-user-id");
-  const platformAdmin = request.headers.get("x-alpha-platform-admin");
   const contentType = request.headers.get("content-type");
   if (cookieToken) headers.set("Authorization", `Bearer ${cookieToken}`);
-  if (userId) headers.set("X-User-Id", userId);
-  if (platformAdmin) headers.set("X-Platform-Admin", platformAdmin);
   if (contentType) headers.set("Content-Type", contentType);
 
   const body = request.method === "GET" ? undefined : await request.arrayBuffer();
