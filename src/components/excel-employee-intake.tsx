@@ -279,8 +279,8 @@ function parseReportRow(raw: Record<string, unknown>, rowNumber: number, nationa
     contribution(raw, 4, "erOther"),
   ].filter(Boolean) as ManualContributionInput[];
   const employeeContributions = [
-    contribution(raw, 1, "eeBenefits"),
-    contribution(raw, 2, "ee47"),
+    contribution(raw, 2, "eeBenefits"),
+    contribution(raw, 1, "ee47"),
     contribution(raw, 3, "eeDisability"),
     contribution(raw, 4, "eeOther"),
   ].filter(Boolean) as ManualContributionInput[];
