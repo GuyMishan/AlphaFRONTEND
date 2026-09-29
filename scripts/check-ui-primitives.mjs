@@ -4,10 +4,12 @@ import path from "node:path";
 const root = path.resolve("src");
 const allowed = new Set([
   path.normalize("src/components/ui-controls.tsx"),
+  path.normalize("src/components/virtualized-table.tsx"),
 ]);
 
 const rawControlPattern = /<(input|select|textarea)\b/g;
 const rawChoiceCardPattern = /choice-card/g;
+const rawTablePattern = /<table\\b/g;
 const failures = [];
 
 function walk(dir) {
@@ -32,6 +34,11 @@ function walk(dir) {
       failures.push(`${rel}: use UiChoiceCard instead of direct choice-card markup`);
     }
     rawChoiceCardPattern.lastIndex = 0;
+
+    const rawTables = [...content.matchAll(rawTablePattern)];
+    if (rawTables.length) {
+      failures.push(`${rel}: use VirtualizedTable instead of raw HTML tables (${rawTables.length} found)`);
+    }
   }
 }
 
