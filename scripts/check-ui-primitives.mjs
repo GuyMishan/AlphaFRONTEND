@@ -4,12 +4,12 @@ import path from "node:path";
 const root = path.resolve("src");
 const allowed = new Set([
   path.normalize("src/components/ui-controls.tsx"),
-  path.normalize("src/components/virtualized-table.tsx"),
+  path.normalize("src/components/data-table.tsx"),
 ]);
 
 const rawControlPattern = /<(input|select|textarea)\b/g;
 const rawChoiceCardPattern = /choice-card/g;
-const rawTablePattern = /<table\\b/g;
+const rawTablePattern = /<table\b/g;
 const failures = [];
 
 function walk(dir) {
@@ -37,7 +37,7 @@ function walk(dir) {
 
     const rawTables = [...content.matchAll(rawTablePattern)];
     if (rawTables.length) {
-      failures.push(`${rel}: use VirtualizedTable instead of raw HTML tables (${rawTables.length} found)`);
+      failures.push(`${rel}: use DataTable instead of raw HTML tables (${rawTables.length} found)`);
     }
   }
 }
