@@ -1,9 +1,11 @@
 import { backendFetch } from "./backend-fetch";
+import { getSession } from "./session";
 
 export type AppearancePreference = "system" | "light" | "dark";
 export type UserPreferences = { appearance: AppearancePreference };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const session = getSession();
   if (session?.mode === "demo") return { appearance: "system" } as T;
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
