@@ -504,15 +504,25 @@ export default function AccessPage() {
 
       {invitations.length ? <section className="card" style={{ marginBottom: 18 }}>
         <div className="card-head"><div><h2>הזמנות</h2><span style={{ color: "var(--muted)" }}>הזמנות שנשלחו מהארגון ועדיין מנוהלות כאן.</span></div></div>
-        <div className="table-wrap"><table><thead><tr><th>אימייל</th><th>גישה</th><th>סטטוס</th><th>תוקף</th><th /></tr></thead><tbody>
-          {invitations.map((item) => <tr key={item.id}>
-            <td><b>{item.email}</b></td>
-            <td>{item.employerName ?? "כל הארגון"}</td>
-            <td>{invitationStatusLabel(item.status)}</td>
-            <td>{formatDateDDMMYYYY(item.expiresAt, "—")}</td>
-            <td>{item.status === 1 ? <button className="btn btn-secondary" type="button" onClick={() => void cancelInvitation(item.id)}>ביטול</button> : null}</td>
-          </tr>)}
-        </tbody></table></div>
+        <VirtualizedTable
+          items={invitations}
+          rowKey={(item) => item.id}
+          maxHeight={360}
+          columns={[
+            { key: "email", label: "אימייל" },
+            { key: "access", label: "גישה" },
+            { key: "status", label: "סטטוס" },
+            { key: "expiry", label: "תוקף" },
+            { key: "action", label: "" },
+          ]}
+          renderCells={(item) => [
+            <b key="email">{item.email}</b>,
+            item.employerName ?? "כל הארגון",
+            invitationStatusLabel(item.status),
+            formatDateDDMMYYYY(item.expiresAt, "—"),
+            item.status === 1 ? <button key="cancel" className="btn btn-secondary" type="button" onClick={() => void cancelInvitation(item.id)}>ביטול</button> : null,
+          ]}
+        />
       </section> : null}
 
       <section className="card">
@@ -536,11 +546,8 @@ export default function AccessPage() {
             organizationRoleLabels[item.role],
             employerAccessLabels[item.employerAccessMode],
           ]}
+          pagination={{ page: Math.floor(skip / PAGE_SIZE), pageSize: PAGE_SIZE, hasMore, onPageChange: (page) => setSkip(page * PAGE_SIZE) }}
         /> : <div className="empty"><ShieldCheck size={34} /><div>לא נמצאו משתמשים.</div></div>}
-        <div className="form-actions" style={{ marginTop: 14 }}>
-          <button className="btn btn-secondary" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}>הקודם</button>
-          <button className="btn btn-secondary" disabled={!hasMore} onClick={() => setSkip(skip + PAGE_SIZE)}>הבא</button>
-        </div>
       </section>
 
     {platformEditor ? <UserEditorModal
@@ -649,11 +656,8 @@ export default function AccessPage() {
                 <UiSelect aria-label={`תפקיד אצל ${item.legalName}`} value={item.role} onClick={(event) => event.stopPropagation()} onChange={(event) => void updateEmployerRole(item.id, Number(event.target.value) as EmployerRole)}>{(Object.keys(employerRoleLabels) as unknown as EmployerRole[]).map((value) => <option key={value} value={value}>{employerRoleLabels[value]}</option>)}</UiSelect>,
                 <button className="btn btn-secondary" type="button" onClick={() => void revokeEmployer(item.id)}>הסר</button>,
               ]}
+              pagination={{ page: Math.floor(assignedSkip / PAGE_SIZE), pageSize: PAGE_SIZE, hasMore: assignedHasMore, onPageChange: (page) => setAssignedSkip(page * PAGE_SIZE) }}
             /> : <div className="empty">לא הוקצו מעסיקים למשתמש.</div>}
-            <div className="form-actions">
-              <button className="btn btn-secondary" disabled={assignedSkip === 0} onClick={() => setAssignedSkip(Math.max(0, assignedSkip - PAGE_SIZE))}>הקודם</button>
-              <button className="btn btn-secondary" disabled={!assignedHasMore} onClick={() => setAssignedSkip(assignedSkip + PAGE_SIZE)}>הבא</button>
-            </div>
           </div>
           <div>
             <div className="toolbar"><div className="search"><Search size={16} /><UiInput value={employerSearch} onChange={(event) => setEmployerSearch(event.target.value)} placeholder="חיפוש מעסיק להקצאה" /></div></div>
