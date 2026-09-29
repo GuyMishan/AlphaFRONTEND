@@ -841,6 +841,9 @@ export type BillingCustomerRow = {
   cardBrand: string;
   cardLast4: string;
   configured: boolean;
+  pensionPaymentConfigured: boolean;
+  pensionPaymentSource: "Organization" | "Employer";
+  pensionPaymentThroughName: string;
   billingType: BillingAccountPricingType;
   unitPrice: number;
 };
