@@ -1,4 +1,4 @@
-import { getSession } from "./session";
+import { backendFetch } from "./backend-fetch";
 
 export type ReportValidationIssue = {
   code: string;
@@ -26,14 +26,9 @@ export type ContributionPercentageLimit = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const session = getSession();
   const headers = new Headers({ Accept: "application/json" });
   if (init?.body) headers.set("Content-Type", "application/json");
-  if (session?.mode === "development" && session.userId) {
-    headers.set("X-Alpha-User-Id", session.userId);
-    if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
-  }
-  const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
+  const response = await backendFetch(path, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
     let message = `אירעה שגיאה (${response.status})`;
     try {
