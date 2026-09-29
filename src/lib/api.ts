@@ -429,7 +429,7 @@ export const alphaApi = {
     getSession()?.mode === "demo" ? Promise.resolve([]) : request<UserCandidate[]>(`/api/organizations/${organizationId}/access/user-candidates${qs({ search, take })}`),
   addAccessUser: (organizationId: string, payload: { userId: string; role: OrganizationRole; employerAccessMode: EmployerAccessMode }) =>
     getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users`, { method: "POST", body: JSON.stringify(payload) }),
-  updateAccessUser: (organizationId: string, userId: string, payload: { role: OrganizationRole; employerAccessMode: EmployerAccessMode; canCreateEmployer: boolean; canEditEmployer: boolean; canCreateEmployee: boolean; canEditEmployee: boolean }) =>
+  updateAccessUser: (organizationId: string, userId: string, payload: { role: OrganizationRole; employerAccessMode: EmployerAccessMode; canCreateEmployer: boolean; canEditEmployer: boolean; canCreateEmployee: boolean; canEditEmployee: boolean; canCreateReport: boolean; canTransmitReport: boolean }) =>
     getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}`, { method: "PUT", body: JSON.stringify(payload) }),
   removeAccessUser: (organizationId: string, userId: string) =>
     getSession()?.mode === "demo" ? Promise.resolve() : request<void>(`/api/organizations/${organizationId}/access/users/${userId}`, { method: "DELETE" }),
