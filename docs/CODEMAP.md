@@ -47,7 +47,7 @@
 ## API/session
 - `src/lib/api.ts` — broad API client and shared types/calls.
 - `src/app/api/backend/[...path]/route.ts` — backend proxy.
-- `src/lib/session.ts`, `src/components/session-timeout-guard.tsx`.
+- `src/lib/session.ts`, `src/components/session-timeout-guard.tsx`. The browser enforces the idle timeout proactively; the shared API client also treats the first Backend `401` as authoritative session expiry, clears local/HttpOnly session state and redirects to `/session-timeout`.
 - Login/register/invite routes live under `src/app/login`, `register`, `invite`.
 
 ## Verification guardrails
