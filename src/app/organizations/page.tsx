@@ -6,7 +6,7 @@ import { Landmark, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { UiInput } from "@/components/ui-controls";
-import { VirtualizedTable } from "@/components/virtualized-table";
+import { DataTable } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { Organization } from "@/lib/types";
@@ -46,7 +46,7 @@ export default function OrganizationsPage() {
         <div className="search"><Search size={17} /><UiInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש ארגון לפי שם" /></div>
         <span className="badge badge-blue">{filtered.length} ארגונים</span>
       </div>
-      {loading ? <div className="empty">טוען ארגונים...</div> : filtered.length ? <VirtualizedTable
+      {loading ? <div className="empty">טוען ארגונים...</div> : filtered.length ? <DataTable
         items={filtered}
         rowKey={(item) => item.id}
         columns={[
