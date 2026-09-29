@@ -10,7 +10,7 @@
 ## Shared UI and styles
 - `src/components/ui-controls.tsx` — shared input, date, select, autocomplete and card primitives.
 - `src/components/app-modal.tsx` — shared modal.
-- `src/components/virtualized-table.tsx` — shared table primitive for consistent headers, rows, loading/empty states, virtualization and optional pagination. Application screens should not render raw HTML tables directly.
+- `src/components/data-table.tsx` — shared table primitive for consistent headers, rows, loading/empty states and windowed rendering. It supports infinite loading via `hasMore`/`onLoadMore`: screens with paged APIs append newly fetched batches to the rows already cached in the frontend; there is no table pagination UI. Application screens should not render raw HTML tables directly.
 - `src/app/globals.css` — global design/layout rules.
 - `src/app/ui-fixes.css` — cross-screen UI corrections, including autocomplete/report modal behavior.
 - `src/app/dark-mode.css`, `mobile.css`, `form-feedback.css` — theme/responsive/validation layers.
