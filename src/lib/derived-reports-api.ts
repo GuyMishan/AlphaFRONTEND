@@ -1,12 +1,11 @@
-import { getSession } from "./session";
+import { backendFetch } from "./backend-fetch";
 import type { ManualReportDraft, ManualReportKind, PagedResult, SourceManualReport } from "./types";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const session = getSession();
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
   if (init?.body) headers.set("Content-Type", "application/json");
-  const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
+  const response = await backendFetch(path, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
     let message = `אירעה שגיאה (${response.status})`;
     try {
