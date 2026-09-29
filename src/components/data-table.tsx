@@ -63,7 +63,7 @@ export function DataTable<T>({
     if (!hasMore || !onLoadMore || loading || loadingMore || loadRequestedRef.current) return;
     if (items.length - 1 - visibleStop > loadMoreThreshold) return;
     loadRequestedRef.current = true;
-    void Promise.resolve(onLoadMore()).finally(() => { loadRequestedRef.current = false; });
+    void onLoadMore();
   }, [hasMore, onLoadMore, loading, loadingMore, items.length, visibleStop, loadMoreThreshold]);
 
   useEffect(() => { requestMoreIfNeeded(); }, [requestMoreIfNeeded]);
