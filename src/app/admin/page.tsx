@@ -4,7 +4,7 @@ import { UiInput, UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, Play, RefreshCw, Settings2, CreditCard, X, Pencil, Save } from "lucide-react";
+import { Eye, Play, RefreshCw, Settings2, CreditCard, X, Pencil, Save, Info } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
 import { DataTable } from "@/components/data-table";
@@ -370,22 +370,19 @@ export default function AdminPage() {
           { key: "plan", label: "מסלול" },
           { key: "price", label: "תעריף" },
           { key: "payment", label: "אמצעי תשלום" },
-          { key: "status", label: "מצב" },
           { key: "actions", label: "פעולות" },
         ]}
         renderCells={(item) => {
-          const paymentMissing = paymentMethodStatusKey(item) === "NotConfigured";
           return [
             <b key="entity">{item.entityType === "Organization" ? "ארגון" : "מעסיק"}</b>,
             <Link key="organization" className="profile-link" href={`/organizations/${item.organizationId}`}><b>{item.organizationName}</b></Link>,
             item.entityType === "Employer" ? <Link key="employer" className="profile-link" href={`/employers/${item.employerId}`}><b>{item.employerName || item.payerName}</b></Link> : "—",
-            <span key="plan"><b>{billingPlanLabel(item.billingType)}</b>{item.inherited ? <span style={{ display: "block", color: "var(--muted)", fontSize: 12, marginTop: 3 }}>יורש מהארגון · {item.billedThroughName}</span> : null}</span>,
+            <span key="plan" className="admin-plan-cell"><b>{billingPlanLabel(item.billingType)}</b>{item.inherited ? <span className="tooltip admin-inheritance-tooltip" tabIndex={0} aria-label={`יורש מהארגון · ${item.billedThroughName}`}><Info size={15} aria-hidden="true" /><span className="tooltip-bubble" role="tooltip">יורש מהארגון · {item.billedThroughName}</span></span> : null}</span>,
             item.billingType === "Free" ? "—" : new Intl.NumberFormat("he-IL", { style: "currency", currency: "ILS" }).format(item.unitPrice),
             <span key="payment"><span>{paymentMethodLabel(item)}</span>{item.inherited ? <span style={{ display: "block", color: "var(--muted)", fontSize: 12, marginTop: 3 }}>דרך הארגון</span> : null}</span>,
-            paymentMethodStatusLabel(item),
-            <div key="actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button className="btn btn-secondary" type="button" onClick={() => openBillingEdit(item)}><Pencil size={15} />עריכת מסלול ותעריף</button>
-              {paymentMissing ? <Link className="btn btn-primary" href={paymentDetailsHref(item)}>השלמת אמצעי תשלום</Link> : null}
+            <div key="actions" className="admin-actions">
+              <button className="btn btn-secondary" type="button" onClick={() => openBillingEdit(item)}><Pencil size={15} />מסלול ותעריף</button>
+              <Link className="btn btn-secondary" href={paymentDetailsHref(item)}><Pencil size={15} />אמצעי תשלום</Link>
             </div>,
           ];
         }}
