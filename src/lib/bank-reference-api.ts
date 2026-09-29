@@ -1,4 +1,4 @@
-import { getSession } from "./session";
+import { backendFetch } from "./backend-fetch";
 
 export type BankReference = {
   bankCode: number;
@@ -13,13 +13,8 @@ export type BankBranchReference = {
 };
 
 async function request<T>(path: string): Promise<T> {
-  const session = getSession();
   const headers = new Headers({ Accept: "application/json" });
-  if (session?.mode === "development" && session.userId) {
-    headers.set("X-Alpha-User-Id", session.userId);
-    if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
-  }
-  const response = await fetch(`/api/backend${path}`, { headers, cache: "no-store" });
+  const response = await backendFetch(path, { headers, cache: "no-store" });
   if (!response.ok) throw new Error(`אירעה שגיאה (${response.status})`);
   return response.json() as Promise<T>;
 }
