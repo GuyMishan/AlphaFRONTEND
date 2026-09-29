@@ -337,7 +337,7 @@ export type EmployerInput = Pick<Employer, "legalName" | "registrationNumber" | 
   contactMobile?: string;
 };
 export type EmployeeInput = Pick<Employee, "nationalId" | "firstName" | "lastName" | "employeeNumber" | "startDate" | "monthlySalary"> & {
-  identifierType: 1 | 2;
+  identifierType?: 1 | 2;
   birthDate: string | null;
   gender: number | null;
   email: string;

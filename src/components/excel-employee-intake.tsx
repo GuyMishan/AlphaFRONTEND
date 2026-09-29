@@ -58,7 +58,8 @@ type IntakeRow = EmployeeInput & {
 };
 
 const employeeAliases = {
-  nationalId: ["תז", "תעודתזהות", "מספרזהות", "nationalid", "id", "identity"],
+  identifierType: ["סוגמזהה", "סוגזיהוי", "identifiertype", "identitytype", "idtype"],
+  nationalId: ["תז", "תעודתזהות", "מספרזהות", "דרכון", "מספרדרכון", "nationalid", "passport", "passportnumber", "id", "identity"],
   firstName: ["שםפרטי", "firstname", "first"],
   lastName: ["שםמשפחה", "lastname", "last", "surname"],
   fullName: ["שםעובד", "שםמלא", "employeename", "fullname", "name"],
@@ -391,7 +392,10 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
   }, [rows]);
   const newRows = useMemo(() => {
     const byNationalId = new Map<string, IntakeRow>();
-    rows.filter((x) => x.status === "new").forEach((x) => { if (!byNationalId.has(x.nationalId)) byNationalId.set(x.nationalId, x); });
+    rows.filter((x) => x.status === "new").forEach((x) => {
+      const key = `${x.identifierType ?? 1}:${x.nationalId.toUpperCase()}`;
+      if (!byNationalId.has(key)) byNationalId.set(key, x);
+    });
     return [...byNationalId.values()];
   }, [rows]);
   const blocked = useMemo(() => rows.filter((x) => x.status === "blocked"), [rows]);
@@ -404,7 +408,7 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
       matchedEmployees: matched.map((x) => ({
         employmentId: x.employmentId!,
         input: {
-          nationalId: x.nationalId, firstName: x.firstName, lastName: x.lastName, employeeNumber: x.employeeNumber,
+          nationalId: x.nationalId, identifierType: x.identifierType ?? 1, firstName: x.firstName, lastName: x.lastName, employeeNumber: x.employeeNumber,
           startDate: x.startDate, monthlySalary: x.monthlySalary, birthDate: x.birthDate, gender: x.gender,
           email: x.email, mobile: x.mobile, city: x.city, street: x.street, houseNumber: x.houseNumber,
           apartment: x.apartment, postalCode: x.postalCode, postOfficeBox: x.postOfficeBox,
@@ -435,7 +439,9 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
       if (rawRows.length > 5000) throw new Error("ניתן לקלוט עד 5,000 שורות דיווח בקובץ אחד.");
 
       const existing = await loadAllEmployees(organizationId, employerId);
-      const byNationalId = new Map(existing.map((x) => [digits(x.nationalId), x]));
+      const byNationalId = new Map(existing.map((x) => [
+        `${x.identifierType ?? 1}:${(x.identifierType ?? 1) === 1 ? digits(x.nationalId) : x.nationalId.trim().toUpperCase()}`, x
+      ]));
       const byEmployeeNumber = new Map(existing.map((x) => [x.employeeNumber.trim().toLowerCase(), x]));
       const identityByNationalId = new Map<string, string>();
       const productOrderByEmployee = new Map<string, number>();
@@ -450,7 +456,10 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
           lastName ||= split.lastName;
         }
 
-        const nationalId = digits(pick(raw, employeeAliases.nationalId)).slice(0, 9);
+        const identifierTypeRaw = pick(raw, employeeAliases.identifierType).trim().toLowerCase();
+        const identifierType: 1 | 2 = identifierTypeRaw === "2" || identifierTypeRaw === "דרכון" || identifierTypeRaw === "passport" ? 2 : 1;
+        const rawIdentifier = pick(raw, employeeAliases.nationalId).trim();
+        const nationalId = identifierType === 1 ? digits(rawIdentifier).slice(0, 9) : rawIdentifier.slice(0, 16);
         const employeeNumber = pick(raw, employeeAliases.employeeNumber);
         const startDate = parseDate(pick(raw, employeeAliases.startDate)) || defaultStartDate;
         const monthlySalary = numeric(pick(raw, employeeAliases.monthlySalary), 0);
@@ -466,12 +475,13 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
         const postOfficeBox = digits(pick(raw, employeeAliases.postOfficeBox));
 
         const base: Omit<IntakeRow, "status" | "selected" | "reason" | "employmentId" | "reportRow"> = {
-          rowNumber: index + 2, nationalId, firstName, lastName, employeeNumber, startDate, monthlySalary,
+          rowNumber: index + 2, nationalId, identifierType, firstName, lastName, employeeNumber, startDate, monthlySalary,
           birthDate, gender, email, mobile, city, street, houseNumber, apartment, postalCode, postOfficeBox,
         };
 
         const missing: string[] = [];
-        if (!nationalId) missing.push("ת״ז");
+        if (!nationalId) missing.push(identifierType === 2 ? "מספר דרכון" : "ת״ז");
+        if (identifierType === 2 && (nationalId.length > 16 || /\s/.test(nationalId))) missing.push("מספר דרכון תקין, עד 16 תווים ללא רווחים");
         if (!firstName) missing.push("שם פרטי");
         if (!lastName) missing.push("שם משפחה");
         if (!employeeNumber) missing.push("מספר עובד");
@@ -485,26 +495,27 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
         if (!Number.isFinite(monthlySalary) || monthlySalary < 0) missing.push("שכר חודשי תקין");
 
         const identitySignature = [employeeNumber.trim().toLowerCase(), firstName.trim(), lastName.trim()].join("|");
-        const existingIdentity = identityByNationalId.get(nationalId);
+        const identityKey = `${identifierType}:${nationalId.toUpperCase()}`;
+        const existingIdentity = identityByNationalId.get(identityKey);
         if (existingIdentity && existingIdentity !== identitySignature)
           missing.push("פרטי עובד לא עקביים בין שורות הקובץ");
-        else if (nationalId) identityByNationalId.set(nationalId, identitySignature);
+        else if (nationalId) identityByNationalId.set(identityKey, identitySignature);
 
-        const order = productOrderByEmployee.get(nationalId) ?? 0;
+        const order = productOrderByEmployee.get(identityKey) ?? 0;
         const report = parseReportRow(raw, index + 2, nationalId, employeeNumber, reportingMonth, order);
-        productOrderByEmployee.set(nationalId, order + 1);
+        productOrderByEmployee.set(identityKey, order + 1);
         missing.push(...report.errors.map((x) => `דיווח: ${x}`));
 
         if (missing.length)
           return { ...base, status: "blocked" as const, reason: `חסרים/לא תקינים: ${missing.join(", ")}`, selected: false };
 
         const employeeKey = employeeNumber.trim().toLowerCase();
-        const nationalMatch = byNationalId.get(nationalId);
+        const nationalMatch = byNationalId.get(identityKey);
         const numberMatch = byEmployeeNumber.get(employeeKey);
         if (nationalMatch && numberMatch && nationalMatch.id === numberMatch.id)
           return { ...base, status: "matched" as const, employmentId: nationalMatch.id, selected: true, reportRow: report.row };
         if (nationalMatch || numberMatch)
-          return { ...base, status: "blocked" as const, reason: nationalMatch && numberMatch ? "ת״ז ומספר עובד שייכים לעובדים שונים" : "נמצאה התאמה חלקית לעובד קיים — נדרשת בדיקה", selected: false };
+          return { ...base, status: "blocked" as const, reason: nationalMatch && numberMatch ? "מזהה העובד ומספר העובד שייכים לעובדים שונים" : "נמצאה התאמה חלקית לעובד קיים — נדרשת בדיקה", selected: false };
         return { ...base, status: "new" as const, selected: true, reportRow: report.row };
       });
 
