@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/session";
+import { backendFetch } from "@/lib/backend-fetch";
 
 export type ReportAttachment = {
   id: string;
@@ -18,13 +18,6 @@ export type ReportAttachmentList = {
   documentTypes: { code: 3 | 4 | 5 | 6; name: string; scope: "report" | "product" }[];
 };
 
-async function authHeaders() {
-  const session = getSession();
-  const headers = new Headers();
-  headers.set("Accept", "application/json");
-  return headers;
-}
-
 async function parseError(response: Response) {
   try {
     const body = await response.json() as { error?: string; detail?: string };
@@ -36,10 +29,7 @@ async function parseError(response: Response) {
 
 export const reportAttachmentsApi = {
   async list(organizationId: string, employerId: string, reportId: string) {
-    const response = await fetch(
-      `/api/backend/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/attachments`,
-      { headers: await authHeaders(), cache: "no-store" },
-    );
+    const response = await backendFetch(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/attachments`, { cache: "no-store" });
     if (!response.ok) throw new Error(await parseError(response));
     return response.json() as Promise<ReportAttachmentList>;
   },
@@ -50,19 +40,13 @@ export const reportAttachmentsApi = {
     form.set("file", file);
     form.set("documentTypeCode", String(documentTypeCode));
     if (reportProductId) form.set("reportProductId", reportProductId);
-    const response = await fetch(
-      `/api/backend/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/attachments`,
-      { method: "POST", headers: await authHeaders(), body: form },
-    );
+    const response = await backendFetch(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/attachments`, { method: "POST", body: form });
     if (!response.ok) throw new Error(await parseError(response));
     return response.json() as Promise<ReportAttachment>;
   },
 
   async remove(organizationId: string, employerId: string, reportId: string, attachmentId: string) {
-    const response = await fetch(
-      `/api/backend/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/attachments/${attachmentId}`,
-      { method: "DELETE", headers: await authHeaders() },
-    );
+    const response = await backendFetch(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/attachments/${attachmentId}`, { method: "DELETE" });
     if (!response.ok) throw new Error(await parseError(response));
   },
 
