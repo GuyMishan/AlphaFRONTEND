@@ -1,4 +1,4 @@
-import { getSession } from "./session";
+import { backendFetch } from "./backend-fetch";
 import type { ManualReportKind } from "./types";
 
 
@@ -91,15 +91,10 @@ export type EmployerInterfacePreflight = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const session = getSession();
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
   if (init?.body) headers.set("Content-Type", "application/json");
-  if (session?.mode === "development" && session.userId) {
-    headers.set("X-Alpha-User-Id", session.userId);
-    if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
-  }
-  const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
+  const response = await backendFetch(path, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
     let message = `אירעה שגיאה (${response.status})`;
     try {
@@ -114,16 +109,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 
 async function uploadEmployerInterface<T>(path: string, file: File, fields?: Record<string, string>): Promise<T> {
-  const session = getSession();
   const headers = new Headers({ Accept: "application/json" });
-  if (session?.mode === "development" && session.userId) {
-    headers.set("X-Alpha-User-Id", session.userId);
-    if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
-  }
   const body = new FormData();
   body.append("file", file);
   Object.entries(fields ?? {}).forEach(([key, value]) => body.append(key, value));
-  const response = await fetch(`/api/backend${path}`, { method: "POST", headers, body, cache: "no-store" });
+  const response = await backendFetch(path, { method: "POST", headers, body, cache: "no-store" });
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
     const validationIssues = payload?.validation?.issues;
