@@ -546,7 +546,9 @@ export default function AccessPage() {
             organizationRoleLabels[item.role],
             employerAccessLabels[item.employerAccessMode],
           ]}
-          hasMore={hasMore}\n          loadingMore={loading && skip > 0}\n          onLoadMore={() => { if (!loading && hasMore) setSkip(users.length); }}
+          hasMore={hasMore}
+          loadingMore={loading && skip > 0}
+          onLoadMore={() => { if (!loading && hasMore) setSkip(users.length); }}
         /> : <div className="empty"><ShieldCheck size={34} /><div>לא נמצאו משתמשים.</div></div>}
       </section>
 
@@ -656,7 +658,8 @@ export default function AccessPage() {
                 <UiSelect aria-label={`תפקיד אצל ${item.legalName}`} value={item.role} onClick={(event) => event.stopPropagation()} onChange={(event) => void updateEmployerRole(item.id, Number(event.target.value) as EmployerRole)}>{(Object.keys(employerRoleLabels) as unknown as EmployerRole[]).map((value) => <option key={value} value={value}>{employerRoleLabels[value]}</option>)}</UiSelect>,
                 <button className="btn btn-secondary" type="button" onClick={() => void revokeEmployer(item.id)}>הסר</button>,
               ]}
-              hasMore={assignedHasMore}\n              onLoadMore={() => { if (assignedHasMore) setAssignedSkip(assigned.length); }}
+              hasMore={assignedHasMore}
+              onLoadMore={() => { if (assignedHasMore) setAssignedSkip(assigned.length); }}
             /> : <div className="empty">לא הוקצו מעסיקים למשתמש.</div>}
           </div>
           <div>
