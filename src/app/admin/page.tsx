@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Eye, Play, RefreshCw, Settings2, CreditCard, X, Pencil, Save } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
+import { VirtualizedTable } from "@/components/virtualized-table";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { BillingAccountPricingType, BillingCustomerRow } from "@/lib/types";
@@ -93,6 +94,8 @@ const paymentMethodOptions = [
   { value: "BankDebit", label: "חיוב חשבון" },
 ];
 
+const BILLING_PAGE_SIZE = 25;
+
 const paymentStatusOptions = [
   { value: "all", label: "כל מצבי אמצעי התשלום" },
   { value: "NotConfigured", label: "לא מוגדר" },
@@ -114,6 +117,7 @@ export default function AdminPage() {
   const [billingTypeFilter, setBillingTypeFilter] = useState("all");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
+  const [billingPage, setBillingPage] = useState(0);
   const [editingBillingCustomer, setEditingBillingCustomer] = useState<BillingCustomerRow | null>(null);
   const [billingTypeDraft, setBillingTypeDraft] = useState<BillingAccountPricingType>("Free");
   const [unitPriceDraft, setUnitPriceDraft] = useState("0");
@@ -284,6 +288,14 @@ export default function AdminPage() {
     if (paymentStatusFilter !== "all" && paymentMethodStatusKey(row) !== paymentStatusFilter) return false;
     return true;
   });
+  const pagedBillingCustomers = filteredBillingCustomers.slice(
+    billingPage * BILLING_PAGE_SIZE,
+    (billingPage + 1) * BILLING_PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setBillingPage(0);
+  }, [entityTypeFilter, organizationFilter, employerFilter, billingTypeFilter, paymentMethodFilter, paymentStatusFilter]);
 
   return <AppShell title="מסך אדמין" hideScopeController={tab !== "subscriptions"}>
     <div className="page-head">
@@ -353,37 +365,46 @@ export default function AdminPage() {
           </label>
         </div>
       </div>
-      <div style={{ overflowX: "auto" }}>
-        <table className="admin-subscriptions-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["סוג ישות","ארגון","מעסיק","מסלול","תעריף","אמצעי תשלום","מצב","פעולות"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
-          <tbody>
-            {loading ? <tr><td colSpan={8} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : filteredBillingCustomers.map((item) => {
-              const paymentMissing = paymentMethodStatusKey(item) === "NotConfigured";
-              return <tr key={`${item.payerType}:${item.payerId}`}>
-                <td style={cellStyle}><b>{item.entityType === "Organization" ? "ארגון" : "מעסיק"}</b></td>
-                <td style={cellStyle}><Link className="profile-link" href={`/organizations/${item.organizationId}`}><b>{item.organizationName}</b></Link></td>
-                <td style={cellStyle}>{item.entityType === "Employer" ? <Link className="profile-link" href={`/employers/${item.employerId}`}><b>{item.employerName || item.payerName}</b></Link> : "—"}</td>
-                <td style={cellStyle}>
-                  <b>{billingPlanLabel(item.billingType)}</b>
-                  {item.inherited ? <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 3 }}>יורש מהארגון · {item.billedThroughName}</div> : null}
-                </td>
-                <td style={cellStyle}>{item.billingType === "Free" ? "—" : new Intl.NumberFormat("he-IL", { style: "currency", currency: "ILS" }).format(item.unitPrice)}</td>
-                <td style={cellStyle}>
-                  <div>{paymentMethodLabel(item)}</div>
-                  {item.inherited ? <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 3 }}>דרך הארגון</div> : null}
-                </td>
-                <td style={cellStyle}>{paymentMethodStatusLabel(item)}</td>
-                <td style={cellStyle}>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button className="btn btn-secondary" type="button" onClick={() => openBillingEdit(item)}><Pencil size={15} />עריכת מסלול ותעריף</button>
-                    {paymentMissing ? <Link className="btn btn-primary" href={paymentDetailsHref(item)}>השלמת אמצעי תשלום</Link> : null}
-                  </div>
-                </td>
-              </tr>;
-            })}
-          </tbody>
-        </table>
-      </div>
+      <VirtualizedTable
+        items={pagedBillingCustomers}
+        loading={loading}
+        loadingLabel="טוען מנויים..."
+        emptyState="לא נמצאו מנויים בהתאם לסינון."
+        rowKey={(item) => `${item.payerType}:${item.payerId}`}
+        tableClassName="admin-subscriptions-table"
+        columns={[
+          { key: "entity", label: "סוג ישות" },
+          { key: "organization", label: "ארגון" },
+          { key: "employer", label: "מעסיק" },
+          { key: "plan", label: "מסלול" },
+          { key: "price", label: "תעריף" },
+          { key: "payment", label: "אמצעי תשלום" },
+          { key: "status", label: "מצב" },
+          { key: "actions", label: "פעולות" },
+        ]}
+        renderCells={(item) => {
+          const paymentMissing = paymentMethodStatusKey(item) === "NotConfigured";
+          return [
+            <b key="entity">{item.entityType === "Organization" ? "ארגון" : "מעסיק"}</b>,
+            <Link key="organization" className="profile-link" href={`/organizations/${item.organizationId}`}><b>{item.organizationName}</b></Link>,
+            item.entityType === "Employer" ? <Link key="employer" className="profile-link" href={`/employers/${item.employerId}`}><b>{item.employerName || item.payerName}</b></Link> : "—",
+            <span key="plan"><b>{billingPlanLabel(item.billingType)}</b>{item.inherited ? <span style={{ display: "block", color: "var(--muted)", fontSize: 12, marginTop: 3 }}>יורש מהארגון · {item.billedThroughName}</span> : null}</span>,
+            item.billingType === "Free" ? "—" : new Intl.NumberFormat("he-IL", { style: "currency", currency: "ILS" }).format(item.unitPrice),
+            <span key="payment"><span>{paymentMethodLabel(item)}</span>{item.inherited ? <span style={{ display: "block", color: "var(--muted)", fontSize: 12, marginTop: 3 }}>דרך הארגון</span> : null}</span>,
+            paymentMethodStatusLabel(item),
+            <div key="actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="btn btn-secondary" type="button" onClick={() => openBillingEdit(item)}><Pencil size={15} />עריכת מסלול ותעריף</button>
+              {paymentMissing ? <Link className="btn btn-primary" href={paymentDetailsHref(item)}>השלמת אמצעי תשלום</Link> : null}
+            </div>,
+          ];
+        }}
+        pagination={{
+          page: billingPage,
+          pageSize: BILLING_PAGE_SIZE,
+          totalItems: filteredBillingCustomers.length,
+          onPageChange: setBillingPage,
+        }}
+      />
     </section>}
 
     {editingBillingCustomer ? <div style={backdropStyle} onClick={() => setEditingBillingCustomer(null)}>
