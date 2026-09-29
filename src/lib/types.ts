@@ -267,12 +267,12 @@ export type EmployerRole = 1 | 2 | 3 | 4;
 export type EmployerAccessMode = 1 | 2;
 
 export type AccessUser = {
-  membershipId: string;
+  membershipId: string | null;
   userId: string;
   displayName: string;
   email: string;
   isActive: boolean;
-  role: OrganizationRole;
+  role: OrganizationRole | null;
   employerAccessMode: EmployerAccessMode;
   canCreateEmployer: boolean;
   canEditEmployer: boolean;
@@ -280,6 +280,7 @@ export type AccessUser = {
   canEditEmployee: boolean;
   canCreateReport: boolean;
   canTransmitReport: boolean;
+  directEmployerOnly: boolean;
 };
 
 export type PlatformUser = {
