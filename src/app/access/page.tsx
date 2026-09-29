@@ -198,7 +198,7 @@ export default function AccessPage() {
 
   useEffect(() => {
     if (!selected) return;
-    setRole(selected.role);
+    setRole(selected.role ?? 4);
     setAccessMode(selected.employerAccessMode);
     setPermissions({
       canCreateEmployer: selected.canCreateEmployer,
@@ -355,11 +355,13 @@ export default function AccessPage() {
     setSaving(true);
     setError("");
     try {
-      await alphaApi.updateAccessUser(organizationId, selected.userId, {
-        role,
-        employerAccessMode: accessMode,
-        ...permissions,
-      });
+      if (!selected.directEmployerOnly) {
+        await alphaApi.updateAccessUser(organizationId, selected.userId, {
+          role,
+          employerAccessMode: accessMode,
+          ...permissions,
+        });
+      }
 
       if (accessMode === 2) {
         const initialById = new Map(initialAssigned.map((item) => [item.id, item]));
@@ -383,7 +385,7 @@ export default function AccessPage() {
         }
       }
 
-      const next = { ...selected, role, employerAccessMode: accessMode, ...permissions };
+      const next = selected.directEmployerOnly ? selected : { ...selected, role, employerAccessMode: accessMode, ...permissions };
       setUsers((items) => items.map((item) => item.userId === selected.userId ? next : item));
       setSelected(null);
     } catch (err) {
@@ -546,8 +548,8 @@ export default function AccessPage() {
           renderCells={(item) => [
             <button className="table-entity-link" type="button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>{item.displayName}</button>,
             item.email,
-            organizationRoleLabels[item.role],
-            employerAccessLabels[item.employerAccessMode],
+            item.role ? organizationRoleLabels[item.role] : "—",
+            item.directEmployerOnly ? "גישה ישירה למעסיק" : employerAccessLabels[item.employerAccessMode],
           ]}
           hasMore={hasMore}
           loadingMore={loading && skip > 0}
@@ -614,35 +616,39 @@ export default function AccessPage() {
         <button className="btn btn-primary" type="button" disabled={saving} onClick={() => void saveAccess()}><Save size={17} />{saving ? "שומר..." : "שמירת הרשאות"}</button>
       </>}
     >
-      <div className="user-editor-grid">
-        <div className="field">
-          <label>תפקיד בארגון</label>
-          <UiSelect value={role} onChange={(event) => changeRole(Number(event.target.value) as OrganizationRole)}>
-            {(Object.keys(organizationRoleLabels) as unknown as OrganizationRole[]).map((value) => <option key={value} value={value}>{organizationRoleLabels[value]}</option>)}
-          </UiSelect>
+      {selected.directEmployerOnly ? <div className="notice notice-info" style={{ marginBottom: 16 }}>
+        למשתמש הזה יש גישה ישירה למעסיק בלבד, ללא תפקיד או הרשאות ברמת הארגון.
+      </div> : <>
+        <div className="user-editor-grid">
+          <div className="field">
+            <label>תפקיד בארגון</label>
+            <UiSelect value={role} onChange={(event) => changeRole(Number(event.target.value) as OrganizationRole)}>
+              {(Object.keys(organizationRoleLabels) as unknown as OrganizationRole[]).map((value) => <option key={value} value={value}>{organizationRoleLabels[value]}</option>)}
+            </UiSelect>
+          </div>
+          <div className="field">
+            <label>גישה למעסיקים</label>
+            <UiSelect value={accessMode} onChange={(event) => changeAccessMode(Number(event.target.value) as EmployerAccessMode)}>
+              <option value={1}>כל המעסיקים</option>
+              <option value={2}>מעסיקים נבחרים</option>
+            </UiSelect>
+          </div>
         </div>
-        <div className="field">
-          <label>גישה למעסיקים</label>
-          <UiSelect value={accessMode} onChange={(event) => changeAccessMode(Number(event.target.value) as EmployerAccessMode)}>
-            <option value={1}>כל המעסיקים</option>
-            <option value={2}>מעסיקים נבחרים</option>
-          </UiSelect>
-        </div>
-      </div>
 
-      <div className="user-permissions-section">
-        <div className="user-permissions-head">
-          <div><h3>הרשאות בפועל</h3><p>התפקיד קובע ברירת מחדל. לאחר מכן אפשר לשנות כל הרשאה למשתמש הזה בנפרד.</p></div>
+        <div className="user-permissions-section">
+          <div className="user-permissions-head">
+            <div><h3>הרשאות בפועל</h3><p>התפקיד קובע ברירת מחדל. לאחר מכן אפשר לשנות כל הרשאה למשתמש הזה בנפרד.</p></div>
+          </div>
+          <div className="user-permissions-grid">
+            <PermissionSelect label="הקמת מעסיק" value={permissions.canCreateEmployer} onChange={(value) => setPermissions((current) => ({ ...current, canCreateEmployer: value }))} />
+            <PermissionSelect label="עריכת מעסיק" value={permissions.canEditEmployer} onChange={(value) => setPermissions((current) => ({ ...current, canEditEmployer: value }))} />
+            <PermissionSelect label="הקמת עובד" value={permissions.canCreateEmployee} onChange={(value) => setPermissions((current) => ({ ...current, canCreateEmployee: value }))} />
+            <PermissionSelect label="עריכת עובד" value={permissions.canEditEmployee} onChange={(value) => setPermissions((current) => ({ ...current, canEditEmployee: value }))} />
+            <PermissionSelect label="יצירת דיווח" value={permissions.canCreateReport} onChange={(value) => setPermissions((current) => ({ ...current, canCreateReport: value }))} />
+            <PermissionSelect label="שידור דיווח" value={permissions.canTransmitReport} onChange={(value) => setPermissions((current) => ({ ...current, canTransmitReport: value }))} />
+          </div>
         </div>
-        <div className="user-permissions-grid">
-          <PermissionSelect label="הקמת מעסיק" value={permissions.canCreateEmployer} onChange={(value) => setPermissions((current) => ({ ...current, canCreateEmployer: value }))} />
-          <PermissionSelect label="עריכת מעסיק" value={permissions.canEditEmployer} onChange={(value) => setPermissions((current) => ({ ...current, canEditEmployer: value }))} />
-          <PermissionSelect label="הקמת עובד" value={permissions.canCreateEmployee} onChange={(value) => setPermissions((current) => ({ ...current, canCreateEmployee: value }))} />
-          <PermissionSelect label="עריכת עובד" value={permissions.canEditEmployee} onChange={(value) => setPermissions((current) => ({ ...current, canEditEmployee: value }))} />
-          <PermissionSelect label="יצירת דיווח" value={permissions.canCreateReport} onChange={(value) => setPermissions((current) => ({ ...current, canCreateReport: value }))} />
-          <PermissionSelect label="שידור דיווח" value={permissions.canTransmitReport} onChange={(value) => setPermissions((current) => ({ ...current, canTransmitReport: value }))} />
-        </div>
-      </div>
+      </>}
 
       {accessMode === 2 ? <div className="user-employer-access-section">
         <h3>מעסיקים מורשים</h3>
