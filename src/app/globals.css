@@ -1252,3 +1252,22 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
 .admin-subscriptions-table .data-table-row > td:nth-child(4):hover {
   z-index: 8;
 }
+
+.admin-payment-status-cell {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  overflow: visible !important;
+}
+.admin-subscriptions-table .data-table-row > td:nth-child(6),
+.admin-subscriptions-table .data-table-row > td:nth-child(7) {
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+.admin-subscriptions-table .data-table-row > td:nth-child(6):hover,
+.admin-subscriptions-table .data-table-row > td:nth-child(6):focus-within,
+.admin-subscriptions-table .data-table-row > td:nth-child(7):hover,
+.admin-subscriptions-table .data-table-row > td:nth-child(7):focus-within {
+  z-index: 8;
+}
