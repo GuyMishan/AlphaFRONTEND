@@ -16,7 +16,7 @@
 
 ## Organizations, employers, employees and access
 - `src/app/organizations/*`, `src/app/employers/*`, `src/app/employees/*`.
-- `src/app/access/page.tsx` — users and permissions.
+- `src/app/access/page.tsx` — users and permissions, including independent report creation/transmission permissions.
 - `src/components/employer-form.tsx`, `employee-form.tsx`, `employer-employees-panel.tsx`.
 - `src/lib/access-scope.ts`.
 
