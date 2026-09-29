@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Building2, Plus, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { DataTable } from "@/components/data-table";
+import { DataTable, DataTableLink } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
 import { getScopeContext } from "@/lib/app-data-cache";
 import { getOrganizationSelection } from "@/lib/session";
@@ -94,7 +94,7 @@ export default function EmployersPage() {
         loadingMore={loadingMore}
         onLoadMore={() => load(organizationId, query, true)}
         renderCells={(employer) => [
-          <Link className="table-entity-link" href={`/employers/${employer.id}?organizationId=${employer.organizationId}`}>{employer.legalName}</Link>,
+          <DataTableLink className="table-entity-link" href={`/employers/${employer.id}?organizationId=${employer.organizationId}`}>{employer.legalName}</DataTableLink>,
           employer.registrationNumber,
           employer.withholdingFileNumber,
           <span className={employer.status === 2 ? "badge badge-green" : "badge badge-orange"}>{employer.status === 2 ? "פעיל" : "בהקמה"}</span>,

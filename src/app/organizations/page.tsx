@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Landmark, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { UiInput } from "@/components/ui-controls";
-import { DataTable } from "@/components/data-table";
+import { DataTable, DataTableLink } from "@/components/data-table";
 import { getSession } from "@/lib/session";
 import { getScopeContext } from "@/lib/app-data-cache";
 import type { Organization } from "@/lib/types";
@@ -56,7 +55,7 @@ export default function OrganizationsPage() {
           { key: "id", label: "מזהה" },
         ]}
         renderCells={(item) => [
-          <Link key="name" className="table-entity-link" href={`/organizations/${item.id}`}>{item.name}</Link>,
+          <DataTableLink key="name" className="table-entity-link" href={`/organizations/${item.id}`}>{item.name}</DataTableLink>,
           organizationTypeLabel(item.type),
           <span key="status" className={item.status === 2 ? "badge badge-green" : "badge badge-gray"}>{organizationStatusLabel(item.status)}</span>,
           <span key="id" dir="ltr">{item.id}</span>,

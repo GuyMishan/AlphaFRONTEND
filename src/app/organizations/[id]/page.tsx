@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Building2, CreditCard, Landmark, Save, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
-import { DataTable } from "@/components/data-table";
+import { DataTable, DataTableLink } from "@/components/data-table";
 import { AppTabs } from "@/components/app-tabs";
 import { SubscriptionBillingPanel } from "@/components/subscription-billing-panel";
 import { OrganizationPensionPaymentAccount } from "@/components/organization-pension-payment-account";
@@ -165,7 +165,7 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
       renderCells={(item) => {
         const billing = billingByEmployer.get(item.id);
         return [
-          <Link key="employer" className="profile-link" href={`/employers/${item.id}?organizationId=${organizationId}`}>{item.legalName}</Link>,
+          <DataTableLink key="employer" className="profile-link" href={`/employers/${item.id}?organizationId=${organizationId}`}>{item.legalName}</DataTableLink>,
           item.registrationNumber,
           item.withholdingFileNumber,
           billing ? (billing.billingMode === 2 ? "חיוב דרך הארגון" : "חיוב עצמאי") : "—",

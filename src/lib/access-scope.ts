@@ -1,4 +1,4 @@
-import { alphaApi } from "./api";
+import { getScopeContext } from "./app-data-cache";
 import { getSession, setEmployerSelection, setOrganizationSelection } from "./session";
 import type { ScopeEmployer, ScopeOrganization } from "./types";
 
@@ -11,7 +11,7 @@ export async function resolveSingleEmployerScope(): Promise<SingleEmployerScope 
   const session = getSession();
   if (!session || session.platformAdmin) return null;
 
-  const scope = await alphaApi.scope();
+  const scope = await getScopeContext();
   const employers = scope.organizations.flatMap((organization) =>
     organization.employers.map((employer) => ({ organization, employer }))
   );

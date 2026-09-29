@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { alphaApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { setSession } from "@/lib/session";
+import { useAppStore } from "@/lib/use-app-store";
 
 const IDLE_MS = 30 * 60 * 1000;
 const WARNING_MS = 2 * 60 * 1000;
@@ -11,15 +12,17 @@ const EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
 
 export function SessionTimeoutGuard() {
   const pathname = usePathname();
+  const session = useAppStore((state) => state.session);
   const lastActivity = useRef(0);
   const validationInFlight = useRef(false);
   const [remaining, setRemaining] = useState<number | null>(null);
 
   const validateServerSession = useCallback(async () => {
-    if (validationInFlight.current || !getSession()) return;
+    if (validationInFlight.current || !session) return;
     validationInFlight.current = true;
     try {
-      await alphaApi.refreshSession();
+      const refreshed = await alphaApi.refreshSession();
+      setSession({ mode: session.mode, ...refreshed });
       lastActivity.current = Date.now();
       setRemaining(null);
     } catch {
@@ -27,10 +30,10 @@ export function SessionTimeoutGuard() {
     } finally {
       validationInFlight.current = false;
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
-    if (!getSession() || pathname === "/login" || pathname === "/register" || pathname === "/session-timeout") return;
+    if (!session || pathname === "/login" || pathname === "/register" || pathname === "/session-timeout") return;
 
     lastActivity.current = Date.now();
 
@@ -38,10 +41,13 @@ export function SessionTimeoutGuard() {
       lastActivity.current = Date.now();
       setRemaining(null);
     };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") void validateServerSession();
+    const validateIfLocallyIdle = () => {
+      if (Date.now() - lastActivity.current >= IDLE_MS) void validateServerSession();
     };
-    const onFocus = () => void validateServerSession();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") validateIfLocallyIdle();
+    };
+    const onFocus = validateIfLocallyIdle;
 
     EVENTS.forEach((event) => window.addEventListener(event, activity, { passive: true }));
     document.addEventListener("visibilitychange", onVisibilityChange);
@@ -63,7 +69,7 @@ export function SessionTimeoutGuard() {
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("focus", onFocus);
     };
-  }, [pathname, validateServerSession]);
+  }, [pathname, session, validateServerSession]);
 
   if (remaining === null) return null;
   const seconds = Math.max(0, Math.ceil(remaining / 1000));

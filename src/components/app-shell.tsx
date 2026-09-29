@@ -11,8 +11,9 @@ import { EmployerForm } from "./employer-form";
 import { AccessibilityMenu } from "./accessibility-menu";
 import { alphaApi } from "@/lib/api";
 import { getScopeContext, refreshScopeContext } from "@/lib/app-data-cache";
-import { clearSession, getSession, isPlatformAdminSession, setEmployerSelection, setOrganizationSelection, setSession } from "@/lib/session";
-import type { Employer, EmployerInput, Session } from "@/lib/types";
+import { clearSession, getSession, isPlatformAdminSession, setEmployerSelection, setOrganizationSelection } from "@/lib/session";
+import { useAppStore } from "@/lib/use-app-store";
+import type { Employer, EmployerInput } from "@/lib/types";
 import { UPGRADE_DIALOG_EVENT, type UpgradeDialogDetail } from "@/lib/upgrade";
 
 const nav = [
@@ -50,7 +51,7 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
 function AppShellFrame({ children, initialConfig }: { children: React.ReactNode; initialConfig: ShellPageConfig }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [session, setLocalSession] = useState<Session | null>(null);
+  const session = useAppStore((state) => state.session);
   const [singleEmployerUser, setSingleEmployerUser] = useState<boolean | null>(null);
   const [singleEmployerTarget, setSingleEmployerTarget] = useState<{ organizationId: string; employerId: string } | null>(null);
   const [canManageOrganization, setCanManageOrganization] = useState<boolean | null>(null);
@@ -77,15 +78,9 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         return;
       }
 
-      let current = stored;
+      const current = stored;
       try {
-        if (stored.mode === "oidc") {
-          const refreshed = await alphaApi.refreshSession();
-          current = { mode: "oidc", ...refreshed };
-          setSession(current);
-        }
         if (!active) return;
-        setLocalSession(current);
 
         const [onboarding, scope] = await Promise.all([
           alphaApi.onboardingStatus(),
@@ -118,7 +113,6 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
           router.replace("/login");
           return;
         }
-        setLocalSession(stored);
         setSingleEmployerUser(false);
         setSingleEmployerTarget(null);
         setSingleOrganizationTarget(null);

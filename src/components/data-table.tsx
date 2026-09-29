@@ -1,8 +1,13 @@
 "use client";
 
-import { CSSProperties, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { CSSProperties, ComponentProps, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type DataTableColumn = { key: string; label: ReactNode; width?: string };
+
+export function DataTableLink(props: ComponentProps<typeof Link>) {
+  return <Link {...props} prefetch={false} />;
+}
 
 type Props<T> = {
   items: T[];

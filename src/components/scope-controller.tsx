@@ -6,16 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { Building2, UserRound } from "lucide-react";
 import { alphaApi } from "@/lib/api";
 import { getScopeContext } from "@/lib/app-data-cache";
+import { useAppStore } from "@/lib/use-app-store";
 import {
   getEmployeeSelection,
   getEmployerSelection,
   getOrganizationSelection,
-  getSession,
   setEmployeeSelection,
   setEmployerSelection,
   setOrganizationSelection,
 } from "@/lib/session";
-import type { Employee, GlobalScopeContext, ScopeEmployer, ScopeOrganization } from "@/lib/types";
+import type { Employee, ScopeEmployer, ScopeOrganization } from "@/lib/types";
 
 type ScopeLevel = "organization" | "employer" | "employee";
 
@@ -37,10 +37,11 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
   const isDashboard = pathname === "/dashboard";
   const isAccessPage = pathname === "/access";
   const isNewReportPage = pathname === "/reports/new";
-  const isPlatformAdmin = Boolean(getSession()?.platformAdmin);
-  const isAdminDashboard = isDashboard && Boolean(getSession()?.platformAdmin);
+  const session = useAppStore((state) => state.session);
+  const scope = useAppStore((state) => state.scope);
+  const isPlatformAdmin = Boolean(session?.platformAdmin);
+  const isAdminDashboard = isDashboard && Boolean(session?.platformAdmin);
   const isAdminBilling = pathname === "/admin/billing" || pathname === "/admin";
-  const [scope, setScope] = useState<GlobalScopeContext | null>(null);
   const [organizationId, setOrganizationId] = useState("");
   const [employerId, setEmployerId] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -82,8 +83,6 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
       try {
         const context = await getScopeContext();
         if (!active) return;
-        setScope(context);
-
         if (isAdminDashboard || isAdminBilling) {
           setOrganizationId("");
           setEmployerId("");

@@ -4,7 +4,7 @@ import { UiInput } from "@/components/ui-controls";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Search, UserRoundPlus, Users } from "lucide-react";
-import { DataTable } from "@/components/data-table";
+import { DataTable, DataTableLink } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
 import type { Employee, Employer } from "@/lib/types";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
@@ -92,7 +92,7 @@ export function EmployerEmployeesPanel({
           }
         }}
         renderCells={(employee) => [
-          <Link key="name" className="profile-link" prefetch={false} href={`/employees/${employee.id}?organizationId=${organizationId}&employerId=${employer.id}`}><b>{employee.firstName} {employee.lastName}</b></Link>,
+          <DataTableLink key="name" className="profile-link" href={`/employees/${employee.id}?organizationId=${organizationId}&employerId=${employer.id}`}><b>{employee.firstName} {employee.lastName}</b></DataTableLink>,
           employee.nationalId,
           employee.employeeNumber,
           formatDateDDMMYYYY(employee.startDate, "—"),

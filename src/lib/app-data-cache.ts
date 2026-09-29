@@ -1,31 +1,35 @@
 import { alphaApi } from "./api";
+import { appStore } from "./app-store";
 import type { GlobalScopeContext } from "./types";
 
-let scopeValue: GlobalScopeContext | null = null;
 let scopePromise: Promise<GlobalScopeContext> | null = null;
 
 export function getScopeContext(force = false): Promise<GlobalScopeContext> {
   if (force) {
-    scopeValue = null;
     scopePromise = null;
+    appStore.getState().setScope(null);
   }
-  if (scopeValue) return Promise.resolve(scopeValue);
+
+  const cached = appStore.getState().scope;
+  if (cached) return Promise.resolve(cached);
+
   if (!scopePromise) {
     scopePromise = alphaApi.scope()
       .then((value) => {
-        scopeValue = value;
+        appStore.getState().setScope(value);
         return value;
       })
       .finally(() => {
         scopePromise = null;
       });
   }
+
   return scopePromise;
 }
 
 export function invalidateScopeContext() {
-  scopeValue = null;
   scopePromise = null;
+  appStore.getState().setScope(null);
 }
 
 export function refreshScopeContext() {

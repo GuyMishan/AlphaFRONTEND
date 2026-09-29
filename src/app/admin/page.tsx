@@ -3,11 +3,10 @@
 import { UiInput, UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Eye, Play, Settings2, CreditCard, X, Pencil, Save, Info } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
-import { DataTable } from "@/components/data-table";
+import { DataTable, DataTableLink } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { backendFetch } from "@/lib/backend-fetch";
@@ -382,8 +381,8 @@ export default function AdminPage() {
         renderCells={(item) => {
           return [
             <b key="entity">{item.entityType === "Organization" ? "ארגון" : "מעסיק"}</b>,
-            <Link key="organization" className="profile-link" href={`/organizations/${item.organizationId}`}><b>{item.organizationName}</b></Link>,
-            item.entityType === "Employer" ? <Link key="employer" className="profile-link" href={`/employers/${item.employerId}`}><b>{item.employerName || item.payerName}</b></Link> : "—",
+            <DataTableLink key="organization" className="profile-link" href={`/organizations/${item.organizationId}`}><b>{item.organizationName}</b></DataTableLink>,
+            item.entityType === "Employer" ? <DataTableLink key="employer" className="profile-link" href={`/employers/${item.employerId}`}><b>{item.employerName || item.payerName}</b></DataTableLink> : "—",
             <span key="alphaPayment" className="admin-payment-status-cell">
               <span>{item.configured ? "מוגדר" : "לא מוגדר"}</span>
               {item.configured && item.inherited && item.entityType === "Employer" ? <span className="tooltip admin-inheritance-tooltip" tabIndex={0} aria-label={`דרך הארגון · ${item.billedThroughName}`}><Info size={15} aria-hidden="true" /><span className="tooltip-bubble" role="tooltip">דרך הארגון · {item.billedThroughName}</span></span> : null}
@@ -396,7 +395,7 @@ export default function AdminPage() {
             </span>,
             <div key="actions" className="admin-actions">
               <button className="btn btn-secondary" type="button" onClick={() => openBillingEdit(item)}><Pencil size={15} />מסלול ותעריף</button>
-              <Link className="btn btn-secondary" href={paymentDetailsHref(item)}><Pencil size={15} />אמצעי תשלום</Link>
+              <DataTableLink className="btn btn-secondary" href={paymentDetailsHref(item)}><Pencil size={15} />אמצעי תשלום</DataTableLink>
             </div>,
           ];
         }}
