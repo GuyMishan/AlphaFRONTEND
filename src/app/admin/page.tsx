@@ -312,26 +312,28 @@ export default function AdminPage() {
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
         <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>
       </div>
-      <div style={{ overflowX: "auto" }}>
-        <table className="admin-interfaces-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["ממשק","הרצה אחרונה","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","פעולות"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
-          <tbody>
-            {loading ? <tr><td colSpan={9} style={{ padding: 24, textAlign: "center" }}>טוען...</td></tr> : rows.map((row) => <tr key={row.key}>
-              <td style={cellStyle}><b>{row.name}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{row.key}</div></td>
-              <td style={cellStyle}>{formatDate(row.lastRun?.finishedAt ?? row.lastRun?.startedAt)}</td>
-              <td style={cellStyle}>{statusLabel(row.lastRun?.status)}</td>
-              <td style={cellStyle}>{row.lastRun?.recordsReceived ?? "-"}</td>
-              <td style={cellStyle}>{row.lastRun?.recordsInserted ?? "-"}</td>
-              <td style={cellStyle}>{row.lastRun?.recordsUpdated ?? "-"}</td>
-              <td style={cellStyle}>{row.lastRun?.recordsDeactivated ?? "-"}</td>
-              <td className="admin-actions-cell" style={cellStyle}><div className="admin-actions">
-                <button className="btn btn-primary" type="button" disabled={Boolean(running)} onClick={() => void runInterface(row.key)}><Play size={15} />{running === row.key ? "מריץ..." : "הרץ עכשיו"}</button>
-                <button className="btn btn-secondary" type="button" onClick={() => void openHistory(row.key)}><Eye size={15} />דוחות הרצה</button>
-              </div></td>
-            </tr>)}
-          </tbody>
-        </table>
-      </div>
+      <VirtualizedTable
+        items={rows}
+        loading={loading}
+        loadingLabel="טוען ממשקים..."
+        emptyState="לא נמצאו ממשקים."
+        rowKey={(row) => row.key}
+        tableClassName="admin-interfaces-table"
+        columns={["ממשק","הרצה אחרונה","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","פעולות"].map((label, index) => ({ key: String(index), label }))}
+        renderCells={(row) => [
+          <span key="name"><b>{row.name}</b><span style={{ display: "block", color: "var(--muted)", fontSize: 12 }}>{row.key}</span></span>,
+          formatDate(row.lastRun?.finishedAt ?? row.lastRun?.startedAt),
+          statusLabel(row.lastRun?.status),
+          row.lastRun?.recordsReceived ?? "-",
+          row.lastRun?.recordsInserted ?? "-",
+          row.lastRun?.recordsUpdated ?? "-",
+          row.lastRun?.recordsDeactivated ?? "-",
+          <div key="actions" className="admin-actions">
+            <button className="btn btn-primary" type="button" disabled={Boolean(running)} onClick={() => void runInterface(row.key)}><Play size={15} />{running === row.key ? "מריץ..." : "הרץ עכשיו"}</button>
+            <button className="btn btn-secondary" type="button" onClick={() => void openHistory(row.key)}><Eye size={15} />דוחות הרצה</button>
+          </div>,
+        ]}
+      />
     </section> : <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
         <div>
@@ -443,13 +445,23 @@ export default function AdminPage() {
     {historyKey ? <div style={backdropStyle} onClick={() => setHistoryKey(null)}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
         <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוחות הרצה</h2><div style={{ color: "var(--muted)", marginTop: 4 }}>{rows.find((x) => x.key === historyKey)?.name}</div></div><button className="btn btn-secondary" onClick={() => setHistoryKey(null)}><X size={17} /></button></div>
-        <div style={{ overflowX: "auto" }}><table className="admin-run-history-table" style={{ width: "100%", minWidth: 620, borderCollapse: "collapse" }}>
-          <thead><tr>{["תאריך","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","דוח"].map((x) => <th key={x} style={thStyle}>{x}</th>)}</tr></thead>
-          <tbody>{history.length === 0 ? <tr><td colSpan={7} style={{ padding: 20, textAlign: "center" }}>אין עדיין הרצות</td></tr> : history.map((run) => <tr key={run.id}>
-            <td style={cellStyle}>{formatDate(run.startedAt)}</td><td style={cellStyle}>{statusLabel(run.status)}</td><td style={cellStyle}>{run.recordsReceived}</td><td style={cellStyle}>{run.recordsInserted}</td><td style={cellStyle}>{run.recordsUpdated}</td><td style={cellStyle}>{run.recordsDeactivated}</td>
-            <td style={{ ...cellStyle, width: 76 }}><button className="btn btn-secondary" style={{ paddingInline: 12 }} onClick={() => setSelectedRun(run)}>פתח</button></td>
-          </tr>)}</tbody>
-        </table></div>
+        <VirtualizedTable
+          items={history}
+          rowKey={(run) => run.id}
+          tableClassName="admin-run-history-table"
+          maxHeight={520}
+          emptyState="אין עדיין הרצות"
+          columns={["תאריך","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","דוח"].map((label, index) => ({ key: String(index), label }))}
+          renderCells={(run) => [
+            formatDate(run.startedAt),
+            statusLabel(run.status),
+            run.recordsReceived,
+            run.recordsInserted,
+            run.recordsUpdated,
+            run.recordsDeactivated,
+            <button key="open" className="btn btn-secondary" style={{ paddingInline: 12 }} onClick={() => setSelectedRun(run)}>פתח</button>,
+          ]}
+        />
       </div>
     </div> : null}
 
@@ -467,8 +479,6 @@ export default function AdminPage() {
   </AppShell>;
 }
 
-const thStyle: React.CSSProperties = { textAlign: "right", padding: 12, borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" };
 const backdropStyle: React.CSSProperties = { position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
 const modalStyle: React.CSSProperties = { width: "min(950px, 96vw)", maxHeight: "88vh", overflow: "auto", background: "var(--surface)", borderRadius: 16, padding: 20, boxShadow: "0 24px 70px rgba(15,23,42,.25)" };
 const modalHeaderStyle: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 };
-const cellStyle: React.CSSProperties = { padding: 10, borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" };
