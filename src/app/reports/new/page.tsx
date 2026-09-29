@@ -15,6 +15,7 @@ import { ManualReportData } from "@/components/manual-report-data";
 import { ManualDepositData } from "@/components/manual-deposit-data";
 import { manualDepositsApi } from "@/lib/manual-deposits-api";
 import { alphaApi } from "@/lib/api";
+import { getScopeContext } from "@/lib/app-data-cache";
 import { derivedReportsApi } from "@/lib/derived-reports-api";
 import { reportValidationApi } from "@/lib/report-validation-api";
 import { reportTransmissionApi } from "@/lib/report-transmission-api";
@@ -104,7 +105,7 @@ export default function NewReportPage() {
         alphaApi.employerCapabilities(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerProfileCenterSettings(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerPaymentAccounts(nextScope.organizationId, nextScope.employerId),
-        alphaApi.scope(),
+        getScopeContext(),
       ]);
       setEmployer(employerItem);
       setCanCreateReport(capabilities.canCreateReport);

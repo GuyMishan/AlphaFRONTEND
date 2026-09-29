@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { UiInput } from "@/components/ui-controls";
 import { DataTable } from "@/components/data-table";
-import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
+import { getScopeContext } from "@/lib/app-data-cache";
 import type { Organization } from "@/lib/types";
 
 export default function OrganizationsPage() {
@@ -24,8 +24,8 @@ export default function OrganizationsPage() {
       router.replace("/dashboard");
       return;
     }
-    alphaApi.organizations()
-      .then(setOrganizations)
+    getScopeContext()
+      .then((scope) => setOrganizations(scope.organizations))
       .catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגונים נכשלה"))
       .finally(() => setLoading(false));
   }, [router]);

@@ -7,6 +7,7 @@ import { Building2, Plus, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { DataTable } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
+import { getScopeContext } from "@/lib/app-data-cache";
 import { getOrganizationSelection } from "@/lib/session";
 import type { Employer } from "@/lib/types";
 
@@ -25,7 +26,7 @@ export default function EmployersPage() {
   async function load(orgId: string, search = query, append = false) {
     if (append) setLoadingMore(true); else setLoading(true); setError("");
     try {
-      const scope = await alphaApi.scope();
+      const scope = await getScopeContext();
       const resolvedOrgId = orgId || getOrganizationSelection() || scope.organizations[0]?.id || "";
       if (resolvedOrgId !== organizationId) setOrganizationId(resolvedOrgId);
 

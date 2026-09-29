@@ -8,6 +8,7 @@ import { PlanUsage } from "@/components/plan-usage";
 import { UserEditorModal } from "@/components/user-editor-modal";
 import { UiChoiceCard, UiInput, UiSelect } from "@/components/ui-controls";
 import { alphaApi } from "@/lib/api";
+import { getScopeContext } from "@/lib/app-data-cache";
 import { getEmployerSelection, getOrganizationSelection, getSession } from "@/lib/session";
 import { openUpgradeDialog } from "@/lib/upgrade";
 import type {
@@ -136,7 +137,8 @@ export default function AccessPage() {
   const [platformSaving, setPlatformSaving] = useState(false);
 
   useEffect(() => {
-    alphaApi.organizations().then((items) => {
+    getScopeContext().then((scope) => {
+      const items = scope.organizations;
       setOrganizations(items);
       const saved = getOrganizationSelection();
       const nextOrganizationId = saved && items.some((x) => x.id === saved) ? saved : items[0]?.id ?? "";
@@ -167,8 +169,9 @@ export default function AccessPage() {
     void Promise.all([
       alphaApi.entitlements(organizationId),
       alphaApi.invitations(organizationId),
-      alphaApi.employers(organizationId),
-    ]).then(([usage, inviteRows, employerRows]) => {
+      getScopeContext(),
+    ]).then(([usage, inviteRows, scope]) => {
+      const employerRows = scope.organizations.find((item) => item.id === organizationId)?.employers ?? [];
       setEntitlements(usage);
       setInvitations(inviteRows);
       setInviteEmployers(employerRows);
