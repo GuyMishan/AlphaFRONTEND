@@ -52,6 +52,15 @@ export type ReportFeedbackDetails = {
   feedbackStatus: Exclude<ReportFeedbackStatus, "all">;
   issueCount: number;
   issues: ReportFeedbackIssue[];
+  officialFeedback: Array<{
+    id: string;
+    documentType: number | string;
+    sourceFileName: string;
+    interfaceFileNumber: string;
+    payloadHash: string;
+    transmissionId: string | null;
+    receivedAt: string;
+  }>;
   transmissions: Array<{
     id: string;
     attemptNumber: number;
