@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, Eye, FileClock, Plus, RefreshCw, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { VirtualizedTable } from "@/components/virtualized-table";
 import { getEmployerSelection } from "@/lib/session";
 import { reportFeedbackApi, type ReportFeedbackDetails, type ReportFeedbackRow, type ReportFeedbackStatus } from "@/lib/report-feedback-api";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
@@ -135,7 +136,32 @@ export default function ReportsPage() {
     </div>
 
     <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-      {loading ? <div className="empty">טוען דיווחים...</div> : rows.length === 0 ? <div className="empty">לא נמצאו דיווחים בהתאם לסינון.</div> : <div className="table-scroll"><table className="report-feedback-table"><thead><tr><th>חודש</th><th>סוג דיווח</th><th>עובדים</th><th>סטטוס משוב</th><th>שגיאות</th><th>שידור אחרון</th><th></th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><strong>{formatMonth(row.reportingMonth)}</strong></td><td>{kindLabel(row.reportKind)}</td><td>{row.employeeCount}</td><td><StatusBadge status={row.feedbackStatus} /></td><td>{row.issueCount > 0 ? <span className="report-feedback-error-count">{row.issueCount}</span> : "—"}</td><td>{row.lastTransmission ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div> : "—"}</td><td><button type="button" className="btn btn-secondary btn-sm" onClick={() => void openFeedback(row)} disabled={loadingDetails}><Eye size={15} />{row.feedbackStatus === "error" ? "צפייה במשוב" : "פרטים"}</button></td></tr>)}</tbody></table></div>}
+      <VirtualizedTable
+        items={rows}
+        loading={loading}
+        loadingLabel="טוען דיווחים..."
+        emptyState="לא נמצאו דיווחים בהתאם לסינון."
+        rowKey={(row) => row.id}
+        tableClassName="report-feedback-table"
+        columns={[
+          { key: "month", label: "חודש" },
+          { key: "kind", label: "סוג דיווח" },
+          { key: "employees", label: "עובדים" },
+          { key: "status", label: "סטטוס משוב" },
+          { key: "issues", label: "שגיאות" },
+          { key: "transmission", label: "שידור אחרון" },
+          { key: "actions", label: "" },
+        ]}
+        renderCells={(row) => [
+          <strong key="month">{formatMonth(row.reportingMonth)}</strong>,
+          kindLabel(row.reportKind),
+          row.employeeCount,
+          <StatusBadge key="status" status={row.feedbackStatus} />,
+          row.issueCount > 0 ? <span key="issues" className="report-feedback-error-count">{row.issueCount}</span> : "—",
+          row.lastTransmission ? <div key="tx" className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div> : "—",
+          <button key="action" type="button" className="btn btn-secondary btn-sm" onClick={() => void openFeedback(row)} disabled={loadingDetails}><Eye size={15} />{row.feedbackStatus === "error" ? "צפייה במשוב" : "פרטים"}</button>,
+        ]}
+      />
     </div>
 
     {selected ? <div className="report-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><div className="report-modal report-feedback-modal" role="dialog" aria-modal="true" aria-label="משוב דיווח"><div className="report-modal-header"><div><h2>משוב דיווח {formatMonth(selected.report.reportingMonth)}</h2><span>{kindLabel(selected.report.reportKind)} · {selected.issueCount ? `${selected.issueCount} שגיאות/הערות` : "ללא שגיאות"}</span></div><button className="icon-button" type="button" aria-label="סגירה" onClick={() => setSelected(null)}><X size={18} /></button></div><div className="report-modal-body"><div style={{ marginBottom: 18 }}><StatusBadge status={selected.feedbackStatus} /></div>{selected.issues.length === 0 ? <div className="notice notice-info">לא נמצאו שגיאות בדיווח הזה.</div> : <div className="report-feedback-issues">{selected.issues.map((issue, index) => <div className="report-feedback-issue" key={`${issue.code}-${index}`}><div className="report-feedback-issue-head"><strong>{issue.employeeName || issue.productName || "שגיאה כללית בדיווח"}</strong><span>{issue.code}</span></div>{issue.productName && issue.employeeName ? <small>מוצר: {issue.productName}</small> : null}<p>{issue.description}</p><div className="report-feedback-action">פעולה מומלצת: {issue.actionType === "EditReport" ? "עריכת הדיווח" : issue.actionType === "RetryTransmission" ? "בדיקה ושליחה מחדש" : issue.actionType}</div></div>)}</div>}{selected.officialFeedback?.length > 0 ? <div className="report-feedback-history"><h3>משובים רשמיים מהמסלקה</h3>{selected.officialFeedback.map((feedback) => <div key={feedback.id}><span>{feedback.sourceFileName}{feedback.interfaceFileNumber ? ` · קובץ ${feedback.interfaceFileNumber}` : ""}</span><small>{formatDate(feedback.receivedAt)}</small></div>)}</div> : null}{selected.transmissions.length > 0 ? <div className="report-feedback-history"><h3>היסטוריית שידורים</h3>{selected.transmissions.map((tx) => <div key={tx.id}><span>ניסיון {tx.attemptNumber} · {tx.provider}</span><small>{formatDate(tx.completedAt ?? tx.sentAt ?? tx.startedAt)}</small></div>)}</div> : null}</div><div className="report-modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>סגירה</button></div></div></div> : null}
