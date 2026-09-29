@@ -94,8 +94,6 @@ const paymentMethodOptions = [
   { value: "BankDebit", label: "חיוב חשבון" },
 ];
 
-const BILLING_PAGE_SIZE = 25;
-
 const paymentStatusOptions = [
   { value: "all", label: "כל מצבי אמצעי התשלום" },
   { value: "NotConfigured", label: "לא מוגדר" },
@@ -117,7 +115,6 @@ export default function AdminPage() {
   const [billingTypeFilter, setBillingTypeFilter] = useState("all");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
-  const [billingPage, setBillingPage] = useState(0);
   const [editingBillingCustomer, setEditingBillingCustomer] = useState<BillingCustomerRow | null>(null);
   const [billingTypeDraft, setBillingTypeDraft] = useState<BillingAccountPricingType>("Free");
   const [unitPriceDraft, setUnitPriceDraft] = useState("0");
@@ -288,14 +285,6 @@ export default function AdminPage() {
     if (paymentStatusFilter !== "all" && paymentMethodStatusKey(row) !== paymentStatusFilter) return false;
     return true;
   });
-  const pagedBillingCustomers = filteredBillingCustomers.slice(
-    billingPage * BILLING_PAGE_SIZE,
-    (billingPage + 1) * BILLING_PAGE_SIZE,
-  );
-
-  useEffect(() => {
-    setBillingPage(0);
-  }, [entityTypeFilter, organizationFilter, employerFilter, billingTypeFilter, paymentMethodFilter, paymentStatusFilter]);
 
   return <AppShell title="מסך אדמין" hideScopeController={tab !== "subscriptions"}>
     <div className="page-head">
