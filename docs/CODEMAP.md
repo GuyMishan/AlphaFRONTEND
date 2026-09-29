@@ -46,8 +46,9 @@
 
 ## API/session
 - `src/lib/api.ts` — broad API client and shared types/calls.
+- `src/lib/backend-fetch.ts` — shared authenticated Backend transport. It applies development auth headers, treats the first Backend `401` as authoritative session expiry, clears browser/HttpOnly session state, and redirects to `/session-timeout`.
 - `src/app/api/backend/[...path]/route.ts` — backend proxy.
-- `src/lib/session.ts`, `src/components/session-timeout-guard.tsx`. The browser enforces the idle timeout proactively; the shared API client also treats the first Backend `401` as authoritative session expiry, clears local/HttpOnly session state and redirects to `/session-timeout`.
+- `src/lib/session.ts`, `src/components/session-timeout-guard.tsx`. The server-side `UserSession.LastActivityAt` is the idle-timeout source of truth. The browser timer is UX-only; on window focus, return to a visible tab, or local 30-minute idle boundary it validates `/api/auth/session` against the server. `/session-timeout` is rendered outside the authenticated `AppShell` so it remains visible after session state is cleared.
 - Login/register/invite routes live under `src/app/login`, `register`, `invite`.
 
 ## Verification guardrails
