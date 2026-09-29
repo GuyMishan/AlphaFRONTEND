@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, Trash2 } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
-import { VirtualizedTable } from "@/components/virtualized-table";
+import { DataTable } from "@/components/data-table";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
 import { bankReferenceApi, type BankBranchReference, type BankReference } from "@/lib/bank-reference-api";
@@ -60,7 +60,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
     </div>
     <div className="toolbar deposit-toolbar"><div className="search"><Search size={17} /><UiInput maxLength={100} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="יצרן, מוצר, עובד או אסמכתא" /></div></div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 12 }}>{error}</div> : null}
-    {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <VirtualizedTable
+    {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <DataTable
       items={rows}
       rowKey={(row) => row.id}
       rowHeight={48}
