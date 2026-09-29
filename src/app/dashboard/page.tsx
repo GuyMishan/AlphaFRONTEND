@@ -18,6 +18,7 @@ import {
 import { AppShell } from "@/components/app-shell";
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
+import { getScopeContext } from "@/lib/app-data-cache";
 import {
   getEmployerSelection,
   getOrganizationSelection,
@@ -25,18 +26,9 @@ import {
   setEmployerSelection,
   setOrganizationSelection,
 } from "@/lib/session";
-import type { Employee, Employer, EntitlementSnapshot, Organization } from "@/lib/types";
+import type { DashboardStats, Employer, EntitlementSnapshot, Organization } from "@/lib/types";
 
 type DashboardMode = "admin" | "organization" | "employer";
-
-type DashboardStats = {
-  organizations: number;
-  employers: number;
-  activeEmployers: number;
-  employees: number;
-  activeEmployees: number;
-  inactiveEmployees: number;
-};
 
 const EMPTY_STATS: DashboardStats = {
   organizations: 0,
@@ -46,14 +38,6 @@ const EMPTY_STATS: DashboardStats = {
   activeEmployees: 0,
   inactiveEmployees: 0,
 };
-
-async function safeEmployees(organizationId: string, employerId: string): Promise<Employee[]> {
-  try {
-    return await alphaApi.employees(organizationId, employerId);
-  } catch {
-    return [];
-  }
-}
 
 function StatCard({ label, value, icon, badge }: { label: string; value: number | string; icon: ReactNode; badge?: string }) {
   return <div className="stat-card">
@@ -80,19 +64,12 @@ export default function DashboardPage() {
   const selectedOrganization = organizations.find((item) => item.id === organizationId) ?? null;
 
   async function loadEmployerDashboard(org: Organization, employer: Employer) {
-    const [employees, planUsage] = await Promise.all([
-      safeEmployees(org.id, employer.id),
+    const [nextStats, planUsage] = await Promise.all([
+      alphaApi.dashboardStats(org.id, employer.id),
       alphaApi.entitlements(org.id),
     ]);
     setEntitlements(planUsage);
-    setStats({
-      organizations: 1,
-      employers: 1,
-      activeEmployers: employer.status === 2 ? 1 : 0,
-      employees: employees.length,
-      activeEmployees: employees.filter((item) => item.status === 1).length,
-      inactiveEmployees: employees.filter((item) => item.status !== 1).length,
-    });
+    setStats(nextStats);
   }
 
   async function loadOrganizationDashboard(orgId: string) {
@@ -101,133 +78,85 @@ export default function DashboardPage() {
       setStats(EMPTY_STATS);
       return;
     }
-
-    const [allEmployers, planUsage] = await Promise.all([
-      alphaApi.employers(orgId),
+    const scopeContext = await getScopeContext();
+    const scopeOrganization = scopeContext.organizations.find((item) => item.id === orgId);
+    const allEmployers = scopeOrganization?.employers ?? [];
+    setEmployers(allEmployers);
+    const [nextStats, planUsage] = await Promise.all([
+      alphaApi.dashboardStats(orgId),
       alphaApi.entitlements(orgId),
     ]);
-    setEmployers(allEmployers);
     setEntitlements(planUsage);
-
+    setStats(nextStats);
     const saved = getEmployerSelection();
     const selected = saved?.organizationId === orgId && allEmployers.some((item) => item.id === saved.employerId)
-      ? saved.employerId
-      : allEmployers[0]?.id ?? "";
+      ? saved.employerId : allEmployers[0]?.id ?? "";
     setEmployerId(selected);
     if (selected) setEmployerSelection(orgId, selected);
-
-    const employeeGroups = await Promise.all(allEmployers.map((employer) => safeEmployees(orgId, employer.id)));
-    const employees = employeeGroups.flat();
-    setStats({
-      organizations: 1,
-      employers: allEmployers.length,
-      activeEmployers: allEmployers.filter((item) => item.status === 2).length,
-      employees: employees.length,
-      activeEmployees: employees.filter((item) => item.status === 1).length,
-      inactiveEmployees: employees.filter((item) => item.status !== 1).length,
-    });
   }
 
-  async function loadAdminDashboard(accessibleOrganizations: Organization[]) {
-    const employerGroups = await Promise.all(accessibleOrganizations.map(async (org) => {
-      try { return await alphaApi.employers(org.id); } catch { return []; }
-    }));
-    const allEmployers = employerGroups.flat();
-    const employees = (await Promise.all(
-      accessibleOrganizations.flatMap((org, orgIndex) =>
-        employerGroups[orgIndex].map((employer) => safeEmployees(org.id, employer.id))
-      )
-    )).flat();
-
-    setStats({
-      organizations: accessibleOrganizations.length,
-      employers: allEmployers.length,
-      activeEmployers: allEmployers.filter((item) => item.status === 2).length,
-      employees: employees.length,
-      activeEmployees: employees.filter((item) => item.status === 1).length,
-      inactiveEmployees: employees.filter((item) => item.status !== 1).length,
-    });
+  async function loadAdminDashboard() {
+    setStats(await alphaApi.dashboardStats());
   }
 
   useEffect(() => {
     let active = true;
-
     async function initialize() {
       setLoading(true);
       setError("");
       try {
         const session = getSession();
-        const scopeContext = await alphaApi.scope();
+        const scopeContext = await getScopeContext();
         const accessibleOrganizations = scopeContext.organizations;
         if (!active) return;
         setOrganizations(accessibleOrganizations);
-
         if (session?.platformAdmin) {
-          setHasOrganizationScope(true);
-          setEntitlements(null);
-          setMode("admin");
-          await loadAdminDashboard(accessibleOrganizations);
-          return;
+          setHasOrganizationScope(true); setEntitlements(null); setMode("admin");
+          await loadAdminDashboard(); return;
         }
-
         const hasOrgScope = scopeContext.organizations.some((item) => item.hasOrganizationScope);
         setHasOrganizationScope(hasOrgScope);
-
         if (!hasOrgScope) {
           const employerEntries = scopeContext.organizations.flatMap((organization) =>
-            organization.employers.map((employer) => ({ organization, employer }))
-          );
+            organization.employers.map((employer) => ({ organization, employer })));
           const saved = getEmployerSelection();
           const selected = employerEntries.find((item) =>
-            saved?.organizationId === item.organization.id && saved?.employerId === item.employer.id
-          ) ?? employerEntries[0];
-
-          if (!selected) {
-            setMode("employer");
-            setEmployers([]);
-            setStats(EMPTY_STATS);
-            return;
-          }
-
-          setMode("employer");
-          setOrganizationId(selected.organization.id);
-          setEmployerId(selected.employer.id);
+            saved?.organizationId === item.organization.id && saved?.employerId === item.employer.id) ?? employerEntries[0];
+          if (!selected) { setMode("employer"); setEmployers([]); setStats(EMPTY_STATS); return; }
+          setMode("employer"); setOrganizationId(selected.organization.id); setEmployerId(selected.employer.id);
           setEmployers(employerEntries.map((item) => item.employer));
-          setOrganizationSelection(selected.organization.id);
-          setEmployerSelection(selected.organization.id, selected.employer.id);
-          await loadEmployerDashboard(selected.organization, selected.employer);
-          return;
+          setOrganizationSelection(selected.organization.id); setEmployerSelection(selected.organization.id, selected.employer.id);
+          await loadEmployerDashboard(selected.organization, selected.employer); return;
         }
-
         setMode("organization");
         const savedOrgId = getOrganizationSelection();
         const organizationScoped = accessibleOrganizations.filter((item) => item.hasOrganizationScope);
-        const orgId = organizationScoped.some((item) => item.id === savedOrgId)
-          ? savedOrgId!
-          : organizationScoped[0]?.id ?? "";
-        setOrganizationId(orgId);
-        if (orgId) setOrganizationSelection(orgId);
+        const orgId = organizationScoped.some((item) => item.id === savedOrgId) ? savedOrgId! : organizationScoped[0]?.id ?? "";
+        setOrganizationId(orgId); if (orgId) setOrganizationSelection(orgId);
         await loadOrganizationDashboard(orgId);
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : "טעינת נתוני הדשבורד נכשלה");
-      } finally {
-        if (active) setLoading(false);
-      }
+      } finally { if (active) setLoading(false); }
     }
-
     void initialize();
     return () => { active = false; };
   }, []);
 
   useEffect(() => {
     if (mode !== "organization" || !organizationId) return;
+    const normalized = query.trim();
+    if (!normalized) {
+      void getScopeContext().then((scopeContext) => {
+        const organization = scopeContext.organizations.find((item) => item.id === organizationId);
+        setEmployers(organization?.employers ?? []);
+      });
+      return;
+    }
     const timer = window.setTimeout(async () => {
       try {
-        const result = await alphaApi.employerSearch(organizationId, query.trim(), 0, 100);
+        const result = await alphaApi.employerSearch(organizationId, normalized, 0, 100);
         setEmployers(result.items);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "חיפוש המעסיקים נכשל");
-      }
+      } catch (err) { setError(err instanceof Error ? err.message : "חיפוש המעסיקים נכשל"); }
     }, 300);
     return () => window.clearTimeout(timer);
   }, [query, organizationId, mode]);
@@ -235,52 +164,30 @@ export default function DashboardPage() {
   useEffect(() => {
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail;
-      setQuery("");
-      setLoading(true);
-      setError("");
-
+      setQuery(""); setLoading(true); setError("");
       if (!detail.organizationId) {
-        setMode("admin");
-        setOrganizationId("");
-        setEmployerId("");
-        setEmployers([]);
-        setEntitlements(null);
-        void loadAdminDashboard(organizations)
-          .catch((err) => setError(err instanceof Error ? err.message : "טעינת נתוני המערכת נכשלה"))
-          .finally(() => setLoading(false));
+        setMode("admin"); setOrganizationId(""); setEmployerId(""); setEmployers([]); setEntitlements(null);
+        void loadAdminDashboard().catch((err) => setError(err instanceof Error ? err.message : "טעינת נתוני המערכת נכשלה")).finally(() => setLoading(false));
         return;
       }
-
       if (!detail.employerId) {
-        setMode("organization");
-        setOrganizationId(detail.organizationId);
-        setOrganizationSelection(detail.organizationId);
-        setEmployerId("");
-        void loadOrganizationDashboard(detail.organizationId)
-          .catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגון נכשלה"))
-          .finally(() => setLoading(false));
+        setMode("organization"); setOrganizationId(detail.organizationId); setOrganizationSelection(detail.organizationId); setEmployerId("");
+        void loadOrganizationDashboard(detail.organizationId).catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגון נכשלה")).finally(() => setLoading(false));
         return;
       }
-
       void (async () => {
-        const organization = organizations.find((item) => item.id === detail.organizationId)
-          ?? await alphaApi.organizations().then((items) => items.find((item) => item.id === detail.organizationId) ?? null);
-        const employer = await alphaApi.employer(detail.organizationId, detail.employerId!);
-        if (!organization) throw new Error("הארגון שנבחר אינו זמין.");
-        setMode("employer");
-        setOrganizationId(detail.organizationId);
-        setEmployerId(detail.employerId!);
-        setOrganizationSelection(detail.organizationId);
-        setEmployerSelection(detail.organizationId, detail.employerId!);
-        setEmployers([employer]);
-        await loadEmployerDashboard(organization, employer);
-      })()
-        .catch((err) => setError(err instanceof Error ? err.message : "טעינת המעסיק נכשלה"))
-        .finally(() => setLoading(false));
+        const scopeContext = await getScopeContext();
+        const organization = scopeContext.organizations.find((item) => item.id === detail.organizationId) ?? null;
+        const employer = organization?.employers.find((item) => item.id === detail.employerId) ?? null;
+        if (!organization || !employer) throw new Error("ההקשר שנבחר אינו זמין.");
+        setMode("employer"); setOrganizationId(detail.organizationId); setEmployerId(detail.employerId!);
+        setOrganizationSelection(detail.organizationId); setEmployerSelection(detail.organizationId, detail.employerId!);
+        setEmployers([employer]); await loadEmployerDashboard(organization, employer);
+      })().catch((err) => setError(err instanceof Error ? err.message : "טעינת המעסיק נכשלה")).finally(() => setLoading(false));
     };
     window.addEventListener("alpha:scope-change", handler);
     return () => window.removeEventListener("alpha:scope-change", handler);
-  }, [mode, organizations]);
+  }, [organizations]);
 
   function chooseEmployer(id: string) {
     if (!organizationId) return;

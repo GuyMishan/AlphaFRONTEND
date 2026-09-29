@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Building2, UserRound } from "lucide-react";
 import { alphaApi } from "@/lib/api";
+import { getScopeContext } from "@/lib/app-data-cache";
 import {
   getEmployeeSelection,
   getEmployerSelection,
@@ -79,7 +80,7 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
     async function load() {
       setLoading(true);
       try {
-        const context = await alphaApi.scope();
+        const context = await getScopeContext();
         if (!active) return;
         setScope(context);
 
@@ -140,11 +141,13 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
           nextEmployeeId = await loadEmployees(orgId, employerEntry.employer.id);
 
         if (!active || !orgId) return;
-        emitScopeChange({
-          organizationId: orgId,
-          employerId: employerEntry?.employer.id,
-          employeeId: nextEmployeeId || undefined,
-        });
+        if (!isDashboard) {
+          emitScopeChange({
+            organizationId: orgId,
+            employerId: employerEntry?.employer.id,
+            employeeId: nextEmployeeId || undefined,
+          });
+        }
       } finally {
         if (active) setLoading(false);
       }

@@ -47,6 +47,7 @@ import type {
   BillingRefund,
   BillingUsageRow,
   GlobalScopeContext,
+  DashboardStats,
   CreateInvitationInput,
   PublicInvitation,
   RefreshedSession,
@@ -152,6 +153,8 @@ export const alphaApi = {
         employerCount: demoEmployers.length,
       })
     : request<GlobalScopeContext>("/api/scope"),
+  dashboardStats: (organizationId?: string, employerId?: string): Promise<DashboardStats> =>
+    request<DashboardStats>(`/api/dashboard/stats${qs({ organizationId, employerId })}`),
   health: () => request<{ status: string; service: string }>("/health"),
   onboardingStatus: (): Promise<OnboardingStatus> =>
     getSession()?.mode === "demo"
@@ -221,7 +224,7 @@ export const alphaApi = {
   employerBillingPayments: (organizationId: string, employerId: string): Promise<BillingPayment[]> =>
     request<BillingPayment[]>(`/api/organizations/${organizationId}/employers/${employerId}/billing/payments`),
   platformSubscriptions: (): Promise<PlatformSubscription[]> =>
-    request<PlatformSubscription[]>("/api/platform/subscriptions/"),
+    request<PlatformSubscription[]>("/api/platform/subscriptions"),
   changePlatformSubscriptionPlan: (organizationId: string, planId: string): Promise<SubscriptionSummary> =>
     request<SubscriptionSummary>(`/api/platform/subscriptions/${organizationId}/plan`, { method: "PUT", body: JSON.stringify({ planId }) }),
   changePlatformSubscriptionStatus: (organizationId: string, status: number) =>
@@ -235,15 +238,15 @@ export const alphaApi = {
     request<void>(`/api/platform/users/${userId}`, { method: "PUT", body: JSON.stringify(payload) }),
   organizations: (): Promise<Organization[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoOrganizations)
-    : request<Organization[]>("/api/organizations/"),
+    : request<Organization[]>("/api/organizations"),
   organization: (organizationId: string): Promise<Organization> =>
     request<Organization>(`/api/organizations/${organizationId}`),
   organizationProfile: (organizationId: string): Promise<OrganizationProfileCenter> =>
-    request<OrganizationProfileCenter>(`/api/organizations/${organizationId}/profile-center/`),
+    request<OrganizationProfileCenter>(`/api/organizations/${organizationId}/profile-center`),
   organizationBillingAccount: (organizationId: string): Promise<AlphaBillingAccount> =>
-    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account/`),
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account`),
   saveOrganizationBillingAccount: (organizationId: string, payload: AlphaBillingAccountInput): Promise<AlphaBillingAccount> =>
-    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account/`, { method: "PUT", body: JSON.stringify(payload) }),
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account`, { method: "PUT", body: JSON.stringify(payload) }),
   updateOrganizationBillingProviderMetadata: (organizationId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account/provider-metadata`, { method: "PUT", body: JSON.stringify(payload) }),
   startOrganizationPaymentSetup: (organizationId: string, returnPath: string): Promise<PaymentMethodSetupResult> =>
@@ -262,11 +265,11 @@ export const alphaApi = {
     billingContactName: string; billingContactPhone: string; billingStatus?: number;
   }) => request<void>(`/api/organizations/${organizationId}/profile-center/billing`, { method: "PUT", body: JSON.stringify(payload) }),
   organizationPaymentAccount: (organizationId: string): Promise<OrganizationPaymentAccountResponse> =>
-    request<OrganizationPaymentAccountResponse>(`/api/organizations/${organizationId}/payment-account/`),
+    request<OrganizationPaymentAccountResponse>(`/api/organizations/${organizationId}/payment-account`),
   organizationPaymentAccountEdit: (organizationId: string, accountId: string): Promise<EmployerPaymentAccountEdit> =>
     request<EmployerPaymentAccountEdit>(`/api/organizations/${organizationId}/payment-account/${accountId}/edit`),
   createOrganizationPaymentAccount: (organizationId: string, payload: EmployerPaymentAccountInput): Promise<EmployerPaymentAccount> =>
-    request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/payment-account/`, { method: "POST", body: JSON.stringify(payload) }),
+    request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/payment-account`, { method: "POST", body: JSON.stringify(payload) }),
   updateOrganizationPaymentAccount: (organizationId: string, accountId: string, payload: EmployerPaymentAccountInput): Promise<EmployerPaymentAccount> =>
     request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/payment-account/${accountId}`, { method: "PUT", body: JSON.stringify(payload) }),
   updateOrganizationPaymentMandate: (organizationId: string, accountId: string, payload: {
@@ -279,7 +282,7 @@ export const alphaApi = {
     request<OrganizationEmployerBilling[]>(`/api/organizations/${organizationId}/profile-center/employer-billing`),
   employers: (organizationId: string): Promise<Employer[]> => getSession()?.mode === "demo"
     ? Promise.resolve(demoEmployers.filter((item) => item.organizationId === organizationId))
-    : request<Employer[]>(`/api/organizations/${organizationId}/employers/`),
+    : request<Employer[]>(`/api/organizations/${organizationId}/employers`),
   employerSearch: (organizationId: string, search = "", skip = 0, take = 50): Promise<PagedResult<Employer>> => getSession()?.mode === "demo"
     ? Promise.resolve({ items: demoEmployers.filter((item) => item.organizationId === organizationId && `${item.legalName} ${item.registrationNumber} ${item.withholdingFileNumber}`.includes(search)), hasMore: false })
     : request<PagedResult<Employer>>(`/api/organizations/${organizationId}/employers/search${qs({ search, skip, take })}`),
@@ -294,18 +297,18 @@ export const alphaApi = {
     : request<EmployerCapabilities>(`/api/organizations/${organizationId}/employers/${employerId}/capabilities`),
   createEmployer: (organizationId: string, payload: EmployerInput) => getSession()?.mode === "demo"
     ? Promise.resolve({ id: crypto.randomUUID(), organizationId, ...payload, status: 1 } as Employer)
-    : request<Employer>(`/api/organizations/${organizationId}/employers/`, { method: "POST", body: JSON.stringify(payload) }),
+    : request<Employer>(`/api/organizations/${organizationId}/employers`, { method: "POST", body: JSON.stringify(payload) }),
   updateEmployer: (organizationId: string, employerId: string, payload: EmployerInput) => getSession()?.mode === "demo"
     ? Promise.resolve({ id: employerId, organizationId, ...payload, status: 2 } as Employer)
     : request<Employer>(`/api/organizations/${organizationId}/employers/${employerId}`, { method: "PUT", body: JSON.stringify(payload) }),
   employerBillingAccount: (organizationId: string, employerId: string): Promise<AlphaBillingAccount> =>
-    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/`),
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account`),
   employerBillingResolution: (organizationId: string, employerId: string): Promise<EmployerBillingResolution> =>
     request<EmployerBillingResolution>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/resolution`),
   employerBillingGate: (organizationId: string, employerId: string): Promise<BillingGateStatus> =>
     request<BillingGateStatus>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/gate`),
   saveEmployerBillingAccount: (organizationId: string, employerId: string, payload: AlphaBillingAccountInput): Promise<AlphaBillingAccount> =>
-    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/`, { method: "PUT", body: JSON.stringify(payload) }),
+    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account`, { method: "PUT", body: JSON.stringify(payload) }),
   updateEmployerBillingProviderMetadata: (organizationId: string, employerId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/provider-metadata`, { method: "PUT", body: JSON.stringify(payload) }),
   startEmployerPaymentSetup: (organizationId: string, employerId: string, returnPath: string): Promise<PaymentMethodSetupResult> =>
@@ -325,13 +328,13 @@ export const alphaApi = {
   updateEmployerReportingSettings: (organizationId: string, employerId: string, payload: EmployerProfileCenterSettings["reporting"]) =>
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/profile-center/reporting`, { method: "PUT", body: JSON.stringify(payload) }),
   employerPaymentAccounts: (organizationId: string, employerId: string): Promise<EmployerPaymentAccount[]> =>
-    request<EmployerPaymentAccount[]>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/`),
+    request<EmployerPaymentAccount[]>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts`),
   employerPaymentResolution: (organizationId: string, employerId: string): Promise<PensionPaymentResolution> =>
     request<PensionPaymentResolution>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/resolution`),
   employerPaymentAccount: (organizationId: string, employerId: string, accountId: string): Promise<EmployerPaymentAccountEdit> =>
     request<EmployerPaymentAccountEdit>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/${accountId}`),
   createEmployerPaymentAccount: (organizationId: string, employerId: string, payload: EmployerPaymentAccountInput) =>
-    request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/`, { method: "POST", body: JSON.stringify(payload) }),
+    request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts`, { method: "POST", body: JSON.stringify(payload) }),
   updateEmployerPaymentAccount: (organizationId: string, employerId: string, accountId: string, payload: EmployerPaymentAccountInput) =>
     request<EmployerPaymentAccount>(`/api/organizations/${organizationId}/employers/${employerId}/payment-accounts/${accountId}`, { method: "PUT", body: JSON.stringify(payload) }),
   setDefaultEmployerPaymentAccount: (organizationId: string, employerId: string, accountId: string) =>
@@ -363,10 +366,10 @@ export const alphaApi = {
     : request<Employee>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}`, { method: "PUT", body: JSON.stringify(payload) }),
   employeePensionMix: (organizationId: string, employerId: string, employeeId: string): Promise<EmployeePensionProduct[]> => getSession()?.mode === "demo"
     ? Promise.resolve([])
-    : request<EmployeePensionProduct[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix/`),
+    : request<EmployeePensionProduct[]>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix`),
   saveEmployeePensionMix: (organizationId: string, employerId: string, employeeId: string, products: EmployeePensionProductInput[], monthlySalary?: number) => getSession()?.mode === "demo"
     ? Promise.resolve()
-    : request<void>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix/`, { method: "PUT", body: JSON.stringify({ products, monthlySalary }) }),
+    : request<void>(`/api/organizations/${organizationId}/employers/${employerId}/employees/${employeeId}/pension-mix`, { method: "PUT", body: JSON.stringify({ products, monthlySalary }) }),
   pensionFunds: (productType: PensionProductType, search = "", take = 500): Promise<PensionFundOption[]> => getSession()?.mode === "demo"
     ? Promise.resolve([])
     : request<PensionFundOption[]>(`/api/reference-data/pension-funds${qs({ productType, search, take })}`),
@@ -374,7 +377,7 @@ export const alphaApi = {
     request<{ id: string }>("/api/platform/users", { method: "POST", body: JSON.stringify(payload) }),
 
   createManualReport: (organizationId: string, employerId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null; employmentIds: string[]; paymentAccountId?: string }): Promise<ManualReportDraft> =>
-    request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/`, { method: "POST", body: JSON.stringify(payload) }),
+    request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports`, { method: "POST", body: JSON.stringify(payload) }),
   manualReport: (organizationId: string, employerId: string, reportId: string): Promise<ManualReportDraft> =>
     request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}`),
   updateManualReportDetails: (organizationId: string, employerId: string, reportId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null }) =>
@@ -420,9 +423,9 @@ export const alphaApi = {
     }),
 
   invitations: (organizationId: string): Promise<UserInvitation[]> =>
-    request<UserInvitation[]>(`/api/organizations/${organizationId}/invitations/`),
+    request<UserInvitation[]>(`/api/organizations/${organizationId}/invitations`),
   createInvitation: (organizationId: string, payload: CreateInvitationInput): Promise<UserInvitation> =>
-    request<UserInvitation>(`/api/organizations/${organizationId}/invitations/`, { method: "POST", body: JSON.stringify(payload) }),
+    request<UserInvitation>(`/api/organizations/${organizationId}/invitations`, { method: "POST", body: JSON.stringify(payload) }),
   cancelInvitation: (organizationId: string, invitationId: string) =>
     request<void>(`/api/organizations/${organizationId}/invitations/${invitationId}/cancel`, { method: "POST" }),
   publicInvitation: (token: string): Promise<PublicInvitation> =>

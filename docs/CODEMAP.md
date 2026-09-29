@@ -3,7 +3,8 @@
 ## App shell and global behavior
 - `src/app/layout.tsx` — root layout and global providers/styles.
 - `src/components/app-shell.tsx` / `persistent-app-layout.tsx` — application shell.
-- `src/components/scope-controller.tsx` — organization/employer scope selection.
+- `src/lib/app-data-cache.ts` — in-memory request de-duplication/cache for global scope data. `AppShell`, `ScopeController` and Dashboard share the same `/api/scope` promise/value; onboarding invalidates and refreshes it.
+- `src/components/scope-controller.tsx` — organization/employer scope selection. Dashboard initialization does not emit a synthetic `alpha:scope-change`; only real selection changes trigger dashboard reloads.
 - `src/components/theme-provider.tsx` — theme state.
 - `src/components/validation-ux-bridge.tsx` — maps server/notice validation into field UI.
 
@@ -45,7 +46,7 @@
 - Related page styling: `src/app/payment-editor.css`.
 
 ## API/session
-- `src/lib/api.ts` — broad API client and shared types/calls.
+- `src/lib/api.ts` — broad API client and shared types/calls. Collection URLs are canonicalized without trailing slashes to avoid proxy/Next 308 redirects. Dashboard statistics use `/api/dashboard/stats` rather than fetching employer/employee collections for counts.
 - `src/lib/backend-fetch.ts` — shared authenticated Backend transport. It applies development auth headers, treats the first Backend `401` as authoritative session expiry, clears browser/HttpOnly session state, and redirects to `/session-timeout`.
 - `src/app/api/backend/[...path]/route.ts` — backend proxy.
 - `src/lib/session.ts`, `src/components/session-timeout-guard.tsx`. The server-side `UserSession.LastActivityAt` is the idle-timeout source of truth. The browser timer is UX-only; on window focus, return to a visible tab, or local 30-minute idle boundary it validates `/api/auth/session` against the server. `/session-timeout` is rendered outside the authenticated `AppShell` so it remains visible after session state is cleared.

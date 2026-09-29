@@ -10,6 +10,7 @@ import { UpgradeModal } from "./upgrade-modal";
 import { EmployerForm } from "./employer-form";
 import { AccessibilityMenu } from "./accessibility-menu";
 import { alphaApi } from "@/lib/api";
+import { getScopeContext, refreshScopeContext } from "@/lib/app-data-cache";
 import { clearSession, getSession, isPlatformAdminSession, setEmployerSelection, setOrganizationSelection, setSession } from "@/lib/session";
 import type { Employer, EmployerInput, Session } from "@/lib/types";
 import { UPGRADE_DIALOG_EVENT, type UpgradeDialogDetail } from "@/lib/upgrade";
@@ -88,7 +89,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
 
         const [onboarding, scope] = await Promise.all([
           alphaApi.onboardingStatus(),
-          alphaApi.scope(),
+          getScopeContext(),
         ]);
         if (!active) return;
 
@@ -184,7 +185,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     setOnboardingRequired(false);
     setOnboardingError("");
     try {
-      const scope = await alphaApi.scope();
+      const scope = await refreshScopeContext();
       const accessibleEmployers = scope.organizations.flatMap((organization) =>
         organization.employers.map((employer) => ({ organizationId: organization.id, employerId: employer.id }))
       );
