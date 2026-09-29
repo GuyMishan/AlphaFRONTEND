@@ -319,6 +319,8 @@ export default function DashboardPage() {
     </div></aside>
   );
 
+  if (loading) return <AppShell title="דף הבית">{null}</AppShell>;
+
   return <AppShell title="דף הבית">
     <div className="page-head">
       <div><h1>{title}</h1><p>{subtitle}</p></div>
@@ -337,10 +339,10 @@ export default function DashboardPage() {
     </section> : null}
 
     <section className="grid stats">
-      {mode === "admin" ? <StatCard label="ארגונים" value={loading ? "—" : stats.organizations} icon={<Building2 size={18} />} /> : null}
-      {mode !== "employer" ? <StatCard label="מעסיקים" value={loading ? "—" : stats.employers} icon={<Building2 size={18} />} badge={`${stats.activeEmployers} פעילים`} /> : null}
-      <StatCard label="עובדים" value={loading ? "—" : stats.employees} icon={<Users size={18} />} badge={`${stats.activeEmployees} פעילים`} />
-      <StatCard label="עובדים לא פעילים" value={loading ? "—" : stats.inactiveEmployees} icon={<AlertTriangle size={18} />} />
+      {mode === "admin" ? <StatCard label="ארגונים" value={stats.organizations} icon={<Building2 size={18} />} /> : null}
+      {mode !== "employer" ? <StatCard label="מעסיקים" value={stats.employers} icon={<Building2 size={18} />} badge={`${stats.activeEmployers} פעילים`} /> : null}
+      <StatCard label="עובדים" value={stats.employees} icon={<Users size={18} />} badge={`${stats.activeEmployees} פעילים`} />
+      <StatCard label="עובדים לא פעילים" value={stats.inactiveEmployees} icon={<AlertTriangle size={18} />} />
       <StatCard label="דיווחים החודש" value="—" icon={<CircleCheck size={18} />} badge="יתחבר לנתוני הדיווחים" />
       <StatCard label="שגיאות פתוחות" value="—" icon={<AlertTriangle size={18} />} badge="יתחבר למשובי המסלקה" />
     </section>
