@@ -30,6 +30,7 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
   const router = useRouter();
   const [form, setForm] = useState<EmployeeInput>({
     nationalId: employee?.nationalId ?? "",
+    identifierType: employee?.identifierType ?? 1,
     firstName: employee?.firstName ?? "",
     lastName: employee?.lastName ?? "",
     employeeNumber: employee?.employeeNumber ?? "",
@@ -66,7 +67,8 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
     const next: FieldErrors = {};
     if (normalized.firstName.trim().length < 2) next.firstName = "שם פרטי הוא שדה חובה ולפחות 2 תווים.";
     if (normalized.lastName.trim().length < 2) next.lastName = "שם משפחה הוא שדה חובה ולפחות 2 תווים.";
-    if (!isIsraeliId(normalized.nationalId.trim())) next.nationalId = "תעודת הזהות אינה תקינה.";
+    if (normalized.identifierType === 1 && !isIsraeliId(normalized.nationalId.trim())) next.nationalId = "תעודת הזהות אינה תקינה.";
+    if (normalized.identifierType === 2 && (!normalized.nationalId.trim() || normalized.nationalId.trim().length > 16 || /\\s/.test(normalized.nationalId))) next.nationalId = "מספר הדרכון הוא שדה חובה ויכול להכיל עד 16 תווים ללא רווחים.";
     if (!normalized.employeeNumber.trim()) next.employeeNumber = "מספר עובד הוא שדה חובה.";
     if (!normalized.startDate) next.startDate = "תאריך תחילת עבודה הוא שדה חובה.";
     else {
@@ -156,7 +158,8 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
       <div className="grid employee-details-grid">
         <Field label="שם פרטי *" error={errors.firstName}><UiInput aria-invalid={Boolean(errors.firstName)} required minLength={2} maxLength={100} disabled={!editable} value={form.firstName} onChange={(event) => update("firstName", event.target.value)} /></Field>
         <Field label="שם משפחה *" error={errors.lastName}><UiInput aria-invalid={Boolean(errors.lastName)} required minLength={2} maxLength={100} disabled={!editable} value={form.lastName} onChange={(event) => update("lastName", event.target.value)} /></Field>
-        <Field label="תעודת זהות *" error={errors.nationalId}><UiInput aria-invalid={Boolean(errors.nationalId)} required disabled={!editable} inputMode="numeric" maxLength={9} value={form.nationalId} onChange={(event) => update("nationalId", event.target.value.replace(/\D/g, "").slice(0, 9))} /></Field>
+        <Field label="סוג מזהה *" error={errors.identifierType}><EmployerInterfaceOptionSelect category="employee-identifier-type" value={form.identifierType} disabled={!editable} required placeholder="בחרו סוג מזהה" onChange={(value) => update("identifierType", value === 2 ? 2 : 1)} /></Field>
+        <Field label={form.identifierType === 2 ? "מספר דרכון *" : "תעודת זהות *"} error={errors.nationalId}><UiInput aria-invalid={Boolean(errors.nationalId)} required disabled={!editable} inputMode={form.identifierType === 1 ? "numeric" : "text"} maxLength={form.identifierType === 1 ? 9 : 16} value={form.nationalId} onChange={(event) => update("nationalId", form.identifierType === 1 ? event.target.value.replace(/\D/g, "").slice(0, 9) : event.target.value.replace(/\s/g, "").slice(0, 16))} /></Field>
         <Field label="מספר עובד אצל המעסיק *" error={errors.employeeNumber}><UiInput aria-invalid={Boolean(errors.employeeNumber)} required maxLength={50} disabled={!editable} value={form.employeeNumber} onChange={(event) => update("employeeNumber", event.target.value)} /></Field>
         <Field label="תאריך תחילת עבודה *" error={errors.startDate}><UiDateInput aria-invalid={Boolean(errors.startDate)} required disabled={!editable} value={form.startDate} onValueChange={(value) => update("startDate", value)} /></Field>
         <Field label="שכר חודשי" error={errors.monthlySalary}><UiInput aria-invalid={Boolean(errors.monthlySalary)} disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={form.monthlySalary || ""} onChange={(event) => update("monthlySalary", Number(event.target.value))} /></Field>

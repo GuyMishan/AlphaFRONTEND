@@ -17,7 +17,7 @@
 ## Organizations, employers, employees and access
 - `src/app/organizations/*`, `src/app/employers/*`, `src/app/employees/*`.
 - `src/app/access/page.tsx` — users and permissions, including independent report creation/transmission permissions.
-- `src/components/employer-form.tsx`, `employee-form.tsx`, `employer-employees-panel.tsx`.
+- `src/components/employer-form.tsx`, `employee-form.tsx`, `employer-employees-panel.tsx`. Employee create/edit uses the shared Employer Interface option control for identifier type and supports Israeli ID (1) and passport (2); the selected type is propagated into manual/Excel report snapshots.
 - `src/lib/access-scope.ts`.
 
 ## Pension products and reference controls

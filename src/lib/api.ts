@@ -397,7 +397,7 @@ export const alphaApi = {
         monthlySalary,
         products,
         snapshot: snapshot ? {
-          identifierType: 1,
+          identifierType: snapshot.identifierType ?? 1,
           identifier: snapshot.nationalId,
           birthDate: snapshot.birthDate,
           gender: snapshot.gender,
