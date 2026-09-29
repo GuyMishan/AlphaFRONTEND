@@ -1,6 +1,7 @@
 "use client";
 
 import { UiDateInput, UiInput } from "@/components/ui-controls";
+import { DataTable } from "@/components/data-table";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { CircleAlert, CircleCheck, UploadCloud, UserPlus } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -558,8 +559,22 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
 
       <div className="field" style={{ maxWidth: 300, marginBottom: 16 }}><label>תאריך תחילת עבודה ברירת מחדל לעובד חדש</label><UiDateInput value={defaultStartDate} onValueChange={setDefaultStartDate} /></div>
       {blocked.length ? <div className="notice notice-error" style={{ marginBottom: 16 }}><b>לא ניתן להמשיך כל עוד קיימות שורות חסומות.</b> תקנו את הקובץ והעלו אותו מחדש. בכל שורה מוצגת הסיבה המדויקת.</div> : null}
-      <div className="contribution-table-wrap"><table className="contribution-table"><thead><tr><th>שורה</th><th>סטטוס</th><th>ת״ז</th><th>שם</th><th>מספר עובד</th><th>מוצר</th><th>פעולה / שגיאה</th></tr></thead><tbody>{rows.slice(0, 250).map((row) => <tr key={row.rowNumber}><td>{row.rowNumber}</td><td>{row.status === "matched" ? "עובד קיים" : row.status === "new" ? "עובד חדש" : "חסום"}</td><td>{row.nationalId || "—"}</td><td>{`${row.firstName} ${row.lastName}`.trim() || "—"}</td><td>{row.employeeNumber || "—"}</td><td>{row.reportRow?.product.fundName || row.reportRow?.product.fundCode || "—"}</td><td>{row.status === "new" ? <label style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><UiInput type="checkbox" checked={row.selected} onChange={() => toggleNew(row.nationalId)} />להקים ולהכליל</label> : row.reason ?? "ייכלל בדיווח"}</td></tr>)}</tbody></table></div>
-      {rows.length > 250 ? <div className="notice notice-info" style={{ marginTop: 12 }}>מוצגות 250 השורות הראשונות מתוך {rows.length}. כל השורות נבדקו וייכללו בעיבוד.</div> : null}
+      <DataTable
+        items={rows}
+        rowKey={(row) => String(row.rowNumber)}
+        tableClassName="contribution-table"
+        maxHeight={520}
+        columns={[{ key: "row", label: "שורה" }, { key: "status", label: "סטטוס" }, { key: "id", label: "ת״ז" }, { key: "name", label: "שם" }, { key: "employeeNumber", label: "מספר עובד" }, { key: "product", label: "מוצר" }, { key: "action", label: "פעולה / שגיאה" }]}
+        renderCells={(row) => [
+          row.rowNumber,
+          row.status === "matched" ? "עובד קיים" : row.status === "new" ? "עובד חדש" : "חסום",
+          row.nationalId || "—",
+          `${row.firstName} ${row.lastName}`.trim() || "—",
+          row.employeeNumber || "—",
+          row.reportRow?.product.fundName || row.reportRow?.product.fundCode || "—",
+          row.status === "new" ? <label key="select" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><UiInput type="checkbox" checked={row.selected} onChange={() => toggleNew(row.nationalId)} />להקים ולהכליל</label> : row.reason ?? "ייכלל בדיווח",
+        ]}
+      />
     </div> : null}
   </>;
 }
