@@ -530,7 +530,7 @@ export default function AccessPage() {
           <div className="search"><Search size={17} /><UiInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="חיפוש משתמש לפי שם או אימייל" /></div>
           <span className="badge badge-blue">{organizations.find((x) => x.id === organizationId)?.name ?? "ארגון"}</span>
         </div>
-        {loading ? <div className="empty">טוען משתמשים...</div> : users.length ? <DataTable
+        {loading && users.length === 0 ? <div className="empty">טוען משתמשים...</div> : users.length ? <DataTable
           items={users}
           rowKey={(item) => item.userId}
           onRowClick={setSelected}
