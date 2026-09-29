@@ -369,7 +369,8 @@ export default function AdminPage() {
           { key: "employer", label: "מעסיק" },
           { key: "plan", label: "מסלול" },
           { key: "price", label: "תעריף" },
-          { key: "payment", label: "אמצעי תשלום" },
+          { key: "pensionPayment", label: "אמצעי תשלום פנסיוני" },
+          { key: "alphaPayment", label: "אמצעי תשלום ALPHA" },
           { key: "actions", label: "פעולות" },
         ]}
         renderCells={(item) => {
@@ -379,7 +380,14 @@ export default function AdminPage() {
             item.entityType === "Employer" ? <Link key="employer" className="profile-link" href={`/employers/${item.employerId}`}><b>{item.employerName || item.payerName}</b></Link> : "—",
             <span key="plan" className="admin-plan-cell"><b>{billingPlanLabel(item.billingType)}</b>{item.inherited ? <span className="tooltip admin-inheritance-tooltip" tabIndex={0} aria-label={`יורש מהארגון · ${item.billedThroughName}`}><Info size={15} aria-hidden="true" /><span className="tooltip-bubble" role="tooltip">יורש מהארגון · {item.billedThroughName}</span></span> : null}</span>,
             item.billingType === "Free" ? "—" : new Intl.NumberFormat("he-IL", { style: "currency", currency: "ILS" }).format(item.unitPrice),
-            <span key="payment"><span>{paymentMethodLabel(item)}</span>{item.inherited ? <span style={{ display: "block", color: "var(--muted)", fontSize: 12, marginTop: 3 }}>דרך הארגון</span> : null}</span>,
+            <span key="pensionPayment" className="admin-payment-status-cell">
+              <span>{item.pensionPaymentConfigured ? "מוגדר" : "לא מוגדר"}</span>
+              {item.pensionPaymentConfigured && item.pensionPaymentSource === "Organization" && item.entityType === "Employer" ? <span className="tooltip admin-inheritance-tooltip" tabIndex={0} aria-label={`דרך הארגון · ${item.pensionPaymentThroughName}`}><Info size={15} aria-hidden="true" /><span className="tooltip-bubble" role="tooltip">דרך הארגון · {item.pensionPaymentThroughName}</span></span> : null}
+            </span>,
+            <span key="alphaPayment" className="admin-payment-status-cell">
+              <span>{item.configured ? "מוגדר" : "לא מוגדר"}</span>
+              {item.configured && item.inherited && item.entityType === "Employer" ? <span className="tooltip admin-inheritance-tooltip" tabIndex={0} aria-label={`דרך הארגון · ${item.billedThroughName}`}><Info size={15} aria-hidden="true" /><span className="tooltip-bubble" role="tooltip">דרך הארגון · {item.billedThroughName}</span></span> : null}
+            </span>,
             <div key="actions" className="admin-actions">
               <button className="btn btn-secondary" type="button" onClick={() => openBillingEdit(item)}><Pencil size={15} />מסלול ותעריף</button>
               <Link className="btn btn-secondary" href={paymentDetailsHref(item)}><Pencil size={15} />אמצעי תשלום</Link>
