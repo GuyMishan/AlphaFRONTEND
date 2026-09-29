@@ -32,6 +32,7 @@ export function setSession(session: Session) {
 
 export function clearSession() {
   window.localStorage.removeItem(SESSION_KEY);
+  window.sessionStorage.removeItem(SESSION_META_KEY);
   window.localStorage.removeItem(EMPLOYER_KEY);
   window.localStorage.removeItem(ORGANIZATION_KEY);
   window.localStorage.removeItem(EMPLOYEE_KEY);
