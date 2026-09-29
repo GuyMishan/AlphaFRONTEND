@@ -1,4 +1,5 @@
-import { clearSession, getSession } from "./session";
+import { getSession } from "./session";
+import { backendFetch } from "./backend-fetch";
 import { openUpgradeDialog, upgradeDetailFromProblem } from "./upgrade";
 import type {
   AccessEmployer,
@@ -94,13 +95,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
   }
 
-  const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store", credentials: "same-origin" });
+  const response = await backendFetch(path, { ...init, headers, cache: "no-store", credentials: "same-origin" });
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== "undefined") {
-      clearSession();
-      void fetch("/api/session/logout", { method: "POST", credentials: "same-origin" }).finally(() => {
-        if (window.location.pathname !== "/session-timeout") window.location.replace("/session-timeout");
-      });
+    if (response.status === 401) {
       throw new ApiError(401, "פג תוקף החיבור. יש להתחבר מחדש.");
     }
 
