@@ -17,7 +17,9 @@ export default function EmployersPage() {
   const [employers, setEmployers] = useState<Employer[]>([]);
   const [canCreate, setCanCreate] = useState(false);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);\n  const [loadingMore, setLoadingMore] = useState(false);\n  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState("");
 
   async function load(orgId: string, search = query, append = false) {
@@ -85,7 +87,10 @@ export default function EmployersPage() {
         items={employers}
         rowKey={(employer) => employer.id}
         columns={[{ key: "name", label: "שם המעסיק" }, { key: "registration", label: "ח.פ." }, { key: "withholding", label: "תיק ניכויים" }, { key: "status", label: "סטטוס" }]}
-        hasMore={hasMore}\n        loadingMore={loadingMore}\n        onLoadMore={() => load(organizationId, query, true)}\n        renderCells={(employer) => [
+        hasMore={hasMore}
+        loadingMore={loadingMore}
+        onLoadMore={() => load(organizationId, query, true)}
+        renderCells={(employer) => [
           <Link className="table-entity-link" href={`/employers/${employer.id}?organizationId=${employer.organizationId}`}>{employer.legalName}</Link>,
           employer.registrationNumber,
           employer.withholdingFileNumber,
