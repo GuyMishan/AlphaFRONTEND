@@ -27,6 +27,7 @@ import {
   setOrganizationSelection,
 } from "@/lib/session";
 import type { DashboardStats, Employer, EntitlementSnapshot, Organization } from "@/lib/types";
+import { employerStatusBadgeClass, employerStatusLabel } from "@/lib/employer-status";
 
 type DashboardMode = "admin" | "organization" | "employer";
 
@@ -262,7 +263,7 @@ export default function DashboardPage() {
           {loading ? <div className="empty">טוען נתונים...</div> : employers.length ? <div className="employer-list">{employers.map((employer) => <div key={employer.id} className={`employer${employer.id === employerId ? " active" : ""}`}>
             <button className="employer-select" onClick={() => chooseEmployer(employer.id)}><span className="employer-logo">{employer.legalName.slice(0, 2)}</span><span className="employer-info"><b>{employer.legalName}</b><span>ח.פ. {employer.registrationNumber} · תיק ניכויים {employer.withholdingFileNumber}</span></span></button>
             <Link className="btn btn-soft" href={`/employers/${employer.id}?organizationId=${organizationId}`}>לפרופיל</Link>
-            <span className={employer.status === 2 ? "badge badge-green" : "badge badge-orange"}>{employer.status === 2 ? "פעיל" : "בתהליך הקמה"}</span>
+            <span className={employerStatusBadgeClass(employer.status)}>{employerStatusLabel(employer.status)}</span>
           </div>)}</div> : <div className="empty"><Building2 size={34} /><div>לא נמצאו מעסיקים בארגון הזה.</div></div>}
         </div>
         {quickActions}

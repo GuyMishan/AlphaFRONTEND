@@ -11,6 +11,8 @@ import { SubscriptionBillingPanel } from "@/components/subscription-billing-pane
 import { EmployerEmployeesPanel } from "@/components/employer-employees-panel";
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
+import { refreshScopeContext } from "@/lib/app-data-cache";
+import { editableEmployerStatuses, employerStatusBadgeClass, employerStatusLabel } from "@/lib/employer-status";
 import type {
   BankDebitMandateStatus,
   BankBranchOption,
@@ -23,6 +25,7 @@ import type {
   EmployerPaymentAccount,
   EmployerPaymentAccountInput,
   EmployerProfileCenterSettings,
+  EmployerStatus,
   EntitlementSnapshot,
   PensionPaymentResolution,
 } from "@/lib/types";
@@ -165,7 +168,9 @@ export default function EmployerProfilePage() {
       organizationId={organizationId}
       employer={employer}
       canEdit={capabilities.canEditEmployer}
+      canManage={capabilities.canManageEmployer}
       address={settings.address}
+      onEmployerSaved={setEmployer}
       onAddressSaved={(address) => setSettings((current) => ({ ...current, address }))}
     /> : null}
 
@@ -216,11 +221,13 @@ export default function EmployerProfilePage() {
   </AppShell>;
 }
 
-function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved }: {
+function GeneralTab({ organizationId, employer, canEdit, canManage, address, onEmployerSaved, onAddressSaved }: {
   organizationId: string;
   employer: Employer;
   canEdit: boolean;
+  canManage: boolean;
   address: EmployerAddressSettings;
+  onEmployerSaved: (value: Employer) => void;
   onAddressSaved: (value: EmployerAddressSettings) => void;
 }) {
   const [details, setDetails] = useState<EmployerInput>({
@@ -234,9 +241,11 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
     contactMobile: employer.contactMobile ?? "",
   });
   const [addressForm, setAddressForm] = useState(address);
+  const [status, setStatus] = useState<1 | 2 | 4>(employer.status === 4 ? 4 : employer.status === 2 ? 2 : 1);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    setStatus(employer.status === 4 ? 4 : employer.status === 2 ? 2 : 1);
     setDetails({
       legalName: employer.legalName,
       registrationNumber: employer.registrationNumber,
@@ -284,10 +293,16 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
         postalCode: addressForm.postalCode.replace(/\D/g, ""),
       };
 
-      await Promise.all([
+      const [savedEmployer] = await Promise.all([
         alphaApi.updateEmployer(organizationId, employer.id, employerInput),
         alphaApi.updateEmployerAddress(organizationId, employer.id, normalizedAddress),
       ]);
+      let finalEmployer = savedEmployer;
+      if (canManage && status !== employer.status) {
+        finalEmployer = await alphaApi.updateEmployerStatus(organizationId, employer.id, status);
+        await refreshScopeContext();
+      }
+      onEmployerSaved(finalEmployer);
       onAddressSaved(normalizedAddress);
       toast.success("פרטי המעסיק נשמרו");
     } catch (err) {
@@ -300,7 +315,7 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
   return <section className="card profile-card employer-general-card employer-general-card-compact">
     <div className="card-head">
       <div><h2>פרטים כלליים</h2><span style={{ color: "var(--muted)" }}>פרטי המעסיק, איש הקשר והכתובת במקום אחד.</span></div>
-      <span className={employer.status === 2 ? "badge badge-green" : "badge badge-gray"}>{employer.status === 2 ? "פעיל" : "בתהליך הקמה"}</span>
+      <span className={employerStatusBadgeClass(employer.status)}>{employerStatusLabel(employer.status)}</span>
     </div>
     {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הפרטים מוצגים לקריאה בלבד לפי ההרשאה שלך.</div> : null}
 
@@ -311,6 +326,7 @@ function GeneralTab({ organizationId, employer, canEdit, address, onAddressSaved
           <div className="field field-span-2"><label>שם משפטי מלא *</label><UiInput disabled={!canEdit} required maxLength={200} value={details.legalName} onChange={(e) => setDetails({ ...details, legalName: e.target.value })} /></div>
           <div className="field"><label>מספר חברה / עוסק *</label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={15} value={details.registrationNumber} onChange={(e) => setDetails({ ...details, registrationNumber: e.target.value.replace(/\D/g, "") })} /></div>
           <div className="field"><label className="field-label-with-info"><span>תיק ניכויים *</span><Tooltip content="אם אין תיק ניכויים, יש להזין 900000000." /></label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={9} value={details.withholdingFileNumber} onChange={(e) => setDetails({ ...details, withholdingFileNumber: e.target.value.replace(/\D/g, "") })} /></div>
+          <div className="field"><label>סטטוס מעסיק</label><UiSelect disabled={!canManage} value={status} onChange={(e) => setStatus(Number(e.target.value) as 1 | 2 | 4)}>{editableEmployerStatuses.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></div>
         </div>
       </div>
 

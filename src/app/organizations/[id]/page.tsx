@@ -13,6 +13,7 @@ import { OrganizationPensionPaymentAccount } from "@/components/organization-pen
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
 import { UiInput, UiSelect } from "@/components/ui-controls";
+import { employerStatusLabel } from "@/lib/employer-status";
 import type {
   Employer,
   EntitlementSnapshot,
@@ -170,7 +171,7 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
           item.withholdingFileNumber,
           billing ? (billing.billingMode === 2 ? "חיוב דרך הארגון" : "חיוב עצמאי") : "—",
           billing?.billedThroughName || "—",
-          item.status === 2 ? "פעיל" : "בתהליך הקמה",
+          employerStatusLabel(item.status),
         ];
       }}
     />}

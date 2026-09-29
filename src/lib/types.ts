@@ -7,13 +7,15 @@ export type Organization = {
   updatedAt?: string;
 };
 
+export type EmployerStatus = 1 | 2 | 3 | 4;
+
 export type Employer = {
   id: string;
   organizationId: string;
   legalName: string;
   registrationNumber: string;
   withholdingFileNumber: string;
-  status: number;
+  status: EmployerStatus;
   contactFirstName?: string;
   contactLastName?: string;
   contactPhone?: string;

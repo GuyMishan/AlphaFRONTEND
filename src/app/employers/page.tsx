@@ -9,6 +9,7 @@ import { DataTable, DataTableLink } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
 import { getScopeContext } from "@/lib/app-data-cache";
 import { getOrganizationSelection } from "@/lib/session";
+import { employerStatusBadgeClass, employerStatusLabel } from "@/lib/employer-status";
 import type { Employer } from "@/lib/types";
 
 const PAGE_SIZE = 100;
@@ -97,7 +98,7 @@ export default function EmployersPage() {
           <DataTableLink className="table-entity-link" href={`/employers/${employer.id}?organizationId=${employer.organizationId}`}>{employer.legalName}</DataTableLink>,
           employer.registrationNumber,
           employer.withholdingFileNumber,
-          <span className={employer.status === 2 ? "badge badge-green" : "badge badge-orange"}>{employer.status === 2 ? "פעיל" : "בהקמה"}</span>,
+          <span className={employerStatusBadgeClass(employer.status)}>{employerStatusLabel(employer.status)}</span>,
         ]}
       /> : <div className="empty"><Building2 size={35} /><div>לא נמצאו מעסיקים.</div></div>}
     </section>
