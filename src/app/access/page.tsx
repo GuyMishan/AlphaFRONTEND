@@ -66,6 +66,8 @@ type PermissionState = {
   canEditEmployer: boolean;
   canCreateEmployee: boolean;
   canEditEmployee: boolean;
+  canCreateReport: boolean;
+  canTransmitReport: boolean;
 };
 
 function roleDefaults(role: OrganizationRole, accessMode: EmployerAccessMode): PermissionState {
@@ -75,6 +77,8 @@ function roleDefaults(role: OrganizationRole, accessMode: EmployerAccessMode): P
     canEditEmployer: canOperate,
     canCreateEmployee: canOperate,
     canEditEmployee: canOperate,
+    canCreateReport: canOperate,
+    canTransmitReport: canOperate,
   };
 }
 
@@ -201,6 +205,8 @@ export default function AccessPage() {
       canEditEmployer: selected.canEditEmployer,
       canCreateEmployee: selected.canCreateEmployee,
       canEditEmployee: selected.canEditEmployee,
+      canCreateReport: selected.canCreateReport,
+      canTransmitReport: selected.canTransmitReport,
     });
     setAssignedSkip(0);
     setAssignedSearch("");
@@ -621,6 +627,8 @@ export default function AccessPage() {
           <PermissionSelect label="עריכת מעסיק" value={permissions.canEditEmployer} onChange={(value) => setPermissions((current) => ({ ...current, canEditEmployer: value }))} />
           <PermissionSelect label="הקמת עובד" value={permissions.canCreateEmployee} onChange={(value) => setPermissions((current) => ({ ...current, canCreateEmployee: value }))} />
           <PermissionSelect label="עריכת עובד" value={permissions.canEditEmployee} onChange={(value) => setPermissions((current) => ({ ...current, canEditEmployee: value }))} />
+          <PermissionSelect label="יצירת דיווח" value={permissions.canCreateReport} onChange={(value) => setPermissions((current) => ({ ...current, canCreateReport: value }))} />
+          <PermissionSelect label="שידור דיווח" value={permissions.canTransmitReport} onChange={(value) => setPermissions((current) => ({ ...current, canTransmitReport: value }))} />
         </div>
       </div>
 
