@@ -37,7 +37,8 @@ export default function EmployersPage() {
           alphaApi.employerSearch(resolvedOrgId, search.trim(), append ? employers.length : 0, PAGE_SIZE),
           alphaApi.capabilities(resolvedOrgId),
         ]);
-        setEmployers(result.items);
+        setEmployers((current) => append ? [...current, ...result.items] : result.items);
+        setHasMore(result.hasMore);
         setCanCreate(capabilities.canCreateEmployer);
         return;
       }
@@ -52,6 +53,7 @@ export default function EmployersPage() {
         });
 
       setEmployers(accessibleEmployers);
+      setHasMore(false);
       setCanCreate(false);
     } catch (err) { setError(err instanceof Error ? err.message : "טעינת המעסיקים נכשלה"); }
     finally { if (append) setLoadingMore(false); else setLoading(false); }
