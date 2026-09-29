@@ -1,4 +1,4 @@
-import { getSession } from "./session";
+import { backendFetch } from "./backend-fetch";
 import type { ManualReportDraft, ManualReportEmployeeSummary } from "./types";
 
 export type OpenManualReportSummary = ManualReportDraft & {
@@ -13,9 +13,8 @@ export type OpenManualReportsPage = {
 };
 
 async function request<T>(path: string): Promise<T> {
-  const session = getSession();
   const headers = new Headers({ Accept: "application/json" });
-  const response = await fetch(`/api/backend${path}`, { headers, cache: "no-store" });
+  const response = await backendFetch(path, { headers, cache: "no-store" });
   if (!response.ok) throw new Error(`אירעה שגיאה (${response.status})`);
   return response.json() as Promise<T>;
 }
