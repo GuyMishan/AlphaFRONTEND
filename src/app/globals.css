@@ -1242,3 +1242,13 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
   flex-wrap: nowrap !important;
   overflow: visible !important;
 }
+
+.admin-subscriptions-table .data-table-row > td:nth-child(4) {
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+.admin-subscriptions-table .data-table-row > td:nth-child(4):focus-within,
+.admin-subscriptions-table .data-table-row > td:nth-child(4):hover {
+  z-index: 8;
+}
