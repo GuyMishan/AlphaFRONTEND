@@ -667,14 +667,9 @@ export type CreateInvitationInput = {
 };
 
 
-export type ScopeEmployer = {
-  id: string;
-  organizationId: string;
-  legalName: string;
-  registrationNumber: string;
-  withholdingFileNumber: string;
-  status: number;
-};
+export type ScopeEmployer = Pick<Employer,
+  "id" | "organizationId" | "legalName" | "registrationNumber" | "withholdingFileNumber" | "status"
+>;
 
 export type ScopeOrganization = {
   id: string;
