@@ -4,7 +4,7 @@ import { UiInput } from "@/components/ui-controls";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Search, UserRoundPlus, Users } from "lucide-react";
-import { VirtualizedTable } from "@/components/virtualized-table";
+import { DataTable } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
 import type { Employee, Employer } from "@/lib/types";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
@@ -25,7 +25,7 @@ export function EmployerEmployeesPanel({
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);\n  const [loadingMore, setLoadingMore] = useState(false);\n  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -60,7 +60,7 @@ export function EmployerEmployeesPanel({
         <div className="search"><Search size={17} /><UiInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
         <span className="badge badge-blue">{employees.length} תוצאות</span>
       </div>
-      {loading ? <div className="empty">טוען עובדים...</div> : employees.length ? <VirtualizedTable
+      {loading ? <div className="empty">טוען עובדים...</div> : employees.length ? <DataTable
         items={employees}
         rowKey={(employee) => employee.id}
         columns={[
@@ -71,7 +71,7 @@ export function EmployerEmployeesPanel({
           { key: "endDate", label: "תאריך סיום" },
           { key: "status", label: "סטטוס" },
         ]}
-        renderCells={(employee) => [
+        hasMore={hasMore}\n        loadingMore={loadingMore}\n        onLoadMore={async () => {\n          if (loadingMore || !hasMore) return;\n          setLoadingMore(true);\n          try {\n            const result = await alphaApi.employeeSearch(organizationId, employer.id, query.trim(), employees.length, PAGE_SIZE);\n            setEmployees((current) => [...current, ...result.items]);\n            setHasMore(result.hasMore);\n          } catch (err) {\n            setError(err instanceof Error ? err.message : "טעינת עובדים נוספים נכשלה");\n          } finally {\n            setLoadingMore(false);\n          }\n        }}\n        renderCells={(employee) => [
           <Link key="name" className="profile-link" href={`/employees/${employee.id}?organizationId=${organizationId}&employerId=${employer.id}`}><b>{employee.firstName} {employee.lastName}</b></Link>,
           employee.nationalId,
           employee.employeeNumber,
