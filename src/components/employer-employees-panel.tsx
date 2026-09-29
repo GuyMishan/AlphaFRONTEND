@@ -34,7 +34,10 @@ export function EmployerEmployeesPanel({
       setLoading(true);
       setError("");
       alphaApi.employeeSearch(organizationId, employer.id, query.trim(), 0, PAGE_SIZE)
-        .then((result) => setEmployees(result.items))
+        .then((result) => {
+          setEmployees(result.items);
+          setHasMore(result.hasMore);
+        })
         .catch((err) => setError(err instanceof Error ? err.message : "טעינת העובדים נכשלה"))
         .finally(() => setLoading(false));
     }, 300);
@@ -89,7 +92,7 @@ export function EmployerEmployeesPanel({
           }
         }}
         renderCells={(employee) => [
-          <Link key="name" className="profile-link" href={`/employees/${employee.id}?organizationId=${organizationId}&employerId=${employer.id}`}><b>{employee.firstName} {employee.lastName}</b></Link>,
+          <Link key="name" className="profile-link" prefetch={false} href={`/employees/${employee.id}?organizationId=${organizationId}&employerId=${employer.id}`}><b>{employee.firstName} {employee.lastName}</b></Link>,
           employee.nationalId,
           employee.employeeNumber,
           formatDateDDMMYYYY(employee.startDate, "—"),

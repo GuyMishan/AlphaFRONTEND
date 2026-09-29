@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmployerEmployeesPanel } from "@/components/employer-employees-panel";
 import { PlanUsage } from "@/components/plan-usage";
@@ -16,8 +16,12 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [canCreateEmployee, setCanCreateEmployee] = useState(false);
   const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
+  const scopeLoadKeyRef = useRef("");
 
   async function loadScope(orgId: string, empId: string) {
+    const scopeKey = `${orgId}:${empId}`;
+    if (scopeLoadKeyRef.current === scopeKey) return;
+    scopeLoadKeyRef.current = scopeKey;
     if (!orgId || !empId) {
       setEmployer(null);
       setLoading(false);
@@ -35,6 +39,7 @@ export default function EmployeesPage() {
       setCanCreateEmployee(capabilities.canCreateEmployee);
       setEntitlements(entitlementSnapshot);
     } catch (err) {
+      scopeLoadKeyRef.current = "";
       setError(err instanceof Error ? err.message : "טעינת המעסיק נכשלה");
     } finally {
       setLoading(false);

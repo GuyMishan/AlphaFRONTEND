@@ -1,7 +1,7 @@
 "use client";
 
 import { UiChoiceCard, UiDateInput, UiInput } from "@/components/ui-controls";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -88,6 +88,7 @@ export default function NewReportPage() {
   const [selectedPaymentAccountId, setSelectedPaymentAccountId] = useState("");
   const [billingGate, setBillingGate] = useState<BillingGateStatus | null>(null);
   const [showBillingGateModal, setShowBillingGateModal] = useState(false);
+  const scopeLoadKeyRef = useRef("");
 
   const selectedSource = useMemo(() => sourceReports.find((report) => report.id === selectedSourceReportId) ?? null, [sourceReports, selectedSourceReportId]);
   const eligibleCorrectionSources = useMemo(() => sourceReports.filter((report) => report.canBeCurrentCorrectionSource), [sourceReports]);
@@ -97,6 +98,9 @@ export default function NewReportPage() {
   const summaryStep = isExcel ? 5 : 4;
 
   async function loadScope(nextScope: { organizationId: string; employerId: string }) {
+    const scopeKey = `${nextScope.organizationId}:${nextScope.employerId}`;
+    if (scopeLoadKeyRef.current === scopeKey) return;
+    scopeLoadKeyRef.current = scopeKey;
     setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
     try {
       const [employerItem, employeePage, capabilities, profileSettings, accountRows, globalScope] = await Promise.all([
@@ -117,14 +121,14 @@ export default function NewReportPage() {
       setSelectedIds(employeePage.items.filter((x) => x.status === 1).map((x) => x.id));
       setPaymentAccounts(accountRows);
       setSelectedPaymentAccountId(accountRows.find((x) => x.isDefault)?.id ?? accountRows[0]?.id ?? "");
-      const initialBillingGate = await alphaApi.employerBillingGate(nextScope.organizationId, nextScope.employerId);
-      setBillingGate(initialBillingGate);
       setShowBillingGateModal(accountRows.length === 0);
       if (!salaryPaymentDate) {
         setSalaryPaymentDate(defaultSalaryDate(month, profileSettings.reporting.defaultSalaryPaymentDay));
       }
-    } catch (err) { setError(err instanceof Error ? err.message : "טעינת הנתונים נכשלה"); }
-    finally { setLoading(false); }
+    } catch (err) {
+      scopeLoadKeyRef.current = "";
+      setError(err instanceof Error ? err.message : "טעינת הנתונים נכשלה");
+    } finally { setLoading(false); }
   }
 
   async function loadSources(reset = true, search = sourceSearch) {
