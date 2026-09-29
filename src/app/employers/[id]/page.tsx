@@ -25,7 +25,6 @@ import type {
   EmployerPaymentAccount,
   EmployerPaymentAccountInput,
   EmployerProfileCenterSettings,
-  EmployerStatus,
   EntitlementSnapshot,
   PensionPaymentResolution,
 } from "@/lib/types";
@@ -241,11 +240,11 @@ function GeneralTab({ organizationId, employer, canEdit, canManage, address, onE
     contactMobile: employer.contactMobile ?? "",
   });
   const [addressForm, setAddressForm] = useState(address);
-  const [status, setStatus] = useState<1 | 2 | 4>(employer.status === 4 ? 4 : employer.status === 2 ? 2 : 1);
+  const [status, setStatus] = useState<2 | 4>(employer.status === 4 ? 4 : 2);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setStatus(employer.status === 4 ? 4 : employer.status === 2 ? 2 : 1);
+    setStatus(employer.status === 4 ? 4 : 2);
     setDetails({
       legalName: employer.legalName,
       registrationNumber: employer.registrationNumber,
@@ -326,7 +325,7 @@ function GeneralTab({ organizationId, employer, canEdit, canManage, address, onE
           <div className="field field-span-2"><label>שם משפטי מלא *</label><UiInput disabled={!canEdit} required maxLength={200} value={details.legalName} onChange={(e) => setDetails({ ...details, legalName: e.target.value })} /></div>
           <div className="field"><label>מספר חברה / עוסק *</label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={15} value={details.registrationNumber} onChange={(e) => setDetails({ ...details, registrationNumber: e.target.value.replace(/\D/g, "") })} /></div>
           <div className="field"><label className="field-label-with-info"><span>תיק ניכויים *</span><Tooltip content="אם אין תיק ניכויים, יש להזין 900000000." /></label><UiInput disabled={!canEdit} required inputMode="numeric" maxLength={9} value={details.withholdingFileNumber} onChange={(e) => setDetails({ ...details, withholdingFileNumber: e.target.value.replace(/\D/g, "") })} /></div>
-          <div className="field"><label>סטטוס מעסיק</label><UiSelect disabled={!canManage} value={status} onChange={(e) => setStatus(Number(e.target.value) as 1 | 2 | 4)}>{editableEmployerStatuses.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></div>
+          <div className="field"><label>סטטוס מעסיק</label><UiSelect disabled={!canManage} value={status} onChange={(e) => setStatus(Number(e.target.value) as 2 | 4)}>{editableEmployerStatuses.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></div>
         </div>
       </div>
 

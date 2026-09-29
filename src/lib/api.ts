@@ -296,9 +296,9 @@ export const alphaApi = {
     ? Promise.resolve({ canManageEmployer: true, canEditEmployer: true, canCreateEmployee: true, canEditEmployee: true, canCreateReport: true, canTransmitReport: true })
     : request<EmployerCapabilities>(`/api/organizations/${organizationId}/employers/${employerId}/capabilities`),
   createEmployer: (organizationId: string, payload: EmployerInput) => getSession()?.mode === "demo"
-    ? Promise.resolve({ id: crypto.randomUUID(), organizationId, ...payload, status: 1 } as Employer)
+    ? Promise.resolve({ id: crypto.randomUUID(), organizationId, ...payload, status: 2 } as Employer)
     : request<Employer>(`/api/organizations/${organizationId}/employers`, { method: "POST", body: JSON.stringify(payload) }),
-  updateEmployerStatus: (organizationId: string, employerId: string, status: 1 | 2 | 4): Promise<Employer> => getSession()?.mode === "demo"
+  updateEmployerStatus: (organizationId: string, employerId: string, status: 2 | 4): Promise<Employer> => getSession()?.mode === "demo"
     ? alphaApi.employer(organizationId, employerId).then((employer) => ({ ...employer, status }))
     : request<Employer>(`/api/organizations/${organizationId}/employers/${employerId}/status`, { method: "PUT", body: JSON.stringify({ status }) }),
   updateEmployer: (organizationId: string, employerId: string, payload: EmployerInput) => getSession()?.mode === "demo"
