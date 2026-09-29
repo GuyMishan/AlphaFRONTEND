@@ -10,6 +10,7 @@ import { AppTabs } from "@/components/app-tabs";
 import { DataTable } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
+import { backendFetch } from "@/lib/backend-fetch";
 import type { BillingAccountPricingType, BillingCustomerRow } from "@/lib/types";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
@@ -45,7 +46,7 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set("X-Alpha-User-Id", session.userId);
     if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
   }
-  const response = await fetch(`/api/backend${path}`, { ...init, headers, cache: "no-store" });
+  const response = await backendFetch(path, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
     let message = `אירעה שגיאה (${response.status})`;
     try {
