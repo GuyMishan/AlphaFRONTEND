@@ -1210,3 +1210,35 @@ td { font-size: 14px; }
   flex-wrap: nowrap !important;
   overflow: hidden;
 }
+
+/* DataTable headers stay visible while the table viewport scrolls. */
+.data-table-grid > thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fafbfc;
+}
+html[data-theme="dark"] .data-table-grid > thead > tr > th {
+  background: #111b28;
+}
+
+/* Admin billing keeps inheritance metadata compact and exposes it on demand. */
+.admin-plan-cell {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  overflow: visible !important;
+}
+.admin-inheritance-tooltip {
+  flex: 0 0 auto;
+  color: var(--muted);
+  cursor: help;
+}
+.admin-inheritance-tooltip:hover,
+.admin-inheritance-tooltip:focus-visible {
+  color: var(--blue);
+}
+.admin-subscriptions-table .admin-actions {
+  flex-wrap: nowrap !important;
+  overflow: visible !important;
+}
