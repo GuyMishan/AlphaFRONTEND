@@ -225,10 +225,13 @@ export default function AccessPage() {
     const timer = window.setTimeout(() => {
       alphaApi.assignedEmployers(organizationId, selected.userId, assignedSearch.trim(), assignedSkip, PAGE_SIZE)
         .then((result) => {
-          if (!assignedLoaded && !assignedSearch.trim() && assignedSkip === 0) {
+          if (!assignedSearch.trim() && assignedSkip === 0) {
             setAssigned(result.items);
             setInitialAssigned(result.items);
             setAssignedLoaded(true);
+          } else if (!assignedSearch.trim() && assignedSkip > 0) {
+            setAssigned((current) => [...current, ...result.items.filter((item) => !current.some((existing) => existing.id === item.id))]);
+            setInitialAssigned((current) => [...current, ...result.items.filter((item) => !current.some((existing) => existing.id === item.id))]);
           }
           setAssignedHasMore(result.hasMore);
         })
