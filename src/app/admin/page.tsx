@@ -400,12 +400,6 @@ export default function AdminPage() {
             </div>,
           ];
         }}
-        pagination={{
-          page: billingPage,
-          pageSize: BILLING_PAGE_SIZE,
-          totalItems: filteredBillingCustomers.length,
-          onPageChange: setBillingPage,
-        }}
       />
     </section>}
 
