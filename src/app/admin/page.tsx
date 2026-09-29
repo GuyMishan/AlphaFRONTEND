@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Eye, Play, RefreshCw, Settings2, CreditCard, X, Pencil, Save } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
-import { VirtualizedTable } from "@/components/virtualized-table";
+import { DataTable } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { BillingAccountPricingType, BillingCustomerRow } from "@/lib/types";
@@ -312,7 +312,7 @@ export default function AdminPage() {
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
         <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>
       </div>
-      <VirtualizedTable
+      <DataTable
         items={rows}
         loading={loading}
         loadingLabel="טוען ממשקים..."
@@ -367,8 +367,8 @@ export default function AdminPage() {
           </label>
         </div>
       </div>
-      <VirtualizedTable
-        items={pagedBillingCustomers}
+      <DataTable
+        items={filteredBillingCustomers}
         loading={loading}
         loadingLabel="טוען מנויים..."
         emptyState="לא נמצאו מנויים בהתאם לסינון."
@@ -445,7 +445,7 @@ export default function AdminPage() {
     {historyKey ? <div style={backdropStyle} onClick={() => setHistoryKey(null)}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
         <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוחות הרצה</h2><div style={{ color: "var(--muted)", marginTop: 4 }}>{rows.find((x) => x.key === historyKey)?.name}</div></div><button className="btn btn-secondary" onClick={() => setHistoryKey(null)}><X size={17} /></button></div>
-        <VirtualizedTable
+        <DataTable
           items={history}
           rowKey={(run) => run.id}
           tableClassName="admin-run-history-table"
