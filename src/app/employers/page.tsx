@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Building2, Plus, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { VirtualizedTable } from "@/components/virtualized-table";
+import { DataTable } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
 import { getOrganizationSelection } from "@/lib/session";
 import type { Employer } from "@/lib/types";
@@ -17,11 +17,11 @@ export default function EmployersPage() {
   const [employers, setEmployers] = useState<Employer[]>([]);
   const [canCreate, setCanCreate] = useState(false);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);\n  const [loadingMore, setLoadingMore] = useState(false);\n  const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState("");
 
-  async function load(orgId: string, search = query) {
-    setLoading(true); setError("");
+  async function load(orgId: string, search = query, append = false) {
+    if (append) setLoadingMore(true); else setLoading(true); setError("");
     try {
       const scope = await alphaApi.scope();
       const resolvedOrgId = orgId || getOrganizationSelection() || scope.organizations[0]?.id || "";
@@ -32,7 +32,7 @@ export default function EmployersPage() {
 
       if (selectedOrganization?.hasOrganizationScope) {
         const [result, capabilities] = await Promise.all([
-          alphaApi.employerSearch(resolvedOrgId, search.trim(), 0, PAGE_SIZE),
+          alphaApi.employerSearch(resolvedOrgId, search.trim(), append ? employers.length : 0, PAGE_SIZE),
           alphaApi.capabilities(resolvedOrgId),
         ]);
         setEmployers(result.items);
@@ -52,7 +52,7 @@ export default function EmployersPage() {
       setEmployers(accessibleEmployers);
       setCanCreate(false);
     } catch (err) { setError(err instanceof Error ? err.message : "טעינת המעסיקים נכשלה"); }
-    finally { setLoading(false); }
+    finally { if (append) setLoadingMore(false); else setLoading(false); }
   }
 
   useEffect(() => {
@@ -81,11 +81,11 @@ export default function EmployersPage() {
     {error ? <div className="notice notice-error">{error}</div> : null}
     <section className="card">
       <div className="toolbar"><div className="search"><Search size={17} /><UiInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ח.פ. או תיק ניכויים" /></div><span className="badge badge-blue">{employers.length} תוצאות</span></div>
-      {loading ? <div className="empty">טוען מעסיקים...</div> : employers.length ? <VirtualizedTable
+      {loading ? <div className="empty">טוען מעסיקים...</div> : employers.length ? <DataTable
         items={employers}
         rowKey={(employer) => employer.id}
         columns={[{ key: "name", label: "שם המעסיק" }, { key: "registration", label: "ח.פ." }, { key: "withholding", label: "תיק ניכויים" }, { key: "status", label: "סטטוס" }]}
-        renderCells={(employer) => [
+        hasMore={hasMore}\n        loadingMore={loadingMore}\n        onLoadMore={() => load(organizationId, query, true)}\n        renderCells={(employer) => [
           <Link className="table-entity-link" href={`/employers/${employer.id}?organizationId=${employer.organizationId}`}>{employer.legalName}</Link>,
           employer.registrationNumber,
           employer.withholdingFileNumber,
