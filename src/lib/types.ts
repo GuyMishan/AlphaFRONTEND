@@ -277,6 +277,8 @@ export type AccessUser = {
   canEditEmployer: boolean;
   canCreateEmployee: boolean;
   canEditEmployee: boolean;
+  canCreateReport: boolean;
+  canTransmitReport: boolean;
 };
 
 export type PlatformUser = {
