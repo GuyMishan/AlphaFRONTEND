@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, Eye, FileClock, Plus, RefreshCw, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { VirtualizedTable } from "@/components/virtualized-table";
+import { DataTable } from "@/components/data-table";
 import { getEmployerSelection } from "@/lib/session";
 import { reportFeedbackApi, type ReportFeedbackDetails, type ReportFeedbackRow, type ReportFeedbackStatus } from "@/lib/report-feedback-api";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
@@ -136,7 +136,7 @@ export default function ReportsPage() {
     </div>
 
     <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-      <VirtualizedTable
+      <DataTable
         items={rows}
         loading={loading}
         loadingLabel="טוען דיווחים..."
