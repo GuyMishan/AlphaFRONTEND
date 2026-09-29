@@ -1167,3 +1167,46 @@ td { font-size: 14px; }
 .session-timeout-login{width:100%;min-height:50px;font-size:15px}
 .session-timeout-security{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:7px;color:var(--muted);font-size:12px;line-height:1.5}
 @media(max-width:640px){.session-timeout-page{padding:86px 16px 28px}.session-timeout-brand{top:22px;right:20px}.session-timeout-card{padding:38px 22px 28px;border-radius:20px}.session-timeout-icon{width:76px;height:76px;border-radius:22px}.session-timeout-card>p{font-size:14px}.session-timeout-orb-top{left:-300px}.session-timeout-orb-bottom{right:-270px}}
+
+
+/* DataTable virtualization invariant: rendered rows must match rowHeight exactly. */
+.data-table-grid {
+  table-layout: auto;
+}
+.data-table-grid .data-table-row {
+  height: var(--data-table-row-height) !important;
+  min-height: var(--data-table-row-height) !important;
+  max-height: var(--data-table-row-height) !important;
+}
+.data-table-grid .data-table-row > td {
+  height: var(--data-table-row-height) !important;
+  max-height: var(--data-table-row-height) !important;
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap !important;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.data-table-grid .data-table-row > td > * {
+  max-width: 100%;
+}
+.data-table-grid .data-table-row .btn,
+.data-table-grid .data-table-row .status-pill-active {
+  white-space: nowrap;
+}
+.admin-subscriptions-table .data-table-row > td > span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.admin-subscriptions-table .data-table-row > td > span > span {
+  display: inline !important;
+  margin-top: 0 !important;
+  margin-inline-start: 5px;
+  white-space: nowrap;
+}
+.admin-subscriptions-table .data-table-row > td:last-child > div {
+  flex-wrap: nowrap !important;
+  overflow: hidden;
+}
