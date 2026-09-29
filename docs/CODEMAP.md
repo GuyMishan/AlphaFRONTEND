@@ -34,6 +34,7 @@
 - `src/components/excel-employee-intake.tsx` — Excel intake.
 - `src/components/employer-interface-xml-intake.tsx` — XML/DAT/TST intake.
 - `src/lib/employer-interface-api.ts`, `manual-deposits-api.ts`, `report-validation-api.ts`, `report-transmission-api.ts`, `report-feedback-api.ts`.
+- `src/app/reports/page.tsx` surfaces both transmission history and correlated official Employer Interface 006 clearinghouse feedback returned by `report-feedback-api.ts`.
 
 ## Billing and payments
 - `src/components/alpha-billing-account-form.tsx`.
