@@ -2,6 +2,7 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { notify } from "@/components/notifications";
+import { AppShell } from "@/components/app-shell";
 import { useAppearance } from "@/components/theme-provider";
 import type { AppearancePreference } from "@/lib/user-preferences-api";
 
@@ -24,7 +25,7 @@ export default function SettingsPage() {
     }
   }
 
-  return <>
+  return <AppShell title="הגדרות" hideScopeController>
     <div className="page-head">
       <div><h1>הגדרות</h1><p>העדפות אישיות של המשתמש</p></div>
     </div>
@@ -43,5 +44,5 @@ export default function SettingsPage() {
       </div>
       <div className="settings-current-theme">מצב פעיל כרגע: <b>{resolvedTheme === "dark" ? "כהה" : "בהיר"}</b>{appearance === "system" ? " · לפי המערכת" : ""}</div>
     </div>
-  </>;
+  </AppShell>;
 }
