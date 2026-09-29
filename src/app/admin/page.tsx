@@ -4,7 +4,7 @@ import { UiInput, UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, Play, RefreshCw, Settings2, CreditCard, X, Pencil, Save, Info } from "lucide-react";
+import { Eye, Play, Settings2, CreditCard, X, Pencil, Save, Info } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
 import { DataTable } from "@/components/data-table";
@@ -295,7 +295,6 @@ export default function AdminPage() {
   return <AppShell title="מסך אדמין" hideScopeController={tab !== "subscriptions"}>
     <div className="page-head">
       <div><h1>מסך אדמין</h1><p>ניהול ממשקי המערכת וניהול הגבייה והתמחור</p></div>
-      <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={loading || Boolean(running)}><RefreshCw size={16} />רענון</button>
     </div>
 
     <AppTabs items={adminTabs} activeKey={tab} onChange={setTab} ariaLabel="מסך אדמין" />
