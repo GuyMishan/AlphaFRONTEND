@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Building2, CreditCard, Landmark, Save, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { DataTable } from "@/components/data-table";
 import { AppTabs } from "@/components/app-tabs";
 import { SubscriptionBillingPanel } from "@/components/subscription-billing-panel";
 import { OrganizationPensionPaymentAccount } from "@/components/organization-pension-payment-account";
@@ -157,28 +158,34 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
       {canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}>מעסיק חדש</Link> : null}
     </div>
     {entitlements ? <div style={{ marginBottom: 18 }}><PlanUsage label="מעסיקים במסלול" usage={entitlements.employers} /></div> : null}
-    {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>מעסיק</th><th>מספר חברה</th><th>תיק ניכויים</th><th>אופן חיוב</th><th>מחויב דרך</th><th>סטטוס</th></tr></thead><tbody>
-      {employers.map((item) => {
+    {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <DataTable
+      items={employers}
+      rowKey={(item) => item.id}
+      columns={[{ key: "employer", label: "מעסיק" }, { key: "registration", label: "מספר חברה" }, { key: "withholding", label: "תיק ניכויים" }, { key: "billing", label: "אופן חיוב" }, { key: "billedThrough", label: "מחויב דרך" }, { key: "status", label: "סטטוס" }]}
+      renderCells={(item) => {
         const billing = billingByEmployer.get(item.id);
-        return <tr key={item.id}>
-          <td><Link className="profile-link" href={`/employers/${item.id}?organizationId=${organizationId}`}>{item.legalName}</Link></td>
-          <td>{item.registrationNumber}</td>
-          <td>{item.withholdingFileNumber}</td>
-          <td>{billing ? (billing.billingMode === 2 ? "חיוב דרך הארגון" : "חיוב עצמאי") : "—"}</td>
-          <td>{billing?.billedThroughName || "—"}</td>
-          <td>{item.status === 2 ? "פעיל" : "בתהליך הקמה"}</td>
-        </tr>;
-      })}
-    </tbody></table></div>}
+        return [
+          <Link key="employer" className="profile-link" href={`/employers/${item.id}?organizationId=${organizationId}`}>{item.legalName}</Link>,
+          item.registrationNumber,
+          item.withholdingFileNumber,
+          billing ? (billing.billingMode === 2 ? "חיוב דרך הארגון" : "חיוב עצמאי") : "—",
+          billing?.billedThroughName || "—",
+          item.status === 2 ? "פעיל" : "בתהליך הקמה",
+        ];
+      }}
+    />}
   </section>;
 }
 function UsersTab({ organizationId, members, canManage }: { organizationId: string; members: OrganizationMemberSummary[]; canManage: boolean }) {
   const roleLabel = (role: number) => role === 1 ? "Admin" : role === 2 ? "Payroll Manager" : role === 3 ? "Operations Agent" : "Viewer";
   return <section className="card">
     <div className="card-head"><div><h2>משתמשים והרשאות</h2><span style={{ color: "var(--muted)" }}>משתמשי Organization-level והגישה שלהם למעסיקים.</span></div>{canManage ? <Link className="btn btn-primary" href="/access">ניהול הרשאות</Link> : null}</div>
-    {members.length === 0 ? <div className="empty">אין משתמשים פעילים בארגון.</div> : <div className="table-wrap"><table><thead><tr><th>משתמש</th><th>אימייל</th><th>Role</th><th>גישה למעסיקים</th></tr></thead><tbody>
-      {members.map((item) => <tr key={item.userId}><td><b>{item.displayName}</b></td><td>{item.email}</td><td>{roleLabel(item.role)}</td><td>{item.employerAccessMode === 1 ? "כל המעסיקים" : "מעסיקים נבחרים"}</td></tr>)}
-    </tbody></table></div>}
+    {members.length === 0 ? <div className="empty">אין משתמשים פעילים בארגון.</div> : <DataTable
+      items={members}
+      rowKey={(item) => item.userId}
+      columns={[{ key: "user", label: "משתמש" }, { key: "email", label: "אימייל" }, { key: "role", label: "Role" }, { key: "access", label: "גישה למעסיקים" }]}
+      renderCells={(item) => [<b key="user">{item.displayName}</b>, item.email, roleLabel(item.role), item.employerAccessMode === 1 ? "כל המעסיקים" : "מעסיקים נבחרים"]}
+    />}
     <div className="notice notice-info" style={{ marginTop: 18 }}>משתמש חדש מצטרף דרך הזמנה במייל, הרשמה ואימות OTP. ההרשאות נוצרות רק לאחר השלמת האימות.</div>
   </section>;
 }
