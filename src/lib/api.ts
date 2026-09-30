@@ -162,6 +162,8 @@ export const alphaApi = {
       : request<OnboardingStatus>("/api/onboarding/status"),
   completeSelfServiceOnboarding: (payload: EmployerInput): Promise<SelfServiceOnboardingResult> =>
     request<SelfServiceOnboardingResult>("/api/onboarding/self-service", { method: "POST", body: JSON.stringify(payload) }),
+  createOrganization: (payload: { name: string; type: number }): Promise<Organization> =>
+    request<Organization>("/api/organizations", { method: "POST", body: JSON.stringify(payload) }),
   entitlements: (organizationId: string): Promise<EntitlementSnapshot> =>
     request<EntitlementSnapshot>(`/api/organizations/${organizationId}/entitlements`),
   platformPlans: (): Promise<Plan[]> =>
