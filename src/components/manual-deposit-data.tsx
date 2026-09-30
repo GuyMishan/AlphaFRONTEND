@@ -402,7 +402,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   }
 
   async function uploadAttachment(documentTypeCode: 3 | 4 | 5 | 6, file: File | null) {
-    if (!file) return;
+    if (readOnly || !file) return;
     setError("");
     setUploadingAttachment(documentTypeCode);
     try {
@@ -419,6 +419,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   }
 
   async function removeAttachment(attachmentId: string) {
+    if (readOnly) return;
     setError("");
     try {
       await reportAttachmentsApi.remove(organizationId, employerId, reportId, attachmentId);
@@ -431,6 +432,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   }
 
   async function uploadPaymentProof(file: File) {
+    if (readOnly) return;
     setUploadingProof(true); setError("");
     try {
       const saved = await paymentConfirmationsApi.upload(organizationId, employerId, reportId, row.id, file);

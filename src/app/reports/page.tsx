@@ -123,6 +123,8 @@ export default function ReportsPage() {
   const [filter, setFilter] = useState<ReportFeedbackStatus>("all");
   const [rows, setRows] = useState<ReportFeedbackRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasMoreReports, setHasMoreReports] = useState(false);
+  const [loadingMoreReports, setLoadingMoreReports] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<ReportFeedbackDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -177,12 +179,29 @@ export default function ReportsPage() {
     try {
       const result = await reportFeedbackApi.list(nextScope.organizationId, nextScope.employerId, nextFilter, 0, 100);
       setRows(result.items);
+      setHasMoreReports(result.hasMore);
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת הדיווחים נכשלה");
       setRows([]);
+      setHasMoreReports(false);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadMoreReports() {
+    if (!scope || !hasMoreReports || loading || loadingMoreReports) return;
+    setLoadingMoreReports(true);
+    try {
+      const page = await reportFeedbackApi.list(scope.organizationId, scope.employerId, filter, rows.length, 100);
+      setRows(previous => {
+        const seen = new Set(previous.map(row => row.id));
+        return [...previous, ...page.items.filter(row => !seen.has(row.id))];
+      });
+      setHasMoreReports(page.hasMore);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "טעינת דיווחים נוספים נכשלה");
+    } finally { setLoadingMoreReports(false); }
   }
 
   async function openFeedback(row: ReportFeedbackRow) {
@@ -258,6 +277,10 @@ export default function ReportsPage() {
     <div className="card" style={{ padding: 0, overflow: "hidden" }}>
       <DataTable
         items={rows}
+        hasMore={hasMoreReports}
+        onLoadMore={loadMoreReports}
+        loadingMore={loadingMoreReports}
+        loadingMoreLabel="טוען דיווחים נוספים..."
         loading={loading}
         loadingLabel="טוען דיווחים..."
         emptyState="לא נמצאו דיווחים בהתאם לסינון."
