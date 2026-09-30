@@ -3,7 +3,7 @@
 import { UiInput, UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Play, Settings2, CreditCard, Pencil, Save, Info } from "lucide-react";
+import { Eye, Play, Settings2, CreditCard, Pencil, Info } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppModal } from "@/components/app-modal";
 import { ReferentsAdminTab } from "@/components/referents-admin-tab";
@@ -118,12 +118,8 @@ export default function AdminPage() {
   const [billingTypeFilter, setBillingTypeFilter] = useState("all");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
-  const [editingBillingCustomer, setEditingBillingCustomer] = useState<BillingCustomerRow | null>(null);
-  const [billingTypeDraft, setBillingTypeDraft] = useState<BillingAccountPricingType>("Free");
-  const [unitPriceDraft, setUnitPriceDraft] = useState("0");
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<string | null>(null);
-  const [savingPricing, setSavingPricing] = useState(false);
   const [error, setError] = useState("");
   const [historyKey, setHistoryKey] = useState<string | null>(null);
   const [history, setHistory] = useState<RunDetail[]>([]);
@@ -236,42 +232,14 @@ export default function AdminPage() {
     return row.cardLast4 ? `${row.cardBrand || "כרטיס"} •••• ${row.cardLast4}` : "כרטיס אשראי";
   }
 
-  function paymentDetailsHref(row: BillingCustomerRow) {
-    if (row.billingSource === "Organization") return `/organizations/${row.organizationId}`;
-    return row.employerId ? `/employers/${row.employerId}` : `/organizations/${row.organizationId}`;
-  }
-
-  function openBillingEdit(row: BillingCustomerRow) {
-    setEditingBillingCustomer(row);
-    setBillingTypeDraft(row.billingType);
-    setUnitPriceDraft(String(row.unitPrice ?? 0));
-    setError("");
-  }
-
-  async function saveBillingEdit() {
-    if (!editingBillingCustomer) return;
-    const unitPrice = billingTypeDraft === "Free" ? 0 : Number(unitPriceDraft);
-    if (billingTypeDraft !== "Free" && (!Number.isFinite(unitPrice) || unitPrice <= 0)) {
-      setError("יש להזין תעריף גדול מאפס.");
-      return;
+  function customerPaymentHref(row: BillingCustomerRow, tab: "billing" | "pension-payment") {
+    // Use the row's actual entity rather than its inherited billing source:
+    // admins should land in that organization's/employer's own card.
+    if (row.entityType === "Employer" && row.employerId) {
+      const params = new URLSearchParams({ organizationId: row.organizationId, tab });
+      return `/employers/${row.employerId}?${params.toString()}`;
     }
-
-    setSavingPricing(true);
-    setError("");
-    try {
-      await alphaApi.updateBillingCustomerPricing({
-        payerType: editingBillingCustomer.payerType,
-        payerId: editingBillingCustomer.payerId,
-        billingType: billingTypeDraft,
-        unitPrice,
-      });
-      setBillingCustomers(await alphaApi.billingCustomers());
-      setEditingBillingCustomer(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "שמירת המסלול והתעריף נכשלה");
-    } finally {
-      setSavingPricing(false);
-    }
+    return `/organizations/${row.organizationId}?tab=${tab}`;
   }
 
   const organizationOptions = Array.from(
@@ -404,42 +372,13 @@ export default function AdminPage() {
               {item.pensionPaymentConfigured && item.pensionPaymentSource === "Organization" && item.entityType === "Employer" ? <span className="tooltip admin-inheritance-tooltip" tabIndex={0} aria-label={`דרך הארגון · ${item.pensionPaymentThroughName}`}><Info size={15} aria-hidden="true" /><span className="tooltip-bubble" role="tooltip">דרך הארגון · {item.pensionPaymentThroughName}</span></span> : null}
             </span>,
             <div key="actions" className="admin-actions">
-              <button className="btn btn-secondary" type="button" onClick={() => openBillingEdit(item)}><Pencil size={15} />מסלול ותעריף</button>
-              <DataTableLink className="btn btn-secondary" href={paymentDetailsHref(item)}><Pencil size={15} />אמצעי תשלום</DataTableLink>
+              <DataTableLink className="btn btn-secondary" href={customerPaymentHref(item, "billing")}><Pencil size={15} />אמצעי תשלום ALPHA</DataTableLink>
+              <DataTableLink className="btn btn-secondary" href={customerPaymentHref(item, "pension-payment")}><Pencil size={15} />אמצעי תשלום פנסיוני</DataTableLink>
             </div>,
           ];
         }}
       />
     </section>}
-
-    {editingBillingCustomer ? <AppModal width="md" title="עריכת מסלול ותעריף" subtitle={editingBillingCustomer.payerName}
-      onClose={() => setEditingBillingCustomer(null)} closeDisabled={savingPricing}
-      actions={<>
-        <button className="btn btn-secondary" type="button" onClick={() => setEditingBillingCustomer(null)} disabled={savingPricing}>ביטול</button>
-        <button className="btn btn-primary" type="button" disabled={savingPricing} onClick={() => void saveBillingEdit()}>
-          <Save size={15} />{savingPricing ? "שומר..." : "שמירה"}
-        </button>
-      </>}>
-      {editingBillingCustomer.inherited ? <div className="notice notice-info" style={{ marginBottom: 16 }}>
-        כרגע יורש את המסלול מהארגון. שמירה כאן תגדיר למעסיק מסלול ותעריף עצמאיים.
-      </div> : null}
-        <div style={{ display: "grid", gap: 14 }}>
-          <label className="field">
-            <span>מסלול</span>
-            <UiSelect value={billingTypeDraft} onChange={(event) => setBillingTypeDraft(event.target.value as BillingAccountPricingType)}>
-              {[
-                { value: "Free", label: "חינם" },
-                { value: "PerEmployee", label: "פר עובד" },
-                { value: "PerReportRow", label: "פר שורה" },
-              ].map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </UiSelect>
-          </label>
-          {billingTypeDraft !== "Free" ? <label className="field">
-            <span>{billingTypeDraft === "PerEmployee" ? "תעריף לעובד" : "תעריף לשורה"}</span>
-            <UiInput type="number" min={0.01} step="0.01" value={unitPriceDraft} onChange={(event) => setUnitPriceDraft(event.target.value)} />
-          </label> : null}
-        </div>
-    </AppModal> : null}
 
     {historyKey ? <AppModal title="דוחות הרצה" subtitle={rows.find(x => x.key === historyKey)?.name}
       onClose={() => setHistoryKey(null)} width="xl">

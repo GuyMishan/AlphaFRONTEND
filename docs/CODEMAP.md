@@ -44,6 +44,7 @@
 - `src/app/reports/page.tsx` surfaces both transmission history and correlated official Employer Interface 006 clearinghouse feedback returned by `report-feedback-api.ts`.
 
 ## Billing and payments
+- `src/app/admin/page.tsx` — billing and pricing administration table links directly to the relevant organization/employer `?tab=billing` or `?tab=pension-payment` card rather than opening a separate pricing edit modal. Employer links include `organizationId` to preserve the target scope.
 - `src/components/alpha-billing-account-form.tsx`.
 - `src/components/subscription-billing-panel.tsx`.
 - `src/components/billing-gate-modal.tsx`, `upgrade-modal.tsx`.
