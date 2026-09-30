@@ -3,8 +3,9 @@
 import { UiInput, UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Play, Settings2, CreditCard, X, Pencil, Save, Info } from "lucide-react";
+import { Eye, Play, Settings2, CreditCard, Pencil, Save, Info } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { AppModal } from "@/components/app-modal";
 import { ReferentsAdminTab } from "@/components/referents-admin-tab";
 import { AppTabs } from "@/components/app-tabs";
 import { DataTable, DataTableLink } from "@/components/data-table";
@@ -411,16 +412,17 @@ export default function AdminPage() {
       />
     </section>}
 
-    {editingBillingCustomer ? <div style={backdropStyle} onClick={() => setEditingBillingCustomer(null)}>
-      <div style={{ ...modalStyle, maxWidth: 520, minHeight: 400, display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
-        <div style={modalHeaderStyle}>
-          <div>
-            <h2 style={{ margin: 0 }}>עריכת מסלול ותעריף</h2>
-            <div style={{ color: "var(--muted)", marginTop: 4 }}>{editingBillingCustomer.payerName}</div>
-            {editingBillingCustomer.inherited ? <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 4 }}>כרגע יורש את המסלול מהארגון. שמירה כאן תגדיר למעסיק מסלול ותעריף עצמאיים.</div> : null}
-          </div>
-          <button className="btn btn-secondary" type="button" onClick={() => setEditingBillingCustomer(null)}><X size={17} /></button>
-        </div>
+    {editingBillingCustomer ? <AppModal width="md" title="עריכת מסלול ותעריף" subtitle={editingBillingCustomer.payerName}
+      onClose={() => setEditingBillingCustomer(null)} closeDisabled={savingPricing}
+      actions={<>
+        <button className="btn btn-secondary" type="button" onClick={() => setEditingBillingCustomer(null)} disabled={savingPricing}>ביטול</button>
+        <button className="btn btn-primary" type="button" disabled={savingPricing} onClick={() => void saveBillingEdit()}>
+          <Save size={15} />{savingPricing ? "שומר..." : "שמירה"}
+        </button>
+      </>}>
+      {editingBillingCustomer.inherited ? <div className="notice notice-info" style={{ marginBottom: 16 }}>
+        כרגע יורש את המסלול מהארגון. שמירה כאן תגדיר למעסיק מסלול ותעריף עצמאיים.
+      </div> : null}
         <div style={{ display: "grid", gap: 14 }}>
           <label className="field">
             <span>מסלול</span>
@@ -437,16 +439,10 @@ export default function AdminPage() {
             <UiInput type="number" min={0.01} step="0.01" value={unitPriceDraft} onChange={(event) => setUnitPriceDraft(event.target.value)} />
           </label> : null}
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: "auto", paddingTop: 24 }}>
-          <button className="btn btn-secondary" type="button" onClick={() => setEditingBillingCustomer(null)}>ביטול</button>
-          <button className="btn btn-primary" type="button" disabled={savingPricing} onClick={() => void saveBillingEdit()}><Save size={15} />{savingPricing ? "שומר..." : "שמירה"}</button>
-        </div>
-      </div>
-    </div> : null}
+    </AppModal> : null}
 
-    {historyKey ? <div style={backdropStyle} onClick={() => setHistoryKey(null)}>
-      <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-        <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוחות הרצה</h2><div style={{ color: "var(--muted)", marginTop: 4 }}>{rows.find((x) => x.key === historyKey)?.name}</div></div><button className="btn btn-secondary" onClick={() => setHistoryKey(null)}><X size={17} /></button></div>
+    {historyKey ? <AppModal title="דוחות הרצה" subtitle={rows.find(x => x.key === historyKey)?.name}
+      onClose={() => setHistoryKey(null)} width="xl">
         <DataTable
           items={history}
           rowKey={(run) => run.id}
@@ -464,23 +460,16 @@ export default function AdminPage() {
             <button key="open" className="btn btn-secondary" style={{ paddingInline: 12 }} onClick={() => setSelectedRun(run)}>פתח</button>,
           ]}
         />
-      </div>
-    </div> : null}
+    </AppModal> : null}
 
-    {selectedRun ? <div style={backdropStyle} onClick={() => setSelectedRun(null)}>
-      <div style={{ ...modalStyle, maxWidth: 650 }} onClick={(e) => e.stopPropagation()}>
-        <div style={modalHeaderStyle}><div><h2 style={{ margin: 0 }}>דוח הרצה</h2><div style={{ color: "var(--muted)", marginTop: 4 }}>{selectedRun.integrationName}</div></div><button className="btn btn-secondary" onClick={() => setSelectedRun(null)}><X size={17} /></button></div>
+    {selectedRun ? <AppModal title="דוח הרצה" subtitle={selectedRun.integrationName}
+      onClose={() => setSelectedRun(null)} width="lg">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 16 }}>
           {[["סטטוס",statusLabel(selectedRun.status)],["התחלה",formatDate(selectedRun.startedAt)],["סיום",formatDate(selectedRun.finishedAt)],["נקלטו",selectedRun.recordsReceived],["חדשות",selectedRun.recordsInserted],["עודכנו",selectedRun.recordsUpdated],["הושבתו",selectedRun.recordsDeactivated]].map(([label,value]) => <div key={String(label)} style={{ padding: 12, border: "1px solid var(--line)", borderRadius: 10 }}><div style={{ color: "var(--muted)", fontSize: 12 }}>{label}</div><b>{value}</b></div>)}
         </div>
         {selectedRun.errorMessage ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{selectedRun.errorMessage}</div> : null}
         <h3 style={{ marginBottom: 8 }}>פרטי מקור</h3>
         <pre style={{ direction: "ltr", textAlign: "left", background: "var(--bg)", padding: 12, borderRadius: 10, overflow: "auto", whiteSpace: "pre-wrap" }}>{JSON.stringify(selectedRun.details ?? {}, null, 2)}</pre>
-      </div>
-    </div> : null}
+    </AppModal> : null}
   </AppShell>;
 }
-
-const backdropStyle: React.CSSProperties = { position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
-const modalStyle: React.CSSProperties = { width: "min(950px, 96vw)", maxHeight: "88vh", overflow: "auto", background: "var(--surface)", borderRadius: 16, padding: 20, boxShadow: "0 24px 70px rgba(15,23,42,.25)" };
-const modalHeaderStyle: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 };
