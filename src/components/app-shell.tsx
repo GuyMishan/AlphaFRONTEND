@@ -218,6 +218,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         ))}
         <div className="nav-divider" />
         {platformAdmin ? <Link href="/organizations" className={pathname.startsWith("/organizations") ? "active" : ""}><Landmark size={18} />ארגונים</Link> : null}
+        {!platformAdmin && session.isReferent && hasOrganizationScope ? <Link href="/organizations" className={pathname.startsWith("/organizations") ? "active" : ""}><Landmark size={18} />ארגונים בניהול</Link> : null}
         {!session.platformAdmin && !singleEmployerUser && singleOrganizationTarget ? <Link href={`/organizations/${singleOrganizationTarget}`} className={pathname.startsWith(`/organizations/${singleOrganizationTarget}`) ? "active" : ""}><Landmark size={18} />הארגון שלי</Link> : null}
         {platformAdmin ? <Link href="/admin" className={pathname === "/admin" ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
         {canManageOrganization ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />משתמשים והרשאות</Link> : null}

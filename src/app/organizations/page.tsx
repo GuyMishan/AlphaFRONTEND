@@ -27,12 +27,13 @@ export default function OrganizationsPage() {
 
   useEffect(() => {
     const session = getSession();
-    if (!session?.platformAdmin) {
+    if (!session?.platformAdmin && !session?.isReferent) {
       router.replace("/dashboard");
       return;
     }
     getScopeContext()
-      .then((scope) => setOrganizations(scope.organizations))
+      .then((scope) => setOrganizations(scope.organizations
+        .filter((organization) => session.platformAdmin || organization.hasOrganizationScope)))
       .catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגונים נכשלה"))
       .finally(() => setLoading(false));
   }, [router]);
@@ -65,8 +66,8 @@ export default function OrganizationsPage() {
 
   return <AppShell title="ארגונים" hideScopeController>
     <div className="page-head">
-      <div><h1>ארגונים</h1><p>צפייה וניהול כלל הארגונים במערכת</p></div>
-      <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}><Plus size={17} /> ארגון חדש</button>
+      <div><h1>{getSession()?.platformAdmin ? "ארגונים" : "ארגונים בניהול"}</h1><p>{getSession()?.platformAdmin ? "צפייה וניהול כלל הארגונים במערכת" : "הארגונים שהוקצו לך לניהול מלא"}</p></div>
+      {getSession()?.platformAdmin ? <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}><Plus size={17} /> ארגון חדש</button> : null}
     </div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
     <section className="card">
