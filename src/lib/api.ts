@@ -75,6 +75,7 @@ import type {
   Plan,
   PlatformSubscription,
   PlatformUser,
+  Referent,
   SubscriptionSummary,
   UserCandidate,
 } from "./types";
@@ -237,6 +238,9 @@ export const alphaApi = {
     request<SubscriptionSummary>(`/api/platform/subscriptions/${organizationId}/status`, { method: "PUT", body: JSON.stringify({ status }) }),
   changePlatformOrganizationStatus: (organizationId: string, status: number) =>
     request<void>(`/api/platform/subscriptions/${organizationId}/organization-status`, { method: "PUT", body: JSON.stringify({ status }) }),
+  referents: (): Promise<Referent[]> => request<Referent[]>("/api/platform/referents"),
+  saveReferent: (userId: string, payload: { enabled: boolean; organizationIds: string[]; employerIds: string[] }): Promise<{ userId: string }> =>
+    request<{ userId: string }>(`/api/platform/referents/${userId}`, { method: "PUT", body: JSON.stringify(payload) }),
   platformUsers: (): Promise<PlatformUser[]> => request<PlatformUser[]>("/api/platform/users"),
   createPlatformUser: (payload: { email: string; displayName: string; nationalId: string; phone: string }): Promise<PlatformUser> =>
     request<PlatformUser>("/api/platform/users", { method: "POST", body: JSON.stringify(payload) }),

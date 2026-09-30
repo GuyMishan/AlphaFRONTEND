@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, Play, Settings2, CreditCard, X, Pencil, Save, Info } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ReferentsAdminTab } from "@/components/referents-admin-tab";
 import { AppTabs } from "@/components/app-tabs";
 import { DataTable, DataTableLink } from "@/components/data-table";
 import { alphaApi } from "@/lib/api";
@@ -72,7 +73,8 @@ function statusLabel(status?: string) {
 const adminTabs = [
   { key: "interfaces", label: "ממשקים", icon: Settings2 },
   { key: "subscriptions", label: "ניהול גבייה ותמחור", icon: CreditCard },
-] satisfies Array<{ key: "interfaces" | "subscriptions"; label: string; icon: typeof Settings2 }>;
+  { key: "referents", label: "ניהול רפרנטים", icon: Settings2 },
+] satisfies Array<{ key: "interfaces" | "subscriptions" | "referents"; label: string; icon: typeof Settings2 }>;
 
 const entityTypeOptions = [
   { value: "all", label: "כל סוגי הישות" },
@@ -106,7 +108,7 @@ const paymentStatusOptions = [
 
 export default function AdminPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<"interfaces" | "subscriptions">("interfaces");
+  const [tab, setTab] = useState<"interfaces" | "subscriptions" | "referents">("interfaces");
   const [rows, setRows] = useState<IntegrationRow[]>([]);
   const [billingCustomers, setBillingCustomers] = useState<BillingCustomerRow[]>([]);
   const [entityTypeFilter, setEntityTypeFilter] = useState("all");
@@ -301,7 +303,7 @@ export default function AdminPage() {
 
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
-    {tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
+    {tab === "referents" ? <ReferentsAdminTab /> : tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
         <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>

@@ -285,6 +285,15 @@ export type AccessUser = {
   directEmployerOnly: boolean;
 };
 
+export type Referent = {
+  id: string;
+  displayName: string;
+  email: string;
+  isActive: boolean;
+  organizationIds: string[];
+  employerIds: string[];
+};
+
 export type PlatformUser = {
   id: string;
   displayName: string;
@@ -292,6 +301,7 @@ export type PlatformUser = {
   nationalId: string | null;
   phone: string | null;
   isPlatformAdmin: boolean;
+  isReferent: boolean;
   isActive: boolean;
 };
 
@@ -508,6 +518,7 @@ export type OrganizationProfileCenter = {
   type: number;
   status: number;
   canManageOrganization: boolean;
+  canEditOrganizationGeneral: boolean;
   general: {
     registrationNumber: string;
     city: string;
