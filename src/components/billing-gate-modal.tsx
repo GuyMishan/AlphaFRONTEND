@@ -36,7 +36,13 @@ export function BillingGateModal({
   const hasBillingAction = canManageOrganizationBilling || canManageEmployerBilling;
 
   return (
-    <AppModal title="נדרשת השלמת אמצעי תשלום פנסיוני" onClose={onClose} width="md">
+    <AppModal title="נדרשת השלמת אמצעי תשלום פנסיוני" onClose={onClose} width="md"
+      actions={<>
+        {canManageOrganizationBilling ? <Link className="btn btn-primary" href={organizationBillingHref}><Building2 size={17} />להגדרת תשלום פנסיוני בארגון</Link> : null}
+        {canManageEmployerBilling ? <Link className={canManageOrganizationBilling ? "btn btn-secondary" : "btn btn-primary"} href={employerBillingHref}><CreditCard size={17} />להגדרת תשלום פנסיוני למעסיק</Link> : null}
+        {onClose ? <button type="button" className="btn btn-secondary" onClick={onClose}>המשך מאוחר יותר</button>
+          : <Link className="btn btn-secondary" href="/dashboard"><House size={17} />חזרה לדף הבית</Link>}
+      </>}>
         <div className="billing-gate-icon"><AlertTriangle size={26} /></div>
         <p id="billing-gate-description">{messageForGate(gate)}</p>
         {gate.billedThroughName ? <div className="billing-gate-source">החיוב עבור המעסיק מתבצע דרך <b>{gate.billedThroughName}</b>.</div> : null}
@@ -53,11 +59,7 @@ export function BillingGateModal({
           אין לך הרשאה לעדכן אמצעי תשלום פנסיוני. יש לפנות למנהל הארגון או למנהל המעסיק.
         </div> : null}
 
-        <div className="billing-gate-actions">
-          {canManageOrganizationBilling ? <Link className="btn btn-primary" href={organizationBillingHref}><Building2 size={17} />להגדרת תשלום פנסיוני בארגון</Link> : null}
-          {canManageEmployerBilling ? <Link className={canManageOrganizationBilling ? "btn btn-secondary" : "btn btn-primary"} href={employerBillingHref}><CreditCard size={17} />להגדרת תשלום פנסיוני למעסיק</Link> : null}
-          {onClose ? <button type="button" className="btn btn-secondary" onClick={onClose}>המשך מאוחר יותר</button> : <Link className="btn btn-secondary" href="/dashboard"><House size={17} />חזרה לדף הבית</Link>}
-        </div>
+
     </AppModal>
   );
 }

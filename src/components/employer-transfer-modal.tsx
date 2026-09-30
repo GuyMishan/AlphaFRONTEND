@@ -82,8 +82,15 @@ export function EmployerTransferModal({
   if (!open) return null;
   return <AppModal open title={receiveIntoOrganizationId ? "שיוך מעסיק קיים לארגון" : "העברת מעסיק לארגון אחר"}
     subtitle="ההעברה מנתקת את המעסיק מארגון המקור, כולל ההרשאות הארגוניות הקודמות."
-    onClose={saving ? undefined : onClose} closeOnBackdrop={!saving}>
-    <form className="form" onSubmit={submit}>
+    onClose={onClose} closeDisabled={saving} closeOnBackdrop={!saving}
+    actions={<>
+      <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>ביטול</button>
+      <button type="submit" form="employer-transfer-form" className="btn btn-primary"
+        disabled={loading || saving || !selectedEmployer || !selectedTarget || selectedEmployer.organizationId === selectedTarget.id}>
+        {saving ? "מעביר..." : "אישור העברה מלאה"}
+      </button>
+    </>}>
+    <form id="employer-transfer-form" className="form" onSubmit={submit}>
       {employer ? <p><strong>מעסיק:</strong> {employer.legalName}</p> :
         <div className="field">
           <label>בחירת מעסיק להעברה</label>
@@ -104,13 +111,6 @@ export function EmployerTransferModal({
       <div className="notice notice-info">
         אם קיימת זהות עובד זהה בארגון היעד, או אם ההעברה חורגת ממגבלות המסלול, הפעולה תיחסם.
         חיובים היסטוריים שבוצעו לא יימחקו ולא ישונו.
-      </div>
-      <div className="form-actions">
-        <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>ביטול</button>
-        <button type="submit" className="btn btn-primary"
-          disabled={loading || saving || !selectedEmployer || !selectedTarget || selectedEmployer.organizationId === selectedTarget.id}>
-          {saving ? "מעביר..." : "אישור העברה מלאה"}
-        </button>
       </div>
     </form>
   </AppModal>;

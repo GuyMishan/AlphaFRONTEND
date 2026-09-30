@@ -92,13 +92,16 @@ export default function OrganizationsPage() {
         ]}
       /> : <div className="empty"><Landmark size={34} /><div>לא נמצאו ארגונים.</div></div>}
     </section>
-    <AppModal open={createOpen} title="יצירת ארגון חדש" onClose={() => { if (!creating) setCreateOpen(false); }}>
-      <form className="form" onSubmit={createOrganization}>
+    <AppModal open={createOpen} title="יצירת ארגון חדש" onClose={() => setCreateOpen(false)} closeDisabled={creating}
+      actions={<>
+        <button className="btn btn-secondary" type="button" disabled={creating} onClick={() => setCreateOpen(false)}>ביטול</button>
+        <button className="btn btn-primary" type="submit" form="create-organization-form" disabled={creating || !name.trim()}>{creating ? "יוצר..." : "יצירת ארגון"}</button>
+      </>}>
+      <form id="create-organization-form" className="form" onSubmit={createOrganization}>
         <div className="field"><label htmlFor="new-organization-name">שם הארגון</label><UiInput id="new-organization-name" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} disabled={creating} /></div>
         <div className="field"><label htmlFor="new-organization-type">סוג הארגון</label><UiSelect id="new-organization-type" value={type} onChange={(e) => setType(Number(e.target.value))} disabled={creating}>
           <option value={1}>מעסיק</option><option value={2}>משרד שכר</option><option value={3}>סוכנות ביטוח</option><option value={4}>ספק תפעול</option><option value={5}>קבוצת חברות</option><option value={6}>שירות עצמי</option>
         </UiSelect></div>
-        <div className="form-actions"><button className="btn btn-secondary" type="button" disabled={creating} onClick={() => setCreateOpen(false)}>ביטול</button><button className="btn btn-primary" type="submit" disabled={creating || !name.trim()}>{creating ? "יוצר..." : "יצירת ארגון"}</button></div>
       </form>
     </AppModal>
   </AppShell>;
