@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +20,9 @@ export function EmployerForm({
   showBackLink = true,
   createLabel = "הקמת מעסיק",
   embedded = false,
+  formId,
+  hideActions = false,
+  onSavingChange,
 }: {
   organizationId?: string;
   employer?: Employer;
@@ -29,6 +32,9 @@ export function EmployerForm({
   showBackLink?: boolean;
   createLabel?: string;
   embedded?: boolean;
+  formId?: string;
+  hideActions?: boolean;
+  onSavingChange?: (saving: boolean) => void;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<EmployerInput>({
@@ -42,6 +48,7 @@ export function EmployerForm({
     contactMobile: employer?.contactMobile ?? "",
   });
   const [saving, setSaving] = useState(false);
+  useEffect(() => { onSavingChange?.(saving); }, [saving, onSavingChange]);
   const [errors, setErrors] = useState<FieldErrors>({});
   const title = employer ? employer.legalName : "מעסיק חדש";
 
@@ -108,7 +115,7 @@ export function EmployerForm({
   return <div className={embedded ? "employer-form-embedded" : "card profile-card"}>
     <div className="profile-summary"><div className="profile-avatar"><Building2 /></div><div><h2 style={{ margin: 0 }}>{title}</h2><span style={{ color: "var(--muted)" }}>{employer ? editable ? "עריכת פרופיל מעסיק" : "צפייה בפרופיל מעסיק" : onCreate ? "הגדרת העסק שלכם" : "הקמת מעסיק חדש בארגון"}</span></div></div>
     {!editable && employer ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק הזה, ללא הרשאת עריכה.</div> : null}
-    <form className="form" onSubmit={submit} noValidate>
+    <form id={formId} className="form" onSubmit={submit} noValidate>
       <Field label="שם משפטי מלא *" error={errors.legalName}><UiInput aria-invalid={Boolean(errors.legalName)} required minLength={2} maxLength={200} disabled={!editable} value={form.legalName} onChange={(event) => update("legalName", event.target.value)} /></Field>
       <div className="grid two-cols">
         <Field label="מספר חברה / עוסק *" error={errors.registrationNumber}><UiInput aria-invalid={Boolean(errors.registrationNumber)} required disabled={!editable} inputMode="numeric" maxLength={15} value={form.registrationNumber} onChange={(event) => update("registrationNumber", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
@@ -123,7 +130,7 @@ export function EmployerForm({
       <small style={{ color: "var(--muted)", marginTop: -8 }}>יש להזין לפחות אחד מהשדות: טלפון או נייד.</small>
       <Field label="אימייל איש קשר *" error={errors.contactEmail}><UiInput disabled={!editable} type="email" maxLength={50} value={form.contactEmail ?? ""} onChange={(event) => update("contactEmail", event.target.value)} /></Field>
       {employer ? <div className="field"><label>סטטוס</label><UiInput disabled value={employer.status === 2 ? "פעיל" : "בתהליך הקמה"} /></div> : null}
-      <div className="form-actions">{showBackLink ? <Link className="btn btn-secondary" href="/employers">חזרה</Link> : null}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employer ? "שמירת שינויים" : createLabel}</button> : null}</div>
+      {!hideActions ? <div className="form-actions">{showBackLink ? <Link className="btn btn-secondary" href="/employers">חזרה</Link> : null}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employer ? "שמירת שינויים" : createLabel}</button> : null}</div> : null}
     </form>
   </div>;
 }

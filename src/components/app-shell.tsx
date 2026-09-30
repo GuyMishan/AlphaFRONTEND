@@ -7,6 +7,7 @@ import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, Landmark, LogOut, 
 import { Brand } from "./brand";
 import { ScopeController } from "./scope-controller";
 import { UpgradeModal } from "./upgrade-modal";
+import { AppModal } from "./app-modal";
 import { EmployerForm } from "./employer-form";
 import { AccessibilityMenu } from "./accessibility-menu";
 import { alphaApi } from "@/lib/api";
@@ -61,6 +62,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   const [pageConfig, setPageConfigState] = useState<ShellPageConfig>(initialConfig);
   const [upgradeDetail, setUpgradeDetail] = useState<UpgradeDialogDetail | null>(null);
   const [onboardingRequired, setOnboardingRequired] = useState(false);
+  const [onboardingSaving, setOnboardingSaving] = useState(false);
   const [onboardingError, setOnboardingError] = useState("");
 
   const setPageConfig = useCallback((config: ShellPageConfig) => {
@@ -261,25 +263,17 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         <UpgradeModal detail={upgradeDetail} onClose={() => setUpgradeDetail(null)} />
         <AccessibilityMenu />
         {onboardingRequired ? (
-          <div className="onboarding-backdrop" role="presentation">
-            <section className="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
-              <div className="onboarding-heading">
-                <div className="profile-avatar"><Building2 /></div>
-                <div>
-                  <h1 id="onboarding-title">בואו נגדיר את העסק שלכם</h1>
-                  <p>הזינו את פרטי המעסיק כדי להתחיל לעבוד במערכת. לא ניתן להמשיך לפני השלמת ההקמה.</p>
-                </div>
-              </div>
-              {onboardingError ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{onboardingError}</div> : null}
-              <EmployerForm
-                editable
-                onCreate={createBusiness}
-                onCreated={() => void completeOnboarding()}
-                showBackLink={false}
-                createLabel="שמירה והמשך"
-              />
-            </section>
-          </div>
+          <AppModal title="בואו נגדיר את העסק שלכם"
+            subtitle="הזינו את פרטי המעסיק כדי להתחיל לעבוד במערכת. לא ניתן להמשיך לפני השלמת ההקמה."
+            width="lg" closeOnBackdrop={false}
+            actions={<button type="submit" form="onboarding-employer-form" className="btn btn-primary"
+              disabled={onboardingSaving}>{onboardingSaving ? "שומר..." : "שמירה והמשך"}</button>}>
+            {onboardingError ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{onboardingError}</div> : null}
+            <EmployerForm editable onCreate={createBusiness}
+              onCreated={() => void completeOnboarding()}
+              formId="onboarding-employer-form" hideActions onSavingChange={setOnboardingSaving}
+              embedded showBackLink={false} createLabel="שמירה והמשך" />
+          </AppModal>
         ) : null}
       </div>
     </ShellContext.Provider>
