@@ -149,6 +149,7 @@
   .deposit-table td:nth-child(7)::before { content: "תאריך ערך"; color: var(--muted); }
   .deposit-table td:nth-child(8)::before { content: "סוג תקבול"; color: var(--muted); }
   .deposit-table td:nth-child(9)::before { content: "סטטוס"; color: var(--muted); }
+  .deposit-table td:nth-child(10)::before { content: "קבצים"; color: var(--muted); }
   .deposit-table tr.virtual-spacer { display: block; border: 0; padding: 0; background: transparent; }
   .deposit-table tr.virtual-spacer td { display: block !important; width: 1px !important; }
 }

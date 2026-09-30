@@ -62,7 +62,10 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
       setPaymentAccount(account ? { bankId: account.bankId, branchId: account.branchId, maskedAccountNumber: account.maskedAccountNumber } : null);
     }).catch(() => setPaymentAccount(null));
     paymentConfirmationsApi.listForReport(organizationId, employerId, reportId)
-      .then((items) => setProofs(Object.groupBy(items, (item) => item.reportProductId)))
+      .then((items) => setProofs(items.reduce<Record<string, PaymentConfirmation[]>>((groups, item) => {
+        (groups[item.reportProductId] ??= []).push(item);
+        return groups;
+      }, {})))
       .catch(() => setProofs({}));
   }, [organizationId, employerId, reportId]);
 
