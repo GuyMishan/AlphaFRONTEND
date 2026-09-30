@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Building2, CreditCard, FileSliders, Save, Users, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { EmployerTransferModal } from "@/components/employer-transfer-modal";
+import { getSession, setEmployerSelection } from "@/lib/session";
 import { AppTabs } from "@/components/app-tabs";
 import { AlphaBillingAccountForm } from "@/components/alpha-billing-account-form";
 import { SubscriptionBillingPanel } from "@/components/subscription-billing-panel";
@@ -77,6 +79,8 @@ const EMPTY_ACCOUNT: EmployerPaymentAccountInput = {
 
 export default function EmployerProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const [transferOpen, setTransferOpen] = useState(false);
   const { organizationId } = useQueryContext();
   const [tab, setTab] = useState<TabKey>("general");
   useEffect(() => {
@@ -154,6 +158,7 @@ export default function EmployerProfilePage() {
         <h1>{employer.legalName}</h1>
         <p>מרכז ניהול המעסיק · ח.פ./עוסק {employer.registrationNumber}</p>
       </div>
+      {getSession()?.platformAdmin ? <button className="btn btn-secondary" type="button" onClick={() => setTransferOpen(true)}>העברה לארגון אחר</button> : null}
     </div>
 
     <AppTabs
@@ -217,6 +222,13 @@ export default function EmployerProfilePage() {
       onSaved={(reporting) => setSettings((current) => ({ ...current, reporting }))}
     /> : null}
 
+    {getSession()?.platformAdmin ? <EmployerTransferModal open={transferOpen}
+      employer={employer} onClose={() => setTransferOpen(false)}
+      onTransferred={async (targetOrganizationId) => {
+        setEmployerSelection(targetOrganizationId, employer.id);
+        await refreshScopeContext();
+        router.replace(`/employers/${employer.id}?organizationId=${targetOrganizationId}`);
+      }} /> : null}
   </AppShell>;
 }
 
