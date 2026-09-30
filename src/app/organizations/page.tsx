@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Landmark, Search } from "lucide-react";
+import { Landmark, Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { AppModal } from "@/components/app-modal";
+import { UiSelect } from "@/components/ui-controls";
+import { alphaApi } from "@/lib/api";
 import { AppShell } from "@/components/app-shell";
 import { UiInput } from "@/components/ui-controls";
 import { DataTable, DataTableLink } from "@/components/data-table";
@@ -14,6 +18,10 @@ export default function OrganizationsPage() {
   const router = useRouter();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [query, setQuery] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [type, setType] = useState(1);
+  const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -29,6 +37,25 @@ export default function OrganizationsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  async function createOrganization(event: React.FormEvent) {
+    event.preventDefault();
+    if (!name.trim() || creating) return;
+    setCreating(true);
+    try {
+      const created = await alphaApi.createOrganization({ name: name.trim(), type });
+      setOrganizations((items) => [...items, created].sort((a, b) => a.name.localeCompare(b.name, "he")));
+      setCreateOpen(false);
+      setName("");
+      setType(1);
+      toast.success("הארגון נוצר בהצלחה");
+      router.push(`/organizations/${created.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "יצירת הארגון נכשלה");
+    } finally {
+      setCreating(false);
+    }
+  }
+
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) return organizations;
@@ -38,6 +65,7 @@ export default function OrganizationsPage() {
   return <AppShell title="ארגונים" hideScopeController>
     <div className="page-head">
       <div><h1>ארגונים</h1><p>צפייה וניהול כלל הארגונים במערכת</p></div>
+      <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}><Plus size={17} /> ארגון חדש</button>
     </div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
     <section className="card">
@@ -62,6 +90,15 @@ export default function OrganizationsPage() {
         ]}
       /> : <div className="empty"><Landmark size={34} /><div>לא נמצאו ארגונים.</div></div>}
     </section>
+    <AppModal open={createOpen} title="יצירת ארגון חדש" onClose={() => { if (!creating) setCreateOpen(false); }}>
+      <form className="form" onSubmit={createOrganization}>
+        <div className="field"><label htmlFor="new-organization-name">שם הארגון</label><UiInput id="new-organization-name" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} disabled={creating} /></div>
+        <div className="field"><label htmlFor="new-organization-type">סוג הארגון</label><UiSelect id="new-organization-type" value={type} onChange={(e) => setType(Number(e.target.value))} disabled={creating}>
+          <option value={1}>מעסיק</option><option value={2}>משרד שכר</option><option value={3}>סוכנות ביטוח</option><option value={4}>ספק תפעול</option><option value={5}>קבוצת חברות</option><option value={6}>שירות עצמי</option>
+        </UiSelect></div>
+        <div className="form-actions"><button className="btn btn-secondary" type="button" disabled={creating} onClick={() => setCreateOpen(false)}>ביטול</button><button className="btn btn-primary" type="submit" disabled={creating || !name.trim()}>{creating ? "יוצר..." : "יצירת ארגון"}</button></div>
+      </form>
+    </AppModal>
   </AppShell>;
 }
 
