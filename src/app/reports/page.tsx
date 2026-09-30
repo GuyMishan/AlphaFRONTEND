@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, Eye, FileClock, Plus, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Eye, FileClock, Plus, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { AppModal } from "@/components/app-modal";
 import { DataTable } from "@/components/data-table";
 import { getEmployerSelection } from "@/lib/session";
 import { reportFeedbackApi, type ReportFeedbackDetails, type ReportFeedbackRow, type ReportFeedbackStatus } from "@/lib/report-feedback-api";
@@ -164,6 +165,40 @@ export default function ReportsPage() {
       />
     </div>
 
-    {selected ? <div className="report-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><div className="report-modal report-feedback-modal" role="dialog" aria-modal="true" aria-label="משוב דיווח"><div className="report-modal-header"><div><h2>משוב דיווח {formatMonth(selected.report.reportingMonth)}</h2><span>{kindLabel(selected.report.reportKind)} · {selected.issueCount ? `${selected.issueCount} שגיאות/הערות` : "ללא שגיאות"}</span></div><button className="icon-button" type="button" aria-label="סגירה" onClick={() => setSelected(null)}><X size={18} /></button></div><div className="report-modal-body"><div style={{ marginBottom: 18 }}><StatusBadge status={selected.feedbackStatus} /></div>{selected.issues.length === 0 ? <div className="notice notice-info">לא נמצאו שגיאות בדיווח הזה.</div> : <div className="report-feedback-issues">{selected.issues.map((issue, index) => <div className="report-feedback-issue" key={`${issue.code}-${index}`}><div className="report-feedback-issue-head"><strong>{issue.employeeName || issue.productName || "שגיאה כללית בדיווח"}</strong><span>{issue.code}</span></div>{issue.productName && issue.employeeName ? <small>מוצר: {issue.productName}</small> : null}<p>{issue.description}</p><div className="report-feedback-action">פעולה מומלצת: {issue.actionType === "EditReport" ? "עריכת הדיווח" : issue.actionType === "RetryTransmission" ? "בדיקה ושליחה מחדש" : issue.actionType}</div></div>)}</div>}{selected.officialFeedback?.length > 0 ? <div className="report-feedback-history"><h3>משובים רשמיים מהמסלקה</h3>{selected.officialFeedback.map((feedback) => <div key={feedback.id}><span>{feedback.sourceFileName}{feedback.interfaceFileNumber ? ` · קובץ ${feedback.interfaceFileNumber}` : ""}</span><small>{formatDate(feedback.receivedAt)}</small></div>)}</div> : null}{selected.transmissions.length > 0 ? <div className="report-feedback-history"><h3>היסטוריית שידורים</h3>{selected.transmissions.map((tx) => <div key={tx.id}><span>ניסיון {tx.attemptNumber} · {tx.provider}</span><small>{formatDate(tx.completedAt ?? tx.sentAt ?? tx.startedAt)}</small></div>)}</div> : null}</div><div className="report-modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>סגירה</button></div></div></div> : null}
+    {selected ? <AppModal width="lg" className="report-feedback-modal"
+      title={`משוב דיווח ${formatMonth(selected.report.reportingMonth)}`}
+      subtitle={`${kindLabel(selected.report.reportKind)} · ${selected.issueCount ? `${selected.issueCount} שגיאות/הערות` : "ללא שגיאות"}`}
+      onClose={() => setSelected(null)}
+      actions={<button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>סגירה</button>}>
+      <div style={{ marginBottom: 18 }}><StatusBadge status={selected.feedbackStatus} /></div>
+      {selected.issues.length === 0
+        ? <div className="notice notice-info">לא נמצאו שגיאות בדיווח הזה.</div>
+        : <div className="report-feedback-issues">
+          {selected.issues.map((issue, index) => <div className="report-feedback-issue" key={`${issue.code}-${index}`}>
+            <div className="report-feedback-issue-head">
+              <strong>{issue.employeeName || issue.productName || "שגיאה כללית בדיווח"}</strong>
+              <span>{issue.code}</span>
+            </div>
+            {issue.productName && issue.employeeName ? <small>מוצר: {issue.productName}</small> : null}
+            <p>{issue.description}</p>
+            <div className="report-feedback-action">פעולה מומלצת: {issue.actionType === "EditReport"
+              ? "עריכת הדיווח" : issue.actionType === "RetryTransmission" ? "בדיקה ושליחה מחדש" : issue.actionType}</div>
+          </div>)}
+        </div>}
+      {selected.officialFeedback?.length > 0 ? <div className="report-feedback-history">
+        <h3>משובים רשמיים מהמסלקה</h3>
+        {selected.officialFeedback.map(feedback => <div key={feedback.id}>
+          <span>{feedback.sourceFileName}{feedback.interfaceFileNumber ? ` · קובץ ${feedback.interfaceFileNumber}` : ""}</span>
+          <small>{formatDate(feedback.receivedAt)}</small>
+        </div>)}
+      </div> : null}
+      {selected.transmissions.length > 0 ? <div className="report-feedback-history">
+        <h3>היסטוריית שידורים</h3>
+        {selected.transmissions.map(tx => <div key={tx.id}>
+          <span>ניסיון {tx.attemptNumber} · {tx.provider}</span>
+          <small>{formatDate(tx.completedAt ?? tx.sentAt ?? tx.startedAt)}</small>
+        </div>)}
+      </div> : null}
+    </AppModal> : null}
   </AppShell>;
 }
