@@ -124,7 +124,7 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
     const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
     const [active, setActive] = useState(-1);
-    const [placement, setPlacement] = useState<CSSProperties>({});
+    const [placement, setPlacement] = useState<CSSProperties>({ visibility: "hidden" });
     const menuId = useId();
     const options = Children.toArray(children).filter(isValidElement).map((child) => {
       const optionProps = child.props as { value?: string | number; children?: ReactNode; disabled?: boolean };
@@ -150,12 +150,16 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
         const maxHeight = Math.max(64, Math.min(desired, available));
         const top = above ? Math.max(gutter, rect.top - maxHeight - 6) : rect.bottom + 6;
         setPlacement({
-          position: "fixed", top, left: rect.left, width: rect.width,
+          position: "fixed", visibility: "visible", top, left: rect.left, width: rect.width,
           maxHeight, zIndex: 6500,
         });
       };
       positionMenu();
       const onOutside = (event: PointerEvent) => {
+        const target = event.target as Node;
+        if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
+      };
+      const onFocusOutside = (event: FocusEvent) => {
         const target = event.target as Node;
         if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
       };
@@ -167,12 +171,14 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
         }
       };
       document.addEventListener("pointerdown", onOutside);
+      document.addEventListener("focusin", onFocusOutside);
       document.addEventListener("keydown", onEscape, true);
       window.addEventListener("resize", positionMenu);
       // A scrolled modal/table may move the trigger while the list is open.
       window.addEventListener("scroll", positionMenu, true);
       return () => {
         document.removeEventListener("pointerdown", onOutside);
+        document.removeEventListener("focusin", onFocusOutside);
         document.removeEventListener("keydown", onEscape, true);
         window.removeEventListener("resize", positionMenu);
         window.removeEventListener("scroll", positionMenu, true);
@@ -226,7 +232,8 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
       <select ref={assignRef} value={value} defaultValue={value === undefined ? defaultValue : undefined} disabled={disabled} onChange={onChange}
         className="ui-select-native" tabIndex={-1} aria-hidden="true" {...props}>{children}</select>
       <button ref={triggerRef} type="button" className={controlClass("ui-control ui-select-trigger", controlSize)} disabled={disabled}
-        aria-haspopup="listbox" aria-controls={open ? menuId : undefined} aria-expanded={open} onKeyDown={keyDown}
+        aria-haspopup="listbox" aria-controls={open ? menuId : undefined} aria-expanded={open}
+        aria-activedescendant={open && active >= 0 ? `${menuId}-option-${active}` : undefined} onKeyDown={keyDown}
         onClick={() => {
           setActive(Math.max(0, options.findIndex(option => option.value === selectedValue && !option.disabled)));
           setOpen(current => !current);
@@ -236,7 +243,7 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
       {open && mounted && !disabled ? createPortal(
         <div ref={menuRef} id={menuId} className="ui-select-menu ui-select-menu-portal" role="listbox" style={placement}
           aria-label={props["aria-label"]}>
-          {options.map((option, index) => <button key={option.value} type="button" role="option"
+          {options.map((option, index) => <button key={option.value} id={`${menuId}-option-${index}`} type="button" role="option"
             aria-selected={option.value === selectedValue} tabIndex={-1}
             disabled={option.disabled} className={option.value === selectedValue || active === index ? "selected" : ""}
             onMouseEnter={() => setActive(index)} onClick={() => choose(option.value)}>{option.label}</button>)}
