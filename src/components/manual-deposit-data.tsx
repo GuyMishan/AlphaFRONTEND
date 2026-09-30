@@ -107,14 +107,15 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
         row.valueDate ? formatDate(row.valueDate) : "—",
         row.reportingType ? (receiptLabels[Number(row.reportingType)] ?? `סוג תקבול לא מוכר (${row.reportingType})`) : "—",
         <span className={`badge ${row.requiresCompletion ? "badge-yellow" : "badge-green"}`}>{row.requiresCompletion ? "דורש השלמה" : "מוכן"}</span>,
-        <div className="deposit-proof-cell">{proofs[row.id]?.length
-          ? proofs[row.id].map((item) => <button type="button" key={item.id} className="deposit-proof-download"
-              title={item.originalFileName} aria-label={`הורדת ${item.originalFileName}`}
-              disabled={downloadingEvidence === item.id}
-              onClick={() => void downloadProof(row.id, item)}>
-              <FileText size={15} /><span>{item.originalFileName}</span><Download size={15} aria-hidden="true" />
-            </button>)
-          : <span className="deposit-proof-empty">—</span>}</div>,
+        proofs[row.id]?.length
+          ? <button type="button" className="icon-button deposit-proof-icon"
+              title={`הורדת ${proofs[row.id][0].originalFileName}`}
+              aria-label={`הורדת ${proofs[row.id][0].originalFileName}`}
+              disabled={downloadingEvidence === proofs[row.id][0].id}
+              onClick={() => void downloadProof(row.id, proofs[row.id][0])}>
+              <FileText size={17} />
+            </button>
+          : <span className="deposit-proof-empty">-</span>,
         <button className="icon-button" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}

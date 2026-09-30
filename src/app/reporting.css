@@ -70,6 +70,7 @@
 .deposit-table th:nth-child(8), .deposit-table td:nth-child(8) { width: 8%; }
 .deposit-table th:nth-child(9), .deposit-table td:nth-child(9) { width: 7%; }
 .deposit-table th:nth-child(10), .deposit-table td:nth-child(10) { width: 5%; text-align: center; }
+.deposit-table th:nth-child(11), .deposit-table td:nth-child(11) { width: 5%; text-align: center; }
 .deposit-table .icon-button { width: 30px; height: 30px; margin: auto; }
 
 .upload-zone { position: relative; display: grid; place-items: center; gap: 8px; min-height: 225px; border: 1.5px dashed #a9bdd4; border-radius: 16px; padding: 28px 24px; background: linear-gradient(180deg, #fbfdff, #f5f9ff); cursor: pointer; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease; }
@@ -150,6 +151,7 @@
   .deposit-table td:nth-child(8)::before { content: "סוג תקבול"; color: var(--muted); }
   .deposit-table td:nth-child(9)::before { content: "סטטוס"; color: var(--muted); }
   .deposit-table td:nth-child(10)::before { content: "קבצים"; color: var(--muted); }
+  .deposit-table td:nth-child(10) { align-items: center; }
   .deposit-table tr.virtual-spacer { display: block; border: 0; padding: 0; background: transparent; }
   .deposit-table tr.virtual-spacer td { display: block !important; width: 1px !important; }
 }
@@ -233,9 +235,6 @@
 }
 
 /* Authorized payment evidence: compact file actions inside virtualized deposit rows. */
-.deposit-proof-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; max-height: 108px; overflow-y: auto; }
-.deposit-proof-download { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--text); max-width: 190px; cursor: pointer; text-align: right; }
-.deposit-proof-download span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
-.deposit-proof-download svg { flex-shrink: 0; }
+.deposit-table .deposit-proof-icon { display: inline-grid; place-items: center; }
 .deposit-proof-empty { color: var(--muted); }
 .payment-evidence-list .btn { display: inline-flex; align-items: center; gap: 6px; }
