@@ -43,3 +43,34 @@
 [data-theme="dark"] .report-feedback-error-count,
 [data-theme="dark"] .report-feedback-issue-head span { color:#ffaaaa; background:rgba(163,52,52,.24); }
 [data-theme="dark"] .report-feedback-issue { background:var(--surface); border-color:var(--line); }
+
+/* Per-report expanded deposit rows; visually distinct from the parent report. */
+.report-feedback-table .data-table-expanded-row > td { padding: 0 !important; }
+.report-deposits-expanded { direction: rtl; min-width: 0; }
+.report-deposits-panel { display: grid; gap: 12px; padding: 4px; min-width: 0; }
+.report-deposits-heading { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.report-deposits-heading > div { display: grid; gap: 3px; }
+.report-deposits-heading small { color: var(--muted); font-size: 12px; }
+.report-deposits-grid { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 750px; }
+.report-deposits-header, .report-deposits-item {
+  display: grid;
+  grid-template-columns: minmax(115px,1fr) minmax(150px,1.35fr) minmax(90px,.65fr) minmax(185px,1.6fr) minmax(88px,.55fr);
+  gap: 12px; align-items: start; padding: 10px 12px;
+}
+.report-deposits-header { background: var(--blue-soft); color: var(--text); font-size: 12px; font-weight: 700; }
+.report-deposits-item { background: color-mix(in srgb, var(--surface) 93%, var(--blue-soft)); border-top: 1px solid var(--line); font-size: 13px; }
+.report-deposits-item:nth-child(odd) { background: var(--surface); }
+.report-deposits-item > div { min-width: 0; overflow-wrap: anywhere; }
+.report-deposits-item b, .report-deposits-item small { display: block; }
+.report-deposits-item small, .report-deposits-unmatched { color: var(--muted); font-size: 11px; line-height: 1.55; }
+.report-deposits-money { font-weight: 700; white-space: nowrap; direction: ltr; text-align: right; }
+.report-deposits-feedback summary { color: var(--blue); cursor: pointer; line-height: 1.5; }
+.report-deposits-feedback summary.report-deposits-has-issues { color: #b45124; }
+.report-deposits-records { display: grid; gap: 9px; margin-top: 9px; }
+.report-deposits-records > div { border-right: 2px solid var(--line); padding-inline-start: 7px; display: grid; gap: 2px; }
+.report-deposits-load-more { justify-self: start; }
+.report-deposits-immutable { margin: 0; color: var(--muted); font-size: 12px; }
+@media(max-width:850px) {
+  .report-deposits-expanded { overflow-x: auto; }
+  .report-deposits-grid { min-width: 730px; }
+}

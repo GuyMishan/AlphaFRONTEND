@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, Eye, FileClock, Plus, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, CheckCircle2, Clock3, Eye, FileClock, Pencil, Plus, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppModal } from "@/components/app-modal";
 import { DataTable } from "@/components/data-table";
+import { DepositPaymentEditor } from "@/components/manual-deposit-data";
+import { manualDepositsApi, type ManualDepositRow } from "@/lib/manual-deposits-api";
 import { getEmployerSelection } from "@/lib/session";
 import { reportFeedbackApi, type ReportFeedbackDetails, type ReportFeedbackRow, type ReportFeedbackStatus } from "@/lib/report-feedback-api";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
@@ -47,6 +49,75 @@ function StatusBadge({ status }: { status: ReportFeedbackRow["feedbackStatus"] }
   return <span className={`report-feedback-badge ${status}`}>{icon}{feedbackLabel(status)}</span>;
 }
 
+type ExpandedReportContent = {
+  deposits: ManualDepositRow[];
+  hasMore: boolean;
+  feedback: ReportFeedbackDetails;
+};
+
+function editableReport(status: string | number): boolean {
+  return [1, 2, 9, "1", "2", "9", "Draft", "ReadyForValidation", "Error"].includes(status);
+}
+
+function DepositFeedbackPanel({ report, content, onEdit, onLoadMore, loadingMore, onReportFeedback }: {
+  report: ReportFeedbackRow; content: ExpandedReportContent;
+  onEdit: (deposit: ManualDepositRow) => void;
+  onLoadMore: () => void;
+  loadingMore: boolean;
+  onReportFeedback: () => void;
+}) {
+  const byProduct = new Map((content.feedback.depositFeedback ?? []).map(item => [item.reportProductId, item]));
+  const editable = editableReport(report.status);
+  return <div className="report-deposits-panel">
+    <div className="report-deposits-heading">
+      <div><b>הפקדות בדיווח</b><small>{editable ? "ניתן לערוך כל הפקדה באמצעות חלונית נתוני ההפקדות" : "דיווח שכבר הועבר נשאר ללא שינוי; ניתן לצפות בפרטי כל הפקדה"}</small></div>
+      <button type="button" className="btn btn-secondary btn-sm" onClick={onReportFeedback}><Eye size={15} />משוב הדיווח המלא</button>
+    </div>
+    {content.deposits.length === 0
+      ? <div className="notice notice-info">לא נמצאו הפקדות משויכות לדיווח.</div>
+      : <div className="report-deposits-grid" role="table" aria-label="נתוני הפקדות ומשוב לפי עובד ומוצר">
+        <div className="report-deposits-header" role="row">
+          <span role="columnheader">עובד</span><span role="columnheader">יצרן / מוצר</span>
+          <span role="columnheader">סכום</span><span role="columnheader">משוב למסלקה</span><span role="columnheader">פעולה</span>
+        </div>
+        {content.deposits.map(deposit => {
+          const feedback = byProduct.get(deposit.id);
+          const records = feedback?.records ?? [];
+          const errors = records.filter(record => record.errorCode != null && record.errorCode !== 1);
+          return <div className="report-deposits-item" role="row" key={deposit.id}>
+            <div role="cell"><b>{deposit.employeeName}</b></div>
+            <div role="cell"><b>{deposit.providerName || deposit.fundCompanyName || deposit.fundName || "מוצר פנסיוני"}</b>
+              <small>{deposit.policyNumber || "ללא מספר פוליסה"}</small></div>
+            <div role="cell" className="report-deposits-money">₪{Number(deposit.totalDeposit).toLocaleString("he-IL")}</div>
+            <div role="cell" className="report-deposits-feedback">
+              {records.length ? <details><summary className={errors.length ? "report-deposits-has-issues" : ""}>
+                {errors.length ? `${errors.length} הערות / שגיאות` : "התקבל משוב פרטני"} · הצגת פירוט
+              </summary><div className="report-deposits-records">
+                {records.map(record => <div key={record.recordIdentifier}>
+                  <span>{record.description}</span>
+                  {record.intakeStatus != null ? <small>סטטוס קליטת רשומה: קוד {record.intakeStatus}</small> : null}
+                  {record.errorCode != null ? <small>קוד שגיאה: {record.errorCode}</small> : null}
+                  {record.sourceFileName ? <small>מקור: {record.sourceFileName}</small> : null}
+                </div>)}
+              </div></details> : <span className="report-deposits-unmatched">
+                {content.feedback.officialFeedback?.length
+                  ? "קיים משוב לקובץ, ללא התאמה חד־משמעית לשורה"
+                  : "טרם התקבל משוב פרטני"}
+              </span>}
+            </div>
+            <div role="cell"><button type="button" className="btn btn-secondary btn-sm"
+              onClick={() => onEdit(deposit)} aria-label={`${editable ? "עריכת" : "צפייה ב"} הפקדה של ${deposit.employeeName}`}>
+              {editable ? <Pencil size={15} /> : <Eye size={15} />}{editable ? "עריכה" : "צפייה"}
+            </button></div>
+          </div>;
+        })}
+      </div>}
+    {content.hasMore ? <button className="btn btn-secondary btn-sm report-deposits-load-more"
+      disabled={loadingMore} onClick={onLoadMore}>{loadingMore ? "טוען..." : "טעינת הפקדות נוספות"}</button> : null}
+    {!editable ? <p className="report-deposits-immutable">שינוי נתונים בדיווח שכבר נשלח מתבצע באמצעות תהליך דיווח מתקן, ולא בעריכת הדיווח המקורי.</p> : null}
+  </div>;
+}
+
 export default function ReportsPage() {
   const [scope, setScope] = useState<{ organizationId: string; employerId: string } | null>(null);
   const [filter, setFilter] = useState<ReportFeedbackStatus>("all");
@@ -55,6 +126,49 @@ export default function ReportsPage() {
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<ReportFeedbackDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [expandedKeys, setExpandedKeys] = useState<ReadonlySet<string>>(new Set());
+  const [expandedContent, setExpandedContent] = useState<Record<string, ExpandedReportContent>>({});
+  const [expandedLoading, setExpandedLoading] = useState<Record<string, boolean>>({});
+  const [expandedErrors, setExpandedErrors] = useState<Record<string, string>>({});
+  const [expandedMoreLoading, setExpandedMoreLoading] = useState<Record<string, boolean>>({});
+  const expandedRequests = useRef(new Set<string>());
+  const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; deposit: ManualDepositRow } | null>(null);
+
+  async function loadExpanded(report: ReportFeedbackRow, force = false) {
+    if (!scope || expandedRequests.current.has(report.id) || (!force && expandedContent[report.id])) return;
+    expandedRequests.current.add(report.id);
+    setExpandedLoading(previous => ({ ...previous, [report.id]: true }));
+    setExpandedErrors(previous => ({ ...previous, [report.id]: "" }));
+    try {
+      const [deposits, feedback] = await Promise.all([
+        manualDepositsApi.list(scope.organizationId, scope.employerId, report.id, "", 0, 100),
+        reportFeedbackApi.details(scope.organizationId, scope.employerId, report.id),
+      ]);
+      setExpandedContent(previous => ({ ...previous, [report.id]: { deposits: deposits.items, hasMore: deposits.hasMore, feedback } }));
+    } catch (err) {
+      setExpandedErrors(previous => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת ההפקדות נכשלה" }));
+    } finally {
+      expandedRequests.current.delete(report.id);
+      setExpandedLoading(previous => ({ ...previous, [report.id]: false }));
+    }
+  }
+
+  async function loadMoreDeposits(report: ReportFeedbackRow) {
+    if (!scope || expandedMoreLoading[report.id] || !expandedContent[report.id]?.hasMore) return;
+    setExpandedMoreLoading(previous => ({ ...previous, [report.id]: true }));
+    try {
+      const current = expandedContent[report.id];
+      const next = await manualDepositsApi.list(scope.organizationId, scope.employerId, report.id, "", current.deposits.length, 100);
+      setExpandedContent(previous => ({
+        ...previous,
+        [report.id]: { ...previous[report.id], deposits: [...previous[report.id].deposits, ...next.items], hasMore: next.hasMore },
+      }));
+    } catch (err) {
+      setExpandedErrors(previous => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת הפקדות נוספות נכשלה" }));
+    } finally {
+      setExpandedMoreLoading(previous => ({ ...previous, [report.id]: false }));
+    }
+  }
 
   async function load(nextScope = scope, nextFilter = filter) {
     if (!nextScope) return;
@@ -97,6 +211,11 @@ export default function ReportsPage() {
       setScope(next);
       setFilter("all");
       setSelected(null);
+      setEditingDeposit(null);
+      setExpandedKeys(new Set());
+      setExpandedContent({});
+      setExpandedErrors({});
+      expandedRequests.current.clear();
       void load(next, "all");
     };
     window.addEventListener("alpha:scope-change", handler);
@@ -144,6 +263,27 @@ export default function ReportsPage() {
         emptyState="לא נמצאו דיווחים בהתאם לסינון."
         rowKey={(row) => row.id}
         tableClassName="report-feedback-table"
+        expandedRowKeys={expandedKeys}
+        expandedRowComponentSize={380}
+        onExpandedRowChange={(key, expanded, report) => {
+          setExpandedKeys(previous => {
+            const next = new Set(previous);
+            if (expanded) next.add(key); else next.delete(key);
+            return next;
+          });
+          if (expanded) void loadExpanded(report);
+        }}
+        expandedRowComponent={(report) => <div className="report-deposits-expanded">
+          {expandedLoading[report.id] ? <div className="empty">טוען הפקדות ומשובים...</div> : null}
+          {expandedErrors[report.id] ? <div className="notice notice-error">{expandedErrors[report.id]}
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadExpanded(report, true)}>נסה שוב</button>
+          </div> : null}
+          {expandedContent[report.id] ? <DepositFeedbackPanel report={report} content={expandedContent[report.id]}
+            onEdit={(deposit) => setEditingDeposit({ report, deposit })}
+            onReportFeedback={() => void openFeedback(report)}
+            loadingMore={Boolean(expandedMoreLoading[report.id])}
+            onLoadMore={() => void loadMoreDeposits(report)} /> : null}
+        </div>}
         columns={[
           { key: "month", label: "חודש" },
           { key: "kind", label: "סוג דיווח" },
@@ -165,6 +305,27 @@ export default function ReportsPage() {
       />
     </div>
 
+    {editingDeposit && scope ? <DepositPaymentEditor
+      key={editingDeposit.deposit.id} employer={null}
+      organizationId={scope.organizationId} employerId={scope.employerId}
+      reportId={editingDeposit.report.id} row={editingDeposit.deposit}
+      readOnly={!editableReport(editingDeposit.report.status)}
+      onEvidenceChanged={() => {}}
+      onClose={() => setEditingDeposit(null)}
+      onSaved={(updated) => {
+        setExpandedContent(previous => {
+          const existing = previous[editingDeposit.report.id];
+          return existing ? {
+            ...previous,
+            [editingDeposit.report.id]: {
+              ...existing,
+              deposits: existing.deposits.map(item => item.id === updated.id ? updated : item),
+            },
+          } : previous;
+        });
+        setEditingDeposit(null);
+      }}
+    /> : null}
     {selected ? <AppModal width="lg" className="report-feedback-modal"
       title={`משוב דיווח ${formatMonth(selected.report.reportingMonth)}`}
       subtitle={`${kindLabel(selected.report.reportKind)} · ${selected.issueCount ? `${selected.issueCount} שגיאות/הערות` : "ללא שגיאות"}`}

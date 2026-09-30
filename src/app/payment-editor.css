@@ -61,3 +61,6 @@
   .payment-modal-footer { position: sticky; bottom: -14px; background: var(--surface); padding: 9px 0 1px; margin-top: 6px; }
   .payment-modal-footer .btn { flex: 1; min-width: 0; }
 }
+
+.deposit-payment-editor-fields { margin: 0; padding: 0; border: 0; min-width: 0; }
+.deposit-payment-editor-fields:disabled { opacity: 1; }

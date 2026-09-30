@@ -61,6 +61,18 @@ export type ReportFeedbackDetails = {
     transmissionId: string | null;
     receivedAt: string;
   }>;
+  depositFeedback: Array<{
+    reportProductId: string;
+    hasRecordFeedback: boolean;
+    records: Array<{
+      recordIdentifier: string;
+      intakeStatus: number | null;
+      errorCode: number | null;
+      description: string;
+      sourceFileName: string;
+      receivedAt: string | null;
+    }>;
+  }>;
   transmissions: Array<{
     id: string;
     attemptNumber: number;

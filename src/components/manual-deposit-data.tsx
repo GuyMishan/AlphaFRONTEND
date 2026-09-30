@@ -230,9 +230,10 @@ function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInte
   return errors;
 }
 
-function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, onClose, onSaved, onEvidenceChanged }: {
+export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, onClose, onSaved, onEvidenceChanged, readOnly = false }: {
   employer: Employer | null; organizationId: string; employerId: string; reportId: string; row: ManualDepositRow;
   onClose: () => void; onSaved: (row: ManualDepositRow) => void; onEvidenceChanged: (items: PaymentConfirmation[]) => void;
+  readOnly?: boolean;
 }) {
   const [form, setForm] = useState<ManualPaymentInput>({
     providerName: row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "", providerAccount: row.providerAccount || "", paymentMethod: row.paymentMethod || "",
@@ -270,7 +271,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
     ]).then(([item, previous, attachmentList, proofList, paymentResolution]) => {
       if (!active) return;
       setMetadata(item);
-      const automaticDebit = !isNegativeKind(item.reportKind) && !isDifferencesKind(item.reportKind)
+      const automaticDebit = !readOnly && !isNegativeKind(item.reportKind) && !isDifferencesKind(item.reportKind)
         && paymentResolution.account?.mandateIsActive === true
         && item.operationCode !== 2 && item.operationCode !== 7;
       setMetadataForm({ operationCode: item.operationCode, depositStatus: item.depositStatus, employeeStatus: item.employeeStatus, statusStartDate: item.statusStartDate,
@@ -447,6 +448,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   }
 
   async function save() {
+    if (readOnly) return;
     setError("");
     const errors = [...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)), ...validate006Metadata(metadata, metadataForm, previousReference)];
     if (!negative && isOldPensionFund && !metadataForm.oldPensionTypeCode)
@@ -472,11 +474,19 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
 
   const providerAccount = form.providerAccount || providerAccountFromReference(providerReference);
 
-  return <AppModal open title="פרטי תשלום" subtitle="השלמת הנתונים הנדרשים לדיווח בלבד" onClose={onClose} width="xl" className="payment-modal" bodyClassName="payment-modal-body" actions={<><button className="btn btn-primary" disabled={saving || loadingMetadata || uploadingProof} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button><button className="btn btn-secondary" onClick={onClose}>ביטול</button></>}>
+  return <AppModal open title="פרטי תשלום"
+    subtitle={readOnly ? "נתוני ההפקדה כפי שנשמרו בדיווח. דיווח שנשלח מחייב דיווח מתקן לשינויים." : "השלמת הנתונים הנדרשים לדיווח בלבד"}
+    onClose={onClose} width="xl" className="payment-modal" bodyClassName="payment-modal-body"
+    actions={readOnly ? <button className="btn btn-secondary" onClick={onClose}>סגירה</button> : <>
+      <button className="btn btn-primary" disabled={saving || loadingMetadata || uploadingProof} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button>
+      <button className="btn btn-secondary" onClick={onClose}>ביטול</button>
+    </>}>
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק, ולכן אין להעביר ערך בשדה אמצעי התשלום.</div> : null}
+      {readOnly ? <div className="notice notice-info">זהו דיווח שנשמר ואינו פתוח לעריכה. ניתן לצפות בפרטי ההפקדה אך אין לשנות דיווחים שהועברו. לתיקון יש ליצור דיווח מתקן.</div> : null}
+      <fieldset className="deposit-payment-editor-fields" disabled={readOnly} aria-label={readOnly ? "פרטי הפקדה לצפייה בלבד" : undefined}>
       <div className="payment-layout"><div className="payment-main">
           <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">{configuredPensionDebit ? "חשבון חיוב בהרשאה" : "חשבון מעסיק להעברה"}</span><b className="account-number">{metadataForm.paymentMethodCode !== 6 && bankRequired && (!form.employerBankCode || !form.employerAccount) ? "יש להזין פרטי חשבון להעברה" : formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
 
@@ -583,5 +593,14 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
           </div></section> : null}
         </div>
       </div>
+      </fieldset>
+      {readOnly && paymentProofs.length > 0 ? <div className="payment-evidence-list">
+        <b>אישורי תשלום להורדה</b>
+        {paymentProofs.map((item) => <button type="button" key={item.id} className="btn btn-secondary"
+          onClick={() => void paymentConfirmationsApi.download(organizationId, employerId, reportId, row.id, item)
+            .catch(() => notify.error("הורדת אישור התשלום נכשלה"))}>
+          <Download size={16} />{item.originalFileName}
+        </button>)}
+      </div> : null}
   </AppModal>;
 }
