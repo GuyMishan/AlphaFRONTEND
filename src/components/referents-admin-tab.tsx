@@ -101,6 +101,10 @@ export function ReferentsAdminTab() {
 
   async function save() {
     if (!editor || saving) return;
+    if (organizationIds.length === 0 && employerIds.length === 0) {
+      toast.error("יש לשייך לרפרנט לפחות ארגון או מעסיק אחד.");
+      return;
+    }
     if (editor.kind === "new" && newUserMode === "existing" && !userId) {
       toast.error("יש לבחור משתמש קיים.");
       return;
