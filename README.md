@@ -15,6 +15,7 @@ Node.js 20.9+ is required. CI currently uses Node 22.
 
 - Authentication, OTP login, registration and invitations
 - Platform / organization / employer scope and permissions
+- Admin-only referent management tab: create internal referents and assign complete organizations or specific employers from multiple organizations
 - Organizations, employers and employees
 - Employee pension products and pension-fund reference data
 - Employer Interface 006 reporting
