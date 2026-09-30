@@ -256,3 +256,9 @@
 .report-validation-finding summary { cursor: pointer; color: var(--muted); }
 .report-validation-technical { margin-top: 8px; padding: 8px; background: var(--bg); border-radius: 8px; overflow-wrap: anywhere; }
 .report-validation-technical p { margin: 6px 0 0; line-height: 1.6; }
+
+/* Keep expanded details as one full-width card in mobile deposit grids. */
+@media(max-width: 680px) {
+  .deposit-table tr.data-table-expanded-row { display: table-row !important; padding: 0 !important; height: auto !important; }
+  .deposit-table tr.data-table-expanded-row > td { display: table-cell !important; width: 100% !important; }
+}

@@ -1279,3 +1279,33 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
 .admin-subscriptions-table .data-table-row > td:nth-child(7):focus-within {
   z-index: 8;
 }
+
+/* Expanded panels are separate full-width rows, outside the fixed-height main-row rule. */
+.data-table-grid .data-table-expand-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-inline-end: 6px;
+  padding: 0;
+  vertical-align: middle;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.data-table-grid .data-table-expand-toggle:hover,
+.data-table-grid .data-table-expand-toggle:focus-visible { color: var(--blue); background: var(--blue-soft); }
+.data-table-chevron-expanded { transform: rotate(180deg); }
+.data-table-grid .data-table-expanded-row > td { padding: 0 !important; overflow: hidden; }
+.data-table-expanded-frame {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  overflow: auto;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
