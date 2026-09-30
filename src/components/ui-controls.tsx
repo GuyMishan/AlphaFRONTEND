@@ -6,6 +6,7 @@ import {
   isValidElement,
   useRef,
   useEffect,
+  useId,
   useState,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
@@ -14,6 +15,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { CalendarDays, ChevronDown, X } from "lucide-react";
+import { createPortal } from "react-dom";
 import { Tooltip } from "@/components/tooltip";
 import { formatDateDDMMYYYY, normalizeDDMMYYYYInput, parseDDMMYYYY } from "@/lib/date-format";
 
@@ -112,16 +114,76 @@ export function UiDateInput({
   </div>;
 }
 
+// Portalled menus are required because modal/table/field overflow otherwise clips them.
 export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement> & { controlSize?: ControlSize }>(
   function UiSelect({ className, controlSize = "default", children, value, defaultValue, disabled, onChange, ...props }, forwardedRef) {
     const nativeRef = useRef<HTMLSelectElement | null>(null);
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
+    const menuRef = useRef<HTMLDivElement | null>(null);
+    const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
+    const [active, setActive] = useState(-1);
+    const [placement, setPlacement] = useState<React.CSSProperties>({});
+    const menuId = useId();
     const options = Children.toArray(children).filter(isValidElement).map((child) => {
       const optionProps = child.props as { value?: string | number; children?: ReactNode; disabled?: boolean };
       return { value: String(optionProps.value ?? ""), label: optionProps.children, disabled: Boolean(optionProps.disabled) };
     });
     const selectedValue = String(value ?? defaultValue ?? "");
     const selected = options.find((option) => option.value === selectedValue);
+
+    useEffect(() => { setMounted(true); }, []);
+    useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
+
+    useEffect(() => {
+      if (!open || !mounted) return;
+      const positionMenu = () => {
+        const rect = triggerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const gutter = 8;
+        const availableBelow = window.innerHeight - rect.bottom - gutter * 2;
+        const availableAbove = rect.top - gutter * 2;
+        const desired = Math.min(260, Math.max(40, options.length * 40 + 14));
+        const above = availableBelow < Math.min(desired, 170) && availableAbove > availableBelow;
+        const available = above ? availableAbove : availableBelow;
+        const maxHeight = Math.max(64, Math.min(desired, available));
+        const top = above ? Math.max(gutter, rect.top - maxHeight - 6) : rect.bottom + 6;
+        setPlacement({
+          position: "fixed", top, left: rect.left, width: rect.width,
+          maxHeight, zIndex: 6500,
+        });
+      };
+      positionMenu();
+      const onOutside = (event: PointerEvent) => {
+        const target = event.target as Node;
+        if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
+      };
+      const onEscape = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          setOpen(false);
+          triggerRef.current?.focus();
+          event.stopPropagation();
+        }
+      };
+      document.addEventListener("pointerdown", onOutside);
+      document.addEventListener("keydown", onEscape, true);
+      window.addEventListener("resize", positionMenu);
+      // A scrolled modal/table may move the trigger while the list is open.
+      window.addEventListener("scroll", positionMenu, true);
+      return () => {
+        document.removeEventListener("pointerdown", onOutside);
+        document.removeEventListener("keydown", onEscape, true);
+        window.removeEventListener("resize", positionMenu);
+        window.removeEventListener("scroll", positionMenu, true);
+      };
+    }, [open, mounted, options.length]);
+
+    useEffect(() => {
+      if (!open) return;
+      const option = menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]')[active];
+      option?.scrollIntoView({ block: "nearest" });
+    }, [active, open]);
+
     function assignRef(node: HTMLSelectElement | null) {
       nativeRef.current = node;
       if (typeof forwardedRef === "function") forwardedRef(node);
@@ -133,19 +195,52 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
       Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(select, nextValue);
       select.dispatchEvent(new Event("change", { bubbles: true }));
       setOpen(false);
+      triggerRef.current?.focus();
     }
-    return <div className={["ui-select", open ? "is-open" : "", disabled ? "is-disabled" : "", className].filter(Boolean).join(" ")}
-      onBlur={(event) => { const next = event.relatedTarget as Node | null; if (!next || !event.currentTarget.contains(next)) setOpen(false); }}>
+    function moveActive(direction: number) {
+      const enabled = options.map((option, index) => option.disabled ? -1 : index).filter(index => index >= 0);
+      if (!enabled.length) return;
+      const current = enabled.indexOf(active);
+      const next = current < 0 ? (direction > 0 ? 0 : enabled.length - 1) :
+        (current + direction + enabled.length) % enabled.length;
+      setActive(enabled[next]);
+    }
+    const keyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        if (!open) setOpen(true);
+        moveActive(event.key === "ArrowDown" ? 1 : -1);
+      } else if (event.key === "Enter" || event.key === " ") {
+        if (open && active >= 0 && !options[active].disabled) {
+          event.preventDefault(); choose(options[active].value);
+        }
+      } else if (event.key === "Home" && open) {
+        event.preventDefault(); setActive(options.findIndex(option => !option.disabled));
+      } else if (event.key === "End" && open) {
+        event.preventDefault(); setActive(options.findLastIndex(option => !option.disabled));
+      }
+    };
+
+    return <div className={["ui-select", open ? "is-open" : "", disabled ? "is-disabled" : "", className].filter(Boolean).join(" ")}>
       <select ref={assignRef} value={value} defaultValue={value === undefined ? defaultValue : undefined} disabled={disabled} onChange={onChange}
         className="ui-select-native" tabIndex={-1} aria-hidden="true" {...props}>{children}</select>
-      <button type="button" className={controlClass("ui-control ui-select-trigger", controlSize)} disabled={disabled}
-        aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+      <button ref={triggerRef} type="button" className={controlClass("ui-control ui-select-trigger", controlSize)} disabled={disabled}
+        aria-haspopup="listbox" aria-controls={open ? menuId : undefined} aria-expanded={open} onKeyDown={keyDown}
+        onClick={() => {
+          setActive(Math.max(0, options.findIndex(option => option.value === selectedValue && !option.disabled)));
+          setOpen(current => !current);
+        }}>
         <span>{selected?.label ?? ""}</span><ChevronDown size={17} />
       </button>
-      {open && !disabled ? <div className="ui-select-menu" role="listbox">
-        {options.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === selectedValue}
-          disabled={option.disabled} className={option.value === selectedValue ? "selected" : ""} onClick={() => choose(option.value)}>{option.label}</button>)}
-      </div> : null}
+      {open && mounted && !disabled ? createPortal(
+        <div ref={menuRef} id={menuId} className="ui-select-menu ui-select-menu-portal" role="listbox" style={placement}
+          aria-label={props["aria-label"]}>
+          {options.map((option, index) => <button key={option.value} type="button" role="option"
+            aria-selected={option.value === selectedValue} tabIndex={-1}
+            disabled={option.disabled} className={option.value === selectedValue || active === index ? "selected" : ""}
+            onMouseEnter={() => setActive(index)} onClick={() => choose(option.value)}>{option.label}</button>)}
+        </div>, document.body,
+      ) : null}
     </div>;
   },
 );
