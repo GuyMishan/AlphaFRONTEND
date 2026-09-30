@@ -7,6 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, FileCode2, FilePenLine, FileSpreadsheet, Info, Keyboard, RotateCcw, Send } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { DataTable } from "@/components/data-table";
 import { BillingGateModal } from "@/components/billing-gate-modal";
 import { ExcelEmployeeIntake, type ExcelEmployeeIntakeResult } from "@/components/excel-employee-intake";
 import { EmployerInterfaceXmlIntake } from "@/components/employer-interface-xml-intake";
@@ -528,15 +529,35 @@ export default function NewReportPage() {
     {step === 1 && showOpenReports && canCreateReport ? <div className="resume-report-section">
       <div id="open-report-drafts" className="resume-report-list">
         <h3>טיוטות שניתן להמשיך לערוך</h3>
-        {openReports.length === 0 ? <div className="notice notice-info">אין כרגע טיוטות פתוחות למעסיק הנבחר.</div> :
-          openReports.map((draft) => <div className="resume-report-row" key={draft.id}>
-            <div><b>{kindLabel(draft.reportKind)} · {formatMonth(draft.reportingMonth)}</b>
-              <span>{draft.employeeCount} עובדים · {draft.productCount} מוצרים · עודכן {formatDraftUpdate(draft.updatedAt)}</span></div>
-            <button type="button" className="btn btn-primary" disabled={advancing}
-              onClick={() => void resumeReport(draft)}>המשך עריכה <ArrowLeft size={15} /></button>
-          </div>)}
-        {openReportsHasMore ? <button type="button" className="btn btn-secondary" disabled={loadingOpenReports}
-          onClick={() => void loadMoreOpenReports()}>{loadingOpenReports ? "טוען..." : "הצג טיוטות נוספות"}</button> : null}
+        <DataTable
+          items={openReports}
+          rowKey={(draft) => draft.id}
+          columns={[
+            { key: "kind", label: "סוג דיווח" },
+            { key: "month", label: "חודש" },
+            { key: "employees", label: "עובדים" },
+            { key: "products", label: "מוצרים" },
+            { key: "updated", label: "עודכן לאחרונה" },
+            { key: "action", label: "פעולה" },
+          ]}
+          rowHeight={54} maxHeight={340} overscan={5}
+          wrapperClassName="resume-report-table-wrap" tableClassName="resume-report-table"
+          loading={loadingOpenReports && openReports.length === 0}
+          loadingMore={loadingOpenReports && openReports.length > 0}
+          hasMore={openReportsHasMore} onLoadMore={loadMoreOpenReports}
+          emptyState="אין כרגע טיוטות פתוחות למעסיק הנבחר."
+          renderCells={(draft) => [
+            <b key="kind">{kindLabel(draft.reportKind)}</b>,
+            <span key="month">{formatMonth(draft.reportingMonth)}</span>,
+            <span key="employees">{draft.employeeCount}</span>,
+            <span key="products">{draft.productCount}</span>,
+            <span key="updated">{formatDraftUpdate(draft.updatedAt)}</span>,
+            <button key="action" type="button" className="btn btn-primary"
+              disabled={advancing} onClick={() => void resumeReport(draft)}>
+              המשך עריכה <ArrowLeft size={15} />
+            </button>,
+          ]}
+        />
       </div>
     </div> : null}
     {step === 1 && !showOpenReports && isXml && scope ? <EmployerInterfaceXmlIntake organizationId={scope.organizationId} employerId={scope.employerId} paymentAccountId={selectedPaymentAccountId} salaryPaymentDate={salaryPaymentDate} disabled={!canCreateReport || !selectedPaymentAccountId} onBeforeImport={ensureBillingAccess} onReportImported={handleXmlImported} /> : null}

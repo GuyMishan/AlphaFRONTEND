@@ -70,3 +70,5 @@
 
 - `המשך דיווח קיים` is a fourth reporting-type card. Open drafts show today/yesterday or date, plus Israel-local 24-hour time.
 - An active pension-debit mandate locks current-report payment method to code 6, while allowing operational-only bank, branch, account, reference, value date and evidence in the editor. Actual mandate account changes belong to the employer payment-account setup; official V006 code 6 emits zeroed employer account fields. Deposit receipt codes display the official Hebrew text, fetched from backend option data.
+
+- The existing-draft card uses the shared virtualized `DataTable` with a 340px scrolling viewport and built-in incremental loading; pension bank selection in the deposit editor uses the shared `UiAutocomplete` as the only bank field. For payment code 6, stored bank/reference/date entries do not override official V006's zeroed employer-bank export (users must choose a suitable payment method for real account details to appear in the XML).

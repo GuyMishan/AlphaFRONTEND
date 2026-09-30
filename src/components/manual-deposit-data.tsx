@@ -1,6 +1,6 @@
 "use client";
 
-import { UiDateInput, UiInput } from "@/components/ui-controls";
+import { UiAutocomplete, UiDateInput, UiInput } from "@/components/ui-controls";
 import { UiFileUpload } from "@/components/ui-file-upload";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
@@ -445,20 +445,26 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
               }
               setError("");
             }} />}</div> : null}
-            {!negative && !noMoneyCorrection && metadataForm.receiverAccountType === 1 && metadataForm.paymentMethodCode !== 9 ? <div className="field"><label>{metadataForm.paymentMethodCode === 6 ? "תאריך ערך (לתיעוד פנימי)" : "תאריך ערך הפקדה לקופה *"}</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
+            {!negative && !noMoneyCorrection && metadataForm.receiverAccountType === 1 && metadataForm.paymentMethodCode !== 9 ? <div className="field"><label>{metadataForm.paymentMethodCode === 6 ? "תאריך ערך" : "תאריך ערך הפקדה לקופה *"}</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative && metadataForm.operationCode === 3 ? <div className="field"><label>סכום הפקדה נוספת בפועל *</label><UiInput type="number" min="0" step="0.01" value={form.actualDepositAmount ?? ""} onChange={(e) => patch("actualDepositAmount", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative && metadataForm.paymentMethodCode === 7 ? <div className="field"><label>קוד פנימי של הגורם השולח במס״ב *</label><UiInput maxLength={16} value={form.masavSenderCode} onChange={(e) => patch("masavSenderCode", e.target.value)} placeholder="8–16 תווים" /></div> : null}
             {!negative && !noMoneyCorrection && (metadataForm.employerAccountType === 2 || metadataForm.receiverAccountType === 2) ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
-            {!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 3 || configuredPensionDebit) ? <div className="field"><label>{configuredPensionDebit ? "מס׳ אסמכתא (לתיעוד פנימי)" : "מס׳ אסמכתא *"}</label><UiInput required={!configuredPensionDebit} maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
+            {!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 3 || configuredPensionDebit) ? <div className="field"><label>{configuredPensionDebit ? "מס׳ אסמכתא" : "מס׳ אסמכתא *"}</label><UiInput required={!configuredPensionDebit} maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
             {bankRequired || configuredPensionDebit ? <>
-              <div className="field"><label>{bankRequired ? "בנק *" : "בנק (לתיעוד)"}</label><UiInput required={bankRequired} list={`banks-${row.id}`} value={bankSelection} onChange={(e) => chooseBank(e.target.value)} placeholder="חיפוש לפי שם או מספר בנק" /><datalist id={`banks-${row.id}`}>{banks.map((bank) => <option key={bank.bankCode} value={bankLabel(bank)} />)}</datalist></div>
-              <div className="field"><label>מס׳ בנק</label><UiInput readOnly value={form.employerBankCode} /></div>
-              <div className="field"><label>{bankRequired ? "סניף *" : "סניף (לתיעוד)"}</label><UiInput required={bankRequired} list={`branches-${row.id}`} value={branchSelection} onChange={(e) => chooseBranch(e.target.value)} placeholder={form.employerBankCode ? "חיפוש סניף" : "יש לבחור בנק תחילה"} disabled={!form.employerBankCode} /><datalist id={`branches-${row.id}`}>{branches.map((branch) => <option key={branch.branchCode} value={branchLabel(branch)} />)}</datalist></div>
-              <div className="field"><label>{bankRequired ? "מס׳ חשבון *" : "מס׳ חשבון (לתיעוד)"}</label><UiInput required={bankRequired} inputMode="numeric" maxLength={20}
-                placeholder={configuredPensionDebit ? (resolvedPaymentAccount?.maskedAccountNumber || "הזינו מספר חשבון אם נדרש") : undefined}
+              <div className="field"><label>{bankRequired ? "בנק *" : "בנק"}</label><UiAutocomplete
+                required={bankRequired} ariaLabel="בחירת בנק" value={bankSelection}
+                onValueChange={chooseBank} onClear={() => {
+                  setForm((current) => ({ ...current, employerBankCode: "", employerBankName: "",
+                    employerBranch: "" }));
+                  setBranchSelection(""); setBranches([]);
+                }}
+                options={banks.map((bank) => ({ value: String(bank.bankCode), label: bankLabel(bank) }))}
+                placeholder="חיפוש בנק" /></div>
+              <div className="field"><label>{bankRequired ? "סניף *" : "סניף"}</label><UiInput required={bankRequired} list={`branches-${row.id}`} value={branchSelection} onChange={(e) => chooseBranch(e.target.value)} placeholder={form.employerBankCode ? "חיפוש סניף" : "יש לבחור בנק תחילה"} disabled={!form.employerBankCode} /><datalist id={`branches-${row.id}`}>{branches.map((branch) => <option key={branch.branchCode} value={branchLabel(branch)} />)}</datalist></div>
+              <div className="field"><label>{bankRequired ? "מס׳ חשבון *" : "מס׳ חשבון"}</label><UiInput required={bankRequired} inputMode="numeric" maxLength={20}
                 value={form.employerAccount && !/^0+$/.test(form.employerAccount) ? form.employerAccount : ""} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div>
             </> : null}
-          </div>{configuredPensionDebit ? <small className="payment-internal-note">הפרטים שתזינו כאן הם לתיעוד בדיווח בלבד. לשינוי חשבון החיוב בפועל יש לעדכן את ההרשאה בכרטיס המעסיק. בממשק 006 אמצעי 6 מדווח עם שדות חשבון מעסיק מאופסים כנדרש.</small> : null}</section> : null}
+          </div></section> : null}
 
           {!negative && (!noMoneyCorrection || paymentProofs.length > 0) ? <section className="payment-panel">
             <h3>אסמכתאות ואישורי תשלום</h3>
@@ -467,7 +473,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
                 accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
                 maxBytes={3_000_000} disabled={saving} busy={uploadingProof}
                 onFileSelected={uploadPaymentProof} onInvalid={(message) => { setError(message); notify.error(message); }} /> : null}
-              {configuredPensionDebit ? <small>באמצעי תשלום 6 האישור נשמר לתיעוד במערכת בלבד ואינו מחליף שדה אסמכתא בממשק 006.</small> : null}
+
               {paymentProofs.length ? <div className="payment-evidence-list">
                 {paymentProofs.map((item, index) => <button type="button" className="btn btn-secondary" key={item.id}
                   onClick={() => void paymentConfirmationsApi.download(organizationId, employerId, reportId, row.id, item)
