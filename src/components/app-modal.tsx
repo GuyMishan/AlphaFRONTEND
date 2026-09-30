@@ -16,7 +16,7 @@ function groupModalActions(actions: ReactNode) {
   const cancel: ReactNode[] = [];
   const positive: ReactNode[] = [];
   function visit(node: ReactNode) {
-    Children.forEach(node, child => {
+    Children.toArray(node).forEach(child => {
       if (child == null || typeof child === "boolean") return;
       if (isValidElement(child) && child.type === Fragment) {
         visit((child.props as { children?: ReactNode }).children);
