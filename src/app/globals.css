@@ -1095,10 +1095,10 @@ td { font-size: 14px; }
 .app-modal-backdrop{position:fixed;inset:0;z-index:4000;display:grid;place-items:center;padding:20px;background:rgba(16,38,64,.62);backdrop-filter:blur(5px)}
 .app-modal{width:min(560px,100%);max-height:calc(100dvh - 40px);display:flex;flex-direction:column;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:18px;box-shadow:0 28px 80px rgba(16,38,64,.28);overflow:hidden;text-align:right}
 .app-modal-sm{width:min(440px,100%)}.app-modal-md{width:min(560px,100%)}.app-modal-lg{width:min(900px,100%)}.app-modal-xl{width:min(1200px,100%)}
-.app-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 14px}.app-modal-header h2{margin:0;font-size:23px}.app-modal-header p{margin:6px 0 0;color:var(--muted)}
+.app-modal-header{display:flex;flex:0 0 auto;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 14px;border-bottom:1px solid var(--line);background:var(--surface);z-index:1}.app-modal-header h2{margin:0;font-size:23px}.app-modal-header p{margin:6px 0 0;color:var(--muted)}
 .app-modal-close{width:36px;height:36px;display:grid;place-items:center;flex:0 0 auto;border:0;border-radius:9px;background:transparent;color:var(--muted);cursor:pointer}.app-modal-close:hover{background:var(--blue-soft);color:var(--blue)}
-.app-modal-body{padding:10px 24px 22px;overflow:auto}.app-modal-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:16px 24px;border-top:1px solid var(--line)}
-@media(max-width:560px){.app-modal-backdrop{padding:10px}.app-modal{max-height:calc(100dvh - 20px)}.app-modal-header{padding:18px 18px 12px}.app-modal-body{padding:8px 18px 18px}.app-modal-actions{padding:14px 18px;display:grid}.app-modal-actions>*{width:100%}}
+.app-modal-heading{min-width:0;flex:1}.app-modal-body{min-height:0;flex:1 1 auto;padding:18px 24px 22px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}.app-modal-actions{flex:0 0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:16px 24px;border-top:1px solid var(--line);background:var(--surface);z-index:1}.app-modal-close:disabled{cursor:not-allowed;opacity:.45}
+@media(max-width:560px){.app-modal-backdrop{padding:10px}.app-modal{max-height:calc(100dvh - 20px)}.app-modal-header{padding:18px 18px 12px}.app-modal-body{padding:14px 18px 18px}.app-modal-actions{padding:14px 18px;display:grid}.app-modal-actions>*{width:100%}}
 
 /* Shared autocomplete affordances: search stays visible; clear and dropdown controls stay available after selection. */
 .pension-fund-search{position:relative}.pension-fund-search .ui-control{padding-inline-start:12px!important;padding-inline-end:76px!important}

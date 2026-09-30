@@ -196,17 +196,25 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
 
     <AppModal open={editor !== null} width="lg"
       title={editor?.kind === "existing" ? `עריכת רפרנט: ${editor.referent.displayName}` : "יצירת רפרנט"}
-      onClose={saving ? undefined : () => setEditor(null)} closeOnBackdrop={!saving}>
+      onClose={() => setEditor(null)} closeDisabled={saving} closeOnBackdrop={!saving}
+      actions={<>
+        <button type="button" className="btn btn-secondary" onClick={() => setEditor(null)} disabled={saving}>
+          <X size={15} /> ביטול
+        </button>
+        <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={saving}>
+          <ShieldCheck size={16} /> {saving ? "שומר..." : "שמירת רפרנט ושיוכים"}
+        </button>
+      </>}>
       {editor ? <div className="form" style={{ display: "grid", gap: 18 }}>
         {editor.kind === "new" ? <>
-          <div className="field">
+          <div className="field referent-user-mode">
             <label htmlFor="referent-user-type">הגדרת המשתמש</label>
             <UiSelect id="referent-user-type" value={newUserMode}
               onChange={(event) => setNewUserMode(event.target.value as "new" | "existing")} disabled={saving}>
               {[{ value: "new", label: "משתמש חדש" }, { value: "existing", label: "משתמש קיים ללא הרשאות רפרנט" }].map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </UiSelect>
           </div>
-          {newUserMode === "new" ? <div className="grid" style={{ gap: 12 }}>
+          {newUserMode === "new" ? <div className="referent-identity-grid">
             <label className="field">שם מלא
               <UiInput value={name} onChange={(event) => setName(event.target.value)} required maxLength={120} disabled={saving} />
             </label>
@@ -260,14 +268,6 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
           disabled={saving}
           height={272}
         />
-        </div>
-        <div className="form-actions" style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
-          <button type="button" className="btn btn-secondary" onClick={() => setEditor(null)} disabled={saving}>
-            <X size={15} /> ביטול
-          </button>
-          <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={saving}>
-            <ShieldCheck size={16} /> {saving ? "שומר..." : "שמירת רפרנט ושיוכים"}
-          </button>
         </div>
       </div> : null}
     </AppModal>

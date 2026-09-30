@@ -10,7 +10,7 @@
 
 ## Shared UI and styles
 - `src/components/ui-controls.tsx` — shared input, date, select, autocomplete and card primitives.
-- `src/components/app-modal.tsx` — shared modal. Shared `UiSelect` in `ui-controls.tsx` renders dropdowns through a viewport-positioned portal, so clipped modal/table containers do not cut off option menus.\n- `src/components/ui-selection-list.tsx` and `src/app/selection-and-scrollbars.css` — searchable multi-select assignment lists and theme-aware scrollbar styling shared across the app.
+- `src/components/app-modal.tsx` — unified dialog shell: persistent header, close control, scroll-only body, persistent action footer and nested scroll locking. Shared `UiSelect` in `ui-controls.tsx` renders dropdowns through a viewport-positioned portal, so clipped modal/table containers do not cut off option menus.\n- `src/components/ui-selection-list.tsx` and `src/app/selection-and-scrollbars.css` — searchable multi-select assignment lists and theme-aware scrollbar styling shared across the app.
 - `src/components/data-table.tsx` — shared table primitive for consistent headers, rows, loading/empty states and windowed rendering. It supports infinite loading via `hasMore`/`onLoadMore`: screens with paged APIs append newly fetched batches to the rows already cached in the frontend; there is no table pagination UI. Table navigation must use `DataTableLink`, which disables Next.js route prefetch so a rendered table does not fan out into one RSC request per row. Application screens should not render raw HTML tables directly.
 - `src/app/globals.css` — global design/layout rules.
 - `src/app/ui-fixes.css` — cross-screen UI corrections, including autocomplete/report modal behavior.
