@@ -25,6 +25,8 @@ type Props<T> = {
   onExpandedRowChange?: (rowKey: string, expanded: boolean, item: T) => void;
   /** Optional row-click expansion; the expander button always works independently. */
   expandOnRowClick?: boolean;
+  /** Optional placement in another existing column; defaults to the first. */
+  expandToggleColumnKey?: string;
   rowHeight?: number;
   maxHeight?: number;
   overscan?: number;
@@ -44,6 +46,7 @@ type Props<T> = {
 export function DataTable<T>({
   items, columns, rowKey, renderCells, expandedRowComponent, expandedRowComponentSize = 240,
   expandedRowKeys, defaultExpandedRowKeys = [], onExpandedRowChange, expandOnRowClick = false,
+  expandToggleColumnKey,
   rowHeight = 56, maxHeight = 520, overscan = 10,
   loadMoreThreshold = 8, tableClassName = "", wrapperClassName = "", onRowClick,
   loading = false, loadingMore = false, loadingLabel = "טוען נתונים...",
@@ -155,15 +158,20 @@ export function DataTable<T>({
                     if (expandOnRowClick && expandedRowComponent && !(event.target as HTMLElement).closest("button, a, input, select, textarea, [role='button']"))
                       toggleExpanded(item);
                   }}>
-                  {renderCells(item).map((cell, cellIndex) => <td key={columns[cellIndex]?.key ?? cellIndex}>
-                    {cellIndex === 0 && expandedRowComponent ? <button type="button" className="data-table-expand-toggle"
+                  {renderCells(item).map((cell, cellIndex) => {
+                    const hasToggle = Boolean(expandedRowComponent && (expandToggleColumnKey
+                      ? columns[cellIndex]?.key === expandToggleColumnKey : cellIndex === 0));
+                    const toggle = hasToggle ? <button type="button" className="data-table-expand-toggle"
                       aria-label={expanded ? "סגירת פרטי השורה" : "הצגת פרטי השורה"}
                       aria-expanded={expanded} aria-controls={panelId}
                       onClick={(event) => { event.stopPropagation(); toggleExpanded(item); }}>
                       <ChevronDown size={16} className={expanded ? "data-table-chevron-expanded" : ""} />
-                    </button> : null}
-                    {cell}
-                  </td>)}
+                    </button> : null;
+                    return <td key={columns[cellIndex]?.key ?? cellIndex}>
+                      {expandToggleColumnKey ? cell : toggle}
+                      {expandToggleColumnKey ? toggle : cell}
+                    </td>;
+                  })}
                 </tr>
                 {expanded ? <tr className="data-table-expanded-row" id={panelId}>
                   <td colSpan={columns.length} style={{ height: panelHeight, padding: 0 }}>

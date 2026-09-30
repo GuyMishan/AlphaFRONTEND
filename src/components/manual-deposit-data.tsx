@@ -476,6 +476,23 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
 
   const providerAccount = form.providerAccount || providerAccountFromReference(providerReference);
 
+  const paymentEvidencePanel = !negative && (!noMoneyCorrection || paymentProofs.length > 0) ? <section className="payment-panel">
+    <h3>אסמכתאות ואישורי תשלום</h3>
+    <div className="payment-evidence-control">
+      {!readOnly && !noMoneyCorrection ? <UiFileUpload label="צירוף אישור תשלום (עד 3MB, אם קיים)" className="payment-upload"
+        accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+        maxBytes={3_000_000} disabled={saving} busy={uploadingProof}
+        onFileSelected={uploadPaymentProof} onInvalid={(message) => { setError(message); notify.error(message); }} /> : null}
+      {paymentProofs.length > 0 ? <div className="payment-evidence-list">
+        {paymentProofs.map((item, index) => <button type="button" className="btn btn-secondary" key={item.id}
+          onClick={() => void paymentConfirmationsApi.download(organizationId, employerId, reportId, row.id, item)
+            .catch(() => notify.error("הורדת אישור התשלום נכשלה"))}>
+          <Download size={16} aria-hidden="true" />{index === 0 ? "אישור אחרון: " : "אישור קודם: "}{item.originalFileName}
+        </button>)}
+      </div> : readOnly ? <span className="payment-evidence-empty">לא צורפה אסמכתא.</span> : null}
+    </div>
+  </section> : null;
+
   return <AppModal open title="פרטי תשלום"
     subtitle={readOnly ? "נתוני ההפקדה כפי שנשמרו בדיווח. דיווח שנשלח מחייב דיווח מתקן לשינויים." : "השלמת הנתונים הנדרשים לדיווח בלבד"}
     onClose={onClose} width="xl" className="payment-modal" bodyClassName="payment-modal-body"
@@ -490,7 +507,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       {readOnly ? <div className="notice notice-info">זהו דיווח שנשמר ואינו פתוח לעריכה. ניתן לצפות בפרטי ההפקדה אך אין לשנות דיווחים שהועברו. לתיקון יש ליצור דיווח מתקן.</div> : null}
       <fieldset className="deposit-payment-editor-fields" disabled={readOnly} aria-label={readOnly ? "פרטי הפקדה לצפייה בלבד" : undefined}>
       <div className="payment-layout"><div className="payment-main">
-          <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">{configuredPensionDebit ? "חשבון חיוב בהרשאה" : "חשבון מעסיק להעברה"}</span><b className="account-number">{metadataForm.paymentMethodCode !== 6 && bankRequired && (!form.employerBankCode || !form.employerAccount) ? "יש להזין פרטי חשבון להעברה" : formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
+          <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-summary-item"><span className="payment-summary-label">סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">{configuredPensionDebit ? "חשבון חיוב בהרשאה" : "חשבון מעסיק להעברה"}</span><b className="account-number">{metadataForm.paymentMethodCode !== 6 && bankRequired && (!form.employerBankCode || !form.employerAccount) ? "יש להזין פרטי חשבון להעברה" : formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
 
           {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label>{configuredPensionDebit
@@ -532,23 +549,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
             </> : null}
           </div></section> : null}
 
-          {!negative && (!noMoneyCorrection || paymentProofs.length > 0) ? <section className="payment-panel">
-            <h3>אסמכתאות ואישורי תשלום</h3>
-            <div className="payment-evidence-control">
-              {!noMoneyCorrection ? <UiFileUpload label="צירוף אישור תשלום (עד 3MB, אם קיים)" className="payment-upload"
-                accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
-                maxBytes={3_000_000} disabled={saving} busy={uploadingProof}
-                onFileSelected={uploadPaymentProof} onInvalid={(message) => { setError(message); notify.error(message); }} /> : null}
-
-              {paymentProofs.length ? <div className="payment-evidence-list">
-                {paymentProofs.map((item, index) => <button type="button" className="btn btn-secondary" key={item.id}
-                  onClick={() => void paymentConfirmationsApi.download(organizationId, employerId, reportId, row.id, item)
-                    .catch(() => notify.error("הורדת אישור התשלום נכשלה"))}>
-                  <Download size={16} aria-hidden="true" /> {index === 0 ? "אישור אחרון: " : "אישור קודם: "}{item.originalFileName}
-                </button>)}
-              </div> : null}
-            </div>
-          </section> : null}
+          {!readOnly ? paymentEvidencePanel : null}
 
           {!differences && !negative && isOldPensionFund ? <section className="payment-panel"><h3>השלמה נדרשת לקרן ותיקה</h3><div className="payment-method-grid">
             <div className="field"><label>סוג פנסיה *</label><EmployerInterfaceOptionSelect category="old-pension-type" scope="current" value={metadataForm.oldPensionTypeCode} required onChange={(value) => patchMetadata("oldPensionTypeCode", value)} /></div>
@@ -596,13 +597,6 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
         </div>
       </div>
       </fieldset>
-      {readOnly && paymentProofs.length > 0 ? <div className="payment-evidence-list">
-        <b>אישורי תשלום להורדה</b>
-        {paymentProofs.map((item) => <button type="button" key={item.id} className="btn btn-secondary"
-          onClick={() => void paymentConfirmationsApi.download(organizationId, employerId, reportId, row.id, item)
-            .catch(() => notify.error("הורדת אישור התשלום נכשלה"))}>
-          <Download size={16} />{item.originalFileName}
-        </button>)}
-      </div> : null}
+      {readOnly ? paymentEvidencePanel : null}
   </AppModal>;
 }

@@ -64,3 +64,10 @@
 
 .deposit-payment-editor-fields { margin: 0; padding: 0; border: 0; min-width: 0; }
 .deposit-payment-editor-fields:disabled { opacity: 1; }
+
+/* Consistent summary blocks and proper RTL account alignment. */
+.payment-provider-grid > div:not(.payment-amount) { min-width: 0; text-align: right; }
+.payment-provider-grid .payment-summary-item { display: grid; align-content: start; gap: 3px; }
+.payment-provider-grid .payment-summary-item b { font-size: 13px; }
+.payment-provider-grid .account-number { display: block; direction: ltr; text-align: right; unicode-bidi: isolate; overflow-wrap: anywhere; }
+.payment-evidence-empty { font-size: 12px; color: var(--muted); }

@@ -59,19 +59,17 @@ function editableReport(status: string | number): boolean {
   return [1, 2, 9, "1", "2", "9", "Draft", "ReadyForValidation", "Error"].includes(status);
 }
 
-function DepositFeedbackPanel({ report, content, onEdit, onLoadMore, loadingMore, onReportFeedback }: {
+function DepositFeedbackPanel({ report, content, onEdit, onLoadMore, loadingMore }: {
   report: ReportFeedbackRow; content: ExpandedReportContent;
   onEdit: (deposit: ManualDepositRow) => void;
   onLoadMore: () => void;
   loadingMore: boolean;
-  onReportFeedback: () => void;
 }) {
   const byProduct = new Map((content.feedback.depositFeedback ?? []).map(item => [item.reportProductId, item]));
   const editable = editableReport(report.status);
   return <div className="report-deposits-panel">
     <div className="report-deposits-heading">
       <div><b>הפקדות בדיווח</b><small>{editable ? "ניתן לערוך כל הפקדה באמצעות חלונית נתוני ההפקדות" : "דיווח שכבר הועבר נשאר ללא שינוי; ניתן לצפות בפרטי כל הפקדה"}</small></div>
-      <button type="button" className="btn btn-secondary btn-sm" onClick={onReportFeedback}><Eye size={15} />משוב הדיווח המלא</button>
     </div>
     {content.deposits.length === 0
       ? <div className="notice notice-info">לא נמצאו הפקדות משויכות לדיווח.</div>
@@ -286,6 +284,7 @@ export default function ReportsPage() {
         emptyState="לא נמצאו דיווחים בהתאם לסינון."
         rowKey={(row) => row.id}
         tableClassName="report-feedback-table"
+        expandToggleColumnKey="actions"
         expandedRowKeys={expandedKeys}
         expandedRowComponentSize={380}
         onExpandedRowChange={(key, expanded, report) => {
@@ -303,7 +302,6 @@ export default function ReportsPage() {
           </div> : null}
           {expandedContent[report.id] ? <DepositFeedbackPanel report={report} content={expandedContent[report.id]}
             onEdit={(deposit) => setEditingDeposit({ report, deposit })}
-            onReportFeedback={() => void openFeedback(report)}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)} /> : null}
         </div>}
