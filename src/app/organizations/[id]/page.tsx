@@ -9,6 +9,8 @@ import { AppShell } from "@/components/app-shell";
 import { DataTable, DataTableLink } from "@/components/data-table";
 import { AppTabs } from "@/components/app-tabs";
 import { SubscriptionBillingPanel } from "@/components/subscription-billing-panel";
+import { EmployerTransferModal } from "@/components/employer-transfer-modal";
+import { getSession } from "@/lib/session";
 import { OrganizationPensionPaymentAccount } from "@/components/organization-pension-payment-account";
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
@@ -53,6 +55,7 @@ export default function OrganizationProfilePage() {
   const [members, setMembers] = useState<OrganizationMemberSummary[]>([]);
   const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [employerBilling, setEmployerBilling] = useState<OrganizationEmployerBilling[]>([]);
+  const [receiveOpen, setReceiveOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -94,7 +97,16 @@ export default function OrganizationProfilePage() {
     <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל ארגון" />
 
     {tab === "general" ? <GeneralTab profile={profile} onSaved={async () => { await load(); }} /> : null}
-    {tab === "employers" ? <EmployersTab organizationId={id} employers={employers} employerBilling={employerBilling} canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))} entitlements={entitlements} /> : null}
+    {tab === "employers" ? <>
+      {getSession()?.platformAdmin ? <div className="form-actions" style={{ marginBottom: 16 }}>
+        <button type="button" className="btn btn-primary" onClick={() => setReceiveOpen(true)}>שיוך מעסיק קיים</button>
+      </div> : null}
+      <EmployersTab organizationId={id} employers={employers} employerBilling={employerBilling}
+        canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))}
+        entitlements={entitlements} onTransferred={load} />
+      {getSession()?.platformAdmin ? <EmployerTransferModal open={receiveOpen}
+        receiveIntoOrganizationId={id} onClose={() => setReceiveOpen(false)} onTransferred={load} /> : null}
+    </> : null}
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
     {tab === "pension-payment" ? <OrganizationPensionPaymentAccount organizationId={id} canManage={profile.canManageOrganization} /> : null}
     {tab === "billing" && entitlements ? <SubscriptionBillingPanel organizationId={id} entitlements={entitlements} canManage={profile.canManageOrganization} onChanged={load} /> : null}
@@ -150,10 +162,11 @@ function GeneralTab({ profile, onSaved }: { profile: OrganizationProfileCenter; 
   </section>;
 }
 
-function EmployersTab({ organizationId, employers, employerBilling, canCreate, entitlements }: { organizationId: string; employers: Employer[]; employerBilling: OrganizationEmployerBilling[]; canCreate: boolean; entitlements: EntitlementSnapshot | null }) {
+function EmployersTab({ organizationId, employers, employerBilling, canCreate, entitlements, onTransferred }: { organizationId: string; employers: Employer[]; employerBilling: OrganizationEmployerBilling[]; canCreate: boolean; entitlements: EntitlementSnapshot | null; onTransferred: () => Promise<void> }) {
+  const [moving, setMoving] = useState<Employer | null>(null);
   const billingByEmployer = new Map(employerBilling.map((item) => [item.employerId, item]));
 
-  return <section className="card">
+  return <><section className="card">
     <div className="card-head">
       <div><h2>מעסיקים</h2><span style={{ color: "var(--muted)" }}>כל המעסיקים בארגון ואופן החיוב שלהם. שינוי הגדרות החיוב מתבצע מתוך כרטיס המעסיק.</span></div>
       {canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}>מעסיק חדש</Link> : null}
@@ -162,7 +175,7 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
     {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <DataTable
       items={employers}
       rowKey={(item) => item.id}
-      columns={[{ key: "employer", label: "מעסיק" }, { key: "registration", label: "מספר חברה" }, { key: "withholding", label: "תיק ניכויים" }, { key: "billing", label: "אופן חיוב" }, { key: "billedThrough", label: "מחויב דרך" }, { key: "status", label: "סטטוס" }]}
+      columns={[{ key: "employer", label: "מעסיק" }, { key: "registration", label: "מספר חברה" }, { key: "withholding", label: "תיק ניכויים" }, { key: "billing", label: "אופן חיוב" }, { key: "billedThrough", label: "מחויב דרך" }, { key: "status", label: "סטטוס" }, ...(getSession()?.platformAdmin ? [{ key: "actions", label: "פעולות" }] : [])]}
       renderCells={(item) => {
         const billing = billingByEmployer.get(item.id);
         return [
@@ -172,10 +185,13 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
           billing ? (billing.billingMode === 2 ? "חיוב דרך הארגון" : "חיוב עצמאי") : "—",
           billing?.billedThroughName || "—",
           employerStatusLabel(item.status),
+          ...(getSession()?.platformAdmin ? [<button key="transfer" className="btn btn-secondary" type="button" onClick={() => setMoving(item)}>העבר / נתק שיוך</button>] : []),
         ];
       }}
     />}
-  </section>;
+  </section>
+  {getSession()?.platformAdmin && moving ? <EmployerTransferModal open employer={moving} onClose={() => setMoving(null)} onTransferred={onTransferred} /> : null}
+  </>;
 }
 function UsersTab({ organizationId, members, canManage }: { organizationId: string; members: OrganizationMemberSummary[]; canManage: boolean }) {
   const roleLabel = (role: number) => role === 1 ? "Admin" : role === 2 ? "Payroll Manager" : role === 3 ? "Operations Agent" : "Viewer";
