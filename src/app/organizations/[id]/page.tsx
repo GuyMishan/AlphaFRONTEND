@@ -15,6 +15,7 @@ import { OrganizationPensionPaymentAccount } from "@/components/organization-pen
 import { PlanUsage } from "@/components/plan-usage";
 import { alphaApi } from "@/lib/api";
 import { UiInput, UiSelect } from "@/components/ui-controls";
+import { organizationTypeLabel, organizationTypeOptions } from "@/lib/organization-types";
 import { employerStatusLabel } from "@/lib/employer-status";
 import type {
   Employer,
@@ -145,7 +146,7 @@ function GeneralTab({ profile, onSaved }: { profile: OrganizationProfileCenter; 
     <form className="form" onSubmit={save}>
       <div className="grid organization-details-grid">
         <div className="field"><label>שם הארגון</label><UiInput disabled={!(profile.canEditOrganizationGeneral ?? profile.canManageOrganization)} required maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-        <div className="field"><label>סוג ארגון</label><UiSelect disabled={!profile.canManageOrganization} value={form.type} onChange={(e) => setForm({ ...form, type: Number(e.target.value) })}><option value={1}>מעסיק</option><option value={2}>משרד שכר</option><option value={3}>סוכנות ביטוח</option><option value={4}>ספק תפעול</option><option value={5}>קבוצת חברות</option><option value={6} disabled={profile.type !== 6}>שירות עצמי</option></UiSelect></div>
+        <div className="field"><label>סוג ארגון</label><UiSelect disabled={!profile.canManageOrganization} value={form.type} onChange={(e) => setForm({ ...form, type: Number(e.target.value) })}>{!organizationTypeOptions.some(option => option.value === form.type) ? <option value={form.type} disabled>{organizationTypeLabel(form.type)} (סוג קיים)</option> : null}{organizationTypeOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect></div>
         <div className="field"><label>מספר חברה / עוסק</label><UiInput disabled={!(profile.canEditOrganizationGeneral ?? profile.canManageOrganization)} maxLength={30} value={form.registrationNumber} onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })} /></div>
         <div className="field"><label>איש קשר</label><UiInput disabled={!(profile.canEditOrganizationGeneral ?? profile.canManageOrganization)} maxLength={150} value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} /></div>
         <div className="field"><label>אימייל איש קשר</label><UiInput disabled={!(profile.canEditOrganizationGeneral ?? profile.canManageOrganization)} type="email" maxLength={320} value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} /></div>

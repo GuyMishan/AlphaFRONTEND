@@ -254,3 +254,12 @@ html[data-theme="dark"] .pension-fund-options-portal {
   .app-modal-actions-cancel { justify-content: flex-start; }
   .app-modal-actions-positive { justify-content: flex-end; margin-inline-start: auto; }
 }
+
+/* The two referent assignment cards share the same outer height despite different description lengths. */
+.referent-assignment-grid { align-items: stretch; }
+.referent-assignment-grid > .ui-selection { height: 100%; grid-template-rows: minmax(86px, auto) auto minmax(0, 1fr) auto; }
+.referent-assignment-grid .ui-selection-heading { align-items: flex-start; align-content: flex-start; }
+.referent-assignment-grid .ui-selection-viewport { min-height: 140px; }
+@media (max-width:740px) {
+  .referent-assignment-grid > .ui-selection { height: auto; grid-template-rows: auto auto minmax(140px, 1fr) auto; }
+}

@@ -12,7 +12,7 @@
 - `src/components/ui-controls.tsx` — shared input, date, select, autocomplete and card primitives.
 - `src/components/app-modal.tsx` — unified dialog shell with persistent header and close, scrollable body, nested scroll locking, and persistent footer. The footer automatically groups cancel/back on the RTL right and positive/submit actions on the left; secondary-styled affirmative actions can explicitly set `data-modal-side="positive"`.
 - `src/components/ui-controls.tsx` — shared `UiSelect` and `UiAutocomplete` both portal their option lists to the document body and recompute viewport position on modal scroll, resizing and opening above a field when needed. This prevents option lists from changing the modal's scroll size or being clipped by modal/table overflow.
-- `src/components/ui-selection-list.tsx` and `src/app/selection-and-scrollbars.css` — searchable multi-select assignment lists, theme-aware scrollbar and shared popup/footer styles.
+- `src/components/ui-selection-list.tsx` and `src/app/selection-and-scrollbars.css` — searchable multi-select assignment lists (referent cards stretch to the same height), theme-aware scrollbar and shared popup/footer styles.
 - `src/components/data-table.tsx` — shared table primitive for consistent headers, rows, loading/empty states and windowed rendering. It supports infinite loading via `hasMore`/`onLoadMore`: screens with paged APIs append newly fetched batches to the rows already cached in the frontend; there is no table pagination UI. Table navigation must use `DataTableLink`, which disables Next.js route prefetch so a rendered table does not fan out into one RSC request per row. Application screens should not render raw HTML tables directly.
 - `src/app/globals.css` — global design/layout rules.
 - `src/app/ui-fixes.css` — cross-screen UI corrections, including autocomplete/report modal behavior.
@@ -20,7 +20,7 @@
 
 ## Organizations, employers, employees and access
 - `src/components/referents-admin-tab.tsx` — platform-only referent lifecycle and cross-organization assignment UI within the admin tabs; `src/lib/api.ts` supplies typed endpoints. Organization profile differentiates general-edit access from organization user/billing administration.
-- `src/app/organizations/page.tsx` — platform-admin organization creation using a shared modal.
+- `src/app/organizations/page.tsx` — platform-admin organization creation using a shared modal. `src/lib/organization-types.ts` provides the two selectable categories (small/one employer, regular) shared with organization profile editing and list labels; existing legacy/self-service values remain readable without being offered as new choices.
 - `src/components/employer-transfer-modal.tsx` — shared platform-admin transfer/receive UI for organization and employer profiles. Uses the admin transfer API, source-scope validation and global scope cache invalidation.
 - `src/app/organizations/*`, `src/app/employers/*`, `src/app/employees/*`. Employer lifecycle status is managed from Employer Profile → General Details. Employer status is intentionally binary in the UI and API: Active ("פעיל") or Closed ("מבוטל"). New employers start Active; legacy Onboarding/Suspended rows are normalized by the Backend.
 - `src/app/access/page.tsx` — users and permissions, including independent report creation/transmission permissions. Platform-admin "new user" lets the administrator choose a customer invitation or an internal referent; the referent path opens the shared admin referent creation flow with required cross-organization assignments.

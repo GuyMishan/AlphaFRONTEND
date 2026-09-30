@@ -13,6 +13,7 @@ import { DataTable, DataTableLink } from "@/components/data-table";
 import { getSession } from "@/lib/session";
 import { getScopeContext, invalidateScopeContext } from "@/lib/app-data-cache";
 import type { Organization } from "@/lib/types";
+import { organizationTypeLabel, organizationTypeOptions } from "@/lib/organization-types";
 
 export default function OrganizationsPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function OrganizationsPage() {
   const [query, setQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
-  const [type, setType] = useState(1);
+  const [type, setType] = useState(7);
   const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -48,7 +49,7 @@ export default function OrganizationsPage() {
       setOrganizations((items) => [...items, created].sort((a, b) => a.name.localeCompare(b.name, "he")));
       setCreateOpen(false);
       setName("");
-      setType(1);
+      setType(7);
       toast.success("הארגון נוצר בהצלחה");
       router.push(`/organizations/${created.id}`);
     } catch (err) {
@@ -100,21 +101,11 @@ export default function OrganizationsPage() {
       <form id="create-organization-form" className="form" onSubmit={createOrganization}>
         <div className="field"><label htmlFor="new-organization-name">שם הארגון</label><UiInput id="new-organization-name" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} disabled={creating} /></div>
         <div className="field"><label htmlFor="new-organization-type">סוג הארגון</label><UiSelect id="new-organization-type" value={type} onChange={(e) => setType(Number(e.target.value))} disabled={creating}>
-          <option value={1}>מעסיק</option><option value={2}>משרד שכר</option><option value={3}>סוכנות ביטוח</option><option value={4}>ספק תפעול</option><option value={5}>קבוצת חברות</option><option value={6}>שירות עצמי</option>
+          {organizationTypeOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
         </UiSelect></div>
       </form>
     </AppModal>
   </AppShell>;
-}
-
-function organizationTypeLabel(type: number) {
-  if (type === 1) return "מעסיק";
-  if (type === 2) return "משרד שכר";
-  if (type === 3) return "סוכנות ביטוח";
-  if (type === 4) return "ספק תפעול";
-  if (type === 5) return "קבוצת חברות";
-  if (type === 6) return "שירות עצמי";
-  return String(type);
 }
 
 function organizationStatusLabel(status: number) {
