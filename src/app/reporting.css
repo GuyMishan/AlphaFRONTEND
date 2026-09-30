@@ -61,10 +61,10 @@
 .deposit-table td:nth-child(2) b, .deposit-table td:nth-child(2) span { display: block; }
 .deposit-table td:nth-child(2) span { color: var(--muted); font-size: 11px; margin-top: 1px; }
 .deposit-table th:nth-child(1), .deposit-table td:nth-child(1) { width: 12%; }
-.deposit-table th:nth-child(2), .deposit-table td:nth-child(2) { width: 17%; }
+.deposit-table th:nth-child(2), .deposit-table td:nth-child(2) { width: 15%; }
 .deposit-table th:nth-child(3), .deposit-table td:nth-child(3) { width: 11%; }
 .deposit-table th:nth-child(4), .deposit-table td:nth-child(4) { width: 8%; }
-.deposit-table th:nth-child(5), .deposit-table td:nth-child(5) { width: 13%; }
+.deposit-table th:nth-child(5), .deposit-table td:nth-child(5) { width: 10%; }
 .deposit-table th:nth-child(6), .deposit-table td:nth-child(6) { width: 10%; }
 .deposit-table th:nth-child(7), .deposit-table td:nth-child(7) { width: 9%; }
 .deposit-table th:nth-child(8), .deposit-table td:nth-child(8) { width: 8%; }
