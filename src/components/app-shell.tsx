@@ -265,7 +265,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         {onboardingRequired ? (
           <AppModal title="בואו נגדיר את העסק שלכם"
             subtitle="הזינו את פרטי המעסיק כדי להתחיל לעבוד במערכת. לא ניתן להמשיך לפני השלמת ההקמה."
-            width="lg" closeOnBackdrop={false}
+            width="lg" closeOnBackdrop={false} onClose={logout} closeDisabled={onboardingSaving}
             actions={<button type="submit" form="onboarding-employer-form" className="btn btn-primary"
               disabled={onboardingSaving}>{onboardingSaving ? "שומר..." : "שמירה והמשך"}</button>}>
             {onboardingError ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{onboardingError}</div> : null}

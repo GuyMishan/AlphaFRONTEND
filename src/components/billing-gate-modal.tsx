@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, Building2, CreditCard, House } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import type { BillingGateStatus } from "@/lib/types";
@@ -31,12 +32,14 @@ export function BillingGateModal({
   canManageEmployerBilling: boolean;
   onClose?: () => void;
 }) {
+  const router = useRouter();
+  const closeModal = onClose ?? (() => router.push("/dashboard"));
   const employerBillingHref = `/employers/${employerId}?organizationId=${organizationId}&tab=pension-payment`;
   const organizationBillingHref = `/organizations/${organizationId}?tab=pension-payment`;
   const hasBillingAction = canManageOrganizationBilling || canManageEmployerBilling;
 
   return (
-    <AppModal title="נדרשת השלמת אמצעי תשלום פנסיוני" onClose={onClose} width="md"
+    <AppModal title="נדרשת השלמת אמצעי תשלום פנסיוני" onClose={closeModal} width="md"
       actions={<>
         {canManageOrganizationBilling ? <Link className="btn btn-primary" href={organizationBillingHref}><Building2 size={17} />להגדרת תשלום פנסיוני בארגון</Link> : null}
         {canManageEmployerBilling ? <Link className={canManageOrganizationBilling ? "btn btn-secondary" : "btn btn-primary"} href={employerBillingHref}><CreditCard size={17} />להגדרת תשלום פנסיוני למעסיק</Link> : null}
