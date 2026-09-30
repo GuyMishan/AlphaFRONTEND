@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, ShieldCheck, UserRound, X } from "lucide-react";
+import { Plus, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppModal } from "@/components/app-modal";
 import { DataTable } from "@/components/data-table";
@@ -206,8 +206,7 @@ export function ReferentsAdminTab() {
             <label htmlFor="referent-user-type">הגדרת המשתמש</label>
             <UiSelect id="referent-user-type" value={newUserMode}
               onChange={(event) => setNewUserMode(event.target.value as "new" | "existing")} disabled={saving}>
-              <option value="new">משתמש חדש</option>
-              <option value="existing">משתמש קיים ללא הרשאות רפרנט</option>
+              {[{ value: "new", label: "משתמש חדש" }, { value: "existing", label: "משתמש קיים ללא הרשאות רפרנט" }].map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </UiSelect>
           </div>
           {newUserMode === "new" ? <div className="grid" style={{ gap: 12 }}>
