@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Building2, Mail, Plus, Save, Search, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { DataTable } from "@/components/data-table";
@@ -84,6 +85,7 @@ function roleDefaults(role: OrganizationRole, accessMode: EmployerAccessMode): P
 }
 
 export default function AccessPage() {
+  const router = useRouter();
   const session = getSession();
   const isPlatformAdmin = Boolean(session?.platformAdmin);
 
@@ -113,6 +115,7 @@ export default function AccessPage() {
 
   const [entitlements, setEntitlements] = useState<EntitlementSnapshot | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [newUserKind, setNewUserKind] = useState<"customer" | "referent">("customer");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteNationalId, setInviteNationalId] = useState("");
   const [invitePhone, setInvitePhone] = useState("");
@@ -489,10 +492,14 @@ export default function AccessPage() {
         <p>ניהול משתמשים והרשאות לפי הארגון והמעסיק שנבחרו.</p>
       </div>
       <button className="btn btn-primary" type="button" onClick={() => {
-          if (entitlements && entitlements.users.maximum !== null && entitlements.users.current >= entitlements.users.maximum) {
+          // Internal referents are not customer seats; platform admins may choose
+          // their user type even when the currently selected customer's quota is full.
+          if (!isPlatformAdmin && entitlements && entitlements.users.maximum !== null &&
+              entitlements.users.current >= entitlements.users.maximum) {
             openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum ?? undefined });
             return;
           }
+          setNewUserKind("customer");
           setInviteOpen(true);
         }}><Mail size={18} />משתמש חדש</button>
     </div>
@@ -581,13 +588,34 @@ export default function AccessPage() {
 
     {inviteOpen ? <UserEditorModal
       title="משתמש חדש"
-      subtitle="הוספת משתמש לארגון באמצעות הזמנה מאובטחת"
+      subtitle={isPlatformAdmin ? "בחרו סוג משתמש: לקוח או רפרנט פנימי" : "הוספת משתמש לארגון באמצעות הזמנה מאובטחת"}
       onClose={() => setInviteOpen(false)}
       actions={<>
         <button className="btn btn-secondary" type="button" onClick={() => setInviteOpen(false)}>ביטול</button>
-        <button className="btn btn-primary" type="button" disabled={inviting} onClick={() => void createInvitation()}><Mail size={17} />{inviting ? "שולח..." : "שליחת הזמנה"}</button>
+        {newUserKind === "referent" && isPlatformAdmin ?
+          <button className="btn btn-primary" type="button" onClick={() => {
+            setInviteOpen(false);
+            router.push("/admin?tab=referents&create=1");
+          }}><UserPlus size={17} />המשך ליצירת רפרנט ושיוכים</button>
+          : <button className="btn btn-primary" type="button" disabled={inviting || (isPlatformAdmin && Boolean(entitlements?.users.maximum !== null && entitlements?.users.maximum !== undefined && entitlements.users.current >= entitlements.users.maximum))}
+              onClick={() => void createInvitation()}><Mail size={17} />{inviting ? "שולח..." : "שליחת הזמנה"}</button>}
       </>}
     >
+      {isPlatformAdmin ? <div className="field" style={{ marginBottom: 16 }}>
+        <label htmlFor="new-user-kind">סוג משתמש</label>
+        <UiSelect id="new-user-kind" value={newUserKind}
+          onChange={(event) => setNewUserKind(event.target.value as "customer" | "referent")}>
+          {[{ value: "customer", label: "משתמש ארגון / מעסיק" },
+            { value: "referent", label: "רפרנט פנימי" }].map((option) =>
+            <option key={option.value} value={option.value}>{option.label}</option>)}
+        </UiSelect>
+      </div> : null}
+      {newUserKind === "referent" && isPlatformAdmin
+        ? <div className="notice notice-info">
+            רפרנט הוא משתמש פנימי שאינו נספר במנוי הארגון. בשלב הבא תוכלו ליצור אותו
+            ולשייך לו ארגונים שלמים או מעסיקים נבחרים מארגונים שונים.
+          </div>
+        : <>
       <div className="user-editor-grid">
         <div className="field"><label>אימייל</label><UiInput type="email" dir="ltr" maxLength={320} value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="name@example.com" /></div>
         <div className="field"><label>תעודת זהות</label><UiInput inputMode="numeric" dir="ltr" maxLength={9} value={inviteNationalId} onChange={(event) => setInviteNationalId(event.target.value.replace(/\D/g, "").slice(0, 9))} /></div>
@@ -606,6 +634,7 @@ export default function AccessPage() {
         <div className="field"><label>מעסיק</label><UiSelect value={inviteEmployerId} onChange={(event) => setInviteEmployerId(event.target.value)}>{inviteEmployers.map((item) => <option key={item.id} value={item.id}>{item.legalName}</option>)}</UiSelect></div>
         <div className="field"><label>תפקיד אצל המעסיק</label><UiSelect value={inviteEmployerRole} onChange={(event) => setInviteEmployerRole(Number(event.target.value) as EmployerRole)}>{(Object.keys(employerRoleLabels) as unknown as EmployerRole[]).map((value) => <option key={value} value={value}>{employerRoleLabels[value]}</option>)}</UiSelect></div>
       </div>}
+      </>}
     </UserEditorModal> : null}
 
     {selected ? <UserEditorModal

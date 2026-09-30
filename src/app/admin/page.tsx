@@ -146,6 +146,13 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
+    // Opening a referent from Users & Permissions preserves a single
+    // authoritative creation flow with assignment validation.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "referents") setTab("referents");
+  }, []);
+
+  useEffect(() => {
     const onScopeChange = (event: Event) => {
       const detail = (event as CustomEvent<{ organizationId?: string; employerId?: string }>).detail;
       setOrganizationFilter(detail?.organizationId || "all");
@@ -303,7 +310,7 @@ export default function AdminPage() {
 
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
-    {tab === "referents" ? <ReferentsAdminTab /> : tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
+    {tab === "referents" ? <ReferentsAdminTab autoCreate={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("create") === "1"} /> : tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
         <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>

@@ -12,7 +12,7 @@ import type { PlatformUser, Referent, ScopeOrganization } from "@/lib/types";
 type Editor = { kind: "existing"; referent: Referent } | { kind: "new" };
 const checkboxStyle = { display: "flex", gap: 10, alignItems: "center", textAlign: "right" as const, width: "100%" as const };
 
-export function ReferentsAdminTab() {
+export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean }) {
   const [referents, setReferents] = useState<Referent[]>([]);
   const [users, setUsers] = useState<PlatformUser[]>([]);
   const [organizations, setOrganizations] = useState<ScopeOrganization[]>([]);
@@ -48,6 +48,15 @@ export function ReferentsAdminTab() {
   }
 
   useEffect(() => { void load(); }, []);
+
+  useEffect(() => {
+    if (!autoCreate) return;
+    openNew();
+    // Avoid reopening after closing the modal or navigating between admin tabs.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("create");
+    window.history.replaceState(window.history.state, "", url);
+  }, [autoCreate]);
 
   function openNew() {
     setEditor({ kind: "new" });
