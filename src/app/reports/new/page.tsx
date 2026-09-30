@@ -18,7 +18,8 @@ import { manualDepositsApi } from "@/lib/manual-deposits-api";
 import { alphaApi } from "@/lib/api";
 import { getScopeContext } from "@/lib/app-data-cache";
 import { derivedReportsApi } from "@/lib/derived-reports-api";
-import { reportValidationApi } from "@/lib/report-validation-api";
+import { reportValidationApi, type ReportValidationResult } from "@/lib/report-validation-api";
+import { ReportValidationErrorsModal } from "@/components/report-validation-errors-modal";
 import { reportTransmissionApi } from "@/lib/report-transmission-api";
 import { getEmployerSelection } from "@/lib/session";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
@@ -89,6 +90,7 @@ export default function NewReportPage() {
   const [fileName, setFileName] = useState("");
   const [excelIntake, setExcelIntake] = useState<ExcelEmployeeIntakeResult | null>(null);
   const [error, setError] = useState("");
+  const [validationResult, setValidationResult] = useState<ReportValidationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [advancing, setAdvancing] = useState(false);
   const [sending, setSending] = useState(false);
@@ -121,7 +123,7 @@ export default function NewReportPage() {
     const scopeKey = `${nextScope.organizationId}:${nextScope.employerId}`;
     if (scopeLoadKeyRef.current === scopeKey) return;
     scopeLoadKeyRef.current = scopeKey;
-    setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setResumingDraft(false); setShowOpenReports(false); setOpenReports([]); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
+    setLoading(true); setError(""); setValidationResult(null); setScope(nextScope); setManualReportId(""); setResumingDraft(false); setShowOpenReports(false); setOpenReports([]); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
     try {
       const [employerItem, employeePage, capabilities, profileSettings, accountRows, globalScope, draftPage] = await Promise.all([
         alphaApi.employer(nextScope.organizationId, nextScope.employerId),
@@ -261,7 +263,10 @@ export default function NewReportPage() {
   async function validatePersistedReport(stage: "employees" | "deposits") {
     if (!scope || !manualReportId) return;
     const result = await reportValidationApi.validate(scope.organizationId, scope.employerId, manualReportId, stage);
-    if (!result.isValid) throw new Error(validationMessage(result.errors));
+    if (!result.isValid) {
+      setValidationResult(result);
+      throw new Error(validationMessage(result.errors));
+    }
   }
 
   async function processExcelEmployees() {
@@ -504,7 +509,11 @@ export default function NewReportPage() {
         return;
       }
       const validation = await reportValidationApi.commit(scope.organizationId, scope.employerId, manualReportId, "final");
-      if (!validation.isValid) throw new Error(validationMessage(validation.errors));
+      if (!validation.isValid) {
+        setValidationResult(validation);
+        setError(validationMessage(validation.errors));
+        return;
+      }
       const result = await reportTransmissionApi.send(scope.organizationId, scope.employerId, manualReportId);
       setSentExternalId(result.transmission.externalId || result.transmission.id);
       toast.success("הדיווח נשלח בהצלחה");
@@ -570,7 +579,10 @@ export default function NewReportPage() {
     canManageOrganizationBilling={canManageOrganizationBilling}
     canManageEmployerBilling={canManageEmployerBilling}
     onClose={() => setShowBillingGateModal(false)}
-  /> : null}</AppShell>;
+  /> : null}
+  {validationResult ? <ReportValidationErrorsModal result={validationResult} reportMonth={month}
+    onClose={() => setValidationResult(null)} /> : null}
+  </AppShell>;
 }
 
 function ReportTypeBanner({ reportKind, source, month, correctionOperationCode }: { reportKind: ManualReportKind; source: SourceManualReport | null; month: string; correctionOperationCode: 2 | 3 | null }) { return <div className="notice" style={{ marginBottom: 18, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}><b>סוג הדיווח: {correctionOperationCode ? `דיווח שוטף מתקן · פעולה ${correctionOperationCode}` : reportKindLabel[reportKind]}</b><span>· חודש {formatMonth(month)}</span>{(reportKind !== 1 || correctionOperationCode) && source ? <span>· מתקן דיווח מחודש {formatMonth(source.reportingMonth)}</span> : null}</div>; }

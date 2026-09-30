@@ -241,3 +241,18 @@
 
 .report-profile-address-link { border: 1px solid var(--line); background: var(--surface); padding: 12px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
 .report-profile-address-link a { display: inline-block; margin-inline: 8px; }
+
+/* Reporting validation results use the shared modal shell and theme tokens. */
+.report-validation-modal .app-modal-body { min-width: 0; }
+.report-validation-intro { margin: 0 0 16px; color: var(--muted); line-height: 1.6; }
+.report-validation-findings { display: grid; gap: 12px; }
+.report-validation-finding { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.report-validation-finding-heading { display: flex; gap: 10px; align-items: start; }
+.report-validation-finding-heading > svg { flex: 0 0 auto; color: var(--danger, #d84545); margin-top: 3px; }
+.report-validation-finding h3 { margin: 3px 0 0; font-size: 15px; }
+.report-validation-category { color: var(--muted); font-size: 12px; }
+.report-validation-finding > p { margin: 10px 0 0; line-height: 1.65; overflow-wrap: anywhere; }
+.report-validation-finding details { margin-top: 12px; font-size: 12px; }
+.report-validation-finding summary { cursor: pointer; color: var(--muted); }
+.report-validation-technical { margin-top: 8px; padding: 8px; background: var(--bg); border-radius: 8px; overflow-wrap: anywhere; }
+.report-validation-technical p { margin: 6px 0 0; line-height: 1.6; }
