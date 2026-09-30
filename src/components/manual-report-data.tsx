@@ -4,6 +4,7 @@ import { UiInput } from "@/components/ui-controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleAlert, CircleCheck, Pencil, Save, Search, UserPlus, X } from "lucide-react";
 import { InlineEmployeeCreateModal } from "@/components/inline-employee-create-modal";
+import { AppModal } from "@/components/app-modal";
 import { PensionProductsEditor, normalizePensionEditorProducts, validatePensionEditorProducts, type PensionEditorProduct } from "@/components/pension-products-editor";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
@@ -322,15 +323,10 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       await loadRows(query.trim());
       notify.success("נתוני העובד והקצאות השכר נשמרו בהצלחה");
     }} /> : null}
-    {mixPrompt && editing ? <div className="report-modal-backdrop" role="presentation" style={{ zIndex: 1100 }}>
-      <div className="report-modal report-modal-auto-height" role="dialog" aria-modal="true" aria-labelledby="mix-update-title" style={{ maxWidth: 540 }}>
-        <div className="report-modal-header"><div><h2 id="mix-update-title">לעדכן את תמהיל המוצרים בכרטיס העובד?</h2><b className="report-modal-employee">{mixPrompt.employeeName}</b></div></div>
-        <div className="report-modal-body">
-          <p style={{ marginTop: 0 }}>התמהיל שהגדרת שונה מהתמהיל השמור כרגע בכרטיס העובד.</p>
-          <p>האם לשמור את המוצרים האלה גם כתמהיל הקבוע של העובד?</p>
-          <div className="notice notice-info">עדכון כרטיס העובד יעזור בדיווחים הבאים: המוצרים והנתונים שהגדרת ייטענו אוטומטית ולא תצטרכו להזין אותם מחדש.</div>
-        </div>
-        <div className="report-modal-footer">
+    {mixPrompt && editing ? <AppModal title="לעדכן את תמהיל המוצרים בכרטיס העובד?"
+      subtitle={mixPrompt.employeeName} width="md"
+      onClose={() => setMixPrompt(null)} closeDisabled={savingMix}
+      actions={<>
           <button className="btn btn-secondary" disabled={savingMix} onClick={() => void (async () => {
             const pending = mixPrompt;
             if (!pending) return;
@@ -361,9 +357,11 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
               notify.error(err instanceof Error ? err.message : "שמירת הנתונים נכשלה");
             } finally { setSavingMix(false); }
           })()}><Save size={15} />{savingMix ? "שומר..." : "כן, שמור גם בכרטיס העובד"}</button>
-        </div>
-      </div>
-    </div> : null}
+        </>}>
+      <p style={{ marginTop: 0 }}>התמהיל שהגדרת שונה מהתמהיל השמור כרגע בכרטיס העובד.</p>
+      <p>האם לשמור את המוצרים האלה גם כתמהיל הקבוע של העובד?</p>
+      <div className="notice notice-info">עדכון כרטיס העובד יעזור בדיווחים הבאים: המוצרים והנתונים שהגדרת ייטענו אוטומטית ולא תצטרכו להזין אותם מחדש.</div>
+    </AppModal> : null}
   </>;
 }
 
@@ -397,13 +395,16 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
 
   const totalDeposits = products.reduce((sum, product) => sum + [...product.employerContributions, ...product.employeeContributions].reduce((subtotal, contribution) => subtotal + Number(contribution.amount || 0), 0), 0);
 
-  return <div className="report-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <div className="report-modal" role="dialog" aria-modal="true">
-      <div className="report-modal-header">
-        <div><h2>עריכת מוצרים לעובד</h2><b className="report-modal-employee">{employee.firstName} {employee.lastName}</b><span>ת״ז {employee.nationalId} · מספר עובד {employee.employeeNumber}</span></div>
-        <button className="icon-button" onClick={onClose}><X size={18} /></button>
-      </div>
-      <div className="report-modal-body">
+  return <AppModal title="עריכת מוצרים לעובד"
+      subtitle={`${employee.firstName} ${employee.lastName} · ת״ז ${employee.nationalId} · מספר עובד ${employee.employeeNumber}`}
+      onClose={onClose} closeDisabled={saving} width="xl"
+      bodyClassName="report-modal-body"
+      actions={<>
+        <button className="btn btn-secondary" onClick={onClose} disabled={saving}>ביטול</button>
+        <button className="btn btn-primary" disabled={saving} onClick={() => void save()}>
+          <Save size={15} />{saving ? "שומר..." : "שמירת נתוני העובד"}
+        </button>
+      </>}>
         {error ? <div className="notice notice-error">{error}</div> : null}
         <div className="employee-report-summary"><div><span>חודש דיווח</span><b>{month}</b></div><div><span>מספר מוצרים</span><b>{products.length}</b></div><div><span>סה״כ הפקדות</span><b>₪{totalDeposits.toLocaleString("he-IL")}</b></div></div>
         <PensionProductsEditor
@@ -415,8 +416,5 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
           onMonthlySalaryChange={(value) => { setMonthlySalary(value); setError(""); setValidationAttempted(false); }}
           onProductsChange={(value) => { setProducts(value); setError(""); setValidationAttempted(false); }}
         />
-      </div>
-      <div className="report-modal-footer"><button className="btn btn-secondary" onClick={onClose}>ביטול</button><button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={15} />{saving ? "שומר..." : "שמירת נתוני העובד"}</button></div>
-    </div>
-  </div>;
+    </AppModal>;
 }
