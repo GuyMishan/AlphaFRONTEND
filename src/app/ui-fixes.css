@@ -246,32 +246,6 @@ body:has(.report-modal-backdrop) {
   line-height: 1.2;
 }
 
-.report-modal .report-product-fields .section14-check {
-  width: 100%;
-  height: var(--control-height-dense);
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 7px;
-  font-size: 11.5px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fbfcfe;
-  box-sizing: border-box;
-}
-
-.report-modal .report-product-fields .section14-check input[type="checkbox"] {
-  width: 15px !important;
-  height: 15px !important;
-  min-width: 15px !important;
-  min-height: 15px !important;
-  margin: 0;
-  padding: 0 !important;
-  flex: 0 0 15px;
-  accent-color: var(--blue);
-}
-
 .report-modal .contribution-grid {
   grid-column: 2;
   display: grid;

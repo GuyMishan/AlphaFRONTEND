@@ -60,6 +60,6 @@
 - Login/register/invite routes live under `src/app/login`, `register`, `invite`.
 
 ## Verification guardrails
-- `scripts/check-ui-primitives.mjs` — shared UI primitive and modal-shell enforcement. All modal dialogs must render through `AppModal`; the anchored accessibility popover is a non-modal exception.
+- `scripts/check-ui-primitives.mjs` — shared UI primitive, checkbox and modal-shell enforcement (rejects raw/UiInput checkboxes and local checkbox roles). All modal dialogs must render through `AppModal`; the anchored accessibility popover is a non-modal exception.
 - `scripts/check-hardcoded-select-options.mjs` — guards against hard-coded select data.
 - `.github/workflows/ci.yml` — authoritative CI sequence.

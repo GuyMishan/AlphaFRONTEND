@@ -39,8 +39,6 @@
 .report-product-title span { color: var(--muted); font-size: 11px; }
 .report-product-title b { margin-top: 1px; font-size: 15px; }
 .report-product-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: end; }
-.section14-check { height: var(--control-height-compact); display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; background: #fbfcfe; font-size: 13px; font-weight: 600; }
-.section14-check input { width: 16px; height: 16px; accent-color: var(--blue); }
 .contribution-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
 .contribution-section { margin-top: 9px; min-width: 0; }
 .contribution-section h3 { margin: 0 0 5px; font-size: 12px; }

@@ -68,7 +68,6 @@ html[data-theme="dark"] td,
 html[data-theme="dark"] th { border-color: var(--line); }
 html[data-theme="dark"] .step-number,
 html[data-theme="dark"] .payment-amount,
-html[data-theme="dark"] .section14-check { background: #111b28; color: var(--text); }
 html[data-theme="dark"] .employer.active,
 html[data-theme="dark"] .manual-employee-row.selected { background: #13243a; }
 html[data-theme="dark"] .upload-zone { background: #121d2a; border-color: #3a4c60; }

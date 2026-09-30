@@ -9,7 +9,9 @@ const allowed = new Set([
 
 const rawControlPattern = /<(input|select|textarea)\b/g;
 const rawChoiceCardPattern = /choice-card/g;
-const checkboxViaInputPattern = /<UiInput\b[^>]*\btype\s*=\s*["']checkbox["']/g;
+// Reject raw or UiInput checkbox controls, including JSX expression values.
+const checkboxControlPattern = /<(UiInput|input)\b[^>]*\btype\s*=\s*(?:["']checkbox["']|\{\s*["']checkbox["']\s*\})/g;
+const customCheckboxRolePattern = /\brole\s*=\s*["']checkbox["']/g;
 const rawTablePattern = /<table\b/g;
 const rawDialogPattern = /role="dialog"|aria-modal=/g;
 const allowedNonModalDialog = path.normalize("src/components/accessibility-menu.tsx");
@@ -29,8 +31,9 @@ function walk(dir) {
     if (allowed.has(rel)) continue;
 
     const content = fs.readFileSync(full, "utf8");
-    const checkboxViaInput = [...content.matchAll(checkboxViaInputPattern)];
-    if (checkboxViaInput.length) failures.push(`${rel}: use UiCheckbox instead of UiInput type="checkbox" (${checkboxViaInput.length} found)`);
+    const rawCheckboxes = [...content.matchAll(checkboxControlPattern)];
+    if (rawCheckboxes.length) failures.push(`${rel}: use UiCheckbox instead of raw/UiInput checkboxes (${rawCheckboxes.length} found)`);
+    if (customCheckboxRolePattern.test(content)) failures.push(`${rel}: custom checkbox roles require a reviewed shared component`);
     const rawControls = [...content.matchAll(rawControlPattern)];
     if (rawControls.length) {
       failures.push(`${rel}: use UiInput/UiSelect/UiTextarea instead of raw HTML controls (${rawControls.length} found)`);
