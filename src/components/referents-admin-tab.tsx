@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, ShieldCheck, X } from "lucide-react";
+import { Building2, Landmark, Plus, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppModal } from "@/components/app-modal";
 import { DataTable } from "@/components/data-table";
 import { UiInput, UiSelect } from "@/components/ui-controls";
+import { UiSelectionList } from "@/components/ui-selection-list";
 import { alphaApi } from "@/lib/api";
 import type { PlatformUser, Referent, ScopeOrganization } from "@/lib/types";
 
 type Editor = { kind: "existing"; referent: Referent } | { kind: "new" };
-const checkboxStyle = { display: "flex", gap: 10, alignItems: "center", textAlign: "right" as const, width: "100%" as const };
 
 export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean }) {
   const [referents, setReferents] = useState<Referent[]>([]);
@@ -26,8 +26,6 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
   const [phone, setPhone] = useState("");
   const [organizationIds, setOrganizationIds] = useState<string[]>([]);
   const [employerIds, setEmployerIds] = useState<string[]>([]);
-  const [orgSearch, setOrgSearch] = useState("");
-  const [employerSearch, setEmployerSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -68,32 +66,18 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
     setPhone("");
     setOrganizationIds([]);
     setEmployerIds([]);
-    setOrgSearch("");
-    setEmployerSearch("");
   }
 
   function openEdit(referent: Referent) {
     setEditor({ kind: "existing", referent });
     setOrganizationIds(referent.organizationIds);
     setEmployerIds(referent.employerIds);
-    setOrgSearch("");
-    setEmployerSearch("");
   }
 
   const allEmployers = useMemo(() => organizations.flatMap((organization) =>
     organization.employers.map((employer) => ({
       ...employer, organizationName: organization.name,
     }))), [organizations]);
-
-  const visibleOrganizations = useMemo(() =>
-    organizations.filter((row) => row.name.toLowerCase().includes(orgSearch.toLowerCase())),
-    [organizations, orgSearch]);
-
-  const visibleEmployers = useMemo(() =>
-    allEmployers.filter((row) =>
-      `${row.legalName} ${row.registrationNumber} ${row.organizationName}`
-        .toLowerCase().includes(employerSearch.toLowerCase())),
-    [allEmployers, employerSearch]);
 
   const candidates = useMemo(() => users.filter((user) =>
     user.isActive && !user.isPlatformAdmin && !user.isReferent
@@ -248,53 +232,33 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
             </label>}
         </> : <div className="notice notice-info">{editor.referent.email}</div>}
 
-        <div className="field">
-          <label htmlFor="referent-org-search"><b>ארגונים בניהול מלא</b></label>
-          <UiInput id="referent-org-search" value={orgSearch} onChange={(event) => setOrgSearch(event.target.value)}
-            placeholder="חיפוש ארגונים" disabled={saving} />
-          <div role="group" aria-label="בחירת ארגונים" style={{
-            maxHeight: 195, overflowY: "auto", display: "grid", gap: 6,
-            padding: 8, border: "1px solid var(--border)", borderRadius: 10,
-          }}>
-            {visibleOrganizations.map((org) => <button key={org.id} type="button"
-              aria-pressed={organizationIds.includes(org.id)} disabled={saving}
-              className="btn btn-secondary" style={checkboxStyle} onClick={() => toggleOrganization(org.id)}>
-              <span aria-hidden="true">{organizationIds.includes(org.id) ? "☑" : "□"}</span>
-              {org.name}
-            </button>)}
-            {!visibleOrganizations.length ? <span>לא נמצאו ארגונים.</span> : null}
-          </div>
-        </div>
+        <UiSelectionList
+          title="ארגונים בניהול מלא"
+          description="בחירת ארגון מעניקה גישה לכל המעסיקים שלו."
+          icon={<Landmark size={19} />}
+          options={organizations.map(org => ({ id: org.id, title: org.name }))}
+          selectedIds={organizationIds}
+          onToggle={toggleOrganization}
+          searchPlaceholder="חיפוש ארגון"
+          disabled={saving}
+        />
 
-        <div className="field">
-          <label htmlFor="referent-employer-search"><b>מעסיקים בודדים מכל הארגונים</b></label>
-          <p style={{ color: "var(--muted)", margin: 0 }}>
-            ניתן לבחור מעסיקים ממספר ארגונים. אין צורך לבחור בנפרד מעסיקים שכבר כלולים בארגון שנבחר.
-          </p>
-          <UiInput id="referent-employer-search" value={employerSearch}
-            onChange={(event) => setEmployerSearch(event.target.value)}
-            placeholder="חיפוש מעסיק, ח.פ. או ארגון" disabled={saving} />
-          <div role="group" aria-label="בחירת מעסיקים" style={{
-            maxHeight: 240, overflowY: "auto", display: "grid", gap: 6,
-            padding: 8, border: "1px solid var(--border)", borderRadius: 10,
-          }}>
-            {visibleEmployers.map((employer) => {
-              const covered = organizationIds.includes(employer.organizationId);
-              return <button type="button" key={employer.id} aria-pressed={covered || employerIds.includes(employer.id)}
-                className="btn btn-secondary" style={checkboxStyle} disabled={covered || saving}
-                onClick={() => toggleEmployer(employer.id)}>
-                <span aria-hidden="true">{covered || employerIds.includes(employer.id) ? "☑" : "□"}</span>
-                <span style={{ minWidth: 0 }}>
-                  <b>{employer.legalName}</b>
-                  <small style={{ display: "block", color: "var(--muted)" }}>
-                    {employer.organizationName} · {employer.registrationNumber}{covered ? " · כלול בארגון" : ""}
-                  </small>
-                </span>
-              </button>;
-            })}
-            {!visibleEmployers.length ? <span>לא נמצאו מעסיקים.</span> : null}
-          </div>
-        </div>
+        <UiSelectionList
+          title="מעסיקים בודדים מכל הארגונים"
+          description="אפשר לשייך מעסיקים מארגונים שונים. מעסיקים מתוך ארגון שנבחר כבר כלולים."
+          icon={<Building2 size={19} />}
+          options={allEmployers.map(employer => ({
+            id: employer.id,
+            title: employer.legalName,
+            subtitle: `${employer.organizationName} · ${employer.registrationNumber}`,
+            selectedByParent: organizationIds.includes(employer.organizationId),
+          }))}
+          selectedIds={employerIds}
+          onToggle={toggleEmployer}
+          searchPlaceholder="חיפוש מעסיק, ח.פ. או ארגון"
+          disabled={saving}
+          height={272}
+        />
         <div className="form-actions" style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <button type="button" className="btn btn-secondary" onClick={() => setEditor(null)} disabled={saving}>
             <X size={15} /> ביטול

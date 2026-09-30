@@ -1,0 +1,182 @@
+/* Theme-aware minimal scrollbars: translucent track, no arrows, hover/focus contrast. */
+:root {
+  --alpha-scroll-thumb: #b3bfce;
+  --alpha-scroll-hover: #658bbf;
+  --alpha-scroll-active: #2865d8;
+  --alpha-scroll-size: 8px;
+}
+html[data-theme="dark"] {
+  --alpha-scroll-thumb: #435c76;
+  --alpha-scroll-hover: #6f9cda;
+  --alpha-scroll-active: #93b7ff;
+}
+html { scrollbar-color: var(--alpha-scroll-thumb) transparent; scrollbar-width: thin; }
+*:not(svg):not(path) {
+  scrollbar-color: var(--alpha-scroll-thumb) transparent;
+  scrollbar-width: thin;
+}
+*:not(svg):not(path):hover,
+*:not(svg):not(path):focus-within {
+  scrollbar-color: var(--alpha-scroll-hover) transparent;
+}
+/* WebKit/Blink scrollbar buttons are suppressed; the track is fully transparent. */
+::-webkit-scrollbar { width: var(--alpha-scroll-size); height: var(--alpha-scroll-size); background: transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-track-piece, ::-webkit-scrollbar-corner {
+  background: transparent !important;
+  border: 0;
+  box-shadow: none;
+}
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background: var(--alpha-scroll-thumb);
+  background-clip: padding-box;
+}
+:hover::-webkit-scrollbar-thumb, :focus-within::-webkit-scrollbar-thumb {
+  background: var(--alpha-scroll-hover);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active {
+  background: var(--alpha-scroll-active);
+  background-clip: padding-box;
+}
+@media (pointer: coarse) {
+  :root { --alpha-scroll-size: 5px; }
+}
+
+/* Select dropdowns are portalled to the document body to escape modal clipping. */
+.ui-select-menu-portal {
+  position: fixed !important;
+  z-index: 6500 !important;
+  inset: auto;
+  min-width: 0;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 20px 55px rgba(14, 33, 54, .21), 0 3px 10px rgba(14, 33, 54, .08);
+}
+.ui-select-menu-portal button {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  direction: rtl;
+}
+html[data-theme="dark"] .ui-select-menu-portal {
+  background: #111b28 !important;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, .48), 0 3px 12px rgba(0, 0, 0, .24);
+}
+
+/* Shared searchable selection cards. Used wherever assignments are multi-select. */
+.ui-selection {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--bg));
+}
+.ui-selection-heading,
+.ui-selection-heading-copy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ui-selection-heading { justify-content: space-between; flex-wrap: wrap; }
+.ui-selection-heading-copy { flex: 1 1 220px; }
+.ui-selection-heading h3 { font-size: 14px; margin: 0 0 3px; color: var(--text); }
+.ui-selection-heading p { font-size: 12px; line-height: 1.55; margin: 0; color: var(--muted); }
+.ui-selection-heading-icon {
+  width: 39px;
+  height: 39px;
+  flex: 0 0 39px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+.ui-selection-count {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--blue);
+  border: 1px solid color-mix(in srgb, var(--blue) 19%, transparent);
+  background: var(--blue-soft);
+}
+.ui-selection-search { position: relative; min-width: 0; }
+.ui-selection-search > svg {
+  position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); pointer-events: none; z-index: 1;
+}
+.ui-selection-search > input.ui-control { padding-inline-start: 38px !important; min-height: 40px; }
+.ui-selection-viewport {
+  display: grid; align-content: start; gap: 7px;
+  min-height: 56px; overflow-y: auto; overscroll-behavior: contain;
+  padding: 2px 2px 2px 8px;
+}
+.ui-selection-item {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 10px 12px;
+  min-height: 55px;
+  display: flex; flex-direction: row; align-items: center; gap: 11px;
+  width: 100%; min-width: 0; text-align: right; direction: rtl; cursor: pointer;
+  transition: border-color .17s ease, background .17s ease, box-shadow .17s ease;
+}
+.ui-selection-item:hover:not(:disabled),
+.ui-selection-item:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--blue-soft) 55%, var(--surface));
+  border-color: color-mix(in srgb, var(--blue) 48%, var(--line));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 8%, transparent);
+}
+.ui-selection-item.is-selected {
+  background: color-mix(in srgb, var(--blue-soft) 70%, var(--surface));
+  border-color: color-mix(in srgb, var(--blue) 43%, var(--line));
+}
+.ui-selection-check {
+  width: 22px; height: 22px; flex: 0 0 22px;
+  border: 1.6px solid color-mix(in srgb, var(--muted) 75%, var(--line));
+  border-radius: 7px; display: grid; place-items: center;
+  color: var(--surface); background: var(--surface);
+}
+.ui-selection-item.is-selected .ui-selection-check {
+  color: #fff; background: var(--blue); border-color: var(--blue);
+}
+.ui-selection-item-copy { display: grid; gap: 3px; min-width: 0; }
+.ui-selection-item-copy strong { font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
+.ui-selection-item-copy small { font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+.ui-selection-item-copy .ui-selection-inherited {
+  color: var(--blue); display: flex; gap: 4px; align-items: center;
+}
+.ui-selection-item.is-disabled { cursor: default; opacity: .8; }
+.ui-selection-empty {
+  min-height: 70px; display: grid; place-items: center;
+  font-size: 13px; text-align: center; color: var(--muted);
+}
+.ui-selection-footer {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 8px; color: var(--muted); font-size: 11px;
+}
+.ui-selection-reset {
+  background: none; color: var(--blue); border: 0; padding: 2px 0; cursor: pointer;
+  font-size: 12px; font-weight: 600;
+}
+.ui-selection-reset:hover { text-decoration: underline; }
+@media (max-width: 560px) {
+  .ui-selection { padding: 12px; gap: 10px; border-radius: 14px; }
+  .ui-selection-heading { gap: 7px; }
+  .ui-selection-item { min-height: 48px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-selection-item { transition: none; }
+}

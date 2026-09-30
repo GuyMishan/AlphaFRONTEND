@@ -17,6 +17,7 @@ import "./ui-fixes.css";
 import "./form-feedback.css";
 import "./visual-hotfixes.css";
 import "./dark-mode.css";
+import "./selection-and-scrollbars.css";
 
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo" });
 

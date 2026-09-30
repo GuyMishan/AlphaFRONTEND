@@ -9,6 +9,7 @@ import {
   useId,
   useState,
   type ButtonHTMLAttributes,
+  type CSSProperties,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
@@ -123,7 +124,7 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
     const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
     const [active, setActive] = useState(-1);
-    const [placement, setPlacement] = useState<React.CSSProperties>({});
+    const [placement, setPlacement] = useState<CSSProperties>({});
     const menuId = useId();
     const options = Children.toArray(children).filter(isValidElement).map((child) => {
       const optionProps = child.props as { value?: string | number; children?: ReactNode; disabled?: boolean };
