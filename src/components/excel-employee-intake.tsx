@@ -2,7 +2,8 @@
 
 import { UiCheckbox, UiDateInput, UiInput } from "@/components/ui-controls";
 import { DataTable } from "@/components/data-table";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { UiFileUpload } from "@/components/ui-file-upload";
 import { CircleAlert, CircleCheck, UploadCloud, UserPlus } from "lucide-react";
 import * as XLSX from "xlsx";
 import { alphaApi } from "@/lib/api";
@@ -424,8 +425,7 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
     });
   }, [fileName, rows, matched, newRows, blocked, updateEmployeeProfiles, updatePensionMix, onChange]);
 
-  async function selectFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+  async function selectFile(file: File | null) {
     if (!file) return;
     setError(""); setRows([]); onChange(null);
     if (!/\.(xlsx|xls|csv)$/i.test(file.name)) { setError("יש לבחור קובץ Excel או CSV בלבד."); return; }
@@ -541,7 +541,10 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
   return <>
     <div className="card-head"><div><h2>העלאת קובץ דיווח מלא</h2><span style={{ color: "var(--muted)" }}>Excel / CSV · עובדים, מוצרים, הפרשות ונתוני ממשק מעסיקים 006</span></div></div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
-    <label className="upload-zone" htmlFor="excel-file"><UploadCloud size={38} /><h3>{fileName || "גררו קובץ לכאן או בחרו מהמחשב"}</h3><p>כל שורה מייצגת מוצר פנסיוני של עובד. המערכת קולטת את פרטי העובד, הקופה, שכר מבוטח, הפרשות, סעיף 14, סטטוסים, סוג פעולה ופרטי תשלום. לעובד עם כמה מוצרים יש כמה שורות.</p><span className="btn btn-soft">{loading ? "קורא ובודק קובץ..." : "בחירת קובץ"}</span><UiInput id="excel-file" type="file" accept=".xlsx,.xls,.csv" hidden disabled={loading} onChange={(event) => void selectFile(event)} /></label>
+    <UiFileUpload id="excel-file" variant="zone" label="גררו קובץ לכאן או בחרו מהמחשב" fileName={fileName}
+      description="כל שורה מייצגת מוצר פנסיוני של עובד. המערכת קולטת את פרטי העובד, הקופה, שכר מבוטח, הפרשות, סעיף 14, סטטוסים, סוג פעולה ופרטי תשלום. לעובד עם כמה מוצרים יש כמה שורות."
+      accept=".xlsx,.xls,.csv" maxBytes={20 * 1024 * 1024} busy={loading}
+      onFileSelected={selectFile} onInvalid={setError} />
 
     {rows.length ? <div style={{ marginTop: 20 }}>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginBottom: 16 }}>

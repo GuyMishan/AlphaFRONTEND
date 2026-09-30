@@ -1,9 +1,10 @@
 "use client";
 
-import { UiDateInput, UiInput  } from "@/components/ui-controls";
+import { UiDateInput, UiInput } from "@/components/ui-controls";
+import { UiFileUpload } from "@/components/ui-file-upload";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
-import { BriefcaseBusiness, CalendarDays, CreditCard, FileUp, Pencil, Search, Trash2 } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, CreditCard, Pencil, Search, Trash2 } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
 import { DataTable } from "@/components/data-table";
@@ -13,6 +14,7 @@ import { bankReferenceApi, type BankBranchReference, type BankReference } from "
 import { employerInterfaceApi, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
 import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
 import { reportAttachmentsApi, type ReportAttachment } from "@/lib/report-attachments-api";
+import { paymentConfirmationsApi, type PaymentConfirmation } from "@/lib/payment-confirmations-api";
 import type { Employer, PensionFundOption, PensionProductType } from "@/lib/types";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
 
@@ -67,9 +69,10 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
       maxHeight={560}
       tableClassName="deposit-table"
       wrapperClassName="deposit-table-wrap"
-      columns={[{ key: "provider", label: "שם יצרן / מוצר" }, { key: "providerAccount", label: "חשבון יצרן" }, { key: "amount", label: "סכום" }, { key: "employerAccount", label: "חשבון מעסיק" }, { key: "reference", label: "אסמכתא" }, { key: "date", label: "תאריך ערך" }, { key: "type", label: "סוג תקבול" }, { key: "status", label: "סטטוס" }, { key: "edit", label: "" }]}
+      columns={[{ key: "employee", label: "עובד" }, { key: "provider", label: "שם יצרן / מוצר" }, { key: "providerAccount", label: "חשבון יצרן" }, { key: "amount", label: "סכום" }, { key: "employerAccount", label: "חשבון מעסיק" }, { key: "reference", label: "אסמכתא" }, { key: "date", label: "תאריך ערך" }, { key: "type", label: "סוג תקבול" }, { key: "status", label: "סטטוס" }, { key: "edit", label: "" }]}
       renderCells={(row) => [
-        <><b>{row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני"}</b><span>{row.employeeName} · {row.policyNumber || "ללא מס׳ פוליסה"}</span></>,
+        <b>{row.employeeName}</b>,
+        <><b>{row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני"}</b><span>{row.policyNumber || "ללא מס׳ פוליסה"}</span></>,
         <span className="account-number">{row.providerAccount || "—"}</span>,
         `₪${Number(row.totalDeposit).toLocaleString("he-IL")}`,
         <span className="account-number">{formatEmployerAccount(row, paymentAccount)}</span>,
@@ -208,6 +211,8 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const [branchSelection, setBranchSelection] = useState(row.employerBranch || "");
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [attachments, setAttachments] = useState<ReportAttachment[]>([]);
+  const [paymentProofs, setPaymentProofs] = useState<PaymentConfirmation[]>([]);
+  const [uploadingProof, setUploadingProof] = useState(false);
   const [annualEmployerAffidavitSatisfied, setAnnualEmployerAffidavitSatisfied] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -220,8 +225,9 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       employerInterfaceApi.productMetadata(organizationId, employerId, reportId, row.id),
       employerInterfaceApi.previousReference(organizationId, employerId, reportId, row.id),
       reportAttachmentsApi.list(organizationId, employerId, reportId),
+      paymentConfirmationsApi.list(organizationId, employerId, reportId, row.id),
       alphaApi.employerPaymentResolution(organizationId, employerId),
-    ]).then(([item, previous, attachmentList, paymentResolution]) => {
+    ]).then(([item, previous, attachmentList, proofList, paymentResolution]) => {
       if (!active) return;
       setMetadata(item);
       const automaticDebit = !isNegativeKind(item.reportKind) && !isDifferencesKind(item.reportKind)
@@ -232,6 +238,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
         receiverAccountType: automaticDebit ? 1 : item.receiverAccountType, oldPensionTypeCode: item.oldPensionTypeCode });
       setPreviousReference(previous);
       setAttachments(attachmentList.items);
+      setPaymentProofs(proofList);
       setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
       const effectiveAccount = paymentResolution.account;
       setResolvedPaymentAccount(effectiveAccount ? { bankId: effectiveAccount.bankId, branchId: effectiveAccount.branchId, maskedAccountNumber: effectiveAccount.maskedAccountNumber, mandateIsActive: effectiveAccount.mandateIsActive } : null);
@@ -348,6 +355,19 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
     }
   }
 
+  async function uploadPaymentProof(file: File) {
+    setUploadingProof(true); setError("");
+    try {
+      const saved = await paymentConfirmationsApi.upload(organizationId, employerId, reportId, row.id, file);
+      setPaymentProofs((current) => [saved, ...current]);
+      patch("confirmationFileName", saved.originalFileName);
+      notify.success("אישור ההעברה הועלה ונשמר.");
+    } catch (err) {
+      const message = shortError(err instanceof Error ? err.message : "שמירת האסמכתא נכשלה");
+      setError(message); notify.error(message);
+    } finally { setUploadingProof(false); }
+  }
+
   async function save() {
     setError("");
     const errors = [...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)), ...validate006Metadata(metadata, metadataForm, previousReference)];
@@ -366,7 +386,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
         await employerInterfaceApi.updateProductMetadata(organizationId, employerId, reportId, row.id, metadataForm);
         await employerInterfaceApi.updatePreviousReference(organizationId, employerId, reportId, row.id, previousReference);
       }
-      onSaved({ ...row, ...persistedPayment });
+      onSaved({ ...row, ...persistedPayment, confirmationFileName: paymentProofs[0]?.originalFileName || persistedPayment.confirmationFileName });
     } catch (err) {
       const message = shortError(err instanceof Error ? err.message : "שמירת פרטי התשלום נכשלה"); setError(message); notify.error(message); setSaving(false);
     }
@@ -374,7 +394,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
 
   const providerAccount = form.providerAccount || providerAccountFromReference(providerReference);
 
-  return <AppModal open title="פרטי תשלום" subtitle="השלמת הנתונים הנדרשים לדיווח בלבד" onClose={onClose} width="xl" className="payment-modal" bodyClassName="payment-modal-body" actions={<><button className="btn btn-primary" disabled={saving || loadingMetadata} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button><button className="btn btn-secondary" onClick={onClose}>ביטול</button></>}>
+  return <AppModal open title="פרטי תשלום" subtitle="השלמת הנתונים הנדרשים לדיווח בלבד" onClose={onClose} width="xl" className="payment-modal" bodyClassName="payment-modal-body" actions={<><button className="btn btn-primary" disabled={saving || loadingMetadata || uploadingProof} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button><button className="btn btn-secondary" onClick={onClose}>ביטול</button></>}>
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
@@ -395,7 +415,19 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {!negative && metadataForm.paymentMethodCode === 7 ? <div className="field"><label>קוד פנימי של הגורם השולח במס״ב *</label><UiInput maxLength={16} value={form.masavSenderCode} onChange={(e) => patch("masavSenderCode", e.target.value)} placeholder="8–16 תווים" /></div> : null}
             {!negative && !noMoneyCorrection && (metadataForm.employerAccountType === 2 || metadataForm.receiverAccountType === 2) ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 3) ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
-            {!negative ? <label className="payment-upload"><FileUp size={15} /><span>{form.confirmationFileName || "צירוף אישור"}</span><UiInput type="file" hidden onChange={(e) => patch("confirmationFileName", e.target.files?.[0]?.name || "")} /></label> : null}
+            {!negative && !configuredPensionDebit && !noMoneyCorrection ? <div className="payment-evidence-control">
+              <UiFileUpload label="צירוף אישור העברה (אם קיים)" fileName={uploadingProof ? "שומר אישור..." : undefined}
+                className="payment-upload" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                maxBytes={10 * 1024 * 1024} disabled={saving} busy={uploadingProof}
+                onFileSelected={uploadPaymentProof} onInvalid={(message) => { setError(message); notify.error(message); }} />
+              {paymentProofs.length ? <div className="payment-evidence-list">
+                {paymentProofs.map((item, index) => <button type="button" className="btn btn-secondary" key={item.id}
+                  onClick={() => void paymentConfirmationsApi.download(organizationId, employerId, reportId, row.id, item)
+                    .catch(() => notify.error("הורדת אישור ההעברה נכשלה"))}>
+                  {index === 0 ? "אישור אחרון: " : "אישור קודם: "}{item.originalFileName}
+                </button>)}
+              </div> : null}
+            </div> : null}
             {bankRequired ? <>
               <div className="field"><label>בנק *</label><UiInput required list={`banks-${row.id}`} value={bankSelection} onChange={(e) => chooseBank(e.target.value)} placeholder="חיפוש לפי שם או מספר בנק" /><datalist id={`banks-${row.id}`}>{banks.map((bank) => <option key={bank.bankCode} value={bankLabel(bank)} />)}</datalist></div>
               <div className="field"><label>מס׳ בנק</label><UiInput readOnly value={form.employerBankCode} /></div>
@@ -433,11 +465,10 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
                 <div><b>{label}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div></div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   {item ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(item.id)}><Trash2 size={14} />הסר</button> : null}
-                  {!item ? <label className="btn btn-secondary" style={{ cursor: uploadingAttachment ? "not-allowed" : "pointer" }}>
-                    <FileUp size={14} />{uploadingAttachment === code ? "מעלה..." : "צרף PDF"}
-                    <UiInput type="file" hidden accept="application/pdf,.pdf" disabled={uploadingAttachment != null}
-                      onChange={(e) => { const file = e.target.files?.[0] ?? null; e.currentTarget.value = ""; void uploadAttachment(code, file); }} />
-                  </label> : null}
+                  {!item ? <UiFileUpload className="btn btn-secondary" label="צרף PDF"
+                    accept="application/pdf,.pdf" maxBytes={10 * 1024 * 1024}
+                    busy={uploadingAttachment != null} onFileSelected={(file) => uploadAttachment(code, file)}
+                    onInvalid={(message) => { setError(message); notify.error(message); }} /> : null}
                 </div>
               </div>)}
             </div>

@@ -37,8 +37,8 @@
 ## Reporting / Employer Interface 006
 - `src/app/reports/new/page.tsx` — new-report orchestration.
 - `src/components/manual-report-data.tsx` — manual report flow.
-- `src/components/manual-deposit-data.tsx` — deposit data.
-- `src/components/excel-employee-intake.tsx` — Excel intake.
+- `src/components/manual-deposit-data.tsx` — per-employee/product deposit data and separately secured payment confirmations, through `payment-confirmations-api.ts`. Payment evidence is not a clearinghouse attachment.
+- `src/components/excel-employee-intake.tsx` — Excel intake; shared `ui-file-upload.tsx` handles file inputs, drag/drop, type and size checks across Excel, XML, payment evidence and V006 attachment uploads.
 - `src/components/employer-interface-xml-intake.tsx` — XML/DAT/TST intake.
 - `src/lib/employer-interface-api.ts`, `manual-deposits-api.ts`, `report-validation-api.ts`, `report-transmission-api.ts`, `report-feedback-api.ts`.
 - `src/app/reports/page.tsx` surfaces both transmission history and correlated official Employer Interface 006 clearinghouse feedback returned by `report-feedback-api.ts`.

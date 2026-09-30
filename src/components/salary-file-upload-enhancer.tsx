@@ -65,66 +65,12 @@ export function SalaryFileUploadEnhancer() {
   const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    let activeInput: HTMLInputElement | null = null;
-    let activeZone: HTMLElement | null = null;
     let toolsRoot: HTMLElement | null = null;
-
-    const detach = () => {
-      if (!activeZone) return;
-      activeZone.removeEventListener("dragenter", onDragEnter);
-      activeZone.removeEventListener("dragover", onDragOver);
-      activeZone.removeEventListener("dragleave", onDragLeave);
-      activeZone.removeEventListener("drop", onDrop);
-      activeZone.classList.remove("drag-active");
-      activeZone = null;
-      activeInput = null;
-    };
-
-    const onDragEnter = (event: DragEvent) => {
-      event.preventDefault();
-      activeZone?.classList.add("drag-active");
-    };
-    const onDragOver = (event: DragEvent) => {
-      event.preventDefault();
-      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
-      activeZone?.classList.add("drag-active");
-    };
-    const onDragLeave = (event: DragEvent) => {
-      if (event.currentTarget === event.target) activeZone?.classList.remove("drag-active");
-    };
-    const onDrop = (event: DragEvent) => {
-      event.preventDefault();
-      activeZone?.classList.remove("drag-active");
-      const file = event.dataTransfer?.files?.[0];
-      if (!file || !activeInput) return;
-      const transfer = new DataTransfer();
-      transfer.items.add(file);
-      activeInput.files = transfer.files;
-      activeInput.dispatchEvent(new Event("change", { bubbles: true }));
-    };
-
     const attach = () => {
-      const input = document.querySelector<HTMLInputElement>("#excel-file");
-      if (!input) {
-        detach();
-        if (toolsRoot) toolsRoot.remove();
-        toolsRoot = null;
-        setMountNode(null);
-        return;
+      const zone = document.querySelector<HTMLInputElement>("#excel-file")?.closest<HTMLElement>(".upload-zone");
+      if (!zone) {
+        toolsRoot?.remove(); toolsRoot = null; setMountNode(null); return;
       }
-      const zone = input.closest<HTMLElement>(".upload-zone");
-      if (!zone) return;
-
-      if (activeInput !== input || activeZone !== zone) {
-        detach();
-        activeInput = input;
-        activeZone = zone;
-        zone.addEventListener("dragenter", onDragEnter);
-        zone.addEventListener("dragover", onDragOver);
-        zone.addEventListener("dragleave", onDragLeave);
-        zone.addEventListener("drop", onDrop);
-      }
-
       if (!toolsRoot || !toolsRoot.isConnected) {
         toolsRoot = document.createElement("div");
         toolsRoot.className = "salary-upload-tools-root";
@@ -138,7 +84,6 @@ export function SalaryFileUploadEnhancer() {
     observer.observe(document.body, { childList: true, subtree: true });
     return () => {
       observer.disconnect();
-      detach();
       toolsRoot?.remove();
       setMountNode(null);
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import { UiInput } from "@/components/ui-controls";
+import { UiFileUpload } from "@/components/ui-file-upload";
 import { useState } from "react";
 import { UploadCloud, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -96,13 +96,10 @@ export function EmployerInterfaceXmlIntake({
     <div className="field">
       <label htmlFor="employer-interface-xml">קובץ XML ממשק מעסיקים 006</label>
       <small style={{ display: "block", marginBottom: 8 }}>המערכת מזהה אוטומטית את סוג הקובץ ומבצעת ולידציה מול ה־XSD המתאים.</small>
-      <UiInput
-        id="employer-interface-xml"
-        type="file"
-        accept=".xml,.dat,.tst,application/xml,text/xml"
-        disabled={disabled || validating || importing}
-        onChange={(event) => void validateSelected(event.target.files?.[0] ?? null)}
-      />
+      <UiFileUpload id="employer-interface-xml" variant="field" label="בחירת קובץ"
+        accept=".xml,.dat,.tst,application/xml,text/xml" maxBytes={20 * 1024 * 1024}
+        disabled={disabled} busy={validating || importing}
+        onFileSelected={validateSelected} onInvalid={(message) => toast.error(message)} />
       <small>עד 20MB. אין צורך לבחור סוג XML מראש.</small>
     </div>
 
