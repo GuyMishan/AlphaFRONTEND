@@ -172,7 +172,7 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
       <div><h2>מעסיקים</h2><span style={{ color: "var(--muted)" }}>כל המעסיקים בארגון ואופן החיוב שלהם. שינוי הגדרות החיוב מתבצע מתוך כרטיס המעסיק.</span></div>
       {canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}>מעסיק חדש</Link> : null}
     </div>
-    {entitlements ? <div style={{ marginBottom: 18 }}><PlanUsage label="מעסיקים במסלול" usage={entitlements.employers} /></div> : null}
+    {entitlements?.plan.code === "FREE" ? <div style={{ marginBottom: 18 }}><PlanUsage label="מעסיקים במסלול" usage={entitlements.employers} /></div> : null}
     {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <DataTable
       items={employers}
       rowKey={(item) => item.id}

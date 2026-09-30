@@ -70,7 +70,7 @@ export default function EmployeesPage() {
   return <AppShell title="עובדים">
     {loading ? <div className="empty">טוען עובדים...</div> : error ? <div className="notice notice-error">{error}</div> : employer && organizationId && employerId
       ? <>
-          {entitlements ? <section className="card" style={{ marginBottom: 18 }}><div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.plan.name}</h3></div></div><PlanUsage label="עובדים פעילים" usage={entitlements.activeEmployees} /></section> : null}
+          {entitlements?.plan.code === "FREE" ? <section className="card" style={{ marginBottom: 18 }}><div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.plan.name}</h3></div></div><PlanUsage label="עובדים פעילים" usage={entitlements.activeEmployees} /></section> : null}
           <EmployerEmployeesPanel organizationId={organizationId} employer={employer} canCreate={canCreateEmployee} showHeader />
         </>
       : <div className="empty">בחרו ארגון ומעסיק בסרגל העליון</div>}

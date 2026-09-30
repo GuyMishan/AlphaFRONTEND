@@ -237,7 +237,7 @@ export default function DashboardPage() {
 
     {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
 
-    {mode !== "admin" && entitlements ? <section className="card" style={{ marginBottom: 18 }}>
+    {mode !== "admin" && entitlements?.plan.code === "FREE" ? <section className="card" style={{ marginBottom: 18 }}>
       <div className="card-head"><div><h2>מסלול {entitlements.plan.name}</h2><span style={{ color: "var(--muted)" }}>השימוש הנוכחי מול מכסת המסלול</span></div></div>
       <div className="grid stats">
         <PlanUsage label="מעסיקים" usage={entitlements.employers} />

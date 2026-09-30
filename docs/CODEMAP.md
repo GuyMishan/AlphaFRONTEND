@@ -87,3 +87,5 @@
 - The reports/feedback parent grid now paginates through the existing report-feedback endpoint via shared DataTable infinite loading, while lazy expansion independently pages each report's deposit rows. Historical payment modals explicitly guard every upload/remove/save action in read-only mode, not merely disabled form controls.
 
 - Shared DataTable supports optional `expandToggleColumnKey` for placement in an existing non-first column; Reports & Feedback places its expand control after its existing Details action. Deposit subrow values are vertically centered and no longer duplicate the report-level feedback action. The shared DepositPaymentEditor renders one evidence panel, keeping downloads outside the disabled form for immutable report viewing and hiding uploads for non-editable reports; summary values share right-aligned RTL styling.
+
+- Free-plan utilization cards on Dashboard, Employees and Organization → Employers are displayed only when the entitlement plan code is `FREE`. Paid customers retain ordinary employee/employer counts and the dedicated subscription/billing interfaces; paid pricing remains visible in authorized billing/admin surfaces.
