@@ -298,7 +298,65 @@ export function UiCard({
 
 export type UiAutocompleteOption = { value: string; label: string; disabled?: boolean };
 export function UiAutocomplete({value,onValueChange,options,loading=false,disabled=false,required=false,invalid=false,placeholder="התחילו להקליד",emptyText="לא נמצאו תוצאות.",loadingText="טוען...",ariaLabel="בחירה",maxLength,onClear}:{value:string;onValueChange:(value:string)=>void;options:UiAutocompleteOption[];loading?:boolean;disabled?:boolean;required?:boolean;invalid?:boolean;placeholder?:string;emptyText?:string;loadingText?:string;ariaLabel?:string;maxLength?:number;onClear?:()=>void}) {
- const [open,setOpen]=useState(false); const [active,setActive]=useState(-1); const [inputGeneration,setInputGeneration]=useState(0); const inputRef=useRef<HTMLInputElement>(null);
+ const [open,setOpen]=useState(false); const [active,setActive]=useState(-1); const [inputGeneration,setInputGeneration]=useState(0);
+ const [mounted,setMounted]=useState(false);
+ const [placement,setPlacement]=useState<CSSProperties>({visibility:"hidden"});
+ const inputRef=useRef<HTMLInputElement>(null);
+ const menuRef=useRef<HTMLDivElement>(null);
+ const menuId=useId();
+ useEffect(()=>{setMounted(true)},[]);
+ useEffect(()=>{if(disabled)setOpen(false)},[disabled]);
+ useEffect(()=>{
+   if(!open||!mounted||disabled)return;
+   const position=()=>{
+     const rect=inputRef.current?.getBoundingClientRect();
+     if(!rect)return;
+     const gutter=8;
+     const below=window.innerHeight-rect.bottom-gutter*2;
+     const above=rect.top-gutter*2;
+     const desired=Math.min(260,Math.max(64,options.length*40+14));
+     const openAbove=below<Math.min(desired,170)&&above>below;
+     const available=openAbove?above:below;
+     const height=Math.max(64,Math.min(desired,available));
+     setPlacement({
+       position:"fixed",visibility:"visible",left:rect.left,
+       top:openAbove?Math.max(gutter,rect.top-height-6):rect.bottom+6,
+       width:rect.width,maxHeight:height,zIndex:6500,
+     });
+   };
+   position();
+   const outsidePointer=(event:PointerEvent)=>{
+     const target=event.target as Node;
+     if(!inputRef.current?.parentElement?.contains(target)&&!menuRef.current?.contains(target))setOpen(false);
+   };
+   const outsideFocus=(event:FocusEvent)=>{
+     const target=event.target as Node;
+     if(!inputRef.current?.parentElement?.contains(target)&&!menuRef.current?.contains(target))setOpen(false);
+   };
+   const escape=(event:KeyboardEvent)=>{
+     if(event.key!=="Escape"||event.defaultPrevented)return;
+     setOpen(false);
+     inputRef.current?.focus();
+     event.preventDefault();
+     event.stopImmediatePropagation();
+   };
+   document.addEventListener("pointerdown",outsidePointer);
+   document.addEventListener("focusin",outsideFocus);
+   document.addEventListener("keydown",escape,true);
+   window.addEventListener("scroll",position,true);
+   window.addEventListener("resize",position);
+   return()=>{
+     document.removeEventListener("pointerdown",outsidePointer);
+     document.removeEventListener("focusin",outsideFocus);
+     document.removeEventListener("keydown",escape,true);
+     window.removeEventListener("scroll",position,true);
+     window.removeEventListener("resize",position);
+   };
+ },[open,mounted,disabled,options.length]);
+ useEffect(()=>{
+   if(!open||active<0)return;
+   menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]')[active]?.scrollIntoView({block:"nearest"});
+ },[open,active]);
  useEffect(()=>{setActive(-1)},[options,open]);
  function clearValidationState(){const input=inputRef.current;if(!input)return;input.setCustomValidity("");input.removeAttribute("aria-invalid");input.closest(".field-invalid")?.dispatchEvent(new Event("alpha:field-valid",{bubbles:true}))}
  function choose(option:UiAutocompleteOption){
@@ -312,11 +370,38 @@ export function UiAutocomplete({value,onValueChange,options,loading=false,disabl
   setInputGeneration((generation)=>generation+1);
  }
  function clear(){clearValidationState();onValueChange("");onClear?.();setOpen(true);setActive(-1);requestAnimationFrame(()=>inputRef.current?.focus())}
- function keyDown(e:React.KeyboardEvent<HTMLInputElement>){if(e.key==="ArrowDown"){e.preventDefault();setOpen(true);setActive(i=>Math.min(i+1,options.length-1))}else if(e.key==="ArrowUp"){e.preventDefault();setActive(i=>Math.max(i-1,0))}else if(e.key==="Enter"&&open&&active>=0){e.preventDefault();choose(options[active])}else if(e.key==="Escape"){setOpen(false)}}
- return <div className="pension-fund-autocomplete" onBlur={e=>{const n=e.relatedTarget as Node|null;if(!n||!e.currentTarget.contains(n))setOpen(false)}}>
-  <div className="pension-fund-search"><UiInput key={inputGeneration} ref={inputRef} disabled={disabled} aria-required={required} aria-invalid={invalid} autoComplete="off" maxLength={maxLength} value={value} placeholder={placeholder} role="combobox" aria-label={ariaLabel} aria-autocomplete="list" aria-expanded={open} onFocus={()=>setOpen(true)} onClick={()=>setOpen(true)} onKeyDown={keyDown} onChange={e=>{clearValidationState();onValueChange(e.target.value);setOpen(true)}}/>
+ function keyDown(e:React.KeyboardEvent<HTMLInputElement>){
+   if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+     e.preventDefault();setOpen(true);
+     const direction=e.key==="ArrowDown"?1:-1;
+     const enabled=options.map((option,index)=>option.disabled?-1:index).filter(index=>index>=0);
+     if(!enabled.length)return;
+     setActive(current=>{
+       const index=enabled.indexOf(current);
+       return enabled[index<0?(direction>0?0:enabled.length-1):(index+direction+enabled.length)%enabled.length];
+     });
+   }else if(e.key==="Enter"&&open&&active>=0&&!options[active].disabled){
+     e.preventDefault();choose(options[active]);
+   }else if(e.key==="Escape"&&open){
+     e.preventDefault();e.stopPropagation();setOpen(false);
+   }
+ }
+ return <div className="pension-fund-autocomplete">
+  <div className="pension-fund-search"><UiInput key={inputGeneration} ref={inputRef} disabled={disabled} aria-required={required} aria-invalid={invalid} autoComplete="off" maxLength={maxLength} value={value} placeholder={placeholder} role="combobox" aria-label={ariaLabel} aria-autocomplete="list" aria-expanded={open}
+    aria-controls={open?menuId:undefined}
+    aria-activedescendant={open&&active>=0?`${menuId}-option-${active}`:undefined} onFocus={()=>setOpen(true)} onClick={()=>setOpen(true)} onKeyDown={keyDown} onChange={e=>{clearValidationState();onValueChange(e.target.value);setOpen(true)}}/>
    <div className="autocomplete-actions">{value&&!disabled?<button type="button" className="autocomplete-action autocomplete-clear" aria-label="ניקוי" onMouseDown={e=>e.preventDefault()} onClick={clear}><X size={16}/></button>:null}<button type="button" className="autocomplete-action autocomplete-toggle" disabled={disabled} aria-label={open?"סגירת רשימה":"פתיחת רשימה"} aria-expanded={open} onMouseDown={e=>e.preventDefault()} onClick={()=>setOpen(v=>!v)}><ChevronDown size={17}/></button></div>
   </div>
-  {open&&!disabled?<div className="pension-fund-options" role="listbox" aria-busy={loading}>{loading?<div className="pension-fund-loading" role="status">{loadingText}</div>:options.length===0?<div className="pension-fund-empty">{emptyText}</div>:options.map((o,i)=><button type="button" key={o.value} role="option" aria-selected={i===active} disabled={o.disabled} className={`pension-fund-option${i===active?" selected":""}`} onMouseDown={e=>e.preventDefault()} onMouseEnter={()=>setActive(i)} onClick={()=>choose(o)}>{o.label}</button>)}</div>:null}
+  {open&&mounted&&!disabled?createPortal(
+   <div ref={menuRef} id={menuId} className="pension-fund-options pension-fund-options-portal"
+     role="listbox" aria-label={ariaLabel} aria-busy={loading} style={placement}>
+     {loading?<div className="pension-fund-loading" role="status">{loadingText}</div>:
+      options.length===0?<div className="pension-fund-empty">{emptyText}</div>:
+      options.map((o,i)=><button type="button" key={o.value} id={`${menuId}-option-${i}`}
+       role="option" aria-selected={i===active} disabled={o.disabled}
+       className={`pension-fund-option${i===active?" selected":""}`}
+       onMouseDown={e=>e.preventDefault()} onMouseEnter={()=>setActive(i)}
+       onClick={()=>choose(o)}>{o.label}</button>)}
+   </div>,document.body):null}
  </div>
 }
