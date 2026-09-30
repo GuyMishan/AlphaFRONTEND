@@ -11,7 +11,7 @@ import { AppShell } from "@/components/app-shell";
 import { UiInput } from "@/components/ui-controls";
 import { DataTable, DataTableLink } from "@/components/data-table";
 import { getSession } from "@/lib/session";
-import { getScopeContext } from "@/lib/app-data-cache";
+import { getScopeContext, invalidateScopeContext } from "@/lib/app-data-cache";
 import type { Organization } from "@/lib/types";
 
 export default function OrganizationsPage() {
@@ -43,6 +43,7 @@ export default function OrganizationsPage() {
     setCreating(true);
     try {
       const created = await alphaApi.createOrganization({ name: name.trim(), type });
+      invalidateScopeContext();
       setOrganizations((items) => [...items, created].sort((a, b) => a.name.localeCompare(b.name, "he")));
       setCreateOpen(false);
       setName("");
