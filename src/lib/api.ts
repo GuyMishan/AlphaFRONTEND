@@ -162,6 +162,10 @@ export const alphaApi = {
       : request<OnboardingStatus>("/api/onboarding/status"),
   completeSelfServiceOnboarding: (payload: EmployerInput): Promise<SelfServiceOnboardingResult> =>
     request<SelfServiceOnboardingResult>("/api/onboarding/self-service", { method: "POST", body: JSON.stringify(payload) }),
+  transferEmployer: (sourceOrganizationId: string, employerId: string, targetOrganizationId: string): Promise<{ employerId: string; organizationId: string }> =>
+    request<{ employerId: string; organizationId: string }>(
+      `/api/organizations/${sourceOrganizationId}/employers/${employerId}/transfer`,
+      { method: "POST", body: JSON.stringify({ targetOrganizationId }) }),
   createOrganization: (payload: { name: string; type: number }): Promise<Organization> =>
     request<Organization>("/api/organizations", { method: "POST", body: JSON.stringify(payload) }),
   entitlements: (organizationId: string): Promise<EntitlementSnapshot> =>
