@@ -232,6 +232,7 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
             </label>}
         </> : <div className="notice notice-info">{editor.referent.email}</div>}
 
+        <div className="referent-assignment-grid">
         <UiSelectionList
           title="ארגונים בניהול מלא"
           description="בחירת ארגון מעניקה גישה לכל המעסיקים שלו."
@@ -259,6 +260,7 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
           disabled={saving}
           height={272}
         />
+        </div>
         <div className="form-actions" style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <button type="button" className="btn btn-secondary" onClick={() => setEditor(null)} disabled={saving}>
             <X size={15} /> ביטול
