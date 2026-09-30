@@ -245,3 +245,12 @@ html[data-theme="dark"] .pension-fund-options-portal {
   background: #111b28 !important;
   box-shadow: 0 20px 55px rgba(0,0,0,.48), 0 3px 12px rgba(0,0,0,.24);
 }
+
+/* Override the legacy mobile footer grid and keep semantic sides on narrow screens. */
+@media (max-width: 560px) {
+  .app-modal-actions { display: flex; justify-content: space-between; align-items: stretch; }
+  .app-modal-actions > .app-modal-actions-cancel,
+  .app-modal-actions > .app-modal-actions-positive { width: auto; flex: 0 1 auto; max-width: 100%; }
+  .app-modal-actions-cancel { justify-content: flex-start; }
+  .app-modal-actions-positive { justify-content: flex-end; margin-inline-start: auto; }
+}
