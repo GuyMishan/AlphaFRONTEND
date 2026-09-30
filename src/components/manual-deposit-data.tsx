@@ -417,9 +417,9 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
             {!negative && !noMoneyCorrection && (metadataForm.employerAccountType === 2 || metadataForm.receiverAccountType === 2) ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 3) ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
             {!negative && !configuredPensionDebit && !noMoneyCorrection ? <div className="payment-evidence-control">
-              <UiFileUpload label="צירוף אישור העברה (אם קיים)" fileName={uploadingProof ? "שומר אישור..." : undefined}
+              <UiFileUpload label="צירוף אישור העברה (עד 3MB, אם קיים)" fileName={uploadingProof ? "שומר אישור..." : undefined}
                 className="payment-upload" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
-                maxBytes={10 * 1024 * 1024} disabled={saving} busy={uploadingProof}
+                maxBytes={3_000_000} disabled={saving} busy={uploadingProof}
                 onFileSelected={uploadPaymentProof} onInvalid={(message) => { setError(message); notify.error(message); }} />
               {paymentProofs.length ? <div className="payment-evidence-list">
                 {paymentProofs.map((item, index) => <button type="button" className="btn btn-secondary" key={item.id}
@@ -466,8 +466,8 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
                 <div><b>{label}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div></div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   {item ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(item.id)}><Trash2 size={14} />הסר</button> : null}
-                  {!item ? <UiFileUpload className="btn btn-secondary" label="צרף PDF"
-                    accept="application/pdf,.pdf" maxBytes={10 * 1024 * 1024}
+                  {!item ? <UiFileUpload className="btn btn-secondary" label="צרף PDF עד 3MB"
+                    accept="application/pdf,.pdf" maxBytes={3_000_000}
                     busy={uploadingAttachment != null} onFileSelected={(file) => uploadAttachment(code, file)}
                     onInvalid={(message) => { setError(message); notify.error(message); }} /> : null}
                 </div>

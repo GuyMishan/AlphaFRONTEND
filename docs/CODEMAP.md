@@ -63,3 +63,5 @@
 - `scripts/check-ui-primitives.mjs` — shared UI primitive, checkbox and modal-shell enforcement (rejects raw/UiInput checkboxes and local checkbox roles). All modal dialogs must render through `AppModal`; the anchored accessibility popover is a non-modal exception.
 - `scripts/check-hardcoded-select-options.mjs` — guards against hard-coded select data.
 - `.github/workflows/ci.yml` — authoritative CI sequence.
+
+- Financial report attachments and payment evidence use the shared file picker with an initial 3 MB upload ceiling to match the Cloudmersive free-evaluation scanning integration. Server-side endpoint and scanner validate the limit independently; increase both only after a commercially suitable scanning plan is configured.
