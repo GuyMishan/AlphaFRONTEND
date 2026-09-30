@@ -155,14 +155,6 @@ export default function NewReportPage() {
     } finally { setLoading(false); }
   }
 
-  async function loadScopeForDrafts() {
-    if (!scope) return;
-    try {
-      const list = await alphaApi.openManualReports(scope.organizationId, scope.employerId);
-      setOpenReports(list.items); setOpenReportsHasMore(list.hasMore);
-    } catch (err) { toast.error(err instanceof Error ? err.message : "טעינת הטיוטות נכשלה"); }
-  }
-
   async function loadMoreOpenReports() {
     if (!scope || loadingOpenReports || !openReportsHasMore) return;
     setLoadingOpenReports(true);
@@ -570,7 +562,7 @@ export default function NewReportPage() {
       {reportKind === 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>דיווח הפרשים הוא טיוטת עבודה</b><div>לא ניתן לשדר אותו ישירות למסלקה. יש ליצור ממנו דיווח שוטף מתקן או דיווח שלילי בהתאם לכיוון ההפרש.</div></div> : null}
       {billingGate?.canTransmit && reportKind !== 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
     </> : null}
-    {!(showOpenReports && step === 1) && !(isXml && step === 1) ? <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || (resumingDraft && step === 2) || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{resumingDraft ? <button type="button" className="btn btn-secondary" onClick={() => { setResumingDraft(false); setManualReportId(""); setStep(1); setShowOpenReports(true); void loadScopeForDrafts(); }}>טיוטות אחרות</button> : null}{step < summaryStep ? <button className="btn btn-primary" disabled={advancing || !canCreateReport} onClick={() => { if (step === 1) { void next(); return; } if (!selectedPaymentAccountId) { setShowBillingGateModal(true); return; } if (canContinue) void next(); }}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <>{sentExternalId ? <button className="btn btn-secondary" onClick={() => router.push("/reports")}>יציאה</button> : null}<button className="btn btn-primary" disabled={reportKind === 2 || sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{reportKind === 2 ? "יש לממש את ההפרש לפני שליחה" : sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button></>}</div> : null}
+    {!(showOpenReports && step === 1) && !(isXml && step === 1) ? <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || (resumingDraft && step === 2) || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={advancing || !canCreateReport} onClick={() => { if (step === 1) { void next(); return; } if (!selectedPaymentAccountId) { setShowBillingGateModal(true); return; } if (canContinue) void next(); }}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <>{sentExternalId ? <button className="btn btn-secondary" onClick={() => router.push("/reports")}>יציאה</button> : null}<button className="btn btn-primary" disabled={reportKind === 2 || sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{reportKind === 2 ? "יש לממש את ההפרש לפני שליחה" : sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button></>}</div> : null}
   </section>}</div>{scope && showBillingGateModal ? <BillingGateModal
     gate={billingGate ?? { canTransmit: false, error: "pension_payment_account_required", billingMode: null, source: null, billedThroughName: null, paymentMethodType: null, paymentMethodStatus: null, configured: false }}
     organizationId={scope.organizationId}

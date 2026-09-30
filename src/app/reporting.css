@@ -230,3 +230,11 @@
   .wizard.wizard-wide { max-width: 100%; }
   .resume-report-row { align-items: stretch; flex-direction: column; }
 }
+
+/* Authorized payment evidence: compact file actions inside virtualized deposit rows. */
+.deposit-proof-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; max-height: 108px; overflow-y: auto; }
+.deposit-proof-download { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--text); max-width: 190px; cursor: pointer; text-align: right; }
+.deposit-proof-download span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+.deposit-proof-download svg { flex-shrink: 0; }
+.deposit-proof-empty { color: var(--muted); }
+.payment-evidence-list .btn { display: inline-flex; align-items: center; gap: 6px; }

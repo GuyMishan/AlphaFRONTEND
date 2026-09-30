@@ -4,7 +4,7 @@ import { UiAutocomplete, UiDateInput, UiInput } from "@/components/ui-controls";
 import { UiFileUpload } from "@/components/ui-file-upload";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
-import { BriefcaseBusiness, CalendarDays, CreditCard, Pencil, Search, Trash2 } from "lucide-react";
+import { BriefcaseBusiness, CreditCard, Download, FileText, Pencil, Search, Trash2 } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
 import { DataTable } from "@/components/data-table";
@@ -36,6 +36,8 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
   const [employer, setEmployer] = useState<Employer | null>(null);
   const [paymentAccount, setPaymentAccount] = useState<{ bankId: number; branchId: number; maskedAccountNumber: string } | null>(null);
   const [receiptLabels, setReceiptLabels] = useState<Record<number, string>>(receiptTypeFallback);
+  const [proofs, setProofs] = useState<Record<string, PaymentConfirmation[]>>({});
+  const [downloadingEvidence, setDownloadingEvidence] = useState<string | null>(null);
 
   async function load(search = query) {
     setLoading(true); setError("");
@@ -59,6 +61,9 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
       const account = resolution.account;
       setPaymentAccount(account ? { bankId: account.bankId, branchId: account.branchId, maskedAccountNumber: account.maskedAccountNumber } : null);
     }).catch(() => setPaymentAccount(null));
+    paymentConfirmationsApi.listForReport(organizationId, employerId, reportId)
+      .then((items) => setProofs(Object.groupBy(items, (item) => item.reportProductId)))
+      .catch(() => setProofs({}));
   }, [organizationId, employerId, reportId]);
 
   useEffect(() => {
@@ -67,6 +72,12 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
   }, [query]);
 
   const total = useMemo(() => rows.reduce((sum, row) => sum + Number(row.totalDeposit || 0), 0), [rows]);
+  async function downloadProof(productId: string, item: PaymentConfirmation) {
+    setDownloadingEvidence(item.id);
+    try { await paymentConfirmationsApi.download(organizationId, employerId, reportId, productId, item); }
+    catch { notify.error("הורדת האסמכתא נכשלה."); }
+    finally { setDownloadingEvidence(null); }
+  }
 
   return <>
     <div className="card-head deposit-head">
@@ -82,7 +93,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
       maxHeight={560}
       tableClassName="deposit-table"
       wrapperClassName="deposit-table-wrap"
-      columns={[{ key: "employee", label: "עובד" }, { key: "provider", label: "שם יצרן / מוצר" }, { key: "providerAccount", label: "חשבון יצרן" }, { key: "amount", label: "סכום" }, { key: "employerAccount", label: "חשבון מעסיק" }, { key: "reference", label: "אסמכתא" }, { key: "date", label: "תאריך ערך" }, { key: "type", label: "סוג תקבול" }, { key: "status", label: "סטטוס" }, { key: "edit", label: "" }]}
+      columns={[{ key: "employee", label: "עובד" }, { key: "provider", label: "שם יצרן / מוצר" }, { key: "providerAccount", label: "חשבון יצרן" }, { key: "amount", label: "סכום" }, { key: "employerAccount", label: "חשבון מעסיק" }, { key: "reference", label: "אסמכתא" }, { key: "date", label: "תאריך ערך" }, { key: "type", label: "סוג תקבול" }, { key: "status", label: "סטטוס" }, { key: "files", label: "קבצים" }, { key: "edit", label: "" }]}
       renderCells={(row) => [
         <b>{row.employeeName}</b>,
         <><b>{row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני"}</b><span>{row.policyNumber || "ללא מס׳ פוליסה"}</span></>,
@@ -93,10 +104,20 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
         row.valueDate ? formatDate(row.valueDate) : "—",
         row.reportingType ? (receiptLabels[Number(row.reportingType)] ?? `סוג תקבול לא מוכר (${row.reportingType})`) : "—",
         <span className={`badge ${row.requiresCompletion ? "badge-yellow" : "badge-green"}`}>{row.requiresCompletion ? "דורש השלמה" : "מוכן"}</span>,
+        <div className="deposit-proof-cell">{proofs[row.id]?.length
+          ? proofs[row.id].map((item) => <button type="button" key={item.id} className="deposit-proof-download"
+              title={item.originalFileName} aria-label={`הורדת ${item.originalFileName}`}
+              disabled={downloadingEvidence === item.id}
+              onClick={() => void downloadProof(row.id, item)}>
+              <FileText size={15} /><span>{item.originalFileName}</span><Download size={15} aria-hidden="true" />
+            </button>)
+          : <span className="deposit-proof-empty">—</span>}</div>,
         <button className="icon-button" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}
-    {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} onClose={() => setEditing(null)} onSaved={(updated) => {
+    {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing}
+      onEvidenceChanged={(items) => setProofs((current) => ({ ...current, [editing.id]: items }))}
+      onClose={() => setEditing(null)} onSaved={(updated) => {
       setRows((current) => current.map((item) => item.id === updated.id ? updated : item));
       setEditing(null);
       notify.success("פרטי התשלום נשמרו בהצלחה");
@@ -205,8 +226,9 @@ function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInte
   return errors;
 }
 
-function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, onClose, onSaved }: {
-  employer: Employer | null; organizationId: string; employerId: string; reportId: string; row: ManualDepositRow; onClose: () => void; onSaved: (row: ManualDepositRow) => void;
+function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, onClose, onSaved, onEvidenceChanged }: {
+  employer: Employer | null; organizationId: string; employerId: string; reportId: string; row: ManualDepositRow;
+  onClose: () => void; onSaved: (row: ManualDepositRow) => void; onEvidenceChanged: (items: PaymentConfirmation[]) => void;
 }) {
   const [form, setForm] = useState<ManualPaymentInput>({
     providerName: row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "", providerAccount: row.providerAccount || "", paymentMethod: row.paymentMethod || "",
@@ -253,7 +275,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
         receiverAccountType: automaticDebit ? 1 : item.receiverAccountType, oldPensionTypeCode: item.oldPensionTypeCode });
       setPreviousReference(previous);
       setAttachments(attachmentList.items);
-      setPaymentProofs(proofList);
+      setPaymentProofs(proofList); onEvidenceChanged(proofList);
       setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
       const effectiveAccount = paymentResolution.account;
       setResolvedPaymentAccount(effectiveAccount ? { bankId: effectiveAccount.bankId, branchId: effectiveAccount.branchId, maskedAccountNumber: effectiveAccount.maskedAccountNumber, mandateIsActive: effectiveAccount.mandateIsActive } : null);
@@ -268,7 +290,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
           employerBranch: current.employerBranch && !/^0+$/.test(current.employerBranch)
             ? current.employerBranch : String(effectiveAccount.branchId),
           employerAccount: current.employerAccount && !/^0+$/.test(current.employerAccount)
-            ? current.employerAccount : /^\\d+$/.test(effectiveAccount.maskedAccountNumber)
+            ? current.employerAccount : /^\d+$/.test(effectiveAccount.maskedAccountNumber)
               ? effectiveAccount.maskedAccountNumber : "",
         }));
       }
@@ -407,7 +429,11 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
     setUploadingProof(true); setError("");
     try {
       const saved = await paymentConfirmationsApi.upload(organizationId, employerId, reportId, row.id, file);
-      setPaymentProofs((current) => [saved, ...current]);
+      setPaymentProofs((current) => {
+        const next = [saved, ...current];
+        onEvidenceChanged(next);
+        return next;
+      });
       patch("confirmationFileName", saved.originalFileName);
       notify.success("אישור ההעברה הועלה ונשמר.");
     } catch (err) {
@@ -469,10 +495,10 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
               }
               setError("");
             }} />}</div> : null}
-            {!negative && !noMoneyCorrection && metadataForm.receiverAccountType === 1 && metadataForm.paymentMethodCode !== 9 ? <div className="field"><label>{metadataForm.paymentMethodCode === 6 ? "תאריך ערך" : "תאריך ערך הפקדה לקופה *"}</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
+            {!negative && !noMoneyCorrection && metadataForm.receiverAccountType === 1 && metadataForm.paymentMethodCode !== 9 ? <div className="field"><label>{metadataForm.paymentMethodCode === 6 ? "תאריך ערך" : "תאריך ערך הפקדה לקופה *"}</label><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /></div> : null}
             {!negative && metadataForm.operationCode === 3 ? <div className="field"><label>סכום הפקדה נוספת בפועל *</label><UiInput type="number" min="0" step="0.01" value={form.actualDepositAmount ?? ""} onChange={(e) => patch("actualDepositAmount", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative && metadataForm.paymentMethodCode === 7 ? <div className="field"><label>קוד פנימי של הגורם השולח במס״ב *</label><UiInput maxLength={16} value={form.masavSenderCode} onChange={(e) => patch("masavSenderCode", e.target.value)} placeholder="8–16 תווים" /></div> : null}
-            {!negative && !noMoneyCorrection && (metadataForm.employerAccountType === 2 || metadataForm.receiverAccountType === 2) ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
+            {!negative && !noMoneyCorrection && (metadataForm.employerAccountType === 2 || metadataForm.receiverAccountType === 2) ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /></div> : null}
             {!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 3 || configuredPensionDebit) ? <div className="field"><label>{configuredPensionDebit ? "מס׳ אסמכתא" : "מס׳ אסמכתא *"}</label><UiInput required={!configuredPensionDebit} maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
             {bankRequired || configuredPensionDebit ? <>
               <div className="field"><label>{bankRequired ? "בנק *" : "בנק"}</label><UiAutocomplete
@@ -502,7 +528,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
                 {paymentProofs.map((item, index) => <button type="button" className="btn btn-secondary" key={item.id}
                   onClick={() => void paymentConfirmationsApi.download(organizationId, employerId, reportId, row.id, item)
                     .catch(() => notify.error("הורדת אישור התשלום נכשלה"))}>
-                  {index === 0 ? "אישור אחרון: " : "אישור קודם: "}{item.originalFileName}
+                  <Download size={16} aria-hidden="true" /> {index === 0 ? "אישור אחרון: " : "אישור קודם: "}{item.originalFileName}
                 </button>)}
               </div> : null}
             </div>

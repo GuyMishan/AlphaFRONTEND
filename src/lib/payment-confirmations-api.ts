@@ -1,6 +1,7 @@
 import { backendFetch } from "@/lib/backend-fetch";
 
 export type PaymentConfirmation = {
+  reportProductId?: string;
   id: string; originalFileName: string; contentType: string; sizeBytes: number; sha256: string; createdAt: string;
 };
 const path = (organizationId: string, employerId: string, reportId: string, productId: string) =>
@@ -10,6 +11,12 @@ async function errorMessage(response: Response) {
   return `שמירת המסמך נכשלה (${response.status}).`;
 }
 export const paymentConfirmationsApi = {
+  async listForReport(org: string, employer: string, report: string): Promise<(PaymentConfirmation & { reportProductId: string })[]> {
+    const base = path(org, employer, report, "").replace(/\/$/, "");
+    const response = await backendFetch(base, { cache: "no-store" });
+    if (!response.ok) throw new Error(await errorMessage(response));
+    return (await response.json() as { items: (PaymentConfirmation & { reportProductId: string })[] }).items;
+  },
   async list(org: string, employer: string, report: string, product: string) {
     const response = await backendFetch(path(org, employer, report, product), { cache: "no-store" });
     if (!response.ok) throw new Error(await errorMessage(response));
