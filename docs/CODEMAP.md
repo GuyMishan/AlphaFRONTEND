@@ -18,6 +18,7 @@
 
 ## Organizations, employers, employees and access
 - `src/app/organizations/page.tsx` — platform-admin organization creation using a shared modal.
+- `src/components/employer-transfer-modal.tsx` — shared platform-admin transfer/receive UI for organization and employer profiles. Uses the admin transfer API, source-scope validation and global scope cache invalidation.
 - `src/app/organizations/*`, `src/app/employers/*`, `src/app/employees/*`. Employer lifecycle status is managed from Employer Profile → General Details. Employer status is intentionally binary in the UI and API: Active ("פעיל") or Closed ("מבוטל"). New employers start Active; legacy Onboarding/Suspended rows are normalized by the Backend.
 - `src/app/access/page.tsx` — users and permissions, including independent report creation/transmission permissions.
 - `src/components/employer-form.tsx`, `employee-form.tsx`, `employer-employees-panel.tsx`. Employee create/edit uses the shared Employer Interface option control for identifier type and supports Israeli ID (1) and passport (2); the selected type is propagated into manual/Excel report snapshots.
