@@ -74,3 +74,5 @@
 - The existing-draft card uses the shared virtualized `DataTable` with a 340px scrolling viewport and built-in incremental loading; pension bank selection in the deposit editor uses the shared `UiAutocomplete` as the only bank field. For payment code 6, stored bank/reference/date entries do not override official V006's zeroed employer-bank export (users must choose a suitable payment method for real account details to appear in the XML).
 
 - The deposit grid fetches report-wide evidence in one scoped call and presents per-product downloadable proof links (all saved versions). The modal keeps the grid's evidence state in sync immediately after upload. Payment dates rely on the single global `UiDateInput` calendar icon; the mandate account prefills from the authorized encrypted DB resolution with a valid numeric check.
+
+- Draft employee product editor includes a separate, tenant-scoped postal-address correction for existing V006 report snapshots. Employee master address fields now enforce the official postal-code (up to 7 digits) and optional postal-box (0–99999) bounds rather than requiring both; at least a full street address or postal box remains mandatory.

@@ -303,7 +303,12 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       })}
     </div>
     {showCreate ? <InlineEmployeeCreateModal organizationId={organizationId} employerId={employerId} onClose={() => setShowCreate(false)} onCreated={employeeCreated} /> : null}
-    {editing ? <EmployeeProductsModal employee={editing} month={month} onClose={() => setEditing(null)} onSave={async (monthlySalary, products) => {
+    {editing ? <EmployeeProductsModal employee={editing} month={month} onClose={() => setEditing(null)}
+      onSavePostalAddress={async (postalCode, postOfficeBox) => {
+        await alphaApi.updateManualReportPostalAddress(organizationId, employerId, reportId, editing.id, { postalCode, postOfficeBox });
+        setEditing((current) => current ? { ...current, postalCodeSnapshot: postalCode, postOfficeBoxSnapshot: postOfficeBox } : current);
+      }}
+      onSave={async (monthlySalary, products) => {
       const currentEditing = editing;
       let mixChanged = true;
       try {
@@ -365,12 +370,36 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   </>;
 }
 
-function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee: ManualReportEmployeeDetail; month: string; onClose: () => void; onSave: (monthlySalary: number, products: ManualProductInput[]) => Promise<void>; }) {
+function EmployeeProductsModal({ employee, month, onClose, onSave, onSavePostalAddress }: {
+  employee: ManualReportEmployeeDetail; month: string; onClose: () => void;
+  onSave: (monthlySalary: number, products: ManualProductInput[]) => Promise<void>;
+  onSavePostalAddress: (postalCode: string, postOfficeBox: string) => Promise<void>;
+}) {
   const [monthlySalary, setMonthlySalary] = useState(Number(employee.monthlySalary || 0));
   const [products, setProducts] = useState<PensionEditorProduct[]>(() => employee.products.map(toEditorProduct));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const [postalCode, setPostalCode] = useState(employee.postalCodeSnapshot || "");
+  const [postOfficeBox, setPostOfficeBox] = useState(employee.postOfficeBoxSnapshot || "");
+  const [savingAddress, setSavingAddress] = useState(false);
+  async function savePostalAddress() {
+    if (postalCode && !/^\d{1,7}$/.test(postalCode)) { setError("מיקוד חייב להכיל עד 7 ספרות."); return; }
+    if (postOfficeBox && (!/^\d{1,5}$/.test(postOfficeBox) || Number(postOfficeBox) > 99999)) {
+      setError("תא דואר חייב להיות מספר בין 0 ל־99999. אין להזין מיקוד בשדה הזה."); return;
+    }
+    setSavingAddress(true);
+    setError("");
+    try {
+      await onSavePostalAddress(postalCode, postOfficeBox);
+      notify.success("כתובת העובד בטיוטת הדיווח עודכנה.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "עדכון כתובת העובד נכשל.";
+      setError(message);
+      notify.error(message);
+    } finally { setSavingAddress(false); }
+  }
+
 
   async function save() {
     setValidationAttempted(true);
@@ -407,6 +436,18 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
       </>}>
         {error ? <div className="notice notice-error">{error}</div> : null}
         <div className="employee-report-summary"><div><span>חודש דיווח</span><b>{month}</b></div><div><span>מספר מוצרים</span><b>{products.length}</b></div><div><span>סה״כ הפקדות</span><b>₪{totalDeposits.toLocaleString("he-IL")}</b></div></div>
+        <section className="report-postal-address">
+          <h3>כתובת העובד בדיווח 006</h3>
+          <p>תא דואר אינו מיקוד. אם קיימת כתובת רחוב מלאה, אפשר להשאיר את תא הדואר ריק. השינוי חל על טיוטת הדיווח הזו בלבד.</p>
+          <div className="report-postal-address-fields">
+            <label>מיקוד <UiInput inputMode="numeric" maxLength={7} value={postalCode}
+              onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, ""))} /></label>
+            <label>תא דואר <UiInput inputMode="numeric" maxLength={5} value={postOfficeBox}
+              onChange={(event) => setPostOfficeBox(event.target.value.replace(/\D/g, ""))} /></label>
+            <button type="button" className="btn btn-secondary" disabled={savingAddress || saving}
+              onClick={() => void savePostalAddress()}>{savingAddress ? "שומר..." : "שמירת כתובת לדיווח"}</button>
+          </div>
+        </section>
         <PensionProductsEditor
           context="report"
           month={month}

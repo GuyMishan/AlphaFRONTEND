@@ -90,8 +90,13 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
     if (!normalized.street.trim()) next.street = "רחוב הוא שדה חובה.";
     if (!normalized.houseNumber.trim()) next.houseNumber = "מספר בית הוא שדה חובה.";
     if (!normalized.apartment.trim()) next.apartment = "מספר דירה הוא שדה חובה.";
-    if (!/^\d+$/.test(normalized.postalCode.trim())) next.postalCode = "מיקוד הוא שדה חובה וחייב להכיל ספרות בלבד.";
-    if (!normalized.postOfficeBox.trim()) next.postOfficeBox = "תא דואר הוא שדה חובה.";
+    if (normalized.postalCode.trim() && !/^\d{1,7}$/.test(normalized.postalCode.trim()))
+      next.postalCode = "מיקוד חייב להכיל עד 7 ספרות.";
+    if (normalized.postOfficeBox.trim() && (!/^\d{1,5}$/.test(normalized.postOfficeBox.trim()) || Number(normalized.postOfficeBox) > 99999))
+      next.postOfficeBox = "תא דואר חייב להיות מספר בין 0 ל־99999.";
+    if (!normalized.postOfficeBox.trim() && (!normalized.city.trim() || !normalized.street.trim()
+      || !normalized.houseNumber.trim() || !normalized.postalCode.trim()))
+      next.postOfficeBox = "יש להזין תא דואר או כתובת רחוב מלאה הכוללת מיקוד.";
     return next;
   }
 
@@ -182,8 +187,8 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         />
         <Field label="מספר בית *" error={errors.houseNumber}><UiInput disabled={!editable} required maxLength={20} value={form.houseNumber} onChange={(event) => update("houseNumber", event.target.value)} /></Field>
         <Field label="מספר דירה *" error={errors.apartment}><UiInput disabled={!editable} required maxLength={20} value={form.apartment} onChange={(event) => update("apartment", event.target.value)} /></Field>
-        <Field label="מיקוד *" error={errors.postalCode}><UiInput disabled={!editable} required inputMode="numeric" maxLength={10} value={form.postalCode} onChange={(event) => update("postalCode", event.target.value.replace(/\D/g, "").slice(0, 10))} /></Field>
-        <Field label="תא דואר *" error={errors.postOfficeBox}><UiInput disabled={!editable} required maxLength={20} value={form.postOfficeBox} onChange={(event) => update("postOfficeBox", event.target.value)} /></Field>
+        <Field label="מיקוד" error={errors.postalCode}><UiInput disabled={!editable} inputMode="numeric" maxLength={7} value={form.postalCode} onChange={(event) => update("postalCode", event.target.value.replace(/\D/g, "").slice(0, 10))} /></Field>
+        <Field label="תא דואר" error={errors.postOfficeBox}><UiInput disabled={!editable} inputMode="numeric" maxLength={5} value={form.postOfficeBox} onChange={(event) => update("postOfficeBox", event.target.value)} /></Field>
         {employee ? <div className="field"><label>סטטוס</label><UiInput disabled value={employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"} /></div> : null}
       </div>
       {!hideActions ? <div className="form-actions">{onCancel ? <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={saving}>ביטול</button> : <Link className="btn btn-secondary" href="/employees">חזרה</Link>}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : submitLabel ?? (employee ? "שמירת שינויים" : "הקמת עובד")}</button> : null}</div> : null}

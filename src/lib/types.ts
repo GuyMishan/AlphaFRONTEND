@@ -252,6 +252,8 @@ export type ManualReportProduct = Omit<ManualProductInput, "employerContribution
 };
 
 export type ManualReportEmployeeDetail = Omit<ManualReportEmployeeSummary, "productCount" | "validationStatus"> & {
+  postalCodeSnapshot: string;
+  postOfficeBoxSnapshot: string;
   products: ManualReportProduct[];
 };
 

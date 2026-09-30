@@ -406,6 +406,10 @@ export const alphaApi = {
     request<PagedResult<ManualReportEmployeeSummary> | ManualReportEmployeeSummary[]>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees${qs({ search, skip, take })}`).then((result) => normalizePaged(result, take)),
   manualReportEmployee: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string): Promise<ManualReportEmployeeDetail> =>
     request<ManualReportEmployeeDetail>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}`),
+  updateManualReportPostalAddress: (organizationId: string, employerId: string, reportId: string, reportEmployeeId: string,
+    payload: { postalCode: string; postOfficeBox: string }) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/employees/${reportEmployeeId}/postal-address`,
+      { method: "PATCH", body: JSON.stringify(payload) }),
   saveManualReportEmployee: (
     organizationId: string,
     employerId: string,
