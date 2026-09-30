@@ -10,6 +10,9 @@ const allowed = new Set([
 const rawControlPattern = /<(input|select|textarea)\b/g;
 const rawChoiceCardPattern = /choice-card/g;
 const rawTablePattern = /<table\b/g;
+const rawDialogPattern = /role="dialog"|aria-modal=/g;
+const allowedNonModalDialog = path.normalize("src/components/accessibility-menu.tsx");
+const sharedDialogShell = path.normalize("src/components/app-modal.tsx");
 const failures = [];
 
 function walk(dir) {
@@ -35,6 +38,14 @@ function walk(dir) {
     }
     rawChoiceCardPattern.lastIndex = 0;
 
+    // All modal dialogs use the shared shell; the anchored accessibility
+    // popover intentionally remains non-modal.
+    if (rel !== sharedDialogShell && rel !== allowedNonModalDialog) {
+      const rawDialogs = [...content.matchAll(rawDialogPattern)];
+      if (rawDialogs.length) {
+        failures.push(`${rel}: modal dialogs must use AppModal (${rawDialogs.length} raw dialog markers found)`);
+      }
+    }
     const rawTables = [...content.matchAll(rawTablePattern)];
     if (rawTables.length) {
       failures.push(`${rel}: use DataTable instead of raw HTML tables (${rawTables.length} found)`);

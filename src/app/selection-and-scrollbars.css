@@ -208,3 +208,15 @@ html[data-theme="dark"] .ui-select-menu-portal {
   .referent-identity-grid { grid-template-columns: minmax(0, 1fr); }
   .referent-user-mode { max-width: none; }
 }
+
+/* Retain dense report-product field styling within the shared flex modal. */
+.app-modal.report-editor-app-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(1080px, 100%);
+  height: auto;
+  min-height: 0;
+  max-height: calc(100dvh - 40px);
+}
+.app-modal.report-editor-app-modal > .app-modal-body { min-height: 0; flex: 1 1 auto; }
+.app-modal-close:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }

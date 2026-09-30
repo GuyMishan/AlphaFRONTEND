@@ -395,7 +395,7 @@ function EmployeeProductsModal({ employee, month, onClose, onSave }: { employee:
 
   const totalDeposits = products.reduce((sum, product) => sum + [...product.employerContributions, ...product.employeeContributions].reduce((subtotal, contribution) => subtotal + Number(contribution.amount || 0), 0), 0);
 
-  return <AppModal title="עריכת מוצרים לעובד"
+  return <AppModal className="report-modal report-editor-app-modal" title="עריכת מוצרים לעובד"
       subtitle={`${employee.firstName} ${employee.lastName} · ת״ז ${employee.nationalId} · מספר עובד ${employee.employeeNumber}`}
       onClose={onClose} closeDisabled={saving} width="xl"
       bodyClassName="report-modal-body"
