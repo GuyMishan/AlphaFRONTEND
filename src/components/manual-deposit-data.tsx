@@ -257,21 +257,22 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
       const effectiveAccount = paymentResolution.account;
       setResolvedPaymentAccount(effectiveAccount ? { bankId: effectiveAccount.bankId, branchId: effectiveAccount.branchId, maskedAccountNumber: effectiveAccount.maskedAccountNumber, mandateIsActive: effectiveAccount.mandateIsActive } : null);
-      if (automaticDebit) {
-        // The official V006 method 6 serializes zeroed banking fields independently;
-        // preserve existing operational details and preselect the employer's known bank/branch.
+      if (automaticDebit && effectiveAccount) {
+        // Resolution returns the actual authorized account value from encrypted DB
+        // (the DTO field is historically named "maskedAccountNumber").
+        // Existing non-zero report values always take precedence over account defaults.
         setForm((current) => ({
           ...current, paymentMethod: "6",
           employerBankCode: current.employerBankCode && !/^0+$/.test(current.employerBankCode)
-            ? current.employerBankCode : String(paymentResolution.account!.bankId),
+            ? current.employerBankCode : String(effectiveAccount.bankId),
           employerBranch: current.employerBranch && !/^0+$/.test(current.employerBranch)
-            ? current.employerBranch : String(paymentResolution.account!.branchId),
+            ? current.employerBranch : String(effectiveAccount.branchId),
+          employerAccount: current.employerAccount && !/^0+$/.test(current.employerAccount)
+            ? current.employerAccount : /^\\d+$/.test(effectiveAccount.maskedAccountNumber)
+              ? effectiveAccount.maskedAccountNumber : "",
         }));
       }
-      if (effectiveAccount && !row.employerBankCode && !row.employerBranch && !row.employerAccount) {
-        setBankSelection(String(effectiveAccount.bankId));
-        setBranchSelection(String(effectiveAccount.branchId));
-      }
+
     }).catch((err) => { if (active) setError(shortError(err instanceof Error ? err.message : "טעינת נתוני הדיווח נכשלה")); })
       .finally(() => { if (active) setLoadingMetadata(false); });
     return () => { active = false; };
@@ -297,6 +298,29 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
     }
     return () => { active = false; };
   }, [row.fundExternalKey, row.productType]);
+
+  // Bank/branch option lists arrive after the payment account. Upgrade a numeric
+  // selection to its full human-readable label without replacing user-typed searches.
+  useEffect(() => {
+    const code = Number(form.employerBankCode);
+    const matching = banks.find((bank) => bank.bankCode === code);
+    if (!matching) return;
+    setBankSelection((current) =>
+      !current || current.trim() === String(code) ||
+      current.trim() === `${code} -` ||
+      (current.startsWith(`${code} -`) && !current.slice(`${code} -`.length).trim())
+        ? bankLabel(matching) : current);
+  }, [banks, form.employerBankCode]);
+
+  useEffect(() => {
+    const code = Number(form.employerBranch);
+    const matching = branches.find((branch) => branch.branchCode === code);
+    if (!matching) return;
+    setBranchSelection((current) =>
+      !current || current.trim() === String(code) ||
+      current.trim() === `${code} -`
+        ? branchLabel(matching) : current);
+  }, [branches, form.employerBranch]);
 
   useEffect(() => {
     const bankCode = Number(form.employerBankCode);
