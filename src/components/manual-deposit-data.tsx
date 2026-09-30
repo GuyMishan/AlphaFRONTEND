@@ -18,6 +18,11 @@ import { paymentConfirmationsApi, type PaymentConfirmation } from "@/lib/payment
 import type { Employer, PensionFundOption, PensionProductType } from "@/lib/types";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
 
+const receiptTypeFallback: Record<number, string> = {
+  1: "שוטף", 2: "חד־פעמי", 4: "הפרשים",
+  6: "השלמת פיצויים עד השכר המבוטח כפול הוותק",
+  8: "הפקדה לפיצויים מעל השכר המבוטח כפול הוותק",
+};
 const productNames: Record<number, string> = { 1: "קרן פנסיה", 2: "קרן השתלמות", 3: "ביטוח מנהלים", 4: "קופת גמל", 99: "אחר" };
 const emptyPreviousReference = (): EmployerInterfacePreviousReference => ({ previousIdentifier: "", previousClearingIdentifier: "", previousReferenceExceptionCode: null });
 const shortError = (message: string) => message.trim().replace(/\s+/g, " ").slice(0, 220) + (message.trim().replace(/\s+/g, " ").length > 220 ? "…" : "");
@@ -30,6 +35,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
   const [editing, setEditing] = useState<ManualDepositRow | null>(null);
   const [employer, setEmployer] = useState<Employer | null>(null);
   const [paymentAccount, setPaymentAccount] = useState<{ bankId: number; branchId: number; maskedAccountNumber: string } | null>(null);
+  const [receiptLabels, setReceiptLabels] = useState<Record<number, string>>(receiptTypeFallback);
 
   async function load(search = query) {
     setLoading(true); setError("");
@@ -42,6 +48,13 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
     setQuery("");
     void load("");
     alphaApi.employer(organizationId, employerId).then(setEmployer).catch(() => setEmployer(null));
+    employerInterfaceApi.options("receipt-type").then((items) => {
+      setReceiptLabels((previous) => Object.fromEntries([
+        ...Object.entries(previous).map(([code, label]) => [Number(code), label] as const),
+        ...items.filter((item) => item.name && !/^קוד\s+\d+$/.test(item.name))
+          .map((item) => [item.code, item.name] as const),
+      ]));
+    }).catch(() => { /* authoritative labels remain available as local offline fallback */ });
     alphaApi.employerPaymentResolution(organizationId, employerId).then((resolution) => {
       const account = resolution.account;
       setPaymentAccount(account ? { bankId: account.bankId, branchId: account.branchId, maskedAccountNumber: account.maskedAccountNumber } : null);
@@ -78,7 +91,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
         <span className="account-number">{formatEmployerAccount(row, paymentAccount)}</span>,
         row.referenceNumber || "—",
         row.valueDate ? formatDate(row.valueDate) : "—",
-        row.reportingType ? `קוד ${row.reportingType}` : "—",
+        row.reportingType ? (receiptLabels[Number(row.reportingType)] ?? `סוג תקבול לא מוכר (${row.reportingType})`) : "—",
         <span className={`badge ${row.requiresCompletion ? "badge-yellow" : "badge-green"}`}>{row.requiresCompletion ? "דורש השלמה" : "מוכן"}</span>,
         <button className="icon-button" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
@@ -233,7 +246,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       setMetadata(item);
       const automaticDebit = !isNegativeKind(item.reportKind) && !isDifferencesKind(item.reportKind)
         && paymentResolution.account?.mandateIsActive === true
-        && item.operationCode !== 2 && item.operationCode !== 7 && item.paymentMethodCode == null;
+        && item.operationCode !== 2 && item.operationCode !== 7;
       setMetadataForm({ operationCode: item.operationCode, depositStatus: item.depositStatus, employeeStatus: item.employeeStatus, statusStartDate: item.statusStartDate,
         employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason,
         paymentMethodCode: automaticDebit ? 6 : item.paymentMethodCode, employerAccountType: automaticDebit ? 1 : item.employerAccountType,
@@ -245,9 +258,11 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       const effectiveAccount = paymentResolution.account;
       setResolvedPaymentAccount(effectiveAccount ? { bankId: effectiveAccount.bankId, branchId: effectiveAccount.branchId, maskedAccountNumber: effectiveAccount.maskedAccountNumber, mandateIsActive: effectiveAccount.mandateIsActive } : null);
       if (automaticDebit) {
-        setForm((current) => ({ ...current, paymentMethod: "6", valueDate: null, trustAccountValueDate: null, referenceNumber: "",
-          employerBankName: "", employerBankCode: "0", employerBranch: "000", employerAccount: "00000000000000000000" }));
-      } else if (effectiveAccount && !row.employerBankCode && !row.employerBranch && !row.employerAccount) {
+        // The official V006 method 6 serializes zeroed banking fields independently;
+        // never replace editable operational account/date/reference with fake zero values.
+        setForm((current) => ({ ...current, paymentMethod: "6" }));
+      }
+      if (effectiveAccount && !row.employerBankCode && !row.employerBranch && !row.employerAccount) {
         setBankSelection(String(effectiveAccount.bankId));
         setBranchSelection(String(effectiveAccount.branchId));
       }
@@ -313,7 +328,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const noMoneyCorrection = !negative && (metadataForm.operationCode === 2 || metadataForm.operationCode === 7);
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
   const configuredPensionDebit = !negative && !differences && resolvedPaymentAccount?.mandateIsActive === true
-    && metadataForm.paymentMethodCode === 6 && !noMoneyCorrection;
+    && !noMoneyCorrection && metadataForm.paymentMethodCode === 6;
   const showOfficialPaymentMethod = !differences && (!negative || operation5);
   const isOldPensionFund = row.productType === 1 && (row.fundClassification || "").includes("ותיק");
   const bankRequired = !differences && ((!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 7))
@@ -405,12 +420,10 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       <div className="payment-layout"><div className="payment-main">
           <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">{configuredPensionDebit ? "חשבון חיוב בהרשאה" : "חשבון מעסיק להעברה"}</span><b className="account-number">{metadataForm.paymentMethodCode !== 6 && bankRequired && (!form.employerBankCode || !form.employerAccount) ? "יש להזין פרטי חשבון להעברה" : formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
 
-          {configuredPensionDebit ? <div className="notice notice-info payment-auto-notice">
-            <b>הרשאה פעילה לחיוב החשבון הפנסיוני</b>
-            <span>ברירת המחדל היא אמצעי תשלום 6. ניתן לשנות את אמצעי התשלום להפקדה ידנית ולערוך את פרטי חשבון ההעברה, האסמכתא ותאריך הערך בהמשך. מסמכים ותאריך שנוספו כאשר נבחר אמצעי 6 יישמרו לתיעוד פנימי ולא יועברו בשדות שאינם רלוונטיים לממשק 006.</span>
-          </div> : null}
-          {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום ואפשרות לשינוי חשבון"}</h3><div className="payment-method-grid">
-            {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => {
+          {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
+            {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label>{configuredPensionDebit
+              ? <UiInput value="6 – הרשאה לחיוב חשבון" disabled aria-label="אמצעי תשלום 6 – נעול לפי הרשאה פעילה" />
+              : <EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => {
               setMetadataForm((current) => value === 9
                 ? { ...current, paymentMethodCode: value, employerAccountType: 1, receiverAccountType: 1 }
                 : { ...current, paymentMethodCode: value });
@@ -425,19 +438,21 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
                 setBankSelection(""); setBranchSelection("");
               }
               setError("");
-            }} /></div> : null}
+            }} />}</div> : null}
             {!negative && !noMoneyCorrection && metadataForm.receiverAccountType === 1 && metadataForm.paymentMethodCode !== 9 ? <div className="field"><label>{metadataForm.paymentMethodCode === 6 ? "תאריך ערך (לתיעוד פנימי)" : "תאריך ערך הפקדה לקופה *"}</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative && metadataForm.operationCode === 3 ? <div className="field"><label>סכום הפקדה נוספת בפועל *</label><UiInput type="number" min="0" step="0.01" value={form.actualDepositAmount ?? ""} onChange={(e) => patch("actualDepositAmount", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative && metadataForm.paymentMethodCode === 7 ? <div className="field"><label>קוד פנימי של הגורם השולח במס״ב *</label><UiInput maxLength={16} value={form.masavSenderCode} onChange={(e) => patch("masavSenderCode", e.target.value)} placeholder="8–16 תווים" /></div> : null}
             {!negative && !noMoneyCorrection && (metadataForm.employerAccountType === 2 || metadataForm.receiverAccountType === 2) ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
-            {!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 3) ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
-            {bankRequired ? <>
-              <div className="field"><label>בנק *</label><UiInput required list={`banks-${row.id}`} value={bankSelection} onChange={(e) => chooseBank(e.target.value)} placeholder="חיפוש לפי שם או מספר בנק" /><datalist id={`banks-${row.id}`}>{banks.map((bank) => <option key={bank.bankCode} value={bankLabel(bank)} />)}</datalist></div>
+            {!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 3 || configuredPensionDebit) ? <div className="field"><label>{configuredPensionDebit ? "מס׳ אסמכתא (לתיעוד פנימי)" : "מס׳ אסמכתא *"}</label><UiInput required={!configuredPensionDebit} maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
+            {bankRequired || configuredPensionDebit ? <>
+              <div className="field"><label>{bankRequired ? "בנק *" : "בנק (לתיעוד)"}</label><UiInput required={bankRequired} list={`banks-${row.id}`} value={bankSelection} onChange={(e) => chooseBank(e.target.value)} placeholder="חיפוש לפי שם או מספר בנק" /><datalist id={`banks-${row.id}`}>{banks.map((bank) => <option key={bank.bankCode} value={bankLabel(bank)} />)}</datalist></div>
               <div className="field"><label>מס׳ בנק</label><UiInput readOnly value={form.employerBankCode} /></div>
-              <div className="field"><label>סניף *</label><UiInput required list={`branches-${row.id}`} value={branchSelection} onChange={(e) => chooseBranch(e.target.value)} placeholder={form.employerBankCode ? "חיפוש סניף" : "יש לבחור בנק תחילה"} disabled={!form.employerBankCode} /><datalist id={`branches-${row.id}`}>{branches.map((branch) => <option key={branch.branchCode} value={branchLabel(branch)} />)}</datalist></div>
-              <div className="field"><label>מס׳ חשבון *</label><UiInput required inputMode="numeric" maxLength={20} value={form.employerAccount} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div>
+              <div className="field"><label>{bankRequired ? "סניף *" : "סניף (לתיעוד)"}</label><UiInput required={bankRequired} list={`branches-${row.id}`} value={branchSelection} onChange={(e) => chooseBranch(e.target.value)} placeholder={form.employerBankCode ? "חיפוש סניף" : "יש לבחור בנק תחילה"} disabled={!form.employerBankCode} /><datalist id={`branches-${row.id}`}>{branches.map((branch) => <option key={branch.branchCode} value={branchLabel(branch)} />)}</datalist></div>
+              <div className="field"><label>{bankRequired ? "מס׳ חשבון *" : "מס׳ חשבון (לתיעוד)"}</label><UiInput required={bankRequired} inputMode="numeric" maxLength={20}
+                placeholder={configuredPensionDebit ? (resolvedPaymentAccount?.maskedAccountNumber || "הזינו מספר חשבון אם נדרש") : undefined}
+                value={form.employerAccount && !/^0+$/.test(form.employerAccount) ? form.employerAccount : ""} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div>
             </> : null}
-          </div></section> : null}
+          </div>{configuredPensionDebit ? <small className="payment-internal-note">הפרטים שתזינו כאן הם לתיעוד בדיווח בלבד. לשינוי חשבון החיוב בפועל יש לעדכן את ההרשאה בכרטיס המעסיק. בממשק 006 אמצעי 6 מדווח עם שדות חשבון מעסיק מאופסים כנדרש.</small> : null}</section> : null}
 
           {!negative && (!noMoneyCorrection || paymentProofs.length > 0) ? <section className="payment-panel">
             <h3>אסמכתאות ואישורי תשלום</h3>

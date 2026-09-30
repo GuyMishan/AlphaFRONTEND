@@ -67,3 +67,6 @@
 - Financial report attachments and payment evidence use the shared file picker with an initial 3 MB upload ceiling to match the Cloudmersive free-evaluation scanning integration. Server-side endpoint and scanner validate the limit independently; increase both only after a commercially suitable scanning plan is configured.
 
 - Deposit payment editor preserves explicitly saved payment-method overrides even when a pension-debit mandate exists. Method 6 is only an initial default; users can select an official manual method and provide bank/reference/date details. Payment-evidence documents remain visible and downloadable for any current-report payment mode, while optional date/documents under method 6 stay operational-only and are not exported into irrelevant V006 fields.
+
+- `המשך דיווח קיים` is a fourth reporting-type card. Open drafts show today/yesterday or date, plus Israel-local 24-hour time.
+- An active pension-debit mandate locks current-report payment method to code 6, while allowing operational-only bank, branch, account, reference, value date and evidence in the editor. Actual mandate account changes belong to the employer payment-account setup; official V006 code 6 emits zeroed employer account fields. Deposit receipt codes display the official Hebrew text, fetched from backend option data.
