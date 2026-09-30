@@ -49,6 +49,7 @@
 - Related page styling: `src/app/payment-editor.css`.
 
 ## API/session
+- Auth session metadata carries `isReferent` for staff-specific UI (hiding self-service subscription management for internal referents); the server continues to authorize every request from database assignments.
 - `src/lib/api.ts` — broad API client and shared types/calls. Collection URLs are canonicalized without trailing slashes to avoid proxy/Next 308 redirects. Dashboard statistics use `/api/dashboard/stats` rather than fetching employer/employee collections for counts.
 - `src/lib/backend-fetch.ts` — shared authenticated Backend transport. It applies development auth headers, treats the first Backend `401` as authoritative session expiry, clears browser/HttpOnly session state, and redirects to `/session-timeout`.
 - `src/app/api/backend/[...path]/route.ts` — backend proxy.

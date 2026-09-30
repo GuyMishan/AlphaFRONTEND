@@ -98,6 +98,7 @@ export default function LoginPage() {
       const result = await response.json() as {
         userId: string;
         platformAdmin: boolean;
+        isReferent?: boolean;
         displayName: string;
       };
       setSession({ mode: "oidc", ...result });

@@ -130,11 +130,11 @@ export default function EmployerProfilePage() {
       const isSingleEmployerUser = accessibleEmployers.length === 1
         && accessibleEmployers[0].organizationId === organizationId
         && accessibleEmployers[0].employerId === id;
-      setSingleEmployerUser(isSingleEmployerUser);
+      setSingleEmployerUser(isSingleEmployerUser && !getSession()?.isReferent);
       const currentOrganization = scope.organizations.find((organization) => organization.id === organizationId);
       setHasOrganizationContext(Boolean(currentOrganization?.hasOrganizationScope));
 
-      if (isSingleEmployerUser) {
+      if (isSingleEmployerUser && !getSession()?.isReferent) {
         const entitlementRow = await alphaApi.entitlements(organizationId);
         setEntitlements(entitlementRow);
       } else {
