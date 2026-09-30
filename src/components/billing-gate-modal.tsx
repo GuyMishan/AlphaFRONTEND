@@ -39,10 +39,10 @@ export function BillingGateModal({
   const hasBillingAction = canManageOrganizationBilling || canManageEmployerBilling;
 
   return (
-    <AppModal title="נדרשת השלמת אמצעי תשלום פנסיוני" onClose={closeModal} width="md"
+    <AppModal title="נדרשת השלמת אמצעי תשלום פנסיוני" onClose={closeModal} width="lg" className="billing-gate-dialog"
       actions={<>
         {canManageOrganizationBilling ? <Link className="btn btn-primary" href={organizationBillingHref}><Building2 size={17} />להגדרת תשלום פנסיוני בארגון</Link> : null}
-        {canManageEmployerBilling ? <Link data-modal-side="positive" className={canManageOrganizationBilling ? "btn btn-secondary" : "btn btn-primary"} href={employerBillingHref}><CreditCard size={17} />להגדרת תשלום פנסיוני למעסיק</Link> : null}
+        {canManageEmployerBilling ? <Link className="btn btn-primary" href={employerBillingHref}><CreditCard size={17} />להגדרת תשלום פנסיוני למעסיק</Link> : null}
         {onClose ? <button type="button" className="btn btn-secondary" onClick={onClose}>המשך מאוחר יותר</button>
           : <Link className="btn btn-secondary" href="/dashboard"><House size={17} />חזרה לדף הבית</Link>}
       </>}>

@@ -9,7 +9,7 @@
 - `src/components/validation-ux-bridge.tsx` — maps server/notice validation into field UI.
 
 ## Shared UI and styles
-- `src/components/ui-controls.tsx` — shared input, date, select, autocomplete and card primitives.
+- `src/components/ui-controls.tsx` — shared input, `UiCheckbox`, date, select, autocomplete and card primitives. All checkboxes use `UiCheckbox` rather than `UiInput type="checkbox"` so sizing, focus and accessibility remain consistent.
 - `src/components/app-modal.tsx` — unified dialog shell with persistent header and close, scrollable body, nested scroll locking, and persistent footer. The footer automatically groups cancel/back on the RTL right and positive/submit actions on the left; secondary-styled affirmative actions can explicitly set `data-modal-side="positive"`.
 - `src/components/ui-controls.tsx` — shared `UiSelect` and `UiAutocomplete` both portal their option lists to the document body and recompute viewport position on modal scroll, resizing and opening above a field when needed. This prevents option lists from changing the modal's scroll size or being clipped by modal/table overflow.
 - `src/components/ui-selection-list.tsx` and `src/app/selection-and-scrollbars.css` — searchable multi-select assignment lists (referent cards stretch to the same height), theme-aware scrollbar and shared popup/footer styles.

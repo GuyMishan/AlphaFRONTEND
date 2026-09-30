@@ -32,6 +32,13 @@ export const UiInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInpu
   },
 );
 
+/** Native checkbox with consistent styling across the application. Keep native keyboard and screen-reader behavior. */
+export const UiCheckbox = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "controlSize">>(
+  function UiCheckbox({ className, ...props }, ref) {
+    return <input {...props} ref={ref} type="checkbox" className={["ui-checkbox", className].filter(Boolean).join(" ")} />;
+  },
+);
+
 export function UiDateInput({
   value,
   onValueChange,

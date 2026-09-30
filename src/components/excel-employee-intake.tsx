@@ -1,6 +1,6 @@
 "use client";
 
-import { UiDateInput, UiInput } from "@/components/ui-controls";
+import { UiCheckbox, UiDateInput, UiInput } from "@/components/ui-controls";
 import { DataTable } from "@/components/data-table";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { CircleAlert, CircleCheck, UploadCloud, UserPlus } from "lucide-react";
@@ -553,8 +553,8 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
       {newRows.length ? <div className="notice notice-info" style={{ marginBottom: 16, display: "grid", gap: 10 }}>
         <b>זוהו {newRows.length} עובדים חדשים. הם יוקמו כדי להיכלל בדיווח.</b>
         <span>בנוסף לדיווח הנוכחי, האם לעדכן מה־Excel גם מידע קבוע בכרטיסי העובדים ובתמהיל הפנסיוני?</span>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}><UiInput type="checkbox" checked={updateEmployeeProfiles} onChange={(e) => setUpdateEmployeeProfiles(e.target.checked)} />עדכן גם את פרטי העובדים הקיימים בכרטיס העובד</label>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}><UiInput type="checkbox" checked={updatePensionMix} onChange={(e) => setUpdatePensionMix(e.target.checked)} />עדכן גם את התמהיל הפנסיוני בכרטיסי העובדים לפי הקובץ</label>
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}><UiCheckbox checked={updateEmployeeProfiles} onChange={(e) => setUpdateEmployeeProfiles(e.target.checked)} />עדכן גם את פרטי העובדים הקיימים בכרטיס העובד</label>
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}><UiCheckbox checked={updatePensionMix} onChange={(e) => setUpdatePensionMix(e.target.checked)} />עדכן גם את התמהיל הפנסיוני בכרטיסי העובדים לפי הקובץ</label>
       </div> : null}
 
       <div className="field" style={{ maxWidth: 300, marginBottom: 16 }}><label>תאריך תחילת עבודה ברירת מחדל לעובד חדש</label><UiDateInput value={defaultStartDate} onValueChange={setDefaultStartDate} /></div>
@@ -572,7 +572,7 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
           `${row.firstName} ${row.lastName}`.trim() || "—",
           row.employeeNumber || "—",
           row.reportRow?.product.fundName || row.reportRow?.product.fundCode || "—",
-          row.status === "new" ? <label key="select" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><UiInput type="checkbox" checked={row.selected} onChange={() => toggleNew(row.nationalId)} />להקים ולהכליל</label> : row.reason ?? "ייכלל בדיווח",
+          row.status === "new" ? <label key="select" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><UiCheckbox checked={row.selected} onChange={() => toggleNew(row.nationalId)} />להקים ולהכליל</label> : row.reason ?? "ייכלל בדיווח",
         ]}
       />
     </div> : null}

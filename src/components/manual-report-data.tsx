@@ -1,6 +1,6 @@
 "use client";
 
-import { UiInput } from "@/components/ui-controls";
+import { UiCheckbox, UiInput } from "@/components/ui-controls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleAlert, CircleCheck, Pencil, Save, Search, UserPlus, X } from "lucide-react";
 import { InlineEmployeeCreateModal } from "@/components/inline-employee-create-modal";
@@ -295,7 +295,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
         const selected = selectedIds.includes(employee.id);
         const row = rowByEmployment.get(employee.id);
         return <div className={`manual-employee-row${selected ? " selected" : ""}`} key={employee.id}>
-          <label className="manual-employee-check"><UiInput type="checkbox" checked={selected} onChange={(event) => changeSelection(employee.id, event.target.checked)} /></label>
+          <label className="manual-employee-check"><UiCheckbox aria-label={`בחירת ${employee.firstName} ${employee.lastName} לדיווח`} checked={selected} onChange={(event) => changeSelection(employee.id, event.target.checked)} /></label>
           <div className="manual-employee-main"><b>{employee.firstName} {employee.lastName}</b><span>ת״ז {employee.nationalId} · עובד {employee.employeeNumber}{row?.monthlySalary ? ` · ₪${Number(row.monthlySalary).toLocaleString("he-IL")}` : ""}</span></div>
           <div className="manual-employee-products">{selected && row ? row.productCount ? <span className="badge badge-green"><CircleCheck size={13} />{row.productCount} מוצרים</span> : <span className="badge badge-orange"><CircleAlert size={13} />חסר תמהיל/מוצרים</span> : selected ? <span className="badge badge-gray">שומר...</span> : <span className="badge badge-gray">לא בדיווח</span>}</div>
           <button className="btn btn-soft manual-edit-btn" disabled={!selected || !row} onClick={() => row && void editEmployee(row)}><Pencil size={16} />עריכה</button>
