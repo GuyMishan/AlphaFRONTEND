@@ -1172,7 +1172,14 @@ td { font-size: 14px; }
 
 /* DataTable virtualization invariant: rendered rows must match rowHeight exactly. */
 .data-table-grid {
-  table-layout: auto;
+  width: 100%;
+  table-layout: fixed;
+}
+.data-table-grid th, .data-table-grid td {
+  min-width: 0;
+}
+.data-table-viewport {
+  scrollbar-gutter: stable;
 }
 .data-table-grid .data-table-row {
   height: var(--data-table-row-height) !important;

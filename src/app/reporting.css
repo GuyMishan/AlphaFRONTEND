@@ -212,7 +212,7 @@
 /* The reporting workspace can use the full app width on desktop; mobile keeps stacked cards. */
 .resume-report-section { margin-bottom: 20px; }
 .resume-report-table-wrap { max-height: 340px; overscroll-behavior: contain; }
-.resume-report-table { width: 100%; table-layout: auto; }
+.resume-report-table { width: 100%; table-layout: fixed; }
 .resume-report-table th, .resume-report-table td { vertical-align: middle; white-space: nowrap; }
 .resume-report-table .btn { display: inline-flex; gap: 6px; align-items: center; }
 @media (max-width: 760px) {

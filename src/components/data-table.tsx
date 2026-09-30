@@ -74,9 +74,10 @@ export function DataTable<T>({
   useEffect(() => { requestMoreIfNeeded(); }, [requestMoreIfNeeded]);
 
   return <div className="data-table">
-    <div ref={viewportRef} className={`table-wrap data-table-viewport ${wrapperClassName}`.trim()} style={{ maxHeight, overflow: "auto" }} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}>
+    <div ref={viewportRef} className={`table-wrap data-table-viewport ${wrapperClassName}`.trim()} style={{ maxHeight, overflow: "auto", scrollbarGutter: "stable" }} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}>
       <table className={`data-table-grid ${tableClassName}`.trim()} style={{ "--data-table-row-height": `${rowHeight}px` } as CSSProperties}>
-        <thead><tr>{columns.map((column) => <th key={column.key} style={column.width ? { width: column.width } : undefined}>{column.label}</th>)}</tr></thead>
+        <colgroup>{columns.map((column) => <col key={column.key} style={column.width ? { width: column.width } : undefined} />)}</colgroup>
+        <thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead>
         <tbody>
           {loading && items.length === 0 ? <tr><td colSpan={columns.length}><div className="empty">{loadingLabel}</div></td></tr> : items.length === 0 ? <tr><td colSpan={columns.length}><div className="empty">{emptyState}</div></td></tr> : <>
             {topSpacerHeight > 0 ? <tr aria-hidden="true" className="virtual-spacer"><td colSpan={columns.length} style={{ height: topSpacerHeight, padding: 0, border: 0 }} /></tr> : null}
