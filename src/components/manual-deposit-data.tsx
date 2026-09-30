@@ -259,8 +259,14 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       setResolvedPaymentAccount(effectiveAccount ? { bankId: effectiveAccount.bankId, branchId: effectiveAccount.branchId, maskedAccountNumber: effectiveAccount.maskedAccountNumber, mandateIsActive: effectiveAccount.mandateIsActive } : null);
       if (automaticDebit) {
         // The official V006 method 6 serializes zeroed banking fields independently;
-        // never replace editable operational account/date/reference with fake zero values.
-        setForm((current) => ({ ...current, paymentMethod: "6" }));
+        // preserve existing operational details and preselect the employer's known bank/branch.
+        setForm((current) => ({
+          ...current, paymentMethod: "6",
+          employerBankCode: current.employerBankCode && !/^0+$/.test(current.employerBankCode)
+            ? current.employerBankCode : String(paymentResolution.account!.bankId),
+          employerBranch: current.employerBranch && !/^0+$/.test(current.employerBranch)
+            ? current.employerBranch : String(paymentResolution.account!.branchId),
+        }));
       }
       if (effectiveAccount && !row.employerBankCode && !row.employerBranch && !row.employerAccount) {
         setBankSelection(String(effectiveAccount.bankId));
