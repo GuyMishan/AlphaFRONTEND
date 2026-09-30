@@ -75,6 +75,18 @@
   .report-deposits-grid { min-width: 730px; }
 }
 
-.report-feedback-table .data-table-row > td:last-child { white-space: nowrap; text-align: right; }
-.report-feedback-table .data-table-row > td:last-child .data-table-expand-toggle { margin-inline-start: 8px; margin-inline-end: 0; }
+/* RTL: keep Details at the start and pin the expansion button to the far end of its cell. */
+.report-feedback-table .data-table-row > td:last-child {
+  position: relative;
+  white-space: nowrap;
+  text-align: right;
+  padding-left: 38px;
+}
+.report-feedback-table .data-table-row > td:last-child .data-table-expand-toggle {
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+}
 .report-deposits-header > *, .report-deposits-item > * { align-self: center; }
