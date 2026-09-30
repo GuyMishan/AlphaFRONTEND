@@ -75,4 +75,5 @@
 
 - The deposit grid fetches report-wide evidence in one scoped call and presents per-product downloadable proof links (all saved versions). The modal keeps the grid's evidence state in sync immediately after upload. Payment dates rely on the single global `UiDateInput` calendar icon; the mandate account prefills from the authorized encrypted DB resolution with a valid numeric check.
 
-- Draft employee product editor includes a separate, tenant-scoped postal-address correction for existing V006 report snapshots. Employee master address fields now enforce the official postal-code (up to 7 digits) and optional postal-box (0–99999) bounds rather than requiring both; at least a full street address or postal box remains mandatory.
+
+- Postal code and post-office box are edited in the employee profile only. The report product modal links to the employee card in a new tab; editing the card synchronizes matching editable draft address snapshots via backend but never alters submitted reports.

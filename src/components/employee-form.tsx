@@ -187,8 +187,8 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         />
         <Field label="מספר בית *" error={errors.houseNumber}><UiInput disabled={!editable} required maxLength={20} value={form.houseNumber} onChange={(event) => update("houseNumber", event.target.value)} /></Field>
         <Field label="מספר דירה *" error={errors.apartment}><UiInput disabled={!editable} required maxLength={20} value={form.apartment} onChange={(event) => update("apartment", event.target.value)} /></Field>
-        <Field label="מיקוד" error={errors.postalCode}><UiInput disabled={!editable} inputMode="numeric" maxLength={7} value={form.postalCode} onChange={(event) => update("postalCode", event.target.value.replace(/\D/g, "").slice(0, 10))} /></Field>
-        <Field label="תא דואר" error={errors.postOfficeBox}><UiInput disabled={!editable} inputMode="numeric" maxLength={5} value={form.postOfficeBox} onChange={(event) => update("postOfficeBox", event.target.value)} /></Field>
+        <Field label="מיקוד" error={errors.postalCode}><UiInput disabled={!editable} inputMode="numeric" maxLength={7} value={form.postalCode} onChange={(event) => update("postalCode", event.target.value.replace(/\D/g, "").slice(0, 7))} /></Field>
+        <Field label="תא דואר" error={errors.postOfficeBox}><UiInput disabled={!editable} inputMode="numeric" maxLength={5} value={form.postOfficeBox} onChange={(event) => update("postOfficeBox", event.target.value.replace(/\D/g, "").slice(0, 5))} /></Field>
         {employee ? <div className="field"><label>סטטוס</label><UiInput disabled value={employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"} /></div> : null}
       </div>
       {!hideActions ? <div className="form-actions">{onCancel ? <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={saving}>ביטול</button> : <Link className="btn btn-secondary" href="/employees">חזרה</Link>}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : submitLabel ?? (employee ? "שמירת שינויים" : "הקמת עובד")}</button> : null}</div> : null}
