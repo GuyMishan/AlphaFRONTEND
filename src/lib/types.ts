@@ -198,6 +198,20 @@ export type ManualReportDraft = {
   employeeCount: number;
 };
 
+export type ResumableManualReport = {
+  id: string;
+  reportingMonth: string;
+  salaryPaymentDate: string | null;
+  status: string | number;
+  reportKind: string | number;
+  sourceReportId: string | null;
+  paymentAccountId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  employeeCount: number;
+  productCount: number;
+};
+
 export type SourceManualReport = {
   id: string;
   reportingMonth: string;

@@ -59,6 +59,7 @@ import type {
   EmployerRole,
   ManualProductInput,
   ManualReportDraft,
+  ResumableManualReport,
   ManualReportEmployeeDetail,
   ManualReportEmployeeSummary,
   Organization,
@@ -391,6 +392,8 @@ export const alphaApi = {
 
   createManualReport: (organizationId: string, employerId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null; employmentIds: string[]; paymentAccountId?: string }): Promise<ManualReportDraft> =>
     request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports`, { method: "POST", body: JSON.stringify(payload) }),
+  openManualReports: (organizationId: string, employerId: string, skip = 0, take = 20): Promise<PagedResult<ResumableManualReport>> =>
+    request<PagedResult<ResumableManualReport>>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports${qs({ skip, take })}`),
   manualReport: (organizationId: string, employerId: string, reportId: string): Promise<ManualReportDraft> =>
     request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}`),
   updateManualReportDetails: (organizationId: string, employerId: string, reportId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null }) =>

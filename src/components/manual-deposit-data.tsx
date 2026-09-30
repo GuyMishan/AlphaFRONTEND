@@ -232,7 +232,8 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       if (!active) return;
       setMetadata(item);
       const automaticDebit = !isNegativeKind(item.reportKind) && !isDifferencesKind(item.reportKind)
-        && paymentResolution.account?.mandateIsActive === true && item.operationCode !== 2 && item.operationCode !== 7;
+        && paymentResolution.account?.mandateIsActive === true
+        && item.operationCode !== 2 && item.operationCode !== 7 && item.paymentMethodCode == null;
       setMetadataForm({ operationCode: item.operationCode, depositStatus: item.depositStatus, employeeStatus: item.employeeStatus, statusStartDate: item.statusStartDate,
         employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason,
         paymentMethodCode: automaticDebit ? 6 : item.paymentMethodCode, employerAccountType: automaticDebit ? 1 : item.employerAccountType,
@@ -311,8 +312,9 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
   const operation6 = negative && metadataForm.operationCode === 6;
   const noMoneyCorrection = !negative && (metadataForm.operationCode === 2 || metadataForm.operationCode === 7);
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
-  const configuredPensionDebit = !negative && !differences && resolvedPaymentAccount?.mandateIsActive === true && !noMoneyCorrection;
-  const showOfficialPaymentMethod = !configuredPensionDebit && !differences && (!negative || operation5);
+  const configuredPensionDebit = !negative && !differences && resolvedPaymentAccount?.mandateIsActive === true
+    && metadataForm.paymentMethodCode === 6 && !noMoneyCorrection;
+  const showOfficialPaymentMethod = !differences && (!negative || operation5);
   const isOldPensionFund = row.productType === 1 && (row.fundClassification || "").includes("ותיק");
   const bankRequired = !differences && ((!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 7))
     || (operation5 && metadataForm.paymentMethodCode === 1));
@@ -401,34 +403,34 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק, ולכן אין להעביר ערך בשדה אמצעי התשלום.</div> : null}
       <div className="payment-layout"><div className="payment-main">
-          <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">חשבון מעסיק</span><b className="account-number">{formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
+          <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">{configuredPensionDebit ? "חשבון חיוב בהרשאה" : "חשבון מעסיק להעברה"}</span><b className="account-number">{metadataForm.paymentMethodCode !== 6 && bankRequired && (!form.employerBankCode || !form.employerAccount) ? "יש להזין פרטי חשבון להעברה" : formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
 
-          {configuredPensionDebit ? <div className="notice notice-success payment-auto-notice"><b>התשלום הפנסיוני מוגדר אוטומטית</b><span>קיימת הרשאה פעילה לחיוב בחשבון הפנסיוני של המעסיק. ALPHA תדווח אמצעי תשלום 6 ותפיק את ערכי ממשק 006 הנדרשים ללא אסמכתא או פרטי העברה ידניים.</span></div> : null}
-          {!differences && (!configuredPensionDebit || negative) ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי העברה חיצונית"}</h3><div className="payment-method-grid">
+          {configuredPensionDebit ? <div className="notice notice-info payment-auto-notice">
+            <b>הרשאה פעילה לחיוב החשבון הפנסיוני</b>
+            <span>ברירת המחדל היא אמצעי תשלום 6. ניתן לשנות את אמצעי התשלום להפקדה ידנית ולערוך את פרטי חשבון ההעברה, האסמכתא ותאריך הערך בהמשך. מסמכים ותאריך שנוספו כאשר נבחר אמצעי 6 יישמרו לתיעוד פנימי ולא יועברו בשדות שאינם רלוונטיים לממשק 006.</span>
+          </div> : null}
+          {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום ואפשרות לשינוי חשבון"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label><EmployerInterfaceOptionSelect category="payment-method" operationCode={metadataForm.operationCode} value={metadataForm.paymentMethodCode} required onChange={(value) => {
               setMetadataForm((current) => value === 9
                 ? { ...current, paymentMethodCode: value, employerAccountType: 1, receiverAccountType: 1 }
                 : { ...current, paymentMethodCode: value });
+              if (value === 6 && resolvedPaymentAccount?.mandateIsActive) {
+                setForm((current) => ({ ...current, employerBankCode: "0", employerBranch: "000",
+                  employerAccount: "00000000000000000000", employerBankName: "", referenceNumber: "" }));
+                setBankSelection(""); setBranchSelection("");
+              } else if (metadataForm.paymentMethodCode === 6 && value !== 6) {
+                // The masked mandate account is not usable as a manually reported transfer account.
+                setForm((current) => ({ ...current, employerBankCode: "", employerBranch: "",
+                  employerAccount: "", employerBankName: "" }));
+                setBankSelection(""); setBranchSelection("");
+              }
               setError("");
             }} /></div> : null}
-            {!negative && !noMoneyCorrection && metadataForm.receiverAccountType === 1 && metadataForm.paymentMethodCode !== 6 && metadataForm.paymentMethodCode !== 9 ? <div className="field"><label>תאריך ערך הפקדה לקופה *</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
+            {!negative && !noMoneyCorrection && metadataForm.receiverAccountType === 1 && metadataForm.paymentMethodCode !== 9 ? <div className="field"><label>{metadataForm.paymentMethodCode === 6 ? "תאריך ערך (לתיעוד פנימי)" : "תאריך ערך הפקדה לקופה *"}</label><div className="payment-input-icon"><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative && metadataForm.operationCode === 3 ? <div className="field"><label>סכום הפקדה נוספת בפועל *</label><UiInput type="number" min="0" step="0.01" value={form.actualDepositAmount ?? ""} onChange={(e) => patch("actualDepositAmount", e.target.value === "" ? null : Number(e.target.value))} /></div> : null}
             {!negative && metadataForm.paymentMethodCode === 7 ? <div className="field"><label>קוד פנימי של הגורם השולח במס״ב *</label><UiInput maxLength={16} value={form.masavSenderCode} onChange={(e) => patch("masavSenderCode", e.target.value)} placeholder="8–16 תווים" /></div> : null}
             {!negative && !noMoneyCorrection && (metadataForm.employerAccountType === 2 || metadataForm.receiverAccountType === 2) ? <div className="field"><label>תאריך ערך הפקדה לחשבון נאמנות *</label><div className="payment-input-icon"><UiDateInput value={form.trustAccountValueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("trustAccountValueDate", value || null)} /><CalendarDays size={14} /></div></div> : null}
             {!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 3) ? <div className="field"><label>מס׳ אסמכתא *</label><UiInput required maxLength={50} value={form.referenceNumber} onChange={(e) => patch("referenceNumber", e.target.value)} /></div> : null}
-            {!negative && !configuredPensionDebit && !noMoneyCorrection ? <div className="payment-evidence-control">
-              <UiFileUpload label="צירוף אישור העברה (עד 3MB, אם קיים)" fileName={uploadingProof ? "שומר אישור..." : undefined}
-                className="payment-upload" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
-                maxBytes={3_000_000} disabled={saving} busy={uploadingProof}
-                onFileSelected={uploadPaymentProof} onInvalid={(message) => { setError(message); notify.error(message); }} />
-              {paymentProofs.length ? <div className="payment-evidence-list">
-                {paymentProofs.map((item, index) => <button type="button" className="btn btn-secondary" key={item.id}
-                  onClick={() => void paymentConfirmationsApi.download(organizationId, employerId, reportId, row.id, item)
-                    .catch(() => notify.error("הורדת אישור ההעברה נכשלה"))}>
-                  {index === 0 ? "אישור אחרון: " : "אישור קודם: "}{item.originalFileName}
-                </button>)}
-              </div> : null}
-            </div> : null}
             {bankRequired ? <>
               <div className="field"><label>בנק *</label><UiInput required list={`banks-${row.id}`} value={bankSelection} onChange={(e) => chooseBank(e.target.value)} placeholder="חיפוש לפי שם או מספר בנק" /><datalist id={`banks-${row.id}`}>{banks.map((bank) => <option key={bank.bankCode} value={bankLabel(bank)} />)}</datalist></div>
               <div className="field"><label>מס׳ בנק</label><UiInput readOnly value={form.employerBankCode} /></div>
@@ -436,6 +438,24 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
               <div className="field"><label>מס׳ חשבון *</label><UiInput required inputMode="numeric" maxLength={20} value={form.employerAccount} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div>
             </> : null}
           </div></section> : null}
+
+          {!negative && (!noMoneyCorrection || paymentProofs.length > 0) ? <section className="payment-panel">
+            <h3>אסמכתאות ואישורי תשלום</h3>
+            <div className="payment-evidence-control">
+              {!noMoneyCorrection ? <UiFileUpload label="צירוף אישור תשלום (עד 3MB, אם קיים)" className="payment-upload"
+                accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                maxBytes={3_000_000} disabled={saving} busy={uploadingProof}
+                onFileSelected={uploadPaymentProof} onInvalid={(message) => { setError(message); notify.error(message); }} /> : null}
+              {configuredPensionDebit ? <small>באמצעי תשלום 6 האישור נשמר לתיעוד במערכת בלבד ואינו מחליף שדה אסמכתא בממשק 006.</small> : null}
+              {paymentProofs.length ? <div className="payment-evidence-list">
+                {paymentProofs.map((item, index) => <button type="button" className="btn btn-secondary" key={item.id}
+                  onClick={() => void paymentConfirmationsApi.download(organizationId, employerId, reportId, row.id, item)
+                    .catch(() => notify.error("הורדת אישור התשלום נכשלה"))}>
+                  {index === 0 ? "אישור אחרון: " : "אישור קודם: "}{item.originalFileName}
+                </button>)}
+              </div> : null}
+            </div>
+          </section> : null}
 
           {!differences && !negative && isOldPensionFund ? <section className="payment-panel"><h3>השלמה נדרשת לקרן ותיקה</h3><div className="payment-method-grid">
             <div className="field"><label>סוג פנסיה *</label><EmployerInterfaceOptionSelect category="old-pension-type" scope="current" value={metadataForm.oldPensionTypeCode} required onChange={(value) => patchMetadata("oldPensionTypeCode", value)} /></div>

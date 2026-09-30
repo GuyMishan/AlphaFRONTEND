@@ -35,7 +35,7 @@
 - Reference APIs: `src/lib/reference-options-api.ts`, `address-reference-api.ts`, `bank-reference-api.ts`.
 
 ## Reporting / Employer Interface 006
-- `src/app/reports/new/page.tsx` — new-report orchestration.
+- `src/app/reports/new/page.tsx` — new-report orchestration, wider desktop workspace, and resumable editable drafts loaded from scope-authorized `GET /manual-reports`. Persisted Excel/XML imports resume in the shared manual editor without re-uploading the source.
 - `src/components/manual-report-data.tsx` — manual report flow.
 - `src/components/manual-deposit-data.tsx` — per-employee/product deposit data and separately secured payment confirmations, through `payment-confirmations-api.ts`. Payment evidence is not a clearinghouse attachment.
 - `src/components/excel-employee-intake.tsx` — Excel intake; shared `ui-file-upload.tsx` handles file inputs, drag/drop, type and size checks across Excel, XML, payment evidence and V006 attachment uploads.
@@ -65,3 +65,5 @@
 - `.github/workflows/ci.yml` — authoritative CI sequence.
 
 - Financial report attachments and payment evidence use the shared file picker with an initial 3 MB upload ceiling to match the Cloudmersive free-evaluation scanning integration. Server-side endpoint and scanner validate the limit independently; increase both only after a commercially suitable scanning plan is configured.
+
+- Deposit payment editor preserves explicitly saved payment-method overrides even when a pension-debit mandate exists. Method 6 is only an initial default; users can select an official manual method and provide bank/reference/date details. Payment-evidence documents remain visible and downloadable for any current-report payment mode, while optional date/documents under method 6 stay operational-only and are not exported into irrelevant V006 fields.

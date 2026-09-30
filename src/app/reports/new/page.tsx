@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, FileCode2, FilePenLine, FileSpreadsheet, Info, Keyboard, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FileCode2, FilePenLine, FileSpreadsheet, Info, Keyboard, RotateCcw, Send } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { BillingGateModal } from "@/components/billing-gate-modal";
 import { ExcelEmployeeIntake, type ExcelEmployeeIntakeResult } from "@/components/excel-employee-intake";
@@ -21,7 +21,7 @@ import { reportValidationApi } from "@/lib/report-validation-api";
 import { reportTransmissionApi } from "@/lib/report-transmission-api";
 import { getEmployerSelection } from "@/lib/session";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
-import type { BillingGateStatus, Employee, EmployeePensionProductInput, Employer, EmployerPaymentAccount, ManualReportKind, ReportMode, SourceManualReport } from "@/lib/types";
+import type { BillingGateStatus, Employee, EmployeePensionProductInput, Employer, EmployerPaymentAccount, ManualReportKind, ReportMode, ResumableManualReport, SourceManualReport } from "@/lib/types";
 
 const manualSteps = ["פרטי הדיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
 const excelSteps = ["פרטי הדיווח", "העלאת קובץ דיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
@@ -66,6 +66,11 @@ export default function NewReportPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [manualReportId, setManualReportId] = useState("");
+  const [resumingDraft, setResumingDraft] = useState(false);
+  const [openReports, setOpenReports] = useState<ResumableManualReport[]>([]);
+  const [showOpenReports, setShowOpenReports] = useState(false);
+  const [openReportsHasMore, setOpenReportsHasMore] = useState(false);
+  const [loadingOpenReports, setLoadingOpenReports] = useState(false);
   const [fileName, setFileName] = useState("");
   const [excelIntake, setExcelIntake] = useState<ExcelEmployeeIntakeResult | null>(null);
   const [error, setError] = useState("");
@@ -101,16 +106,20 @@ export default function NewReportPage() {
     const scopeKey = `${nextScope.organizationId}:${nextScope.employerId}`;
     if (scopeLoadKeyRef.current === scopeKey) return;
     scopeLoadKeyRef.current = scopeKey;
-    setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
+    setLoading(true); setError(""); setScope(nextScope); setManualReportId(""); setResumingDraft(false); setShowOpenReports(false); setOpenReports([]); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
     try {
-      const [employerItem, employeePage, capabilities, profileSettings, accountRows, globalScope] = await Promise.all([
+      const [employerItem, employeePage, capabilities, profileSettings, accountRows, globalScope, draftPage] = await Promise.all([
         alphaApi.employer(nextScope.organizationId, nextScope.employerId),
         alphaApi.employeeSearch(nextScope.organizationId, nextScope.employerId, "", 0, 100),
         alphaApi.employerCapabilities(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerProfileCenterSettings(nextScope.organizationId, nextScope.employerId),
         alphaApi.employerPaymentAccounts(nextScope.organizationId, nextScope.employerId),
         getScopeContext(),
+        alphaApi.openManualReports(nextScope.organizationId, nextScope.employerId),
       ]);
+      if (scopeLoadKeyRef.current !== scopeKey) return;
+      setOpenReports(draftPage.items);
+      setOpenReportsHasMore(draftPage.hasMore);
       setEmployer(employerItem);
       setCanCreateReport(capabilities.canCreateReport);
       setCanTransmitReport(capabilities.canTransmitReport);
@@ -129,6 +138,61 @@ export default function NewReportPage() {
       scopeLoadKeyRef.current = "";
       setError(err instanceof Error ? err.message : "טעינת הנתונים נכשלה");
     } finally { setLoading(false); }
+  }
+
+  async function loadScopeForDrafts() {
+    if (!scope) return;
+    try {
+      const list = await alphaApi.openManualReports(scope.organizationId, scope.employerId);
+      setOpenReports(list.items); setOpenReportsHasMore(list.hasMore);
+    } catch (err) { toast.error(err instanceof Error ? err.message : "טעינת הטיוטות נכשלה"); }
+  }
+
+  async function loadMoreOpenReports() {
+    if (!scope || loadingOpenReports || !openReportsHasMore) return;
+    setLoadingOpenReports(true);
+    try {
+      const result = await alphaApi.openManualReports(scope.organizationId, scope.employerId, openReports.length);
+      setOpenReports((current) => [...current, ...result.items.filter((item) => !current.some((existing) => existing.id === item.id))]);
+      setOpenReportsHasMore(result.hasMore);
+    } catch (err) { toast.error(err instanceof Error ? err.message : "טעינת הטיוטות נכשלה"); }
+    finally { setLoadingOpenReports(false); }
+  }
+
+  async function resumeReport(draft: ResumableManualReport) {
+    if (!scope || !canCreateReport || advancing) return;
+    setAdvancing(true);
+    try {
+      // Re-fetch and enforce scope/editable state rather than trusting stale list data.
+      const [current, employmentIds] = await Promise.all([
+        alphaApi.manualReport(scope.organizationId, scope.employerId, draft.id),
+        loadReportEmploymentIds(draft.id),
+      ]);
+      if (!["1", "2", "9", "Draft", "ReadyForValidation", "Error"].includes(String(current.status)))
+        throw new Error("הדיווח כבר אינו ניתן לעריכה.");
+      const kind = Number(current.reportKind) as ManualReportKind;
+      setReportKind(kind === 2 || kind === 3 ? kind : 1);
+      // Imported Excel/XML rows have already been persisted, so resume directly in the
+      // common manual employee/deposit editor without re-importing the source file.
+      setMode("manual");
+      setResumingDraft(true);
+      setManualReportId(current.id);
+      setSelectedIds(employmentIds);
+      setMonth(current.reportingMonth.slice(0, 7));
+      setSalaryPaymentDate(current.salaryPaymentDate?.slice(0, 10) ?? "");
+      setSelectedPaymentAccountId(current.paymentAccountId || "");
+      setSelectedSourceReportId(current.sourceReportId ?? "");
+      setFileName("");
+      setExcelIntake(null);
+      setSentExternalId("");
+      setStepOneAttempted(false);
+      setShowOpenReports(false);
+      setError("");
+      setStep(2);
+      toast.success("הטיוטה נטענה. ניתן להמשיך לערוך ולשמור.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "לא ניתן לפתוח את הטיוטה");
+    } finally { setAdvancing(false); }
   }
 
   async function loadSources(reset = true, search = sourceSearch) {
@@ -159,14 +223,14 @@ export default function NewReportPage() {
   useEffect(() => { const handler = (event: Event) => { if (step !== 1) return; const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail; if (detail.employerId) void loadScope({ organizationId: detail.organizationId, employerId: detail.employerId }); }; window.addEventListener("alpha:scope-change", handler); return () => window.removeEventListener("alpha:scope-change", handler); }, [step]);
   useEffect(() => {
     const needsSources = reportKind !== 1 || mode === "correction";
-    if (!needsSources || !scope || (mode === "xml" && manualReportId)) return;
+    if (!needsSources || !scope || manualReportId) return;
     if (reportKind !== 1 && mode !== "manual") setMode("manual");
-    setManualReportId(""); setSourceSearch(""); setSentExternalId(""); void loadSources(true, "");
+    setSourceSearch(""); setSentExternalId(""); void loadSources(true, "");
   }, [reportKind, mode, manualReportId, scope?.organizationId, scope?.employerId]);
 
   function chooseSource(report: SourceManualReport) { setSelectedSourceReportId(report.id); setMonth(report.reportingMonth.slice(0, 7)); setSalaryPaymentDate(report.salaryPaymentDate?.slice(0, 10) ?? ""); setError(""); setSentExternalId(""); }
-  function chooseKind(kind: ManualReportKind) { setReportKind(kind); setManualReportId(""); setSelectedSourceReportId(""); setCorrectionOperationCode(2); setFileName(""); setExcelIntake(null); setError(""); setSentExternalId(""); if (kind !== 1) setMode("manual"); }
-  function chooseMode(value: IntakeMode) { setMode(value); setManualReportId(""); setFileName(""); setExcelIntake(null); setError(""); setSentExternalId(""); setStep(1); }
+  function chooseKind(kind: ManualReportKind) { setResumingDraft(false); setReportKind(kind); setManualReportId(""); setSelectedSourceReportId(""); setCorrectionOperationCode(2); setFileName(""); setExcelIntake(null); setError(""); setSentExternalId(""); if (kind !== 1) setMode("manual"); }
+  function chooseMode(value: IntakeMode) { setResumingDraft(false); setMode(value); setManualReportId(""); setFileName(""); setExcelIntake(null); setError(""); setSentExternalId(""); setStep(1); }
 
   const canContinue = step === 1
     ? Boolean(!isXml && employer && month && salaryPaymentDate && selectedPaymentAccountId
@@ -182,7 +246,7 @@ export default function NewReportPage() {
     if (!/^\d{4}-\d{2}$/.test(month)) return "חודש דיווח הוא שדה חובה.";
     if (!salaryPaymentDate) return "תאריך תשלום שכר הוא שדה חובה.";
     if (!selectedPaymentAccountId) return "יש לבחור חשבון תשלום לדיווח.";
-    if ((reportKind !== 1 || isCorrection) && !selectedSourceReportId) return "יש לבחור את הדיווח הקודם שעליו מבוסס הדיווח.";
+    if (!manualReportId && (reportKind !== 1 || isCorrection) && !selectedSourceReportId) return "יש לבחור את הדיווח הקודם שעליו מבוסס הדיווח.";
     if (isCorrection && !selectedSource?.canBeCurrentCorrectionSource) return "יש לבחור דיווח שלילי קוד 6 שכבר נשלח או יובא ממקור חיצוני.";
     return "";
   }
@@ -444,7 +508,24 @@ export default function NewReportPage() {
   }
 
   const steps = isExcel ? excelSteps : manualSteps;
-  return <AppShell title="דיווח חדש" hideScopeController={step > 1}><div className="wizard"><div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer && scope ? <><Link className="profile-link" href={`/employers/${employer.id}?organizationId=${scope.organizationId}`}>{employer.legalName}</Link>{` · ח.פ. ${employer.registrationNumber}`}</> : "יש לבחור מעסיק בבורר העליון"}</p></div></div><ReportTypeBanner reportKind={reportKind} source={selectedSource} month={month} correctionOperationCode={isCorrection ? correctionOperationCode : null} /><div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>{error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}{!loading && employer && !canCreateReport ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק, אך אין לך הרשאה ליצור או לערוך דיווחים.</div> : null}{loading ? <div className="card empty">טוען את המעסיק והעובדים...</div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : <section className="card">
+  return <AppShell title="דיווח חדש" hideScopeController={step > 1}><div className={step > 1 ? "wizard wizard-wide" : "wizard"}><div className="page-head"><div><h1>יצירת דיווח פנסיוני</h1><p>{employer && scope ? <><Link className="profile-link" href={`/employers/${employer.id}?organizationId=${scope.organizationId}`}>{employer.legalName}</Link>{` · ח.פ. ${employer.registrationNumber}`}</> : "יש לבחור מעסיק בבורר העליון"}</p></div></div><ReportTypeBanner reportKind={reportKind} source={selectedSource} month={month} correctionOperationCode={isCorrection ? correctionOperationCode : null} /><div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>{error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}{!loading && employer && !canCreateReport ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק, אך אין לך הרשאה ליצור או לערוך דיווחים.</div> : null}{loading ? <div className="card empty">טוען את המעסיק והעובדים...</div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : <section className="card">
+    {step === 1 && canCreateReport ? <div className="resume-report-section">
+      <button type="button" className="btn btn-secondary" aria-expanded={showOpenReports} aria-controls="open-report-drafts" onClick={() => setShowOpenReports((value) => !value)}>
+        <RotateCcw size={17} />המשך דיווח קיים{openReports.length ? ` (${openReports.length}${openReportsHasMore ? "+" : ""})` : ""}
+      </button>
+      {showOpenReports ? <div id="open-report-drafts" className="resume-report-list">
+        <h3>טיוטות שניתן להמשיך לערוך</h3>
+        {openReports.length === 0 ? <div className="notice notice-info">אין כרגע טיוטות פתוחות למעסיק הנבחר.</div> :
+          openReports.map((draft) => <div className="resume-report-row" key={draft.id}>
+            <div><b>{kindLabel(draft.reportKind)} · {formatMonth(draft.reportingMonth)}</b>
+              <span>{draft.employeeCount} עובדים · {draft.productCount} מוצרים · עודכן {formatDateDDMMYYYY(draft.updatedAt, "—")}</span></div>
+            <button type="button" className="btn btn-primary" disabled={advancing}
+              onClick={() => void resumeReport(draft)}>המשך עריכה <ArrowLeft size={15} /></button>
+          </div>)}
+        {openReportsHasMore ? <button type="button" className="btn btn-secondary" disabled={loadingOpenReports}
+          onClick={() => void loadMoreOpenReports()}>{loadingOpenReports ? "טוען..." : "הצג טיוטות נוספות"}</button> : null}
+      </div> : null}
+    </div> : null}
     {step === 1 ? <ReportDetails reportKind={reportKind} setReportKind={chooseKind} mode={mode} setMode={chooseMode} correctionOperationCode={correctionOperationCode} setCorrectionOperationCode={setCorrectionOperationCode} month={month} setMonth={setMonth} salaryPaymentDate={salaryPaymentDate} setSalaryPaymentDate={(value) => { setSalaryPaymentDate(value); if (value) setError(""); }} showValidation={stepOneAttempted} paymentAccounts={paymentAccounts} selectedPaymentAccountId={selectedPaymentAccountId} sourceReports={isCorrection ? eligibleCorrectionSources : sourceReports} sourceSearch={sourceSearch} setSourceSearch={setSourceSearch} sourceHasMore={sourceHasMore} loadingSources={loadingSources} selectedSourceReportId={selectedSourceReportId} chooseSource={chooseSource} searchSources={() => void loadSources(true, sourceSearch)} loadMoreSources={() => void loadSources(false, sourceSearch)} /> : null}
     {step === 1 && isXml && scope ? <EmployerInterfaceXmlIntake organizationId={scope.organizationId} employerId={scope.employerId} paymentAccountId={selectedPaymentAccountId} salaryPaymentDate={salaryPaymentDate} disabled={!canCreateReport || !selectedPaymentAccountId} onBeforeImport={ensureBillingAccess} onReportImported={handleXmlImported} /> : null}
     {step === 2 && isExcel && scope ? <ExcelEmployeeIntake organizationId={scope.organizationId} employerId={scope.employerId} reportingMonth={month} onChange={(result) => { setExcelIntake(result); setFileName(result?.fileName ?? ""); setError(""); }} /> : null}
@@ -456,7 +537,7 @@ export default function NewReportPage() {
       {reportKind === 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>דיווח הפרשים הוא טיוטת עבודה</b><div>לא ניתן לשדר אותו ישירות למסלקה. יש ליצור ממנו דיווח שוטף מתקן או דיווח שלילי בהתאם לכיוון ההפרש.</div></div> : null}
       {billingGate?.canTransmit && reportKind !== 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
     </> : null}
-    {!(isXml && step === 1) ? <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={advancing || !canCreateReport} onClick={() => { if (step === 1) { void next(); return; } if (!selectedPaymentAccountId) { setShowBillingGateModal(true); return; } if (canContinue) void next(); }}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <>{sentExternalId ? <button className="btn btn-secondary" onClick={() => router.push("/reports")}>יציאה</button> : null}<button className="btn btn-primary" disabled={reportKind === 2 || sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{reportKind === 2 ? "יש לממש את ההפרש לפני שליחה" : sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button></>}</div> : null}
+    {!(isXml && step === 1) ? <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || (resumingDraft && step === 2) || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{resumingDraft ? <button type="button" className="btn btn-secondary" onClick={() => { setResumingDraft(false); setManualReportId(""); setStep(1); setShowOpenReports(true); void loadScopeForDrafts(); }}>טיוטות אחרות</button> : null}{step < summaryStep ? <button className="btn btn-primary" disabled={advancing || !canCreateReport} onClick={() => { if (step === 1) { void next(); return; } if (!selectedPaymentAccountId) { setShowBillingGateModal(true); return; } if (canContinue) void next(); }}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <>{sentExternalId ? <button className="btn btn-secondary" onClick={() => router.push("/reports")}>יציאה</button> : null}<button className="btn btn-primary" disabled={reportKind === 2 || sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{reportKind === 2 ? "יש לממש את ההפרש לפני שליחה" : sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button></>}</div> : null}
   </section>}</div>{scope && showBillingGateModal ? <BillingGateModal
     gate={billingGate ?? { canTransmit: false, error: "pension_payment_account_required", billingMode: null, source: null, billedThroughName: null, paymentMethodType: null, paymentMethodStatus: null, configured: false }}
     organizationId={scope.organizationId}
@@ -471,7 +552,7 @@ function ReportTypeBanner({ reportKind, source, month, correctionOperationCode }
 
 function ReportDetails({ reportKind, setReportKind, mode, setMode, correctionOperationCode, setCorrectionOperationCode, month, setMonth, salaryPaymentDate, setSalaryPaymentDate, showValidation, paymentAccounts, selectedPaymentAccountId, sourceReports, sourceSearch, setSourceSearch, sourceHasMore, loadingSources, selectedSourceReportId, chooseSource, searchSources, loadMoreSources }: { reportKind: ManualReportKind; setReportKind: (value: ManualReportKind) => void; mode: IntakeMode; setMode: (value: IntakeMode) => void; correctionOperationCode: 2 | 3; setCorrectionOperationCode: (value: 2 | 3) => void; month: string; setMonth: (value: string) => void; salaryPaymentDate: string; setSalaryPaymentDate: (value: string) => void; showValidation: boolean; paymentAccounts: EmployerPaymentAccount[]; selectedPaymentAccountId: string; sourceReports: SourceManualReport[]; sourceSearch: string; setSourceSearch: (value: string) => void; sourceHasMore: boolean; loadingSources: boolean; selectedSourceReportId: string; chooseSource: (report: SourceManualReport) => void; searchSources: () => void; loadMoreSources: () => void; }) {
   const kindChoices: { value: ManualReportKind; icon: typeof Keyboard; title: string; text: string }[] = [{ value: 1, icon: Keyboard, title: "דיווח שוטף", text: "הדיווח החודשי הרגיל עבור תקופת השכר שנבחרה" }, { value: 2, icon: FilePenLine, title: "דיווח הפרשים", text: "דיווח המשלים סכומים ביחס לדיווח קודם" }, { value: 3, icon: FilePenLine, title: "דיווח שלילי", text: "הפחתה או ביטול של נתונים שכבר דווחו בדיווח קודם" }];
-  return <><div className="card-head"><div><h2>סוג הדיווח</h2><span style={{ color: "var(--muted)" }}>בחרו קודם מה מטרת הדיווח. הבחירה תישאר מוצגת לאורך כל התהליך.</span></div></div><div className="grid choice-grid" style={{ marginBottom: 24 }}>{kindChoices.map(({ value, icon: Icon, title, text }) => <UiChoiceCard key={value} selected={reportKind === value} onClick={() => setReportKind(value)}><Icon className="choice-icon" size={28} /><b>{title}</b><p>{text}</p></UiChoiceCard>)}</div>{reportKind === 1 ? <><div className="grid two-cols" style={{ marginBottom: 24 }}><div className="field"><label htmlFor="month">חודש דיווח *</label><UiDateInput id="month" mode="month" value={month} onValueChange={setMonth} required /></div><div className={`field${showValidation && !salaryPaymentDate ? " field-error" : ""}`}><label htmlFor="salary-date">תאריך תשלום שכר *</label><UiDateInput id="salary-date" value={salaryPaymentDate} onValueChange={setSalaryPaymentDate} required aria-invalid={showValidation && !salaryPaymentDate} />{showValidation && !salaryPaymentDate ? <small className="field-error-text">תאריך תשלום שכר הוא שדה חובה.</small> : null}</div></div><div className="field" style={{ marginBottom: 24 }}><label>חשבון לתשלום פנסיוני *</label>{paymentAccounts.length ? (() => { const account = paymentAccounts.find((item) => item.id === selectedPaymentAccountId) ?? paymentAccounts[0]; return <div className="payment-account-card payment-account-card-single"><div className="payment-account-head"><div><b>{account.accountHolderName}</b><span className="badge badge-blue">{account.source === "Organization" ? "חשבון ארגוני" : "חשבון מעסיק"}</span></div><span className={account.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{account.mandateIsActive ? "הרשאה פעילה" : "הרשאה לא פעילה"}</span></div><div className="payment-account-details payment-account-details-wide"><span><b>בנק וסניף</b><small>בנק {account.bankId} · סניף {account.branchId}</small></span><span><b>מספר חשבון</b><small className="account-number">{account.maskedAccountNumber}</small></span><span><b>מקור</b><small>{account.source === "Organization" ? "יורש מהארגון" : "חשבון עצמאי של המעסיק"}</small></span></div><small>החשבון האפקטיבי נשמר כצילום מצב בדיווח ולא ישתנה היסטורית אם ההגדרה תעודכן בעתיד.</small></div>; })() : <div className="empty"><b>טרם הוגדר חשבון לתשלום פנסיוני</b><span>יש להשלים את ההגדרה לפני המשך תהליך הדיווח.</span></div>}</div><div className="card-head"><div><h3 style={{ margin: 0 }}>אופן קליטת הנתונים</h3></div></div><div className="grid choice-grid"><UiChoiceCard selected={mode === "manual"} onClick={() => setMode("manual")}><Keyboard className="choice-icon" size={28} /><b>דיווח ידני</b><p>בחירת עובדים והזנת המוצרים וההפקדות במערכת</p></UiChoiceCard><UiChoiceCard selected={mode === "excel"} onClick={() => setMode("excel")}><FileSpreadsheet className="choice-icon" size={28} /><b>קובץ Excel</b><p>העלאת קובץ דיווח מלא: עובדים, מוצרים, הפרשות ונתוני ממשק 006</p></UiChoiceCard><UiChoiceCard selected={mode === "xml"} onClick={() => setMode("xml")}><FileCode2 className="choice-icon" size={28} /><b>XML ממשק מעסיקים</b><p>העלאת קובץ ממשק מעסיקים 006, בדיקת המבנה וקליטת הדיווח</p></UiChoiceCard><UiChoiceCard selected={mode === "correction"} onClick={() => setMode("correction")}><FilePenLine className="choice-icon" size={28} /><b>תיקון אחרי שלילי 6</b><p>יצירת דיווח שוטף מתקן פעולה 2 או 3 על בסיס דיווח שלילי שביטל את התנועה</p></UiChoiceCard></div>{mode === "correction" ? <div style={{ marginTop: 24 }}><div className="notice notice-info" style={{ marginBottom: 18 }}>לפי ממשק מעסיקים 006, פעולה 2/3 חייבת להפנות לדיווח השלילי קוד 6 שקדם לה. מוצגים כאן רק דיווחים כשירים.</div><div className="grid choice-grid" style={{ marginBottom: 18 }}><UiChoiceCard selected={correctionOperationCode === 2} onClick={() => setCorrectionOperationCode(2)}><b>פעולה 2</b><p>תיקון נתונים ללא הפקדה נוספת</p></UiChoiceCard><UiChoiceCard selected={correctionOperationCode === 3} onClick={() => setCorrectionOperationCode(3)}><b>פעולה 3</b><p>תיקון נתונים עם הפקדה נוספת בפועל</p></UiChoiceCard></div><SourceReportsList reports={sourceReports} loading={loadingSources} selectedId={selectedSourceReportId} search={sourceSearch} setSearch={setSourceSearch} chooseSource={chooseSource} onSearch={searchSources} hasMore={sourceHasMore} onLoadMore={loadMoreSources} />{!loadingSources && sourceReports.length === 0 ? <div className="notice notice-info" style={{ marginTop: 12 }}>לא נמצא דיווח שלילי קוד 6 כשיר לתיקון שוטף.</div> : null}</div> : null}</> : <><div className="notice" style={{ marginBottom: 18 }}>{reportKind === 3 ? "דיווח שלילי חייב להיות מקושר לדיווח שאותו הוא מפחית או מבטל." : "דיווח הפרשים חייב להיות מקושר לדיווח שעליו משלימים את ההפרשים."}</div><SourceReportsList reports={sourceReports} loading={loadingSources} selectedId={selectedSourceReportId} search={sourceSearch} setSearch={setSourceSearch} chooseSource={chooseSource} onSearch={searchSources} hasMore={sourceHasMore} onLoadMore={loadMoreSources} />{selectedSourceReportId ? <div className="grid two-cols" style={{ marginTop: 24 }}><div className="field"><label>חודש הדיווח *</label><UiDateInput mode="month" value={month} onValueChange={setMonth} disabled /></div><div className="field"><label>תאריך תשלום שכר *</label><UiDateInput required value={salaryPaymentDate} onValueChange={setSalaryPaymentDate} /></div></div> : null}</>}</>;
+  return <><div className="card-head"><div><h2>סוג הדיווח</h2><span style={{ color: "var(--muted)" }}>בחרו קודם מה מטרת הדיווח. הבחירה תישאר מוצגת לאורך כל התהליך.</span></div></div><div className="grid choice-grid" style={{ marginBottom: 24 }}>{kindChoices.map(({ value, icon: Icon, title, text }) => <UiChoiceCard key={value} selected={reportKind === value} onClick={() => setReportKind(value)}><Icon className="choice-icon" size={28} /><b>{title}</b><p>{text}</p></UiChoiceCard>)}</div>{reportKind === 1 ? <><div className="grid two-cols" style={{ marginBottom: 24 }}><div className="field"><label htmlFor="month">חודש דיווח *</label><UiDateInput id="month" mode="month" value={month} onValueChange={setMonth} required /></div><div className={`field${showValidation && !salaryPaymentDate ? " field-error" : ""}`}><label htmlFor="salary-date">תאריך תשלום שכר *</label><UiDateInput id="salary-date" value={salaryPaymentDate} onValueChange={setSalaryPaymentDate} required aria-invalid={showValidation && !salaryPaymentDate} />{showValidation && !salaryPaymentDate ? <small className="field-error-text">תאריך תשלום שכר הוא שדה חובה.</small> : null}</div></div><div className="card-head"><div><h3 style={{ margin: 0 }}>אופן קליטת הנתונים</h3></div></div><div className="grid choice-grid"><UiChoiceCard selected={mode === "manual"} onClick={() => setMode("manual")}><Keyboard className="choice-icon" size={28} /><b>דיווח ידני</b><p>בחירת עובדים והזנת המוצרים וההפקדות במערכת</p></UiChoiceCard><UiChoiceCard selected={mode === "excel"} onClick={() => setMode("excel")}><FileSpreadsheet className="choice-icon" size={28} /><b>קובץ Excel</b><p>העלאת קובץ דיווח מלא: עובדים, מוצרים, הפרשות ונתוני ממשק 006</p></UiChoiceCard><UiChoiceCard selected={mode === "xml"} onClick={() => setMode("xml")}><FileCode2 className="choice-icon" size={28} /><b>XML ממשק מעסיקים</b><p>העלאת קובץ ממשק מעסיקים 006, בדיקת המבנה וקליטת הדיווח</p></UiChoiceCard><UiChoiceCard selected={mode === "correction"} onClick={() => setMode("correction")}><FilePenLine className="choice-icon" size={28} /><b>תיקון אחרי שלילי 6</b><p>יצירת דיווח שוטף מתקן פעולה 2 או 3 על בסיס דיווח שלילי שביטל את התנועה</p></UiChoiceCard></div>{mode === "correction" ? <div style={{ marginTop: 24 }}><div className="notice notice-info" style={{ marginBottom: 18 }}>לפי ממשק מעסיקים 006, פעולה 2/3 חייבת להפנות לדיווח השלילי קוד 6 שקדם לה. מוצגים כאן רק דיווחים כשירים.</div><div className="grid choice-grid" style={{ marginBottom: 18 }}><UiChoiceCard selected={correctionOperationCode === 2} onClick={() => setCorrectionOperationCode(2)}><b>פעולה 2</b><p>תיקון נתונים ללא הפקדה נוספת</p></UiChoiceCard><UiChoiceCard selected={correctionOperationCode === 3} onClick={() => setCorrectionOperationCode(3)}><b>פעולה 3</b><p>תיקון נתונים עם הפקדה נוספת בפועל</p></UiChoiceCard></div><SourceReportsList reports={sourceReports} loading={loadingSources} selectedId={selectedSourceReportId} search={sourceSearch} setSearch={setSourceSearch} chooseSource={chooseSource} onSearch={searchSources} hasMore={sourceHasMore} onLoadMore={loadMoreSources} />{!loadingSources && sourceReports.length === 0 ? <div className="notice notice-info" style={{ marginTop: 12 }}>לא נמצא דיווח שלילי קוד 6 כשיר לתיקון שוטף.</div> : null}</div> : null}</> : <><div className="notice" style={{ marginBottom: 18 }}>{reportKind === 3 ? "דיווח שלילי חייב להיות מקושר לדיווח שאותו הוא מפחית או מבטל." : "דיווח הפרשים חייב להיות מקושר לדיווח שעליו משלימים את ההפרשים."}</div><SourceReportsList reports={sourceReports} loading={loadingSources} selectedId={selectedSourceReportId} search={sourceSearch} setSearch={setSourceSearch} chooseSource={chooseSource} onSearch={searchSources} hasMore={sourceHasMore} onLoadMore={loadMoreSources} />{selectedSourceReportId ? <div className="grid two-cols" style={{ marginTop: 24 }}><div className="field"><label>חודש הדיווח *</label><UiDateInput mode="month" value={month} onValueChange={setMonth} disabled /></div><div className="field"><label>תאריך תשלום שכר *</label><UiDateInput required value={salaryPaymentDate} onValueChange={setSalaryPaymentDate} /></div></div> : null}</>}</>;
 }
 
 function SourceReportsList({ reports, loading, selectedId, search, setSearch, chooseSource, onSearch, hasMore, onLoadMore }: { reports: SourceManualReport[]; loading: boolean; selectedId: string; search: string; setSearch: (value: string) => void; chooseSource: (report: SourceManualReport) => void; onSearch: () => void; hasMore: boolean; onLoadMore: () => void; }) { return <div><div className="card-head"><div><h3 style={{ margin: 0 }}>בחרו את הדיווח שאותו מתקנים</h3><span style={{ color: "var(--muted)" }}>ניתן לטעון דיווחים נוספים לפי הצורך.</span></div></div><div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}><UiInput aria-label="חיפוש לפי חודש" placeholder="חיפוש חודש, למשל 2026-09" maxLength={7} value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSearch(); }} style={{ flex: "1 1 220px" }} /><button type="button" className="btn btn-secondary" onClick={onSearch} disabled={loading}>חיפוש</button></div>{loading && reports.length === 0 ? <div className="empty">טוען דיווחים קודמים...</div> : null}{!loading && reports.length === 0 ? <div className="empty"><b>לא נמצאו דיווחים</b><span>אין כרגע דיווח זמין לבסס עליו את התיקון.</span></div> : null}{reports.length > 0 ? <div className="manual-employee-list">{reports.map((report) => { const selected = report.id === selectedId; return <button type="button" key={report.id} className={`manual-employee-row correction-report-row${selected ? " selected" : ""}`} onClick={() => chooseSource(report)}><span className="manual-employee-check"><UiInput type="radio" readOnly checked={selected} /></span><span className="manual-employee-main"><b>חודש {formatMonth(report.reportingMonth)} · {kindLabel(report.reportKind)}</b><span>{report.employeeCount} עובדים · {report.productCount} מוצרים · עודכן {formatDateDDMMYYYY(report.updatedAt, "—")}</span></span></button>; })}</div> : null}{hasMore ? <div style={{ marginTop: 14, textAlign: "center" }}><button type="button" className="btn btn-secondary" disabled={loading} onClick={onLoadMore}>{loading ? "טוען..." : "טען דיווחים נוספים"}</button></div> : null}</div>; }
