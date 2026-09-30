@@ -53,7 +53,7 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
           <UserPlus size={16} />{working ? "יוצר..." : "הקמת עובד"}
         </button>
       </> : stage === "confirm-products" ? <>
-        <button type="button" className="btn btn-secondary" disabled={working} onClick={() => void addToReportAndClose()}>
+        <button type="button" data-modal-side="positive" className="btn btn-secondary" disabled={working} onClick={() => void addToReportAndClose()}>
           {working ? "מוסיף לדיווח..." : "לא, הוסף לדיווח וסגור"}
         </button>
         <button type="button" className="btn btn-primary" disabled={working} onClick={() => setStage("products")}>

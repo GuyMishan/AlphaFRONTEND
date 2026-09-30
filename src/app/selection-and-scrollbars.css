@@ -220,3 +220,28 @@ html[data-theme="dark"] .ui-select-menu-portal {
 }
 .app-modal.report-editor-app-modal > .app-modal-body { min-height: 0; flex: 1 1 auto; }
 .app-modal-close:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* Right-hand cancel/back controls, left-hand affirmative actions in RTL. */
+.app-modal-actions {
+  display: flex; flex-direction: row; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 12px;
+}
+.app-modal-actions-cancel, .app-modal-actions-positive {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+}
+.app-modal-actions-positive { margin-inline-start: auto; }
+@media(max-width:560px) {
+  .app-modal-actions { display: flex; flex-direction: row; flex-wrap: wrap; }
+  .app-modal-actions > * { min-width: 0; }
+  .app-modal-actions :is(button, a) { width: auto; }
+}
+.pension-fund-options-portal {
+  position: fixed !important; z-index: 6500 !important;
+  right: auto !important; bottom: auto !important;
+  overflow-y: auto; overscroll-behavior: contain; border-radius: 12px;
+  box-shadow: 0 20px 55px rgba(14,33,54,.21), 0 3px 10px rgba(14,33,54,.08);
+}
+html[data-theme="dark"] .pension-fund-options-portal {
+  background: #111b28 !important;
+  box-shadow: 0 20px 55px rgba(0,0,0,.48), 0 3px 12px rgba(0,0,0,.24);
+}
