@@ -24,9 +24,12 @@ type EmployeeFormProps = {
   onSaved?: (employee: Employee) => void | Promise<void>;
   onCancel?: () => void;
   submitLabel?: string;
+  formId?: string;
+  hideActions?: boolean;
+  onSavingChange?: (saving: boolean) => void;
 };
 
-export function EmployeeForm({ organizationId, employerId, employee, employer, editable = true, embedded = false, onSaved, onCancel, submitLabel }: EmployeeFormProps) {
+export function EmployeeForm({ organizationId, employerId, employee, employer, editable = true, embedded = false, onSaved, onCancel, submitLabel, formId, hideActions = false, onSavingChange }: EmployeeFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<EmployeeInput>({
     nationalId: employee?.nationalId ?? "",
@@ -48,6 +51,7 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
     postOfficeBox: employee?.postOfficeBox ?? "",
   });
   const [saving, setSaving] = useState(false);
+  useEffect(() => { onSavingChange?.(saving); }, [saving, onSavingChange]);
   const [errors, setErrors] = useState<FieldErrors>({});
   const title = employee ? `${employee.firstName} ${employee.lastName}` : "עובד חדש";
 
@@ -154,7 +158,7 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
   const body = <>
     <div className="profile-summary"><div className="profile-avatar"><UserRound /></div><div><h2 style={{ margin: 0 }}>{title}</h2><span style={{ color: "var(--muted)" }}>{employee ? editable ? "עריכת פרופיל עובד" : "צפייה בפרופיל עובד" : <>הקמת עובד אצל {employer ? <Link className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}>{employer.legalName}</Link> : "המעסיק שנבחר"}</>}</span></div></div>
     {!editable && employee ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה בעובד הזה, ללא הרשאת עריכה.</div> : null}
-    <form className="form" onSubmit={submit} noValidate>
+    <form id={formId} className="form" onSubmit={submit} noValidate>
       <div className="grid employee-details-grid">
         <Field label="שם פרטי *" error={errors.firstName}><UiInput aria-invalid={Boolean(errors.firstName)} required minLength={2} maxLength={100} disabled={!editable} value={form.firstName} onChange={(event) => update("firstName", event.target.value)} /></Field>
         <Field label="שם משפחה *" error={errors.lastName}><UiInput aria-invalid={Boolean(errors.lastName)} required minLength={2} maxLength={100} disabled={!editable} value={form.lastName} onChange={(event) => update("lastName", event.target.value)} /></Field>
@@ -182,7 +186,7 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         <Field label="תא דואר *" error={errors.postOfficeBox}><UiInput disabled={!editable} required maxLength={20} value={form.postOfficeBox} onChange={(event) => update("postOfficeBox", event.target.value)} /></Field>
         {employee ? <div className="field"><label>סטטוס</label><UiInput disabled value={employee.status === 1 ? "פעיל" : employee.status === 2 ? "חל״ת" : "סיים עבודה"} /></div> : null}
       </div>
-      <div className="form-actions">{onCancel ? <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={saving}>ביטול</button> : <Link className="btn btn-secondary" href="/employees">חזרה</Link>}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : submitLabel ?? (employee ? "שמירת שינויים" : "הקמת עובד")}</button> : null}</div>
+      {!hideActions ? <div className="form-actions">{onCancel ? <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={saving}>ביטול</button> : <Link className="btn btn-secondary" href="/employees">חזרה</Link>}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : submitLabel ?? (employee ? "שמירת שינויים" : "הקמת עובד")}</button> : null}</div> : null}
     </form>
   </>;
 

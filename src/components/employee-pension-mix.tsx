@@ -67,14 +67,18 @@ type EmployeePensionMixProps = {
   editable: boolean;
   saveLabel?: string;
   onSaved?: () => void | Promise<void>;
+  externalSaveSignal?: number;
+  hideHeaderSave?: boolean;
+  onSavingChange?: (saving: boolean) => void;
 };
 
-export function EmployeePensionMix({ organizationId, employerId, employeeId, editable, saveLabel, onSaved }: EmployeePensionMixProps) {
+export function EmployeePensionMix({ organizationId, employerId, employeeId, editable, saveLabel, onSaved, externalSaveSignal = 0, hideHeaderSave = false, onSavingChange }: EmployeePensionMixProps) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [monthlySalary, setMonthlySalary] = useState(0);
   const [products, setProducts] = useState<PensionEditorProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  useEffect(() => { onSavingChange?.(saving); }, [saving, onSavingChange]);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
@@ -136,12 +140,19 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
     }
   }
 
+  // An embedded modal can invoke the same validated save path from its fixed footer.
+  useEffect(() => {
+    if (externalSaveSignal > 0) void save();
+    // The external signal is the event. Other render/state changes must not resubmit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalSaveSignal]);
+
   if (loading) return <div className="card empty">טוען את תמהיל העובד...</div>;
 
   return <div className="card">
     <div className="card-head">
       <div><h2>תמהיל העובד</h2><span style={{ color: "var(--muted)" }}>המוצרים נשמרים כברירת המחדל של העובד ומשמשים ליצירת דיווחים חדשים.</span></div>
-      {editable ? <button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={17} />{saving ? "שומר..." : saveLabel ?? "שמירת תמהיל"}</button> : null}
+      {editable && !hideHeaderSave ? <button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={17} />{saving ? "שומר..." : saveLabel ?? "שמירת תמהיל"}</button> : null}
     </div>
     <div className="manual-report-badges" style={{ marginBottom: 14 }}><span className="badge badge-blue">{products.length} מוצרים</span><span className="badge badge-green">{activeCount} פעילים</span></div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}

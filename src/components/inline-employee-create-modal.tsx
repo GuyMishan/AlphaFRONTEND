@@ -20,6 +20,7 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
   const [createdEmployee, setCreatedEmployee] = useState<Employee | null>(null);
   const [stage, setStage] = useState<Stage>("create");
   const [working, setWorking] = useState(false);
+  const [productSaveSignal, setProductSaveSignal] = useState(0);
 
   function handleCreated(employee: Employee) {
     setCreatedEmployee(employee);
@@ -44,34 +45,43 @@ export function InlineEmployeeCreateModal({ organizationId, employerId, onClose,
       ? "לפני הוספת העובד לדיווח אפשר לערוך את התמהיל שלו, כדי שהמוצרים ייכנסו לדיווח כברירת מחדל."
       : createdEmployee ? `${createdEmployee.firstName} ${createdEmployee.lastName} · המוצרים נשמרים בתמהיל העובד כברירת מחדל לדיווחים.` : "";
 
-  return <AppModal title={title} subtitle={subtitle} onClose={working ? undefined : onClose} closeOnBackdrop={!working} width="xl" bodyClassName="report-modal-body">
-        {stage === "create" ? <EmployeeForm
-          organizationId={organizationId}
-          employerId={employerId}
-          embedded
-          onCancel={onClose}
-          onSaved={handleCreated}
-          submitLabel="הקמת עובד"
-        /> : null}
-
-        {stage === "confirm-products" && createdEmployee ? <div className="employee-created-next-step">
-          <div className="employee-created-icon"><UserPlus size={24} /></div>
-          <div>
-            <h3>{createdEmployee.firstName} {createdEmployee.lastName} הוקם בהצלחה</h3>
-            <p>האם ברצונך לערוך עכשיו את המוצרים הפנסיוניים של העובד לפני הוספתו לדיווח?</p>
-          </div>
-          <div className="employee-created-actions">
-            <button type="button" className="btn btn-secondary" disabled={working} onClick={() => void addToReportAndClose()}>{working ? "מוסיף לדיווח..." : "לא, הוסף לדיווח וסגור"}</button>
-            <button type="button" className="btn btn-primary" disabled={working} onClick={() => setStage("products")}><Boxes size={16} />כן, עריכת מוצרים</button>
-          </div>
-        </div> : null}
-
-        {stage === "products" && createdEmployee ? <>
-          <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={createdEmployee.id} editable saveLabel="סיום, הוספה לדיווח וחזרה" onSaved={addToReportAndClose} />
-          <div className="employee-created-actions employee-products-finish">
-            <button type="button" className="btn btn-secondary" disabled={working} onClick={() => setStage("confirm-products")}>חזרה</button>
-            
-          </div>
-        </> : null}
-      </AppModal>;
+  return <AppModal title={title} subtitle={subtitle} onClose={onClose} closeDisabled={working}
+      closeOnBackdrop={!working} width="xl" bodyClassName="report-modal-body"
+      actions={stage === "create" ? <>
+        <button type="button" className="btn btn-secondary" disabled={working} onClick={onClose}>ביטול</button>
+        <button type="submit" form="inline-employee-create-form" className="btn btn-primary" disabled={working}>
+          <UserPlus size={16} />{working ? "יוצר..." : "הקמת עובד"}
+        </button>
+      </> : stage === "confirm-products" ? <>
+        <button type="button" className="btn btn-secondary" disabled={working} onClick={() => void addToReportAndClose()}>
+          {working ? "מוסיף לדיווח..." : "לא, הוסף לדיווח וסגור"}
+        </button>
+        <button type="button" className="btn btn-primary" disabled={working} onClick={() => setStage("products")}>
+          <Boxes size={16} />כן, עריכת מוצרים
+        </button>
+      </> : <>
+        <button type="button" className="btn btn-secondary" disabled={working}
+          onClick={() => setStage("confirm-products")}>חזרה</button>
+        <button type="button" className="btn btn-primary" disabled={working}
+          onClick={() => setProductSaveSignal(value => value + 1)}>
+          {working ? "שומר..." : "סיום, שמירה והוספה לדיווח"}
+        </button>
+      </>}>
+      {stage === "create" ? <EmployeeForm
+        organizationId={organizationId} employerId={employerId}
+        embedded formId="inline-employee-create-form" hideActions
+        onSavingChange={setWorking} onCancel={onClose} onSaved={handleCreated}
+        submitLabel="הקמת עובד" /> : null}
+      {stage === "confirm-products" && createdEmployee ? <div className="employee-created-next-step">
+        <div className="employee-created-icon"><UserPlus size={24} /></div>
+        <div>
+          <h3>{createdEmployee.firstName} {createdEmployee.lastName} הוקם בהצלחה</h3>
+          <p>אפשר לערוך את התמהיל הפנסיוני שלו לפני הוספתו לדיווח.</p>
+        </div>
+      </div> : null}
+      {stage === "products" && createdEmployee ? <EmployeePensionMix
+        organizationId={organizationId} employerId={employerId} employeeId={createdEmployee.id}
+        editable hideHeaderSave externalSaveSignal={productSaveSignal}
+        onSavingChange={setWorking} onSaved={addToReportAndClose} /> : null}
+    </AppModal>;
 }
