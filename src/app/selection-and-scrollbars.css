@@ -314,3 +314,13 @@ html[data-theme="dark"] .pension-fund-options-portal {
   .billing-gate-dialog .app-modal-actions-positive { flex-direction: column; align-items: stretch; }
   .billing-gate-dialog .app-modal-actions-positive .btn { white-space: normal; width: 100%; }
 }
+
+/* Unified upload control: button, drop zone and visible field share keyboard handling. */
+.ui-file-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; min-width: 0; }
+.ui-file-button[aria-disabled="true"], .ui-file-field[aria-disabled="true"] { cursor: not-allowed; opacity: .6; }
+.ui-file-button:focus-visible, .ui-file-field:focus-visible, .upload-zone:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.ui-file-field { display: grid; gap: 7px; cursor: pointer; }
+.ui-file-field > span { font-size: 12px; font-weight: 600; }
+.ui-file-field .ui-file-native { width: 100%; }
+.payment-evidence-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.payment-evidence-list .btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: normal; text-align: right; }

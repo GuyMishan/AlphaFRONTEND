@@ -94,9 +94,8 @@ export function EmployerInterfaceXmlIntake({
 
   return <div style={{ marginTop: 20 }}>
     <div className="field">
-      <label htmlFor="employer-interface-xml">קובץ XML ממשק מעסיקים 006</label>
       <small style={{ display: "block", marginBottom: 8 }}>המערכת מזהה אוטומטית את סוג הקובץ ומבצעת ולידציה מול ה־XSD המתאים.</small>
-      <UiFileUpload id="employer-interface-xml" variant="field" label="בחירת קובץ"
+      <UiFileUpload id="employer-interface-xml" variant="field" label="קובץ XML ממשק מעסיקים 006"
         accept=".xml,.dat,.tst,application/xml,text/xml" maxBytes={20 * 1024 * 1024}
         disabled={disabled} busy={validating || importing}
         onFileSelected={validateSelected} onInvalid={(message) => toast.error(message)} />

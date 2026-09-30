@@ -10,7 +10,7 @@ const allowed = new Set([
 const rawControlPattern = /<(input|select|textarea)\b/g;
 const rawChoiceCardPattern = /choice-card/g;
 // Reject raw or UiInput checkbox controls, including JSX expression values.
-const fileViaInputPattern = /<UiInput\\b[^>]*\\btype\\s*=\\s*["\u0027]file["\u0027]/g;
+const fileViaInputPattern = /<UiInput\b[^>]*\btype\s*=\s*["']file["']/g;
 const checkboxControlPattern = /<(UiInput|input)\b[^>]*\btype\s*=\s*(?:["']checkbox["']|\{\s*["']checkbox["']\s*\})/g;
 const customCheckboxRolePattern = /\brole\s*=\s*["']checkbox["']/g;
 const rawTablePattern = /<table\b/g;
@@ -33,7 +33,7 @@ function walk(dir) {
 
     const content = fs.readFileSync(full, "utf8");
     const fileInputs = [...content.matchAll(fileViaInputPattern)];
-    if (fileInputs.length) failures.push(`${rel}: use UiFileUpload instead of UiInput type="file" (${fileInputs.length} found)`);
+    if (rel !== path.normalize("src/components/ui-file-upload.tsx") && fileInputs.length) failures.push(`${rel}: use UiFileUpload instead of UiInput type="file" (${fileInputs.length} found)`);
     const rawCheckboxes = [...content.matchAll(checkboxControlPattern)];
     if (rawCheckboxes.length) failures.push(`${rel}: use UiCheckbox instead of raw/UiInput checkboxes (${rawCheckboxes.length} found)`);
     if (customCheckboxRolePattern.test(content)) failures.push(`${rel}: custom checkbox roles require a reviewed shared component`);

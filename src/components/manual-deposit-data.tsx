@@ -92,10 +92,11 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
 }
 
 function formatEmployerAccount(row: ManualDepositRow, resolved: { bankId: number; branchId: number; maskedAccountNumber: string } | null) {
-  if (resolved) return formatAccount(resolved.bankId, resolved.branchId, resolved.maskedAccountNumber);
   const values = [row.employerBankCode, row.employerBranch, row.employerAccount].filter(Boolean);
-  if (!values.length || values.every((value) => /^0+$/.test(String(value)))) return "—";
-  return values.join(" - ");
+  const meaningful = values.some((value) => !/^0+$/.test(String(value)));
+  if (meaningful && values.length === 3) return values.join(" - ");
+  if (resolved) return formatAccount(resolved.bankId, resolved.branchId, resolved.maskedAccountNumber);
+  return meaningful ? values.join(" - ") : "—";
 }
 function formatAccount(bank: string | number, branch: string | number, account: string) {
   return `${bank} - ${branch} - ${account}`;
@@ -400,7 +401,7 @@ function DepositPaymentEditor({ employer, organizationId, employerId, reportId, 
       {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק, ולכן אין להעביר ערך בשדה אמצעי התשלום.</div> : null}
       <div className="payment-layout"><div className="payment-main">
-          <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">חשבון מעסיק</span><b className="account-number">{resolvedPaymentAccount ? formatAccount(resolvedPaymentAccount.bankId, resolvedPaymentAccount.branchId, resolvedPaymentAccount.maskedAccountNumber) : "לא הוגדר חשבון פנסיוני"}</b></div></div></section>
+          <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-amount"><span>סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">חשבון מעסיק</span><b className="account-number">{formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
 
           {configuredPensionDebit ? <div className="notice notice-success payment-auto-notice"><b>התשלום הפנסיוני מוגדר אוטומטית</b><span>קיימת הרשאה פעילה לחיוב בחשבון הפנסיוני של המעסיק. ALPHA תדווח אמצעי תשלום 6 ותפיק את ערכי ממשק 006 הנדרשים ללא אסמכתא או פרטי העברה ידניים.</span></div> : null}
           {!differences && (!configuredPensionDebit || negative) ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי העברה חיצונית"}</h3><div className="payment-method-grid">
