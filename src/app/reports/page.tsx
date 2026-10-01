@@ -79,6 +79,10 @@ function kindLabel(value: string | number) {
   return "שוטף";
 }
 
+function isNegativeReportKind(value: string | number) {
+  return value === 3 || value === "3" || value === "Negative";
+}
+
 function feedbackLabel(status: ReportFeedbackRow["feedbackStatus"]) {
   switch (status) {
     case "completed": return "הושלם";
@@ -135,7 +139,7 @@ function DepositFeedbackPanel({
         <small>כל שורה מייצגת עובד + מוצר. המשוב, מצב הכספים והטיפול נשארים מחוברים לאותה הפקדה.</small>
       </div>
       <div className="report-expanded-actions">
-        {["6", "8", "Sent", "Completed"].includes(String(report.status))
+        {["6", "8", "Sent", "Completed"].includes(String(report.status)) && !isNegativeReportKind(report.reportKind)
           ? <button type="button" className="btn btn-secondary btn-sm" onClick={onStartCorrection}><RefreshCw size={15} />יצירת דיווח מתקן</button>
           : null}
         <details className="report-control-menu">
@@ -563,7 +567,7 @@ export default function ReportsPage() {
             onLoadMore={() => void loadMoreDeposits(report)}
             onExport={(type) => void exportReport(report, type)}
             exporting={exportingReportId === report.id}
-            onStartCorrection={() => router.push(`/reports/new?sourceReportId=${report.id}&sourceMonth=${report.reportingMonth.slice(0, 7)}`)}
+            onStartCorrection={() => router.push(`/reports/new?sourceReportId=${report.id}&sourceMonth=${report.reportingMonth.slice(0, 7)}&sourceKind=${encodeURIComponent(String(report.reportKind))}`)}
           /> : null}
         </div>}
         columns={activeColumns}
@@ -589,7 +593,7 @@ export default function ReportsPage() {
       onEditDeposit={(details) => void editDepositFromFeedback(selectedDeposit.report, details.product.id, details.employee.name)}
       onStartCorrection={(details) => {
         setSelectedDeposit(null);
-        router.push(`/reports/new?sourceReportId=${details.report.id}&sourceProductId=${details.product.id}&sourceMonth=${details.report.reportingMonth.slice(0, 7)}`);
+        router.push(`/reports/new?sourceReportId=${details.report.id}&sourceProductId=${details.product.id}&sourceMonth=${details.report.reportingMonth.slice(0, 7)}&sourceKind=${encodeURIComponent(String(details.report.reportKind))}`);
       }}
     /> : null}
 
