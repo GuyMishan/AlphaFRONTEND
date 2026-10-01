@@ -120,9 +120,9 @@ export function ReportDepositFeedbackModal({
             <RefreshCw size={15} />יצירת דיווח מתקן
           </button>
         : null}
-      <button type="button" className="btn btn-primary" onClick={() => void saveTreatment()} disabled={saving || loading || !details}>
+      {details?.canUpdateTreatment ? <button type="button" className="btn btn-primary" onClick={() => void saveTreatment()} disabled={saving || loading}>
         <Save size={15} />{saving ? "שומר..." : "שמירת טיפול"}
-      </button>
+      </button> : null}
     </>}
   >
     {loading ? <div className="empty">טוען פרטי הפקדה ומשוב...</div> : null}
@@ -211,7 +211,9 @@ export function ReportDepositFeedbackModal({
       </section>
 
       <section className="feedback-modal-section">
-        <div className="feedback-modal-section-head"><div><h3>טיפול במשוב</h3><p>סטטוס הטיפול וההערה הם פנימיים ל־ALPHA ואינם משנים את המשוב הרשמי שהתקבל.</p></div></div>
+        <div className="feedback-modal-section-head"><div><h3>טיפול במשוב</h3><p>{details.canUpdateTreatment
+          ? "סטטוס הטיפול וההערה הם פנימיים ל־ALPHA ואינם משנים את המשוב הרשמי שהתקבל."
+          : "ניתן לצפות בטיפול ובהיסטוריה, אך אין לך הרשאה לעדכן אותם."}</p></div></div>
         <div className="feedback-treatment-form">
           <label><span>סטטוס טיפול</span>
             <UiAutocomplete
@@ -222,11 +224,13 @@ export function ReportDepositFeedbackModal({
               emptyText="לא נמצא סטטוס מתאים"
               ariaLabel="סטטוס טיפול במשוב"
               maxLength={120}
+              disabled={!details.canUpdateTreatment}
               onClear={() => setStatusText("")}
             />
           </label>
           <label><span>פירוט / הערה</span>
             <UiTextarea value={note} onChange={(event) => setNote(event.target.value)} maxLength={4000} rows={4}
+              disabled={!details.canUpdateTreatment}
               placeholder="הוסיפו פירוט חופשי לטיפול במקרה..." />
           </label>
         </div>
