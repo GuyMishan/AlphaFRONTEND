@@ -41,7 +41,7 @@
 - `src/components/excel-employee-intake.tsx` — Excel intake; shared `ui-file-upload.tsx` handles file inputs, drag/drop, type and size checks across Excel, XML, payment evidence and V006 attachment uploads.
 - `src/components/employer-interface-xml-intake.tsx` — XML/DAT/TST intake.
 - `src/lib/employer-interface-api.ts`, `manual-deposits-api.ts`, `report-validation-api.ts`, `report-transmission-api.ts`, `report-feedback-api.ts`.
-- `src/app/reports/page.tsx` surfaces both transmission history and correlated official Employer Interface 006 clearinghouse feedback returned by `report-feedback-api.ts`.
+- `src/app/reports/page.tsx` is the unified Reports & Feedback operations screen. It keeps the report grid compact (including payoff rate), uses server-side dynamic filters and a persisted column chooser, expands reports into employee+product rows, and opens `report-deposit-feedback-modal.tsx` for employer-vs-manufacturer contribution comparison, financial feedback, manual treatment status/free-text notes and treatment history. `report-feedback-api.ts` consumes normalized official Employer Interface 006 feedback; immutable submitted reports enter the formal focused correction flow instead of being edited in place.
 
 ## Billing and payments
 - `src/app/admin/page.tsx` — billing and pricing administration table links directly to the relevant organization/employer `?tab=billing` or `?tab=pension-payment` card rather than opening a separate pricing edit modal. Employer links include `organizationId` to preserve the target scope.
@@ -89,3 +89,5 @@
 - Shared DataTable supports optional `expandToggleColumnKey` for placement in an existing non-first column; Reports & Feedback places its expand control after its existing Details action. Deposit subrow values are vertically centered and no longer duplicate the report-level feedback action. The shared DepositPaymentEditor renders one evidence panel, keeping downloads outside the disabled form for immutable report viewing and hiding uploads for non-editable reports; summary values share right-aligned RTL styling.
 
 - Free-plan utilization cards on Dashboard, Employees and Organization → Employers are displayed only when the entitlement plan code is `FREE`. Paid customers retain ordinary employee/employer counts and the dedicated subscription/billing interfaces; paid pricing remains visible in authorized billing/admin surfaces.
+
+- Focused correction entry from Reports & Feedback passes the source report/product to `/reports/new`; derived-report creation can clone only that selected source product while preserving the normal 006 correction rules and immutable-source behavior.

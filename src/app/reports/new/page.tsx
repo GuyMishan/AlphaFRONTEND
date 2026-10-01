@@ -72,6 +72,11 @@ function validationMessage(errors: string[]) {
 
 export default function NewReportPage() {
   const router = useRouter();
+  const [requestedSource, setRequestedSource] = useState({ reportId: "", productId: "", month: "" });
+  const requestedSourceReportId = requestedSource.reportId;
+  const requestedSourceProductId = requestedSource.productId;
+  const requestedSourceMonth = requestedSource.month;
+  const correctionEntryInitialized = useRef(false);
   const [step, setStep] = useState(1);
   const [reportKind, setReportKind] = useState<ManualReportKind>(1);
   const [mode, setMode] = useState<IntakeMode>("manual");
@@ -212,7 +217,16 @@ export default function NewReportPage() {
       const result = await derivedReportsApi.sourceReports(scope.organizationId, scope.employerId, search.trim(), skip, 30);
       setSourceReports((current) => reset ? result.items : [...current, ...result.items]);
       setSourceHasMore(result.hasMore);
-      if (reset) setSelectedSourceReportId("");
+      if (reset) {
+        const requested = requestedSourceReportId ? result.items.find((item) => item.id === requestedSourceReportId) : null;
+        if (requested) {
+          setSelectedSourceReportId(requested.id);
+          setMonth(requested.reportingMonth.slice(0, 7));
+          setSalaryPaymentDate(requested.salaryPaymentDate?.slice(0, 10) ?? "");
+        } else {
+          setSelectedSourceReportId("");
+        }
+      }
     } catch (err) { setError(err instanceof Error ? err.message : "טעינת הדיווחים הקודמים נכשלה"); }
     finally { setLoadingSources(false); }
   }
@@ -228,13 +242,31 @@ export default function NewReportPage() {
     return ids;
   }
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setRequestedSource({
+      reportId: params.get("sourceReportId") ?? "",
+      productId: params.get("sourceProductId") ?? "",
+      month: params.get("sourceMonth") ?? "",
+    });
+  }, []);
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
   useEffect(() => { const handler = (event: Event) => { if (step !== 1) return; const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail; if (detail.employerId) void loadScope({ organizationId: detail.organizationId, employerId: detail.employerId }); }; window.addEventListener("alpha:scope-change", handler); return () => window.removeEventListener("alpha:scope-change", handler); }, [step]);
+  useEffect(() => {
+    if (!scope || !requestedSourceReportId || correctionEntryInitialized.current) return;
+    correctionEntryInitialized.current = true;
+    setReportKind(3);
+    setMode("manual");
+    setShowOpenReports(false);
+    setSourceSearch(requestedSourceMonth);
+    void loadSources(true, requestedSourceMonth);
+  }, [scope?.organizationId, scope?.employerId, requestedSourceReportId, requestedSourceMonth]);
   useEffect(() => {
     const needsSources = reportKind !== 1 || mode === "correction";
     if (!needsSources || !scope || manualReportId) return;
     if (reportKind !== 1 && mode !== "manual") setMode("manual");
-    setSourceSearch(""); setSentExternalId(""); void loadSources(true, "");
+    const initialSearch = requestedSourceReportId ? requestedSourceMonth : "";
+    setSourceSearch(initialSearch); setSentExternalId(""); void loadSources(true, initialSearch);
   }, [reportKind, mode, manualReportId, scope?.organizationId, scope?.employerId]);
 
   function chooseSource(report: SourceManualReport) { setSelectedSourceReportId(report.id); setMonth(report.reportingMonth.slice(0, 7)); setSalaryPaymentDate(report.salaryPaymentDate?.slice(0, 10) ?? ""); setError(""); setSentExternalId(""); }
@@ -467,11 +499,16 @@ export default function NewReportPage() {
           const report = await derivedReportsApi.create(scope.organizationId, scope.employerId, {
             sourceReportId: selectedSourceReportId, reportKind: 1, reportingMonth: `${month}-01`, salaryPaymentDate,
             paymentAccountId: selectedPaymentAccountId, correctionOperationCode,
+            reportProductIds: requestedSourceProductId && selectedSourceReportId === requestedSourceReportId ? [requestedSourceProductId] : undefined,
           });
           setManualReportId(report.id); setSelectedIds(await loadReportEmploymentIds(report.id));
         }
         if (reportKind !== 1 && !manualReportId) {
-          const report = await derivedReportsApi.create(scope.organizationId, scope.employerId, { sourceReportId: selectedSourceReportId, reportKind, reportingMonth: `${month}-01`, salaryPaymentDate, paymentAccountId: selectedPaymentAccountId });
+          const report = await derivedReportsApi.create(scope.organizationId, scope.employerId, {
+            sourceReportId: selectedSourceReportId, reportKind, reportingMonth: `${month}-01`, salaryPaymentDate,
+            paymentAccountId: selectedPaymentAccountId,
+            reportProductIds: requestedSourceProductId && selectedSourceReportId === requestedSourceReportId ? [requestedSourceProductId] : undefined,
+          });
           setManualReportId(report.id); setSelectedIds(await loadReportEmploymentIds(report.id));
         }
       }

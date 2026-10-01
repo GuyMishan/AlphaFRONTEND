@@ -1,23 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, Eye, FileClock, Pencil, Plus, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  Columns3,
+  Eye,
+  FileClock,
+  Filter,
+  Plus,
+  RefreshCw,
+  Search,
+  X,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { AppModal } from "@/components/app-modal";
-import { DataTable } from "@/components/data-table";
+import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { DepositPaymentEditor } from "@/components/manual-deposit-data";
+import { ReportDepositFeedbackModal } from "@/components/report-deposit-feedback-modal";
+import { UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { manualDepositsApi, type ManualDepositRow } from "@/lib/manual-deposits-api";
 import { getEmployerSelection } from "@/lib/session";
-import { reportFeedbackApi, type ReportFeedbackDetails, type ReportFeedbackRow, type ReportFeedbackStatus } from "@/lib/report-feedback-api";
+import {
+  reportFeedbackApi,
+  type ReportFeedbackDepositRow,
+  type ReportFeedbackFilters,
+  type ReportFeedbackRow,
+  type ReportFeedbackStatus,
+  type TreatmentStatusOption,
+} from "@/lib/report-feedback-api";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import "./reports.css";
 
-const filters: Array<{ value: ReportFeedbackStatus; label: string }> = [
+const statusFilters: Array<{ value: ReportFeedbackStatus; label: string }> = [
   { value: "all", label: "הכל" },
-  { value: "success", label: "הצליח" },
-  { value: "error", label: "שגיאה" },
+  { value: "completed", label: "הושלם" },
+  { value: "attention", label: "דורש טיפול" },
+  { value: "partial", label: "משוב חלקי" },
   { value: "pending", label: "ממתין למשוב" },
   { value: "not-sent", label: "לא נשלח" },
+];
+
+type ExtraFilterKey = "kind" | "product" | "treatment" | "attention";
+type ColumnKey = "month" | "kind" | "employees" | "total" | "status" | "attention" | "payoff" | "transmission" | "actions";
+
+const columnOptions: Array<{ key: ColumnKey; label: string; defaultVisible: boolean }> = [
+  { key: "month", label: "חודש", defaultVisible: true },
+  { key: "kind", label: "סוג דיווח", defaultVisible: true },
+  { key: "employees", label: "עובדים", defaultVisible: false },
+  { key: "total", label: "סכום דיווח", defaultVisible: true },
+  { key: "status", label: "מצב דיווח", defaultVisible: true },
+  { key: "attention", label: "דורש טיפול", defaultVisible: true },
+  { key: "payoff", label: "שיעור פירעון", defaultVisible: true },
+  { key: "transmission", label: "שידור אחרון", defaultVisible: true },
+  { key: "actions", label: "פעולות", defaultVisible: true },
 ];
 
 function formatMonth(value: string) {
@@ -29,6 +67,10 @@ function formatDate(value: string | null | undefined) {
   return formatDateTimeDDMMYYYY(value, "—");
 }
 
+function money(value: number | null | undefined) {
+  return value == null ? "—" : `₪${Number(value).toLocaleString("he-IL", { maximumFractionDigits: 2 })}`;
+}
+
 function kindLabel(value: string | number) {
   if (value === 2 || value === "2" || value === "Differences") return "הפרשים";
   if (value === 3 || value === "3" || value === "Negative") return "שלילי";
@@ -37,145 +79,175 @@ function kindLabel(value: string | number) {
 
 function feedbackLabel(status: ReportFeedbackRow["feedbackStatus"]) {
   switch (status) {
-    case "success": return "הושלם בהצלחה";
-    case "error": return "הסתיים עם שגיאה";
+    case "completed": return "הושלם";
+    case "attention": return "דורש טיפול";
+    case "partial": return "משוב חלקי";
     case "pending": return "ממתין למשוב";
     default: return "לא נשלח";
   }
 }
 
 function StatusBadge({ status }: { status: ReportFeedbackRow["feedbackStatus"] }) {
-  const icon = status === "success" ? <CheckCircle2 size={15} /> : status === "error" ? <AlertTriangle size={15} /> : status === "pending" ? <Clock3 size={15} /> : <FileClock size={15} />;
+  const icon = status === "completed"
+    ? <CheckCircle2 size={15} />
+    : status === "attention"
+      ? <AlertTriangle size={15} />
+      : status === "partial" || status === "pending"
+        ? <Clock3 size={15} />
+        : <FileClock size={15} />;
   return <span className={`report-feedback-badge ${status}`}>{icon}{feedbackLabel(status)}</span>;
 }
 
 type ExpandedReportContent = {
-  deposits: ManualDepositRow[];
+  deposits: ReportFeedbackDepositRow[];
   hasMore: boolean;
-  feedback: ReportFeedbackDetails;
 };
 
-function editableReport(status: string | number): boolean {
-  return [1, 2, 9, "1", "2", "9", "Draft", "ReadyForValidation", "Error"].includes(status);
+function DepositStatusBadge({ value, label }: { value: string; label: string }) {
+  return <span className={`feedback-state ${value}`}>{label}</span>;
 }
 
-function DepositFeedbackPanel({ report, content, onEdit, onLoadMore, loadingMore }: {
-  report: ReportFeedbackRow; content: ExpandedReportContent;
-  onEdit: (deposit: ManualDepositRow) => void;
+function DepositFeedbackPanel({
+  content,
+  onOpen,
+  onLoadMore,
+  loadingMore,
+}: {
+  content: ExpandedReportContent;
+  onOpen: (deposit: ReportFeedbackDepositRow) => void;
   onLoadMore: () => void;
   loadingMore: boolean;
 }) {
-  const byProduct = new Map((content.feedback.depositFeedback ?? []).map(item => [item.reportProductId, item]));
-  const editable = editableReport(report.status);
   return <div className="report-deposits-panel">
     <div className="report-deposits-heading">
-      <div><b>הפקדות בדיווח</b><small>{editable ? "ניתן לערוך כל הפקדה באמצעות חלונית נתוני ההפקדות" : "דיווח שכבר הועבר נשאר ללא שינוי; ניתן לצפות בפרטי כל הפקדה"}</small></div>
+      <div>
+        <b>הפקדות בדיווח</b>
+        <small>כל שורה מייצגת עובד + מוצר. המשוב, מצב הכספים והטיפול נשארים מחוברים לאותה הפקדה.</small>
+      </div>
     </div>
     {content.deposits.length === 0
       ? <div className="notice notice-info">לא נמצאו הפקדות משויכות לדיווח.</div>
-      : <div className="report-deposits-grid" role="table" aria-label="נתוני הפקדות ומשוב לפי עובד ומוצר">
+      : <div className="report-deposits-grid" role="table" aria-label="הפקדות ומשובים לפי עובד ומוצר">
         <div className="report-deposits-header" role="row">
-          <span role="columnheader">עובד</span><span role="columnheader">יצרן / מוצר</span>
-          <span role="columnheader">סכום</span><span role="columnheader">משוב למסלקה</span><span role="columnheader">פעולה</span>
+          <span role="columnheader">עובד</span>
+          <span role="columnheader">יצרן / מוצר</span>
+          <span role="columnheader">סכום</span>
+          <span role="columnheader">משוב</span>
+          <span role="columnheader">מצב כספים</span>
+          <span role="columnheader">סטטוס טיפול</span>
+          <span role="columnheader">עודכן</span>
+          <span role="columnheader">פעולה</span>
         </div>
-        {content.deposits.map(deposit => {
-          const feedback = byProduct.get(deposit.id);
-          const records = feedback?.records ?? [];
-          const errors = records.filter(record => record.errorCode != null && record.errorCode !== 1);
-          return <div className="report-deposits-item" role="row" key={deposit.id}>
-            <div role="cell"><b>{deposit.employeeName}</b></div>
-            <div role="cell"><b>{deposit.providerName || deposit.fundCompanyName || deposit.fundName || "מוצר פנסיוני"}</b>
-              <small>{deposit.policyNumber || "ללא מספר פוליסה"}</small></div>
-            <div role="cell" className="report-deposits-money">₪{Number(deposit.totalDeposit).toLocaleString("he-IL")}</div>
-            <div role="cell" className="report-deposits-feedback">
-              {records.length ? <details><summary className={errors.length ? "report-deposits-has-issues" : ""}>
-                {errors.length ? `${errors.length} הערות / שגיאות` : "התקבל משוב פרטני"} · הצגת פירוט
-              </summary><div className="report-deposits-records">
-                {records.map(record => <div key={record.recordIdentifier}>
-                  <span>{record.description}</span>
-                  {record.intakeStatus != null ? <small>סטטוס קליטת רשומה: קוד {record.intakeStatus}</small> : null}
-                  {record.errorCode != null ? <small>קוד שגיאה: {record.errorCode}</small> : null}
-                  {record.sourceFileName ? <small>מקור: {record.sourceFileName}</small> : null}
-                </div>)}
-              </div></details> : <span className="report-deposits-unmatched">
-                {content.feedback.officialFeedback?.length
-                  ? "קיים משוב לקובץ, ללא התאמה חד־משמעית לשורה"
-                  : "טרם התקבל משוב פרטני"}
-              </span>}
-            </div>
-            <div role="cell"><button type="button" className="btn btn-secondary btn-sm"
-              onClick={() => onEdit(deposit)} aria-label={`${editable ? "עריכת" : "צפייה ב"} הפקדה של ${deposit.employeeName}`}>
-              {editable ? <Pencil size={15} /> : <Eye size={15} />}{editable ? "עריכה" : "צפייה"}
-            </button></div>
-          </div>;
-        })}
+        {content.deposits.map((deposit) => <div className="report-deposits-item" role="row" key={deposit.id}>
+          <div role="cell"><b>{deposit.employeeName}</b></div>
+          <div role="cell">
+            <b>{deposit.fundCompanyName || deposit.fundName || "מוצר פנסיוני"}</b>
+            <small>{deposit.fundName && deposit.fundCompanyName ? deposit.fundName : deposit.policyNumber || "ללא מספר פוליסה"}</small>
+          </div>
+          <div role="cell" className="report-deposits-money">{money(deposit.totalAmount)}</div>
+          <div role="cell"><DepositStatusBadge value={deposit.feedbackStatus} label={deposit.feedbackLabel} /></div>
+          <div role="cell"><DepositStatusBadge value={deposit.moneyStatus} label={deposit.moneyStatusLabel} /></div>
+          <div role="cell">
+            {deposit.treatmentStatusLabel
+              ? <span className="report-treatment-label">{deposit.treatmentStatusLabel}</span>
+              : <span className="muted-inline">לא עודכן</span>}
+          </div>
+          <div role="cell" className="muted-inline">{formatDate(deposit.updatedAt)}</div>
+          <div role="cell">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onOpen(deposit)}>
+              <Eye size={15} />פרטים
+            </button>
+          </div>
+        </div>)}
       </div>}
-    {content.hasMore ? <button className="btn btn-secondary btn-sm report-deposits-load-more"
-      disabled={loadingMore} onClick={onLoadMore}>{loadingMore ? "טוען..." : "טעינת הפקדות נוספות"}</button> : null}
-    {!editable ? <p className="report-deposits-immutable">שינוי נתונים בדיווח שכבר נשלח מתבצע באמצעות תהליך דיווח מתקן, ולא בעריכת הדיווח המקורי.</p> : null}
+    {content.hasMore ? <button className="btn btn-secondary btn-sm report-deposits-load-more" disabled={loadingMore} onClick={onLoadMore}>
+      {loadingMore ? "טוען..." : "טעינת הפקדות נוספות"}
+    </button> : null}
   </div>;
 }
 
 export default function ReportsPage() {
+  const router = useRouter();
   const [scope, setScope] = useState<{ organizationId: string; employerId: string } | null>(null);
-  const [filter, setFilter] = useState<ReportFeedbackStatus>("all");
+  const [filters, setFilters] = useState<ReportFeedbackFilters>({ status: "all" });
+  const [extraFilters, setExtraFilters] = useState<ExtraFilterKey[]>([]);
+  const [treatmentStatuses, setTreatmentStatuses] = useState<TreatmentStatusOption[]>([]);
   const [rows, setRows] = useState<ReportFeedbackRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMoreReports, setHasMoreReports] = useState(false);
   const [loadingMoreReports, setLoadingMoreReports] = useState(false);
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState<ReportFeedbackDetails | null>(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<ReadonlySet<string>>(new Set());
   const [expandedContent, setExpandedContent] = useState<Record<string, ExpandedReportContent>>({});
   const [expandedLoading, setExpandedLoading] = useState<Record<string, boolean>>({});
   const [expandedErrors, setExpandedErrors] = useState<Record<string, string>>({});
   const [expandedMoreLoading, setExpandedMoreLoading] = useState<Record<string, boolean>>({});
   const expandedRequests = useRef(new Set<string>());
+  const [selectedDeposit, setSelectedDeposit] = useState<{ report: ReportFeedbackRow; deposit: ReportFeedbackDepositRow } | null>(null);
   const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; deposit: ManualDepositRow } | null>(null);
+  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(() => columnOptions.filter((item) => item.defaultVisible).map((item) => item.key));
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("alpha:reports:columns");
+      if (!stored) return;
+      const parsed = JSON.parse(stored) as ColumnKey[];
+      const allowed = new Set(columnOptions.map((item) => item.key));
+      const next = parsed.filter((item) => allowed.has(item));
+      if (next.includes("actions") && next.length > 1) setVisibleColumns(next);
+    } catch { /* keep defaults */ }
+  }, []);
+
+  function persistColumns(next: ColumnKey[]) {
+    const normalized = Array.from(new Set([...next.filter((item) => item !== "actions"), "actions"])) as ColumnKey[];
+    setVisibleColumns(normalized);
+    try { window.localStorage.setItem("alpha:reports:columns", JSON.stringify(normalized)); } catch { /* ignore */ }
+  }
 
   async function loadExpanded(report: ReportFeedbackRow, force = false) {
     if (!scope || expandedRequests.current.has(report.id) || (!force && expandedContent[report.id])) return;
     expandedRequests.current.add(report.id);
-    setExpandedLoading(previous => ({ ...previous, [report.id]: true }));
-    setExpandedErrors(previous => ({ ...previous, [report.id]: "" }));
+    setExpandedLoading((previous) => ({ ...previous, [report.id]: true }));
+    setExpandedErrors((previous) => ({ ...previous, [report.id]: "" }));
     try {
-      const [deposits, feedback] = await Promise.all([
-        manualDepositsApi.list(scope.organizationId, scope.employerId, report.id, "", 0, 100),
-        reportFeedbackApi.details(scope.organizationId, scope.employerId, report.id),
-      ]);
-      setExpandedContent(previous => ({ ...previous, [report.id]: { deposits: deposits.items, hasMore: deposits.hasMore, feedback } }));
+      const deposits = await reportFeedbackApi.deposits(scope.organizationId, scope.employerId, report.id, "", 0, 100);
+      setExpandedContent((previous) => ({ ...previous, [report.id]: { deposits: deposits.items, hasMore: deposits.hasMore } }));
     } catch (err) {
-      setExpandedErrors(previous => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת ההפקדות נכשלה" }));
+      setExpandedErrors((previous) => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת ההפקדות נכשלה" }));
     } finally {
       expandedRequests.current.delete(report.id);
-      setExpandedLoading(previous => ({ ...previous, [report.id]: false }));
+      setExpandedLoading((previous) => ({ ...previous, [report.id]: false }));
     }
   }
 
   async function loadMoreDeposits(report: ReportFeedbackRow) {
     if (!scope || expandedMoreLoading[report.id] || !expandedContent[report.id]?.hasMore) return;
-    setExpandedMoreLoading(previous => ({ ...previous, [report.id]: true }));
+    setExpandedMoreLoading((previous) => ({ ...previous, [report.id]: true }));
     try {
       const current = expandedContent[report.id];
-      const next = await manualDepositsApi.list(scope.organizationId, scope.employerId, report.id, "", current.deposits.length, 100);
-      setExpandedContent(previous => ({
+      const next = await reportFeedbackApi.deposits(
+        scope.organizationId, scope.employerId, report.id, "", current.deposits.length, 100,
+      );
+      setExpandedContent((previous) => ({
         ...previous,
-        [report.id]: { ...previous[report.id], deposits: [...previous[report.id].deposits, ...next.items], hasMore: next.hasMore },
+        [report.id]: {
+          deposits: [...previous[report.id].deposits, ...next.items],
+          hasMore: next.hasMore,
+        },
       }));
     } catch (err) {
-      setExpandedErrors(previous => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת הפקדות נוספות נכשלה" }));
+      setExpandedErrors((previous) => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת הפקדות נוספות נכשלה" }));
     } finally {
-      setExpandedMoreLoading(previous => ({ ...previous, [report.id]: false }));
+      setExpandedMoreLoading((previous) => ({ ...previous, [report.id]: false }));
     }
   }
 
-  async function load(nextScope = scope, nextFilter = filter) {
+  async function load(nextScope = scope, nextFilters = filters) {
     if (!nextScope) return;
     setLoading(true);
     setError("");
     try {
-      const result = await reportFeedbackApi.list(nextScope.organizationId, nextScope.employerId, nextFilter, 0, 100);
+      const result = await reportFeedbackApi.list(nextScope.organizationId, nextScope.employerId, nextFilters, 0, 100);
       setRows(result.items);
       setHasMoreReports(result.hasMore);
     } catch (err) {
@@ -191,88 +263,215 @@ export default function ReportsPage() {
     if (!scope || !hasMoreReports || loading || loadingMoreReports) return;
     setLoadingMoreReports(true);
     try {
-      const page = await reportFeedbackApi.list(scope.organizationId, scope.employerId, filter, rows.length, 100);
-      setRows(previous => {
-        const seen = new Set(previous.map(row => row.id));
-        return [...previous, ...page.items.filter(row => !seen.has(row.id))];
+      const page = await reportFeedbackApi.list(scope.organizationId, scope.employerId, filters, rows.length, 100);
+      setRows((previous) => {
+        const seen = new Set(previous.map((row) => row.id));
+        return [...previous, ...page.items.filter((row) => !seen.has(row.id))];
       });
       setHasMoreReports(page.hasMore);
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת דיווחים נוספים נכשלה");
-    } finally { setLoadingMoreReports(false); }
-  }
-
-  async function openFeedback(row: ReportFeedbackRow) {
-    if (!scope) return;
-    setLoadingDetails(true);
-    setError("");
-    try {
-      setSelected(await reportFeedbackApi.details(scope.organizationId, scope.employerId, row.id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "טעינת המשוב נכשלה");
     } finally {
-      setLoadingDetails(false);
+      setLoadingMoreReports(false);
     }
   }
 
   useEffect(() => {
     const initial = getEmployerSelection();
-    if (initial) {
-      setScope(initial);
-      void load(initial, "all");
-    }
+    if (initial) setScope(initial);
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail;
       if (!detail.employerId) return;
-      const next = { organizationId: detail.organizationId, employerId: detail.employerId };
-      setScope(next);
-      setFilter("all");
-      setSelected(null);
+      setScope({ organizationId: detail.organizationId, employerId: detail.employerId });
+      setFilters({ status: "all" });
+      setExtraFilters([]);
+      setSelectedDeposit(null);
       setEditingDeposit(null);
       setExpandedKeys(new Set());
       setExpandedContent({});
       setExpandedErrors({});
       expandedRequests.current.clear();
-      void load(next, "all");
     };
     window.addEventListener("alpha:scope-change", handler);
     return () => window.removeEventListener("alpha:scope-change", handler);
   }, []);
 
+  useEffect(() => {
+    if (!scope) return;
+    void reportFeedbackApi.treatmentStatuses(scope.organizationId, scope.employerId)
+      .then(setTreatmentStatuses)
+      .catch(() => setTreatmentStatuses([]));
+  }, [scope?.organizationId, scope?.employerId]);
+
+  useEffect(() => {
+    if (!scope) return;
+    const timer = window.setTimeout(() => void load(scope, filters), filters.search ? 300 : 0);
+    return () => window.clearTimeout(timer);
+  }, [
+    scope?.organizationId,
+    scope?.employerId,
+    filters.status,
+    filters.month,
+    filters.reportKind,
+    filters.search,
+    filters.product,
+    filters.treatmentStatus,
+    filters.requiresAttention,
+  ]);
+
   const counts = useMemo(() => ({
     total: rows.length,
-    errors: rows.filter((row) => row.feedbackStatus === "error").length,
-    success: rows.filter((row) => row.feedbackStatus === "success").length,
+    completed: rows.filter((row) => row.feedbackStatus === "completed").length,
+    attention: rows.reduce((sum, row) => sum + Number(row.requiresAttentionCount || 0), 0),
+    pending: rows.filter((row) => row.feedbackStatus === "pending" || row.feedbackStatus === "partial").length,
   }), [rows]);
 
-  function changeFilter(value: ReportFeedbackStatus) {
-    setFilter(value);
-    void load(scope, value);
+  function addFilter(key: ExtraFilterKey) {
+    setExtraFilters((current) => current.includes(key) ? current : [...current, key]);
   }
+
+  function removeFilter(key: ExtraFilterKey) {
+    setExtraFilters((current) => current.filter((item) => item !== key));
+    if (key === "kind") setFilters((current) => ({ ...current, reportKind: "" }));
+    if (key === "product") setFilters((current) => ({ ...current, product: "" }));
+    if (key === "treatment") setFilters((current) => ({ ...current, treatmentStatus: "" }));
+    if (key === "attention") setFilters((current) => ({ ...current, requiresAttention: false }));
+  }
+
+  async function editDepositFromFeedback(report: ReportFeedbackRow, reportProductId: string, employeeName: string) {
+    if (!scope) return;
+    setError("");
+    try {
+      const page = await manualDepositsApi.list(scope.organizationId, scope.employerId, report.id, employeeName, 0, 100);
+      const deposit = page.items.find((item) => item.id === reportProductId);
+      if (!deposit) throw new Error("לא ניתן היה לטעון את פרטי ההפקדה לעריכה.");
+      setSelectedDeposit(null);
+      setEditingDeposit({ report, deposit });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "טעינת פרטי ההפקדה לעריכה נכשלה");
+    }
+  }
+
+  const allColumns = useMemo<Record<ColumnKey, { column: DataTableColumn; render: (row: ReportFeedbackRow) => ReactNode }>>(() => ({
+    month: { column: { key: "month", label: "חודש", width: "110px" }, render: (row) => <strong>{formatMonth(row.reportingMonth)}</strong> },
+    kind: { column: { key: "kind", label: "סוג דיווח", width: "110px" }, render: (row) => kindLabel(row.reportKind) },
+    employees: { column: { key: "employees", label: "עובדים", width: "90px" }, render: (row) => row.employeeCount },
+    total: { column: { key: "total", label: "סכום דיווח", width: "130px" }, render: (row) => <span className="report-money">{money(row.totalAmount)}</span> },
+    status: { column: { key: "status", label: "מצב דיווח", width: "165px" }, render: (row) => <StatusBadge status={row.feedbackStatus} /> },
+    attention: { column: { key: "attention", label: "דורש טיפול", width: "115px" }, render: (row) => row.requiresAttentionCount > 0 ? <span className="report-feedback-error-count">{row.requiresAttentionCount}</span> : "—" },
+    payoff: { column: { key: "payoff", label: "שיעור פירעון", width: "120px" }, render: (row) => row.payoffRate == null ? "—" : <strong>{row.payoffRate.toLocaleString("he-IL", { maximumFractionDigits: 2 })}%</strong> },
+    transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
+      ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div>
+      : "—" },
+    actions: { column: { key: "actions", label: "", width: "110px" }, render: (row) => <button type="button" className="btn btn-secondary btn-sm" onClick={() => {
+      setExpandedKeys((previous) => {
+        const next = new Set(previous);
+        if (next.has(row.id)) next.delete(row.id); else next.add(row.id);
+        return next;
+      });
+      if (!expandedContent[row.id]) void loadExpanded(row);
+    }}><Eye size={15} />פרטים</button> },
+  }), [expandedContent, scope]);
+
+  const activeColumns = visibleColumns.map((key) => allColumns[key].column);
 
   return <AppShell title="דיווחים ומשובים">
     <div className="page-head">
-      <div><h1>דיווחים ומשובים</h1><p>מעקב אחרי כל הדיווחים, סטטוס השידור והמשוב שהתקבל.</p></div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={!scope || loading}><RefreshCw size={16} />רענון</button>
+      <div>
+        <h1>דיווחים ומשובים</h1>
+        <p>מעקב, משוב, מצב כספים וטיפול ידני — במקום אחד.</p>
+      </div>
+      <div className="report-page-actions">
+        <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={!scope || loading}>
+          <RefreshCw size={16} />רענון
+        </button>
         <Link className="btn btn-primary" href="/reports/new"><Plus size={16} />דיווח חדש</Link>
       </div>
     </div>
 
     {!scope ? <div className="notice notice-info">יש לבחור ארגון ומעסיק בבורר העליון כדי לצפות בדיווחים.</div> : null}
-    {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
+    {error ? <div className="notice notice-error report-page-error">{error}</div> : null}
 
     <div className="report-feedback-summary">
       <div className="card"><strong>{counts.total}</strong><span>דיווחים בתצוגה</span></div>
-      <div className="card"><strong>{counts.success}</strong><span>הושלמו בהצלחה</span></div>
-      <div className="card"><strong>{counts.errors}</strong><span>דורשים בדיקה</span></div>
+      <div className="card"><strong>{counts.completed}</strong><span>הושלמו</span></div>
+      <div className="card"><strong>{counts.attention}</strong><span>שורות דורשות טיפול</span></div>
+      <div className="card"><strong>{counts.pending}</strong><span>ממתינים למשוב</span></div>
     </div>
 
-    <div className="report-feedback-filters" aria-label="סינון דיווחים">
-      {filters.map((item) => <button key={item.value} type="button" className={filter === item.value ? "active" : ""} onClick={() => changeFilter(item.value)} disabled={!scope}>{item.label}</button>)}
-    </div>
+    <section className="report-filter-shell" aria-label="סינון דיווחים">
+      <div className="report-filter-main">
+        <label className="report-filter-field month-filter"><span>חודש</span>
+          <UiDateInput mode="month" value={filters.month ?? ""} onValueChange={(value) => setFilters((current) => ({ ...current, month: value }))} />
+        </label>
+        <label className="report-filter-field status-filter"><span>סטטוס</span>
+          <UiSelect value={filters.status ?? "all"} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value as ReportFeedbackStatus }))}>
+            {statusFilters.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+          </UiSelect>
+        </label>
+        <label className="report-filter-field search-filter"><span>חיפוש</span>
+          <div className="report-search-control"><Search size={16} /><UiInput value={filters.search ?? ""} onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} placeholder="עובד, ת״ז, מוצר או פוליסה" maxLength={100} /></div>
+        </label>
 
-    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        {extraFilters.includes("kind") ? <label className="report-filter-field removable"><span>סוג דיווח<button type="button" onClick={() => removeFilter("kind")} aria-label="הסרת פילטר סוג דיווח"><X size={13} /></button></span>
+          <UiSelect value={filters.reportKind ?? ""} onChange={(event) => setFilters((current) => ({ ...current, reportKind: event.target.value }))}>
+            <option value="">הכל</option><option value="1">שוטף</option><option value="2">הפרשים</option><option value="3">שלילי</option>
+          </UiSelect>
+        </label> : null}
+
+        {extraFilters.includes("product") ? <label className="report-filter-field removable"><span>יצרן / מוצר<button type="button" onClick={() => removeFilter("product")} aria-label="הסרת פילטר מוצר"><X size={13} /></button></span>
+          <UiInput value={filters.product ?? ""} onChange={(event) => setFilters((current) => ({ ...current, product: event.target.value }))} placeholder="שם יצרן או מוצר" maxLength={100} />
+        </label> : null}
+
+        {extraFilters.includes("treatment") ? <label className="report-filter-field removable"><span>סטטוס טיפול<button type="button" onClick={() => removeFilter("treatment")} aria-label="הסרת פילטר סטטוס טיפול"><X size={13} /></button></span>
+          <UiSelect value={filters.treatmentStatus ?? ""} onChange={(event) => setFilters((current) => ({ ...current, treatmentStatus: event.target.value }))}>
+            <option value="">הכל</option>
+            {treatmentStatuses.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
+          </UiSelect>
+        </label> : null}
+
+        {extraFilters.includes("attention") ? <label className="report-attention-filter removable">
+          <span>דורש טיפול<button type="button" onClick={() => removeFilter("attention")} aria-label="הסרת פילטר דורש טיפול"><X size={13} /></button></span>
+          <span className="report-checkbox-line"><UiCheckbox checked={Boolean(filters.requiresAttention)} onChange={(event) => setFilters((current) => ({ ...current, requiresAttention: event.target.checked }))} />רק דיווחים עם חריגות</span>
+        </label> : null}
+      </div>
+
+      <div className="report-view-controls">
+        <details className="report-control-menu">
+          <summary className="btn btn-secondary"><Filter size={15} />הוסף פילטר</summary>
+          <div className="report-control-menu-panel">
+            {([
+              ["kind", "סוג דיווח"],
+              ["product", "יצרן / מוצר"],
+              ["treatment", "סטטוס טיפול"],
+              ["attention", "דורש טיפול"],
+            ] as Array<[ExtraFilterKey, string]>).map(([key, label]) =>
+              <button type="button" key={key} disabled={extraFilters.includes(key)} onClick={() => addFilter(key)}>{label}</button>)}
+          </div>
+        </details>
+
+        <details className="report-control-menu">
+          <summary className="btn btn-secondary"><Columns3 size={15} />עמודות</summary>
+          <div className="report-control-menu-panel column-menu">
+            {columnOptions.map((item) => <label key={item.key}>
+              <UiCheckbox
+                checked={visibleColumns.includes(item.key)}
+                disabled={item.key === "actions"}
+                onChange={(event) => {
+                  const next = event.target.checked
+                    ? [...visibleColumns, item.key]
+                    : visibleColumns.filter((key) => key !== item.key);
+                  persistColumns(next);
+                }}
+              />
+              {item.label}
+            </label>)}
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <div className="card report-table-card">
       <DataTable
         items={rows}
         hasMore={hasMoreReports}
@@ -286,9 +485,9 @@ export default function ReportsPage() {
         tableClassName="report-feedback-table"
         expandToggleColumnKey="actions"
         expandedRowKeys={expandedKeys}
-        expandedRowComponentSize={380}
+        expandedRowComponentSize={430}
         onExpandedRowChange={(key, expanded, report) => {
-          setExpandedKeys(previous => {
+          setExpandedKeys((previous) => {
             const next = new Set(previous);
             if (expanded) next.add(key); else next.delete(key);
             return next;
@@ -297,90 +496,64 @@ export default function ReportsPage() {
         }}
         expandedRowComponent={(report) => <div className="report-deposits-expanded">
           {expandedLoading[report.id] ? <div className="empty">טוען הפקדות ומשובים...</div> : null}
-          {expandedErrors[report.id] ? <div className="notice notice-error">{expandedErrors[report.id]}
+          {expandedErrors[report.id] ? <div className="notice notice-error">
+            {expandedErrors[report.id]}
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadExpanded(report, true)}>נסה שוב</button>
           </div> : null}
-          {expandedContent[report.id] ? <DepositFeedbackPanel report={report} content={expandedContent[report.id]}
-            onEdit={(deposit) => setEditingDeposit({ report, deposit })}
+          {expandedContent[report.id] ? <DepositFeedbackPanel
+            content={expandedContent[report.id]}
+            onOpen={(deposit) => setSelectedDeposit({ report, deposit })}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
-            onLoadMore={() => void loadMoreDeposits(report)} /> : null}
+            onLoadMore={() => void loadMoreDeposits(report)}
+          /> : null}
         </div>}
-        columns={[
-          { key: "month", label: "חודש" },
-          { key: "kind", label: "סוג דיווח" },
-          { key: "employees", label: "עובדים" },
-          { key: "status", label: "סטטוס משוב" },
-          { key: "issues", label: "שגיאות" },
-          { key: "transmission", label: "שידור אחרון" },
-          { key: "actions", label: "" },
-        ]}
-        renderCells={(row) => [
-          <strong key="month">{formatMonth(row.reportingMonth)}</strong>,
-          kindLabel(row.reportKind),
-          row.employeeCount,
-          <StatusBadge key="status" status={row.feedbackStatus} />,
-          row.issueCount > 0 ? <span key="issues" className="report-feedback-error-count">{row.issueCount}</span> : "—",
-          row.lastTransmission ? <div key="tx" className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div> : "—",
-          <button key="action" type="button" className="btn btn-secondary btn-sm" onClick={() => void openFeedback(row)} disabled={loadingDetails}><Eye size={15} />{row.feedbackStatus === "error" ? "צפייה במשוב" : "פרטים"}</button>,
-        ]}
+        columns={activeColumns}
+        renderCells={(row) => visibleColumns.map((key) => <span key={key} className="report-cell-content">{allColumns[key].render(row)}</span>)}
       />
     </div>
 
+    {selectedDeposit && scope ? <ReportDepositFeedbackModal
+      organizationId={scope.organizationId}
+      employerId={scope.employerId}
+      reportId={selectedDeposit.report.id}
+      reportProductId={selectedDeposit.deposit.id}
+      onClose={() => setSelectedDeposit(null)}
+      onTreatmentSaved={() => {
+        setExpandedContent((current) => {
+          const next = { ...current };
+          delete next[selectedDeposit.report.id];
+          return next;
+        });
+        void loadExpanded(selectedDeposit.report, true);
+        void load();
+      }}
+      onEditDeposit={(details) => void editDepositFromFeedback(selectedDeposit.report, details.product.id, details.employee.name)}
+      onStartCorrection={(details) => {
+        setSelectedDeposit(null);
+        router.push(`/reports/new?sourceReportId=${details.report.id}&sourceProductId=${details.product.id}&sourceMonth=${details.report.reportingMonth.slice(0, 7)}`);
+      }}
+    /> : null}
+
     {editingDeposit && scope ? <DepositPaymentEditor
-      key={editingDeposit.deposit.id} employer={null}
-      organizationId={scope.organizationId} employerId={scope.employerId}
-      reportId={editingDeposit.report.id} row={editingDeposit.deposit}
-      readOnly={!editableReport(editingDeposit.report.status)}
+      key={editingDeposit.deposit.id}
+      employer={null}
+      organizationId={scope.organizationId}
+      employerId={scope.employerId}
+      reportId={editingDeposit.report.id}
+      row={editingDeposit.deposit}
+      readOnly={false}
       onEvidenceChanged={() => {}}
       onClose={() => setEditingDeposit(null)}
       onSaved={(updated) => {
-        setExpandedContent(previous => {
-          const existing = previous[editingDeposit.report.id];
-          return existing ? {
-            ...previous,
-            [editingDeposit.report.id]: {
-              ...existing,
-              deposits: existing.deposits.map(item => item.id === updated.id ? updated : item),
-            },
-          } : previous;
-        });
         setEditingDeposit(null);
+        setExpandedContent((current) => {
+          const next = { ...current };
+          delete next[editingDeposit.report.id];
+          return next;
+        });
+        void loadExpanded(editingDeposit.report, true);
+        void load();
       }}
     /> : null}
-    {selected ? <AppModal width="lg" className="report-feedback-modal"
-      title={`משוב דיווח ${formatMonth(selected.report.reportingMonth)}`}
-      subtitle={`${kindLabel(selected.report.reportKind)} · ${selected.issueCount ? `${selected.issueCount} שגיאות/הערות` : "ללא שגיאות"}`}
-      onClose={() => setSelected(null)}
-      actions={<button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>סגירה</button>}>
-      <div style={{ marginBottom: 18 }}><StatusBadge status={selected.feedbackStatus} /></div>
-      {selected.issues.length === 0
-        ? <div className="notice notice-info">לא נמצאו שגיאות בדיווח הזה.</div>
-        : <div className="report-feedback-issues">
-          {selected.issues.map((issue, index) => <div className="report-feedback-issue" key={`${issue.code}-${index}`}>
-            <div className="report-feedback-issue-head">
-              <strong>{issue.employeeName || issue.productName || "שגיאה כללית בדיווח"}</strong>
-              <span>{issue.code}</span>
-            </div>
-            {issue.productName && issue.employeeName ? <small>מוצר: {issue.productName}</small> : null}
-            <p>{issue.description}</p>
-            <div className="report-feedback-action">פעולה מומלצת: {issue.actionType === "EditReport"
-              ? "עריכת הדיווח" : issue.actionType === "RetryTransmission" ? "בדיקה ושליחה מחדש" : issue.actionType}</div>
-          </div>)}
-        </div>}
-      {selected.officialFeedback?.length > 0 ? <div className="report-feedback-history">
-        <h3>משובים רשמיים מהמסלקה</h3>
-        {selected.officialFeedback.map(feedback => <div key={feedback.id}>
-          <span>{feedback.sourceFileName}{feedback.interfaceFileNumber ? ` · קובץ ${feedback.interfaceFileNumber}` : ""}</span>
-          <small>{formatDate(feedback.receivedAt)}</small>
-        </div>)}
-      </div> : null}
-      {selected.transmissions.length > 0 ? <div className="report-feedback-history">
-        <h3>היסטוריית שידורים</h3>
-        {selected.transmissions.map(tx => <div key={tx.id}>
-          <span>ניסיון {tx.attemptNumber} · {tx.provider}</span>
-          <small>{formatDate(tx.completedAt ?? tx.sentAt ?? tx.startedAt)}</small>
-        </div>)}
-      </div> : null}
-    </AppModal> : null}
   </AppShell>;
 }
