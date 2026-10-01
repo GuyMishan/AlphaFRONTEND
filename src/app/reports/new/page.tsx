@@ -216,11 +216,30 @@ export default function NewReportPage() {
     setLoadingSources(true);
     try {
       const skip = reset ? 0 : sourceReports.length;
-      const result = await derivedReportsApi.sourceReports(scope.organizationId, scope.employerId, search.trim(), skip, 30);
-      setSourceReports((current) => reset ? result.items : [...current, ...result.items]);
-      setSourceHasMore(result.hasMore);
+      const first = await derivedReportsApi.sourceReports(scope.organizationId, scope.employerId, search.trim(), skip, 30);
+      let items = first.items;
+      let hasMore = first.hasMore;
+
+      // A correction opened from Reports & Feedback points at one exact source report.
+      // Do not silently lose that selection just because more than one API page exists
+      // for the same salary month.
+      if (reset && requestedSourceReportId && !items.some((item) => item.id === requestedSourceReportId)) {
+        let nextSkip = items.length;
+        while (hasMore && nextSkip < 5000) {
+          const page = await derivedReportsApi.sourceReports(
+            scope.organizationId, scope.employerId, search.trim(), nextSkip, 100,
+          );
+          items = [...items, ...page.items.filter((item) => !items.some((existing) => existing.id === item.id))];
+          hasMore = page.hasMore;
+          if (items.some((item) => item.id === requestedSourceReportId) || page.items.length === 0) break;
+          nextSkip += page.items.length;
+        }
+      }
+
+      setSourceReports((current) => reset ? items : [...current, ...items.filter((item) => !current.some((existing) => existing.id === item.id))]);
+      setSourceHasMore(hasMore);
       if (reset) {
-        const requested = requestedSourceReportId ? result.items.find((item) => item.id === requestedSourceReportId) : null;
+        const requested = requestedSourceReportId ? items.find((item) => item.id === requestedSourceReportId) : null;
         if (requested) {
           setSelectedSourceReportId(requested.id);
           setMonth(requested.reportingMonth.slice(0, 7));
