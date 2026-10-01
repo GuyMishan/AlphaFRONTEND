@@ -24,6 +24,10 @@ function sameNumber(a: number | null | undefined, b: number | null | undefined) 
   return Math.abs(Number(a) - Number(b)) < 0.01;
 }
 
+function isActionableManufacturerError(code: number | null | undefined) {
+  return code != null && code !== 1 && code !== 31;
+}
+
 function contributionTypeLabel(code: number | null | undefined) {
   switch (code) {
     case 1: return "פיצויים";
@@ -162,7 +166,7 @@ export function ReportDepositFeedbackModal({
             const amountMismatch = manufacturer?.contributionAmount != null && !sameNumber(employer.amount, manufacturer.contributionAmount);
             const rateMismatch = manufacturer?.contributionRate != null && !sameNumber(employer.percentage, manufacturer.contributionRate);
             const salaryMismatch = manufacturer?.calculatedSalary != null && !sameNumber(details.product.salary, manufacturer.calculatedSalary);
-            const hasError = manufacturer?.errorCode != null && manufacturer.errorCode !== 1;
+            const hasError = isActionableManufacturerError(manufacturer?.errorCode);
             const hasDifference = amountMismatch || rateMismatch || salaryMismatch || hasError;
             return <article className={`contribution-comparison-card${hasDifference ? " has-difference" : ""}`} key={employer.id}>
               <div className="contribution-comparison-title">
