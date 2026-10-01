@@ -86,17 +86,19 @@
 .report-control-menu-panel.column-menu label { display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 8px; font-size: 13px; cursor: pointer; }
 
 .report-table-card { padding: 0; overflow: hidden; }
-.report-feedback-table th, .report-feedback-table td { vertical-align: middle; }
+.report-feedback-table th, .report-feedback-table td { vertical-align: middle; text-align: center; }
 .report-feedback-table .data-table-row > td { padding-block: 0; }
 .report-cell-content {
+  width: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
   min-height: var(--data-table-row-height);
   height: var(--data-table-row-height);
   max-width: 100%;
+  text-align: center;
 }
 .report-feedback-table .data-table-row > td:last-child .report-cell-content {
-  width: 100%;
   justify-content: flex-end;
 }
 .report-row-actions { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 0; }
@@ -139,7 +141,7 @@
   color: var(--danger);
   font-weight: 750;
 }
-.report-feedback-transmission { display: grid; gap: 2px; min-width: 0; }
+.report-feedback-transmission { display: grid; place-items: center; gap: 2px; min-width: 0; text-align: center; }
 .report-feedback-transmission span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .report-feedback-transmission small { color: var(--muted); }
 .muted-inline { color: var(--muted); font-size: 12px; }

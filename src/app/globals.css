@@ -1313,6 +1313,7 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
 
 .ui-action-menu { display: inline-flex; align-items: center; justify-content: center; }
 .ui-action-menu-trigger {
+  position: relative;
   width: 30px;
   height: 30px;
   display: inline-grid;
@@ -1336,11 +1337,13 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
   outline-offset: 2px;
 }
 .ui-action-menu-trigger > svg {
+  position: absolute;
+  inset: 50% auto auto 50%;
   display: block;
   width: 18px;
   height: 18px;
-  margin: auto;
-  transform: none;
+  margin: 0;
+  transform: translate(-50%, -50%);
 }
 .ui-action-menu-panel {
   overflow: visible;
