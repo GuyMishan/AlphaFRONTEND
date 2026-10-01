@@ -188,8 +188,7 @@ function DepositFeedbackPanel({
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={() => onEdit(deposit)}
-              disabled={!report.canEdit && !report.canCreateCorrection}
-              title={!report.canEdit && !report.canCreateCorrection ? "לא ניתן לערוך או ליצור דיווח מתקן עבור דיווח זה." : undefined}
+              title={report.canEdit ? "עריכת פרטי ההפקדה" : "צפייה בפרטי ההפקדה כפי שנשלחו"}
             >
               <Pencil size={15} />עריכת פרטי ההפקדה
             </button>
@@ -562,15 +561,7 @@ export default function ReportsPage() {
             report={report}
             content={expandedContent[report.id]}
             onOpen={(deposit) => setSelectedDeposit({ report, deposit })}
-            onEdit={(deposit) => {
-              if (report.canEdit) {
-                void editDepositFromFeedback(report, deposit.id, deposit.employeeName);
-                return;
-              }
-              if (report.canCreateCorrection) {
-                router.push(`/reports/new?sourceReportId=${report.id}&sourceProductId=${deposit.id}&sourceMonth=${report.reportingMonth.slice(0, 7)}&sourceKind=${encodeURIComponent(String(report.reportKind))}`);
-              }
-            }}
+            onEdit={(deposit) => void editDepositFromFeedback(report, deposit.id, deposit.employeeName)}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
             onExport={(type) => void exportReport(report, type)}
@@ -612,7 +603,7 @@ export default function ReportsPage() {
       employerId={scope.employerId}
       reportId={editingDeposit.report.id}
       row={editingDeposit.deposit}
-      readOnly={false}
+      readOnly={!editingDeposit.report.canEdit}
       onEvidenceChanged={() => {}}
       onClose={() => setEditingDeposit(null)}
       onSaved={(updated) => {
