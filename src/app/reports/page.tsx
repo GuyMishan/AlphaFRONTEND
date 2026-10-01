@@ -32,6 +32,7 @@ import {
   type TreatmentStatusOption,
 } from "@/lib/report-feedback-api";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import { referenceOptionsApi, type ReferenceOption } from "@/lib/reference-options-api";
 import "./reports.css";
 
 const statusFilters: Array<{ value: ReportFeedbackStatus; label: string }> = [
@@ -172,6 +173,7 @@ export default function ReportsPage() {
   const [filters, setFilters] = useState<ReportFeedbackFilters>({ status: "all" });
   const [extraFilters, setExtraFilters] = useState<ExtraFilterKey[]>([]);
   const [treatmentStatuses, setTreatmentStatuses] = useState<TreatmentStatusOption[]>([]);
+  const [reportKindOptions, setReportKindOptions] = useState<ReferenceOption[]>([]);
   const [rows, setRows] = useState<ReportFeedbackRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMoreReports, setHasMoreReports] = useState(false);
@@ -298,9 +300,16 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (!scope) return;
-    void reportFeedbackApi.treatmentStatuses(scope.organizationId, scope.employerId)
-      .then(setTreatmentStatuses)
-      .catch(() => setTreatmentStatuses([]));
+    void Promise.all([
+      reportFeedbackApi.treatmentStatuses(scope.organizationId, scope.employerId),
+      referenceOptionsApi.list("manual-report-kind"),
+    ]).then(([treatments, kinds]) => {
+      setTreatmentStatuses(treatments);
+      setReportKindOptions(kinds);
+    }).catch(() => {
+      setTreatmentStatuses([]);
+      setReportKindOptions([]);
+    });
   }, [scope?.organizationId, scope?.employerId]);
 
   useEffect(() => {
@@ -415,7 +424,8 @@ export default function ReportsPage() {
 
         {extraFilters.includes("kind") ? <label className="report-filter-field removable"><span>סוג דיווח<button type="button" onClick={() => removeFilter("kind")} aria-label="הסרת פילטר סוג דיווח"><X size={13} /></button></span>
           <UiSelect value={filters.reportKind ?? ""} onChange={(event) => setFilters((current) => ({ ...current, reportKind: event.target.value }))}>
-            <option value="">הכל</option><option value="1">שוטף</option><option value="2">הפרשים</option><option value="3">שלילי</option>
+            <option value="">הכל</option>
+            {reportKindOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </UiSelect>
         </label> : null}
 
