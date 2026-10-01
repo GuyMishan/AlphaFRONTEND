@@ -45,6 +45,7 @@ export type ReportFeedbackRow = {
 };
 
 export type TreatmentStatusOption = { code: string; label: string };
+export type ReportFeedbackSummary = { total: number; completed: number; attention: number; pending: number };
 
 export type ReportFeedbackDepositRow = {
   id: string;
@@ -248,6 +249,8 @@ function base(organizationId: string, employerId: string) {
   return `/api/organizations/${organizationId}/employers/${employerId}/report-feedback`;
 }
 
+const treatmentStatusCache = new Map<string, Promise<TreatmentStatusOption[]>>();
+
 export const reportFeedbackApi = {
   list: (organizationId: string, employerId: string, filters: ReportFeedbackFilters = {}, skip = 0, take = 50) => {
     const params = new URLSearchParams({ skip: String(skip), take: String(take), feedbackStatus: filters.status ?? "all" });
@@ -257,7 +260,7 @@ export const reportFeedbackApi = {
     if (filters.product) params.set("product", filters.product);
     if (filters.treatmentStatus) params.set("treatmentStatus", filters.treatmentStatus);
     if (filters.requiresAttention) params.set("requiresAttention", "true");
-    return request<{ items: ReportFeedbackRow[]; hasMore: boolean }>(`${base(organizationId, employerId)}/?${params}`);
+    return request<{ items: ReportFeedbackRow[]; hasMore: boolean; summary: ReportFeedbackSummary }>(`${base(organizationId, employerId)}/?${params}`);
   },
   details: (organizationId: string, employerId: string, reportId: string) =>
     request<ReportFeedbackDetails>(`${base(organizationId, employerId)}/${reportId}`),
@@ -271,8 +274,18 @@ export const reportFeedbackApi = {
     request<ReportFeedbackDepositDetails>(
       `${base(organizationId, employerId)}/${reportId}/deposits/${reportProductId}`,
     ),
-  treatmentStatuses: (organizationId: string, employerId: string) =>
-    request<TreatmentStatusOption[]>(`${base(organizationId, employerId)}/treatment-statuses`),
+  treatmentStatuses: (organizationId: string, employerId: string) => {
+    const key = `${organizationId}:${employerId}`;
+    const cached = treatmentStatusCache.get(key);
+    if (cached) return cached;
+    const pending = request<TreatmentStatusOption[]>(`${base(organizationId, employerId)}/treatment-statuses`)
+      .catch((error) => {
+        treatmentStatusCache.delete(key);
+        throw error;
+      });
+    treatmentStatusCache.set(key, pending);
+    return pending;
+  },
   updateTreatment: (
     organizationId: string,
     employerId: string,

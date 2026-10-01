@@ -30,6 +30,7 @@ import {
   type ReportFeedbackFilters,
   type ReportFeedbackRow,
   type ReportFeedbackStatus,
+  type ReportFeedbackSummary,
   type TreatmentStatusOption,
 } from "@/lib/report-feedback-api";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
@@ -197,6 +198,7 @@ export default function ReportsPage() {
   const [treatmentStatuses, setTreatmentStatuses] = useState<TreatmentStatusOption[]>([]);
   const [reportKindOptions, setReportKindOptions] = useState<ReferenceOption[]>([]);
   const [rows, setRows] = useState<ReportFeedbackRow[]>([]);
+  const [summary, setSummary] = useState<ReportFeedbackSummary>({ total: 0, completed: 0, attention: 0, pending: 0 });
   const [loading, setLoading] = useState(false);
   const [hasMoreReports, setHasMoreReports] = useState(false);
   const [loadingMoreReports, setLoadingMoreReports] = useState(false);
@@ -274,10 +276,12 @@ export default function ReportsPage() {
     try {
       const result = await reportFeedbackApi.list(nextScope.organizationId, nextScope.employerId, nextFilters, 0, 100);
       setRows(result.items);
+      setSummary(result.summary);
       setHasMoreReports(result.hasMore);
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת הדיווחים נכשלה");
       setRows([]);
+      setSummary({ total: 0, completed: 0, attention: 0, pending: 0 });
       setHasMoreReports(false);
     } finally {
       setLoading(false);
@@ -293,6 +297,7 @@ export default function ReportsPage() {
         const seen = new Set(previous.map((row) => row.id));
         return [...previous, ...page.items.filter((row) => !seen.has(row.id))];
       });
+      setSummary(page.summary);
       setHasMoreReports(page.hasMore);
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת דיווחים נוספים נכשלה");
@@ -350,13 +355,6 @@ export default function ReportsPage() {
     filters.treatmentStatus,
     filters.requiresAttention,
   ]);
-
-  const counts = useMemo(() => ({
-    total: rows.length,
-    completed: rows.filter((row) => row.feedbackStatus === "completed").length,
-    attention: rows.reduce((sum, row) => sum + Number(row.requiresAttentionCount || 0), 0),
-    pending: rows.filter((row) => row.feedbackStatus === "pending" || row.feedbackStatus === "partial").length,
-  }), [rows]);
 
   function addFilter(key: ExtraFilterKey) {
     setExtraFilters((current) => current.includes(key) ? current : [...current, key]);
@@ -447,10 +445,10 @@ export default function ReportsPage() {
     {error ? <div className="notice notice-error report-page-error">{error}</div> : null}
 
     <div className="report-feedback-summary">
-      <div className="card"><strong>{counts.total}</strong><span>דיווחים בתצוגה</span></div>
-      <div className="card"><strong>{counts.completed}</strong><span>הושלמו</span></div>
-      <div className="card"><strong>{counts.attention}</strong><span>שורות דורשות טיפול</span></div>
-      <div className="card"><strong>{counts.pending}</strong><span>ממתינים למשוב</span></div>
+      <div className="card"><strong>{summary.total}</strong><span>דיווחים בתצוגה</span></div>
+      <div className="card"><strong>{summary.completed}</strong><span>הושלמו</span></div>
+      <div className="card"><strong>{summary.attention}</strong><span>שורות דורשות טיפול</span></div>
+      <div className="card"><strong>{summary.pending}</strong><span>ממתינים למשוב</span></div>
     </div>
 
     <section className="report-filter-shell" aria-label="סינון דיווחים">
