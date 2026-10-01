@@ -101,3 +101,6 @@
 - Product lineage is preserved through `sourceReportProductId` in the report editor. The shared pension-products editor carries this optional identifier through normalization so saving an employee does not break deposit history.
 - Editable drafts that have never had an external transmission may be deleted from Reports & Feedback or from “המשך דיווח קיים”. The frontend always uses the shared `AppModal` confirmation; the backend remains authoritative about whether deletion is still allowed.
 - A generated correction workspace is an internal Differences draft and is hidden from the normal resumable-drafts list. When opened explicitly from Reports & Feedback it can be edited fully, then saved and returned to Reports & Feedback for “דיווח חוזר”.
+
+
+- “דיווח חוזר” no longer asks for one global operation 2/3. The backend resolves the correction operation independently per changed deposit/product, so one retransmission may correctly contain both no-money corrections and additional-money corrections.

@@ -449,7 +449,7 @@ export default function ReportsPage() {
     }
   }
 
-  async function materializeCorrection(operationCode: 2 | 3) {
+  async function materializeCorrection() {
     if (!scope || !retransmitReport || !retransmitReport.correctionWorkspaceId || correctionBusyId) return;
     const report = retransmitReport;
     const workspaceId = retransmitReport.correctionWorkspaceId;
@@ -457,7 +457,7 @@ export default function ReportsPage() {
     setError("");
     try {
       const result = await derivedReportsApi.materializeCorrection(
-        scope.organizationId, scope.employerId, workspaceId, operationCode,
+        scope.organizationId, scope.employerId, workspaceId,
       );
       setRetransmitReport(null);
       router.push(
@@ -754,11 +754,12 @@ export default function ReportsPage() {
       closeDisabled={correctionBusyId === retransmitReport.id}
       actions={<>
         <button className="btn btn-secondary" disabled={Boolean(correctionBusyId)} onClick={() => setRetransmitReport(null)}>ביטול</button>
-        <button className="btn btn-secondary" disabled={Boolean(correctionBusyId)} onClick={() => void materializeCorrection(2)}>ללא הפקדה נוספת</button>
-        <button className="btn btn-primary" disabled={Boolean(correctionBusyId)} onClick={() => void materializeCorrection(3)}>בוצעה הפקדה נוספת</button>
+        <button className="btn btn-primary" disabled={Boolean(correctionBusyId)} onClick={() => void materializeCorrection()}>
+          יצירת דיווח חוזר
+        </button>
       </>}
     >
-      <p style={{ marginTop: 0 }}>ALPHA תאסוף את כל התיקונים הממתינים לדיווח הזה ותיצור את רצף התיקון הרשמי.</p>
+      <p style={{ marginTop: 0 }}>ALPHA תאסוף את כל התיקונים הממתינים לדיווח הזה ותיצור את רצף התיקון הרשמי. סוג התיקון נקבע לכל הפקדה בנפרד לפי השינוי שנשמר בה.</p>
       <div className="notice notice-info">
         מאחורי הקלעים ייווצר קודם דיווח שלילי לביטול התנועות הקודמות, ולאחריו הדיווח השוטף המתוקן. הדיווח המקורי נשאר ללא שינוי בהיסטוריה.
       </div>
