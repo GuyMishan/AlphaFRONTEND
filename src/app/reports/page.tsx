@@ -22,7 +22,7 @@ import { AppShell } from "@/components/app-shell";
 import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { DepositPaymentEditor } from "@/components/manual-deposit-data";
 import { ReportDepositFeedbackModal } from "@/components/report-deposit-feedback-modal";
-import { UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
+import { UiActionMenu, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { manualDepositsApi, type ManualDepositRow } from "@/lib/manual-deposits-api";
 import { getEmployerSelection } from "@/lib/session";
 import {
@@ -118,7 +118,6 @@ function DepositFeedbackPanel({
   onEdit,
   onLoadMore,
   loadingMore,
-  onStartCorrection,
 }: {
   report: ReportFeedbackRow;
   content: ExpandedReportContent;
@@ -126,18 +125,12 @@ function DepositFeedbackPanel({
   onEdit: (deposit: ReportFeedbackDepositRow) => void;
   onLoadMore: () => void;
   loadingMore: boolean;
-  onStartCorrection: () => void;
 }) {
   return <div className="report-deposits-panel">
     <div className="report-deposits-heading">
       <div>
         <b>הפקדות בדיווח</b>
         <small>כל שורה מייצגת עובד + מוצר. המשוב, מצב הכספים והטיפול נשארים מחוברים לאותה הפקדה.</small>
-      </div>
-      <div className="report-expanded-actions">
-        {report.canCreateCorrection
-          ? <button type="button" className="btn btn-secondary btn-sm" onClick={onStartCorrection}><RefreshCw size={15} />יצירת דיווח מתקן</button>
-          : null}
       </div>
     </div>
     {content.deposits.length === 0
@@ -169,16 +162,23 @@ function DepositFeedbackPanel({
           </div>
           <div role="cell" className="muted-inline">{formatDate(deposit.updatedAt)}</div>
           <div role="cell" className="report-deposit-row-actions">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onOpen(deposit)}>
-              <Eye size={15} />צפייה
-            </button>
-            {report.canEdit ? <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => onEdit(deposit)}
-            >
-              <Pencil size={15} />עריכה
-            </button> : null}
+            <UiActionMenu
+              ariaLabel={`פעולות עבור ${deposit.employeeName}`}
+              items={[
+                {
+                  key: "view",
+                  label: "צפייה",
+                  icon: <Eye size={16} />,
+                  onSelect: () => onOpen(deposit),
+                },
+                ...(report.canEdit ? [{
+                  key: "edit",
+                  label: "עריכה",
+                  icon: <Pencil size={16} />,
+                  onSelect: () => onEdit(deposit),
+                }] : []),
+              ]}
+            />
           </div>
         </div>)}
       </div>}
@@ -413,19 +413,46 @@ export default function ReportsPage() {
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div>
       : "—" },
-    actions: { column: { key: "actions", label: "פעולות", width: "245px" }, render: (row) => <div className="report-row-actions">
-      <details className="report-control-menu">
-        <summary className="btn btn-secondary btn-sm"><Download size={15} />ייצוא</summary>
-        <div className="report-control-menu-panel">
-          <button type="button" disabled={exportingReportId === row.id} onClick={() => void exportReport(row, "contributions")}>פירוט עובדים והפרשות</button>
-          <button type="button" disabled={exportingReportId === row.id} onClick={() => void exportReport(row, "deposits")}>סיכום הפקדות</button>
-          <button type="button" disabled={exportingReportId === row.id} onClick={() => void exportReport(row, "feedback")}>משוב קופות</button>
-        </div>
-      </details>
-      {row.canEdit ? <button type="button" className="btn btn-secondary btn-sm"
-        onClick={() => router.push(`/reports/new?resumeReportId=${row.id}`)}>
-        <Pencil size={15} />עריכה
-      </button> : null}
+    actions: { column: { key: "actions", label: "פעולות", width: "86px" }, render: (row) => <div className="report-row-actions">
+      <UiActionMenu
+        ariaLabel={`פעולות לדיווח ${formatMonth(row.reportingMonth)}`}
+        items={[
+          ...(row.canEdit ? [{
+            key: "edit",
+            label: "עריכת הדיווח",
+            icon: <Pencil size={16} />,
+            onSelect: () => router.push(`/reports/new?resumeReportId=${row.id}`),
+          }] : []),
+          ...(row.canCreateCorrection ? [{
+            key: "correction",
+            label: "יצירת דיווח מתקן",
+            icon: <RefreshCw size={16} />,
+            onSelect: () => router.push(`/reports/new?sourceReportId=${row.id}&sourceMonth=${row.reportingMonth.slice(0, 7)}&sourceKind=${encodeURIComponent(String(row.reportKind))}`),
+          }] : []),
+          {
+            key: "export-contributions",
+            label: "ייצוא פירוט עובדים והפרשות",
+            icon: <Download size={16} />,
+            disabled: exportingReportId === row.id,
+            separatorBefore: row.canEdit || row.canCreateCorrection,
+            onSelect: () => void exportReport(row, "contributions"),
+          },
+          {
+            key: "export-deposits",
+            label: "ייצוא סיכום הפקדות",
+            icon: <Download size={16} />,
+            disabled: exportingReportId === row.id,
+            onSelect: () => void exportReport(row, "deposits"),
+          },
+          {
+            key: "export-feedback",
+            label: "ייצוא משוב קופות",
+            icon: <Download size={16} />,
+            disabled: exportingReportId === row.id,
+            onSelect: () => void exportReport(row, "feedback"),
+          },
+        ]}
+      />
     </div> },
   }), [expandedContent, scope, exportingReportId, router]);
 
@@ -566,7 +593,6 @@ export default function ReportsPage() {
             onEdit={(deposit) => void editDepositFromFeedback(report, deposit.id)}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
-            onStartCorrection={() => router.push(`/reports/new?sourceReportId=${report.id}&sourceMonth=${report.reportingMonth.slice(0, 7)}&sourceKind=${encodeURIComponent(String(report.reportKind))}`)}
           /> : null}
         </div>}
         columns={activeColumns}

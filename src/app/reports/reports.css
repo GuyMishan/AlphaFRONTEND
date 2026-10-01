@@ -88,8 +88,7 @@
 .report-table-card { padding: 0; overflow: hidden; }
 .report-feedback-table th, .report-feedback-table td { vertical-align: middle; }
 .report-cell-content { display: inline-flex; align-items: center; min-height: 32px; max-width: 100%; }
-.report-row-actions { display: flex; align-items: center; gap: 7px; min-width: 0; }
-.report-row-actions .btn { white-space: nowrap; }
+.report-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
 .report-money { font-weight: 700; white-space: nowrap; }
 .report-feedback-badge,
 .feedback-state {
@@ -151,7 +150,7 @@
 .report-deposits-header,
 .report-deposits-item {
   display: grid;
-  grid-template-columns: minmax(145px, 1.1fr) minmax(190px, 1.5fr) 110px 130px 140px minmax(150px, 1fr) 110px minmax(170px, 1fr);
+  grid-template-columns: minmax(145px, 1.1fr) minmax(190px, 1.5fr) 110px 130px 140px minmax(150px, 1fr) 110px 64px;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -164,8 +163,7 @@
 .report-deposits-item small { display: block; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .report-deposits-money { font-weight: 750; white-space: nowrap; }
 .report-deposits-load-more { justify-self: center; }
-.report-deposit-row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.report-deposit-row-actions .btn { white-space: nowrap; }
+.report-deposit-row-actions { display: flex; align-items: center; justify-content: flex-end; }
 
 .report-deposit-feedback-modal .app-modal-body { overflow: auto; }
 .feedback-modal-summary {

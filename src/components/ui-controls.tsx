@@ -15,7 +15,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
-import { CalendarDays, ChevronDown, X } from "lucide-react";
+import { CalendarDays, ChevronDown, EllipsisVertical, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Tooltip } from "@/components/tooltip";
 import { formatDateDDMMYYYY, normalizeDDMMYYYYInput, parseDDMMYYYY } from "@/lib/date-format";
@@ -259,6 +259,132 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
     </div>;
   },
 );
+
+
+export type UiActionMenuItem = {
+  key: string;
+  label: ReactNode;
+  icon?: ReactNode;
+  disabled?: boolean;
+  separatorBefore?: boolean;
+  onSelect: () => void;
+};
+
+export function UiActionMenu({
+  items,
+  ariaLabel = "פעולות נוספות",
+}: {
+  items: UiActionMenuItem[];
+  ariaLabel?: string;
+}) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<CSSProperties>({ visibility: "hidden" });
+
+  useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (!open || !mounted) return;
+    const positionMenu = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const gutter = 8;
+      const width = Math.min(260, Math.max(220, window.innerWidth - gutter * 2));
+      const desiredHeight = Math.min(320, Math.max(48, items.length * 42 + 14));
+      const below = window.innerHeight - rect.bottom - gutter * 2;
+      const above = rect.top - gutter * 2;
+      const openAbove = below < Math.min(desiredHeight, 180) && above > below;
+      const available = openAbove ? above : below;
+      const maxHeight = Math.max(64, Math.min(desiredHeight, available));
+      const left = Math.min(
+        Math.max(gutter, rect.right - width),
+        Math.max(gutter, window.innerWidth - width - gutter),
+      );
+      setPlacement({
+        position: "fixed",
+        visibility: "visible",
+        top: openAbove ? Math.max(gutter, rect.top - maxHeight - 6) : rect.bottom + 6,
+        left,
+        width,
+        maxHeight,
+        zIndex: 7000,
+      });
+    };
+
+    positionMenu();
+    const outsidePointer = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
+    };
+    const outsideFocus = (event: FocusEvent) => {
+      const target = event.target as Node;
+      if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      triggerRef.current?.focus();
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    document.addEventListener("pointerdown", outsidePointer);
+    document.addEventListener("focusin", outsideFocus);
+    document.addEventListener("keydown", escape, true);
+    window.addEventListener("resize", positionMenu);
+    window.addEventListener("scroll", positionMenu, true);
+    return () => {
+      document.removeEventListener("pointerdown", outsidePointer);
+      document.removeEventListener("focusin", outsideFocus);
+      document.removeEventListener("keydown", escape, true);
+      window.removeEventListener("resize", positionMenu);
+      window.removeEventListener("scroll", positionMenu, true);
+    };
+  }, [open, mounted, items.length]);
+
+  function select(item: UiActionMenuItem) {
+    if (item.disabled) return;
+    setOpen(false);
+    item.onSelect();
+  }
+
+  return <span className="ui-action-menu">
+    <button
+      ref={triggerRef}
+      type="button"
+      className="ui-action-menu-trigger"
+      aria-label={ariaLabel}
+      aria-haspopup="menu"
+      aria-expanded={open}
+      aria-controls={open ? menuId : undefined}
+      onClick={(event) => {
+        event.stopPropagation();
+        setOpen((current) => !current);
+      }}
+    >
+      <EllipsisVertical size={18} />
+    </button>
+    {open && mounted ? createPortal(
+      <div ref={menuRef} id={menuId} className="ui-action-menu-panel" role="menu" aria-label={ariaLabel} style={placement}>
+        {items.map((item) => <div key={item.key} className={item.separatorBefore ? "ui-action-menu-group-start" : undefined}>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={item.disabled}
+            onClick={() => select(item)}
+          >
+            {item.icon ? <span className="ui-action-menu-icon" aria-hidden="true">{item.icon}</span> : null}
+            <span>{item.label}</span>
+          </button>
+        </div>)}
+      </div>,
+      document.body,
+    ) : null}
+  </span>;
+}
 
 export const UiTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement> & { controlSize?: ControlSize }>(
   function UiTextarea({ className, controlSize = "default", ...props }, ref) {

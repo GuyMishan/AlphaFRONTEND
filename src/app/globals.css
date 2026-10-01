@@ -1309,3 +1309,54 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
   border-bottom: 1px solid var(--line);
   overflow-wrap: anywhere;
 }
+
+
+.ui-action-menu { display: inline-flex; align-items: center; justify-content: center; }
+.ui-action-menu-trigger {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.ui-action-menu-trigger:hover,
+.ui-action-menu-trigger[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--blue) 55%, var(--line));
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+.ui-action-menu-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--blue) 65%, transparent);
+  outline-offset: 2px;
+}
+.ui-action-menu-panel {
+  overflow: auto;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.ui-action-menu-panel > div > button {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: right;
+  cursor: pointer;
+}
+.ui-action-menu-panel > div > button:hover { background: var(--blue-soft); color: var(--blue); }
+.ui-action-menu-panel > div > button:disabled { opacity: .45; cursor: default; background: transparent; color: var(--muted); }
+.ui-action-menu-group-start { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--line); }
+.ui-action-menu-icon { width: 18px; height: 18px; display: inline-grid; place-items: center; flex: 0 0 18px; }
