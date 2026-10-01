@@ -51,6 +51,7 @@ export function ReportDepositFeedbackModal({
   onTreatmentSaved,
   onEditDeposit,
   onStartCorrection,
+  mode = "feedback",
 }: {
   organizationId: string;
   employerId: string;
@@ -60,6 +61,7 @@ export function ReportDepositFeedbackModal({
   onTreatmentSaved: () => void;
   onEditDeposit?: (details: ReportFeedbackDepositDetails) => void;
   onStartCorrection?: (details: ReportFeedbackDepositDetails) => void;
+  mode?: "feedback" | "details";
 }) {
   const [details, setDetails] = useState<ReportFeedbackDepositDetails | null>(null);
   const [statuses, setStatuses] = useState<TreatmentStatusOption[]>([]);
@@ -75,7 +77,9 @@ export function ReportDepositFeedbackModal({
     try {
       const [nextDetails, nextStatuses] = await Promise.all([
         reportFeedbackApi.depositDetails(organizationId, employerId, reportId, reportProductId),
-        reportFeedbackApi.treatmentStatuses(organizationId, employerId),
+        mode === "feedback"
+          ? reportFeedbackApi.treatmentStatuses(organizationId, employerId)
+          : Promise.resolve([] as TreatmentStatusOption[]),
       ]);
       setDetails(nextDetails);
       setStatuses(nextStatuses);
@@ -88,7 +92,7 @@ export function ReportDepositFeedbackModal({
     }
   }
 
-  useEffect(() => { void load(); }, [organizationId, employerId, reportId, reportProductId]);
+  useEffect(() => { void load(); }, [organizationId, employerId, reportId, reportProductId, mode]);
 
   const statusOptions = useMemo(() => {
     const query = statusText.trim();
@@ -129,7 +133,9 @@ export function ReportDepositFeedbackModal({
   return <AppModal
     width="xl"
     className="report-deposit-feedback-modal"
-    title={details ? `פירוט הפקדה ומשוב · ${details.employee.name}` : "פירוט הפקדה ומשוב"}
+    title={details
+      ? `${mode === "feedback" ? "פירוט הפקדה ומשוב" : "פרטי ההפקדה"} · ${details.employee.name}`
+      : mode === "feedback" ? "פירוט הפקדה ומשוב" : "פרטי ההפקדה"}
     subtitle={details ? [details.product.fundCompanyName, details.product.fundName, details.product.policyNumber ? `פוליסה ${details.product.policyNumber}` : ""].filter(Boolean).join(" · ") : ""}
     onClose={onClose}
     closeDisabled={saving}
@@ -140,17 +146,17 @@ export function ReportDepositFeedbackModal({
             <Pencil size={15} />עריכת פרטי ההפקדה
           </button>
         : null}
-      {details?.canCreateCorrection && onStartCorrection
+      {mode === "feedback" && details?.canCreateCorrection && onStartCorrection
         ? <button type="button" className="btn btn-secondary" data-modal-side="positive" onClick={() => onStartCorrection(details)} disabled={saving}>
             <RefreshCw size={15} />יצירת דיווח מתקן
           </button>
         : null}
-      {details?.canUpdateTreatment ? <button type="button" className="btn btn-primary" onClick={() => void saveTreatment()} disabled={saving || loading}>
+      {mode === "feedback" && details?.canUpdateTreatment ? <button type="button" className="btn btn-primary" onClick={() => void saveTreatment()} disabled={saving || loading}>
         <Save size={15} />{saving ? "שומר..." : "שמירת טיפול"}
       </button> : null}
     </>}
   >
-    {loading ? <div className="empty">טוען פרטי הפקדה ומשוב...</div> : null}
+    {loading ? <div className="empty">{mode === "feedback" ? "טוען פרטי הפקדה ומשוב..." : "טוען פרטי הפקדה..."}</div> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
     {details ? <>
       <section className="feedback-modal-summary" aria-label="סיכום הפקדה">
@@ -161,6 +167,39 @@ export function ReportDepositFeedbackModal({
       </section>
 
       <section className="feedback-modal-section">
+        <div className="feedback-modal-section-head">
+          <div><h3>פרטי ההפקדה</h3><p>פרטי התשלום והאסמכתאות כפי שנשמרו בדיווח.</p></div>
+        </div>
+        <div className="money-feedback-grid">
+          <div><span>חשבון יצרן</span><b dir="ltr">{details.payment?.providerAccount || "—"}</b></div>
+          <div><span>אמצעי תשלום</span><b>{details.payment?.paymentMethod || "—"}</b></div>
+          <div><span>חשבון מעסיק</span><b dir="ltr">{details.payment?.employerAccount || "—"}</b></div>
+          <div><span>אסמכתא</span><b dir="ltr">{details.payment?.referenceNumber || "—"}</b></div>
+          <div><span>תאריך ערך</span><b>{details.payment?.valueDate ? formatDateTimeDDMMYYYY(details.payment.valueDate, "—") : "—"}</b></div>
+          <div><span>תאריך ערך נאמנות</span><b>{details.payment?.trustAccountValueDate ? formatDateTimeDDMMYYYY(details.payment.trustAccountValueDate, "—") : "—"}</b></div>
+          <div><span>סכום שהופקד בפועל</span><b>{money(details.payment?.actualDepositAmount)}</b></div>
+          <div><span>קוד מס״ב</span><b dir="ltr">{details.payment?.masavSenderCode || "—"}</b></div>
+        </div>
+      </section>
+
+      {mode === "details" ? <section className="feedback-modal-section">
+        <div className="feedback-modal-section-head">
+          <div><h3>רכיבי ההפרשה שדווחו</h3><p>הנתונים שנשלחו עבור העובד והמוצר, ללא מצב המתנה למשוב.</p></div>
+        </div>
+        <div className="contribution-comparison-list">
+          {details.employerContributions.map((item) => <article className="contribution-comparison-card" key={item.id}>
+            <div className="contribution-comparison-title"><strong>{item.label}</strong></div>
+            <div className="contribution-side employer">
+              <div><small>סכום</small><b>{money(item.amount)}</b></div>
+              <div><small>שיעור</small><b>{percent(item.percentage)}</b></div>
+              <div><small>שכר</small><b>{money(details.product.salary)}</b></div>
+            </div>
+          </article>)}
+          {details.employerContributions.length === 0 ? <div className="notice notice-info">לא נמצאו רכיבי הפרשה בהפקדה.</div> : null}
+        </div>
+      </section> : null}
+
+      {mode === "feedback" ? <section className="feedback-modal-section">
         <div className="feedback-modal-section-head">
           <div><h3>דיווח מעסיק מול קליטת יצרן</h3><p>כל רכיב מוצג מול הנתונים שהוחזרו במשוב הרשמי. פערים מסומנים בלבד.</p></div>
         </div>
@@ -221,8 +260,9 @@ export function ReportDepositFeedbackModal({
           })}
           {details.employerContributions.length === 0 ? <div className="notice notice-info">לא נמצאו רכיבי הפרשה בהפקדה.</div> : null}
         </div>
-      </section>
+      </section> : null}
 
+      {mode === "feedback" ? <>
       <section className="feedback-modal-section">
         <div className="feedback-modal-section-head"><div><h3>מצב כספים</h3><p>נתוני הכספים מוחזרים ברמת העברת הכספים ואינם זהים לסטטוס קליטת הרשומה.</p></div></div>
         {details.money ? <div className="money-feedback-grid">
@@ -272,6 +312,7 @@ export function ReportDepositFeedbackModal({
           </div>)}
         </div> : <div className="notice notice-info">עדיין לא בוצעו עדכוני טיפול ידניים.</div>}
       </section>
+      </> : null}
     </> : null}
   </AppModal>;
 }

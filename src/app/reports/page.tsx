@@ -182,7 +182,7 @@ function DepositFeedbackPanel({
           <div role="cell" className="muted-inline">{formatDate(deposit.updatedAt)}</div>
           <div role="cell" className="report-deposit-row-actions">
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => onOpen(deposit)}>
-              <Eye size={15} />צפייה במשוב
+              <Eye size={15} />{deposit.hasFeedback ? "צפייה במשוב" : "פרטי ההפקדה"}
             </button>
             <button
               type="button"
@@ -190,7 +190,8 @@ function DepositFeedbackPanel({
               onClick={() => onEdit(deposit)}
               title={report.canEdit ? "עריכת פרטי ההפקדה" : "צפייה בפרטי ההפקדה כפי שנשלחו"}
             >
-              <Pencil size={15} />עריכת פרטי ההפקדה
+              {report.canEdit ? <Pencil size={15} /> : <Eye size={15} />}
+              {report.canEdit ? "עריכת פרטי ההפקדה" : "צפייה בפרטי ההפקדה"}
             </button>
           </div>
         </div>)}
@@ -405,8 +406,8 @@ export default function ReportsPage() {
     if (!scope) return;
     setError("");
     try {
-      const page = await manualDepositsApi.list(scope.organizationId, scope.employerId, report.id, employeeName, 0, 100);
-      const deposit = page.items.find((item) => item.id === reportProductId);
+      const page = await manualDepositsApi.list(scope.organizationId, scope.employerId, report.id, "", 0, 1, reportProductId);
+      const deposit = page.items[0];
       if (!deposit) throw new Error("לא ניתן היה לטעון את פרטי ההפקדה לעריכה.");
       setSelectedDeposit(null);
       setEditingDeposit({ report, deposit });
@@ -580,6 +581,7 @@ export default function ReportsPage() {
       reportId={selectedDeposit.report.id}
       reportProductId={selectedDeposit.deposit.id}
       onClose={() => setSelectedDeposit(null)}
+      mode={selectedDeposit.deposit.hasFeedback ? "feedback" : "details"}
       onTreatmentSaved={() => {
         setExpandedContent((current) => {
           const next = { ...current };

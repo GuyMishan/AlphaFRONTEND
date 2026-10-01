@@ -53,8 +53,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const manualDepositsApi = {
-  list: (organizationId: string, employerId: string, reportId: string, search = "", skip = 0, take = 50) => {
+  list: (organizationId: string, employerId: string, reportId: string, search = "", skip = 0, take = 50, reportProductId = "") => {
     const params = new URLSearchParams({ search, skip: String(skip), take: String(take) });
+    if (reportProductId) params.set("reportProductId", reportProductId);
     return request<DepositPage>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/deposits?${params}`);
   },
   savePayment: (organizationId: string, employerId: string, reportId: string, reportProductId: string, payload: ManualPaymentInput) =>

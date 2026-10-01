@@ -58,6 +58,7 @@ export type ReportFeedbackDepositRow = {
   policyNumber: string;
   salaryMonth: string;
   totalAmount: number;
+  hasFeedback: boolean;
   feedbackStatus: "completed" | "attention" | "partial" | "pending";
   feedbackLabel: string;
   moneyStatus: "allocated" | "in-transit" | "received-partial" | "unresolved" | "pending";
