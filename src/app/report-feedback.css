@@ -48,7 +48,7 @@
 .report-feedback-table .data-table-expanded-row > td { padding: 0 !important; }
 .report-deposits-expanded { direction: rtl; min-width: 0; }
 .report-deposits-panel { display: grid; gap: 12px; padding: 4px; min-width: 0; }
-.report-deposits-heading { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.report-deposits-heading { display: flex; width: 100%; gap: 14px; align-items: center; justify-content: flex-start; flex-wrap: wrap; text-align: right; }
 .report-deposits-heading > div { display: grid; gap: 3px; }
 .report-deposits-heading small { color: var(--muted); font-size: 12px; }
 .report-deposits-grid { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 750px; }
