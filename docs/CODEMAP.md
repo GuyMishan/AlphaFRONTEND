@@ -104,3 +104,6 @@
 
 
 - “דיווח חוזר” no longer asks for one global operation 2/3. The backend resolves the correction operation independently per changed deposit/product, so one retransmission may correctly contain both no-money corrections and additional-money corrections.
+
+
+- Correction editor products also carry `workspaceReportProductId`. This keeps newly-added products stable across repeated saves even though they have no immutable `SourceReportProductId` yet, preventing duplicate products inside the same correction workspace.

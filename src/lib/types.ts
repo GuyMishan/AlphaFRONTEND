@@ -102,6 +102,7 @@ export type ManualContributionInput = {
 };
 
 export type ManualProductInput = {
+  workspaceReportProductId?: string | null;
   sourceReportProductId?: string | null;
   productType: PensionProductType;
   policyNumber: string;

@@ -42,6 +42,7 @@ function matchesEmployee(employee: Employee, search: string) {
 
 function toEditorProduct(product: ManualProductInput, index: number): PensionEditorProduct {
   return {
+    workspaceReportProductId: product.workspaceReportProductId ?? null,
     sourceReportProductId: product.sourceReportProductId ?? null,
     productType: Number(product.productType) as PensionProductType,
     policyNumber: product.policyNumber,
@@ -108,6 +109,7 @@ function mixSignature(products: Array<{ productType: PensionProductType; policyN
 
 function toManualProduct(product: PensionEditorProduct, month: string): ManualProductInput {
   return {
+    workspaceReportProductId: product.workspaceReportProductId ?? null,
     sourceReportProductId: product.sourceReportProductId ?? null,
     productType: product.productType,
     policyNumber: product.policyNumber,

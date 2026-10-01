@@ -17,6 +17,7 @@ export type PensionEditorContribution = {
 };
 
 export type PensionEditorProduct = {
+  workspaceReportProductId?: string | null;
   sourceReportProductId?: string | null;
   productType: PensionProductType;
   policyNumber: string;
