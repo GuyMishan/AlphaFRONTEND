@@ -1317,6 +1317,8 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
   height: 30px;
   display: inline-grid;
   place-items: center;
+  padding: 0;
+  line-height: 0;
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--surface);
@@ -1332,6 +1334,13 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
 .ui-action-menu-trigger:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--blue) 65%, transparent);
   outline-offset: 2px;
+}
+.ui-action-menu-trigger > svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: auto;
+  transform: none;
 }
 .ui-action-menu-panel {
   overflow: visible;
@@ -1374,6 +1383,8 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
   width: 30px;
   height: 30px;
   margin-inline-end: 0;
+  padding: 0;
+  line-height: 0;
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--surface);
@@ -1385,4 +1396,11 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
   border-color: color-mix(in srgb, var(--blue) 55%, var(--line));
   background: var(--blue-soft);
   color: var(--blue);
+}
+
+.data-table-grid .data-table-expand-toggle-contained > svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: auto;
 }

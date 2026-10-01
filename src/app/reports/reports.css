@@ -87,7 +87,18 @@
 
 .report-table-card { padding: 0; overflow: hidden; }
 .report-feedback-table th, .report-feedback-table td { vertical-align: middle; }
-.report-cell-content { display: inline-flex; align-items: center; min-height: 32px; max-width: 100%; }
+.report-feedback-table .data-table-row > td { padding-block: 0; }
+.report-cell-content {
+  display: flex;
+  align-items: center;
+  min-height: var(--data-table-row-height);
+  height: var(--data-table-row-height);
+  max-width: 100%;
+}
+.report-feedback-table .data-table-row > td:last-child .report-cell-content {
+  width: 100%;
+  justify-content: flex-end;
+}
 .report-row-actions { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 0; }
 .report-money { font-weight: 700; white-space: nowrap; }
 .report-feedback-badge,
