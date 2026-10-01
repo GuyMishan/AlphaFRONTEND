@@ -26,6 +26,8 @@ export type ManualDepositRow = {
   valueDate: string | null;
   trustAccountValueDate: string | null;
   actualDepositAmount: number | null;
+  isCorrectionWorkspace?: boolean;
+  correctionOperationCode?: 2 | 3 | null;
   masavSenderCode: string;
   referenceNumber: string;
   employerBankName: string;
@@ -38,7 +40,9 @@ export type ManualDepositRow = {
 
 export type ManualPaymentInput = Pick<ManualDepositRow,
   "providerName" | "providerAccount" | "paymentMethod" | "valueDate" | "trustAccountValueDate" | "actualDepositAmount" | "masavSenderCode" | "referenceNumber" |
-  "employerBankName" | "employerBankCode" | "employerBranch" | "employerAccount" | "confirmationFileName">;
+  "employerBankName" | "employerBankCode" | "employerBranch" | "employerAccount" | "confirmationFileName"> & {
+    correctionOperationCode?: 2 | 3 | null;
+  };
 
 export type DepositPage = { items: ManualDepositRow[]; hasMore: boolean };
 

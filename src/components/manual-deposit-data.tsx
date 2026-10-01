@@ -1,6 +1,6 @@
 "use client";
 
-import { UiAutocomplete, UiDateInput, UiInput } from "@/components/ui-controls";
+import { UiAutocomplete, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { UiFileUpload } from "@/components/ui-file-upload";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
@@ -241,7 +241,9 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     actualDepositAmount: row.actualDepositAmount, masavSenderCode: row.masavSenderCode || "",
     referenceNumber: row.referenceNumber || "", employerBankName: row.employerBankName || "", employerBankCode: row.employerBankCode || "",
     employerBranch: row.employerBranch || "", employerAccount: row.employerAccount || "", confirmationFileName: row.confirmationFileName || "",
+    correctionOperationCode: row.correctionOperationCode ?? null,
   });
+  const [correctionOperationCode, setCorrectionOperationCode] = useState<2 | 3>(row.correctionOperationCode === 3 ? 3 : 2);
   const [metadata, setMetadata] = useState<EmployerInterfaceProductMetadata | null>(null);
   const [metadataForm, setMetadataForm] = useState<EmployerInterfaceProductMetadataInput>(emptyMetadata);
   const [previousReference, setPreviousReference] = useState<EmployerInterfacePreviousReference>(emptyPreviousReference);
@@ -383,6 +385,9 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   const operation5 = negative && metadataForm.operationCode === 5;
   const operation6 = negative && metadataForm.operationCode === 6;
   const noMoneyCorrection = !negative && (metadataForm.operationCode === 2 || metadataForm.operationCode === 7);
+  const correctionWorkspace = row.isCorrectionWorkspace === true;
+  const correctionNoMoney = correctionWorkspace && correctionOperationCode === 2;
+  const effectiveNoMoneyCorrection = noMoneyCorrection || correctionNoMoney;
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
   const configuredPensionDebit = !negative && !differences && resolvedPaymentAccount?.mandateIsActive === true
     && !noMoneyCorrection && metadataForm.paymentMethodCode === 6;
@@ -453,16 +458,23 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     if (readOnly) return;
     setError("");
     const errors = [...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)), ...validate006Metadata(metadata, metadataForm, previousReference)];
-    if (!negative && isOldPensionFund && !metadataForm.oldPensionTypeCode)
+    if (correctionWorkspace && correctionOperationCode === 3 && (form.actualDepositAmount == null || form.actualDepositAmount <= 0))
+      errors.push("כאשר בוצעה הפקדה נוספת יש להזין את סכום ההפקדה הנוספת בפועל.");
+    if (!negative && !differences && isOldPensionFund && !metadataForm.oldPensionTypeCode)
       errors.push("בקרן פנסיה ותיקה יש לבחור סוג פנסיה: מקיפה או יסוד.");
-    if (!negative && isOldPensionFund && metadataForm.employmentPercentage == null && metadataForm.workDaysInMonth == null)
+    if (!negative && !differences && isOldPensionFund && metadataForm.employmentPercentage == null && metadataForm.workDaysInMonth == null)
       errors.push("בקרן פנסיה ותיקה יש להזין חלקיות משרה או ימי עבודה בחודש.");
     if (operation5 && !annualEmployerAffidavitSatisfied)
       errors.push("בקוד פעולה 5 נדרש תצהיר מעסיק שנתי (סוג מסמך 3) לפחות פעם אחת בשנה.");
     if (errors.length) { const message = shortError(errors.join(" ")); setError(message); notify.error(message); return; }
     setSaving(true);
     try {
-      const persistedPayment = { ...form, paymentMethod: metadataForm.paymentMethodCode == null ? "" : String(metadataForm.paymentMethodCode) };
+      const persistedPayment: ManualPaymentInput = {
+        ...form,
+        paymentMethod: metadataForm.paymentMethodCode == null ? form.paymentMethod : String(metadataForm.paymentMethodCode),
+        actualDepositAmount: correctionWorkspace && correctionOperationCode === 2 ? null : form.actualDepositAmount,
+        correctionOperationCode: correctionWorkspace ? correctionOperationCode : null,
+      };
       await manualDepositsApi.savePayment(organizationId, employerId, reportId, row.id, persistedPayment);
       if (!differences) {
         await employerInterfaceApi.updateProductMetadata(organizationId, employerId, reportId, row.id, metadataForm);
@@ -476,10 +488,10 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
 
   const providerAccount = form.providerAccount || providerAccountFromReference(providerReference);
 
-  const paymentEvidencePanel = !negative && (!noMoneyCorrection || paymentProofs.length > 0) ? <section className="payment-panel">
+  const paymentEvidencePanel = !negative && (!effectiveNoMoneyCorrection || paymentProofs.length > 0) ? <section className="payment-panel">
     <h3>אסמכתאות ואישורי תשלום</h3>
     <div className="payment-evidence-control">
-      {!readOnly && !noMoneyCorrection ? <UiFileUpload label="צירוף אישור תשלום (עד 3MB, אם קיים)" className="payment-upload"
+      {!readOnly && !effectiveNoMoneyCorrection ? <UiFileUpload label="צירוף אישור תשלום (עד 3MB, אם קיים)" className="payment-upload"
         accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
         maxBytes={3_000_000} disabled={saving} busy={uploadingProof}
         onFileSelected={uploadPaymentProof} onInvalid={(message) => { setError(message); notify.error(message); }} /> : null}
@@ -502,12 +514,35 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     </>}>
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
-      {differences ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
+      {differences && !correctionWorkspace ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
+      {correctionWorkspace ? <div className="notice notice-info payment-error">זהו workspace פנימי לתיקון. בחרו אם התיקון כולל כסף נוסף; ALPHA תחיל את הבחירה על כל ההעברה לאותה קופה ותבנה לאחר מכן את רצף 006 הרשמי.</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק, ולכן אין להעביר ערך בשדה אמצעי התשלום.</div> : null}
       {readOnly ? <div className="notice notice-info">זהו דיווח שנשמר ואינו פתוח לעריכה. ניתן לצפות בפרטי ההפקדה אך אין לשנות דיווחים שהועברו. לתיקון יש ליצור דיווח מתקן.</div> : null}
       <fieldset className="deposit-payment-editor-fields" disabled={readOnly} aria-label={readOnly ? "פרטי הפקדה לצפייה בלבד" : undefined}>
       <div className="payment-layout"><div className="payment-main">
           <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-summary-item"><span className="payment-summary-label">סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">{configuredPensionDebit ? "חשבון חיוב בהרשאה" : "חשבון מעסיק להעברה"}</span><b className="account-number">{metadataForm.paymentMethodCode !== 6 && bankRequired && (!form.employerBankCode || !form.employerAccount) ? "יש להזין פרטי חשבון להעברה" : formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
+
+          {correctionWorkspace ? <section className="payment-panel"><h3>אופן התיקון להעברה לקופה</h3><div className="payment-method-grid">
+            <div className="field"><label>סוג תיקון *</label><UiSelect value={String(correctionOperationCode)} onChange={(event) => {
+              const next = Number(event.target.value) === 3 ? 3 : 2;
+              setCorrectionOperationCode(next);
+              if (next === 2) patch("actualDepositAmount", null);
+              setError("");
+            }}>
+              <option value="2">ללא הפקדה נוספת</option>
+              <option value="3">בוצעה הפקדה נוספת</option>
+            </UiSelect></div>
+            {correctionOperationCode === 3 ? <div className="field"><label>סכום הפקדה נוספת בפועל *</label><UiInput type="number" min="0.01" step="0.01" value={form.actualDepositAmount ?? ""} onChange={(event) => patch("actualDepositAmount", event.target.value === "" ? null : Number(event.target.value))} /></div> : null}
+            <div className="field"><label>חשבון יצרן</label><UiInput value={form.providerAccount} onChange={(event) => patch("providerAccount", event.target.value)} /></div>
+            <div className="field"><label>תאריך ערך</label><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /></div>
+            <div className="field"><label>מס׳ אסמכתא</label><UiInput maxLength={50} value={form.referenceNumber} onChange={(event) => patch("referenceNumber", event.target.value)} /></div>
+            <div className="field"><label>בנק</label><UiAutocomplete ariaLabel="בחירת בנק" value={bankSelection}
+              onValueChange={chooseBank} onClear={() => { setForm((current) => ({ ...current, employerBankCode: "", employerBankName: "", employerBranch: "" })); setBranchSelection(""); setBranches([]); }}
+              options={banks.map((bank) => ({ value: String(bank.bankCode), label: bankLabel(bank) }))} placeholder="חיפוש בנק" /></div>
+            <div className="field"><label>סניף</label><UiInput list={`branches-correction-${row.id}`} value={branchSelection} onChange={(event) => chooseBranch(event.target.value)} disabled={!form.employerBankCode} />
+              <datalist id={`branches-correction-${row.id}`}>{branches.map((branch) => <option key={branch.branchCode} value={branchLabel(branch)} />)}</datalist></div>
+            <div className="field"><label>מס׳ חשבון</label><UiInput inputMode="numeric" maxLength={20} value={form.employerAccount && !/^0+$/.test(form.employerAccount) ? form.employerAccount : ""} onChange={(event) => patch("employerAccount", event.target.value.replace(/\D/g, "").slice(0, 20))} /></div>
+          </div></section> : null}
 
           {!differences ? <section className="payment-panel"><h3>{operation6 ? "פרטי פעולה" : negative ? "פרטי החזר" : "פרטי תשלום"}</h3><div className="payment-method-grid">
             {showOfficialPaymentMethod ? <div className="field payment-method"><label>{negative ? "אופן החזר התשלום המבוקש *" : "אמצעי תשלום *"}</label>{configuredPensionDebit
