@@ -88,7 +88,7 @@
 .report-table-card { padding: 0; overflow: hidden; }
 .report-feedback-table th, .report-feedback-table td { vertical-align: middle; }
 .report-cell-content { display: inline-flex; align-items: center; min-height: 32px; max-width: 100%; }
-.report-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
+.report-row-actions { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 0; }
 .report-money { font-weight: 700; white-space: nowrap; }
 .report-feedback-badge,
 .feedback-state {

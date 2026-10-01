@@ -164,15 +164,17 @@ export function DataTable<T>({
                   {renderCells(item).map((cell, cellIndex) => {
                     const hasToggle = Boolean(rowCanExpand(item) && (expandToggleColumnKey
                       ? columns[cellIndex]?.key === expandToggleColumnKey : cellIndex === 0));
-                    const toggle = hasToggle ? <button type="button" className="data-table-expand-toggle"
+                    const toggle = hasToggle ? <button type="button"
+                      className={`data-table-expand-toggle${expandToggleColumnKey ? " data-table-expand-toggle-contained" : ""}`}
                       aria-label={expanded ? "סגירת פרטי השורה" : "הצגת פרטי השורה"}
                       aria-expanded={expanded} aria-controls={panelId}
                       onClick={(event) => { event.stopPropagation(); toggleExpanded(item); }}>
                       <ChevronDown size={16} className={expanded ? "data-table-chevron-expanded" : ""} />
                     </button> : null;
                     return <td key={columns[cellIndex]?.key ?? cellIndex}>
-                      {expandToggleColumnKey ? cell : toggle}
-                      {expandToggleColumnKey ? toggle : cell}
+                      {expandToggleColumnKey && toggle
+                        ? <div className="data-table-inline-actions">{cell}{toggle}</div>
+                        : <>{toggle}{cell}</>}
                     </td>;
                   })}
                 </tr>

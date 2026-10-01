@@ -293,12 +293,10 @@ export function UiActionMenu({
       if (!rect) return;
       const gutter = 8;
       const width = Math.min(260, Math.max(220, window.innerWidth - gutter * 2));
-      const desiredHeight = Math.min(320, Math.max(48, items.length * 42 + 14));
+      const desiredHeight = Math.max(48, items.length * 42 + 14);
       const below = window.innerHeight - rect.bottom - gutter * 2;
       const above = rect.top - gutter * 2;
-      const openAbove = below < Math.min(desiredHeight, 180) && above > below;
-      const available = openAbove ? above : below;
-      const maxHeight = Math.max(64, Math.min(desiredHeight, available));
+      const openAbove = below < desiredHeight && above >= desiredHeight;
       const left = Math.min(
         Math.max(gutter, rect.right - width),
         Math.max(gutter, window.innerWidth - width - gutter),
@@ -306,10 +304,9 @@ export function UiActionMenu({
       setPlacement({
         position: "fixed",
         visibility: "visible",
-        top: openAbove ? Math.max(gutter, rect.top - maxHeight - 6) : rect.bottom + 6,
+        top: openAbove ? Math.max(gutter, rect.top - desiredHeight - 6) : rect.bottom + 6,
         left,
         width,
-        maxHeight,
         zIndex: 7000,
       });
     };
