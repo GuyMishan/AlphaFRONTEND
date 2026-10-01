@@ -218,12 +218,14 @@ function maxPercentage(productType: PensionProductType, party: "employer" | "emp
   return 100;
 }
 
-export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction }: {
+export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, allowAdd = true, allowRemove = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction }: {
   context: "employee" | "report";
   month?: string;
   monthlySalary: number;
   products: PensionEditorProduct[];
   editable?: boolean;
+  allowAdd?: boolean;
+  allowRemove?: boolean;
   showAllocationError?: boolean;
   onMonthlySalaryChange: (value: number) => void;
   onProductsChange: (products: PensionEditorProduct[]) => void;
@@ -266,7 +268,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
       const section14DateRequired = section14Code === 2 || section14Code === 4;
       const insuredSalary = allocation.resolved.get(index) ?? 0;
       return <section className="report-product-card" key={index} style={{ opacity: product.isActive === false ? .72 : 1 }}>
-        <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <div className="status-pill-active"><CircleCheck size={13} /><div>פעיל</div></div>}{editable ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
+        <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <div className="status-pill-active"><CircleCheck size={13} /><div>פעיל</div></div>}{editable && allowRemove ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
         <div className="grid report-product-fields">
           {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
           <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required onChange={(value) => changeProductType(index, Number(value) as PensionProductType)} /></div>
@@ -285,7 +287,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
         <div className="contribution-grid"><ContributionEditor context={context} title="הפקדות מעסיק" party="employer" product={product} items={product.employerContributions} editable={editable} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} /><ContributionEditor context={context} title="הפקדות עובד" party="employee" product={product} items={product.employeeContributions} editable={editable} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} /></div>
       </section>;
     })}</div>
-    {editable ? <button className="btn btn-soft wide" onClick={() => onProductsChange([...products, createEmptyPensionEditorProduct(context, products.length, month)])}><Plus size={15} />הוספת מוצר</button> : null}
+    {editable && allowAdd ? <button className="btn btn-soft wide" onClick={() => onProductsChange([...products, createEmptyPensionEditorProduct(context, products.length, month)])}><Plus size={15} />הוספת מוצר</button> : null}
   </>;
 }
 

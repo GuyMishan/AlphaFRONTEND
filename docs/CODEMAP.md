@@ -110,3 +110,6 @@
 
 
 - The correction-workspace deposit editor now has an explicit per-transfer choice between operation 2 (no additional deposit) and operation 3 (additional deposit), including the mandatory additional amount for operation 3. The backend reports correction-workspace context on deposit rows and applies the selected operation/payment details across the same V006 fund transfer.
+
+
+- In correction-workspace UI, structural add/remove controls are disabled: employee selection is locked and the shared pension-product editor receives `allowAdd=false` / `allowRemove=false`. Users can still edit the source-backed employee/product values and deposits that the backend can version safely.
