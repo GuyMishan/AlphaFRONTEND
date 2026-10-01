@@ -109,11 +109,18 @@ export function ReportDepositFeedbackModal({
     try {
       await reportFeedbackApi.updateTreatment(
         organizationId, employerId, reportId, reportProductId, selected.code, note,
+        details?.treatment?.updatedAt ?? null,
       );
       await load();
       onTreatmentSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שמירת סטטוס הטיפול נכשלה");
+      const message = err instanceof Error ? err.message : "שמירת סטטוס הטיפול נכשלה";
+      if (message.includes("עודכן במקביל")) {
+        await load();
+        setError(message);
+      } else {
+        setError(message);
+      }
     } finally {
       setSaving(false);
     }

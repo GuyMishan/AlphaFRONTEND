@@ -295,9 +295,10 @@ export const reportFeedbackApi = {
     reportProductId: string,
     statusCode: string,
     note: string,
+    expectedUpdatedAt: string | null,
   ) => request<{ statusCode: string; label: string; note: string; updatedAt: string }>(
     `${base(organizationId, employerId)}/${reportId}/deposits/${reportProductId}/treatment`,
-    { method: "PUT", body: JSON.stringify({ statusCode, note }) },
+    { method: "PUT", body: JSON.stringify({ statusCode, note, expectedUpdatedAt }) },
   ),
   exportReport: async (
     organizationId: string,
