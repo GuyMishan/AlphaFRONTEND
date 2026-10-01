@@ -142,7 +142,9 @@ export function ReportDepositFeedbackModal({
         <div className="contribution-comparison-list">
           {details.employerContributions.map((employer) => {
             const manufacturerRows = details.manufacturerContributions.filter((item) => item.contributionId === employer.id);
-            const manufacturer = manufacturerRows[0];
+            const manufacturer = manufacturerRows.find((item) => item.contributionTypeCode === employer.contributionTypeCode)
+              ?? manufacturerRows[0];
+            const additionalManufacturerRows = manufacturerRows.filter((item) => item !== manufacturer);
             const amountMismatch = manufacturer?.contributionAmount != null && !sameNumber(employer.amount, manufacturer.contributionAmount);
             const rateMismatch = manufacturer?.contributionRate != null && !sameNumber(employer.percentage, manufacturer.contributionRate);
             const salaryMismatch = manufacturer?.calculatedSalary != null && !sameNumber(details.product.salary, manufacturer.calculatedSalary);
@@ -181,6 +183,15 @@ export function ReportDepositFeedbackModal({
                   </div>
                 : null}
               {manufacturer?.sourceFileName ? <small className="feedback-source">מקור: {manufacturer.sourceFileName} · {formatDateTimeDDMMYYYY(manufacturer.receivedAt, "—")}</small> : null}
+              {additionalManufacturerRows.length ? <div className="manufacturer-extra-rows">
+                <small>נתוני יצרן נוספים שהוחזרו לאותה רשומה</small>
+                {additionalManufacturerRows.map((item) => <div key={`${item.recordIdentifier}:${item.sequence}`}>
+                  <span>סוג הפרשה {item.contributionTypeCode ?? "—"}</span>
+                  <span>{money(item.contributionAmount)}</span>
+                  <span>{percent(item.contributionRate)}</span>
+                  <span>{money(item.calculatedSalary)}</span>
+                </div>)}
+              </div> : null}
             </article>;
           })}
           {details.employerContributions.length === 0 ? <div className="notice notice-info">לא נמצאו רכיבי הפרשה בהפקדה.</div> : null}
