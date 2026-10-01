@@ -280,4 +280,5 @@
   .contribution-sides { grid-template-columns: 1fr; }
   .contribution-compare-mark { min-height: 24px; transform: rotate(90deg); }
   .contribution-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .manufacturer-extra-rows > div { grid-template-columns: 1fr 1fr; }
 }

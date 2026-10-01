@@ -79,10 +79,6 @@ function kindLabel(value: string | number) {
   return "שוטף";
 }
 
-function isNegativeReportKind(value: string | number) {
-  return value === 3 || value === "3" || value === "Negative";
-}
-
 function feedbackLabel(status: ReportFeedbackRow["feedbackStatus"]) {
   switch (status) {
     case "completed": return "הושלם";
@@ -139,7 +135,7 @@ function DepositFeedbackPanel({
         <small>כל שורה מייצגת עובד + מוצר. המשוב, מצב הכספים והטיפול נשארים מחוברים לאותה הפקדה.</small>
       </div>
       <div className="report-expanded-actions">
-        {["6", "8", "Sent", "Completed"].includes(String(report.status)) && !isNegativeReportKind(report.reportKind)
+        {report.canCreateCorrection
           ? <button type="button" className="btn btn-secondary btn-sm" onClick={onStartCorrection}><RefreshCw size={15} />יצירת דיווח מתקן</button>
           : null}
         <details className="report-control-menu">

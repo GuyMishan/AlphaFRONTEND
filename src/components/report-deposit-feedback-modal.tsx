@@ -24,6 +24,20 @@ function sameNumber(a: number | null | undefined, b: number | null | undefined) 
   return Math.abs(Number(a) - Number(b)) < 0.01;
 }
 
+function contributionTypeLabel(code: number | null | undefined) {
+  switch (code) {
+    case 1: return "פיצויים";
+    case 2: return "תגמולי עובד";
+    case 3: return "תגמולי מעביד";
+    case 4: return "תגמולים 47";
+    case 5: return "אכ״ע עובד";
+    case 6: return "אכ״ע מעסיק";
+    case 7: return "רכיב עובד נוסף";
+    case 8: return "רכיב מעסיק נוסף";
+    default: return "רכיב יצרן";
+  }
+}
+
 export function ReportDepositFeedbackModal({
   organizationId,
   employerId,
@@ -186,7 +200,7 @@ export function ReportDepositFeedbackModal({
               {additionalManufacturerRows.length ? <div className="manufacturer-extra-rows">
                 <small>נתוני יצרן נוספים שהוחזרו לאותה רשומה</small>
                 {additionalManufacturerRows.map((item) => <div key={`${item.recordIdentifier}:${item.sequence}`}>
-                  <span>סוג הפרשה {item.contributionTypeCode ?? "—"}</span>
+                  <span>{contributionTypeLabel(item.contributionTypeCode)}</span>
                   <span>{money(item.contributionAmount)}</span>
                   <span>{percent(item.contributionRate)}</span>
                   <span>{money(item.calculatedSalary)}</span>
