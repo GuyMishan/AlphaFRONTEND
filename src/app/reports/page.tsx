@@ -13,6 +13,7 @@ import {
   FileClock,
   Filter,
   Plus,
+  Pencil,
   RefreshCw,
   Search,
   X,
@@ -114,6 +115,7 @@ function DepositFeedbackPanel({
   report,
   content,
   onOpen,
+  onEdit,
   onLoadMore,
   loadingMore,
   onExport,
@@ -123,6 +125,7 @@ function DepositFeedbackPanel({
   report: ReportFeedbackRow;
   content: ExpandedReportContent;
   onOpen: (deposit: ReportFeedbackDepositRow) => void;
+  onEdit: (deposit: ReportFeedbackDepositRow) => void;
   onLoadMore: () => void;
   loadingMore: boolean;
   onExport: (type: "contributions" | "deposits" | "feedback") => void;
@@ -160,7 +163,7 @@ function DepositFeedbackPanel({
           <span role="columnheader">מצב כספים</span>
           <span role="columnheader">סטטוס טיפול</span>
           <span role="columnheader">עודכן</span>
-          <span role="columnheader">פעולה</span>
+          <span role="columnheader">פעולות</span>
         </div>
         {content.deposits.map((deposit) => <div className="report-deposits-item" role="row" key={deposit.id}>
           <div role="cell"><b>{deposit.employeeName}</b></div>
@@ -177,9 +180,18 @@ function DepositFeedbackPanel({
               : <span className="muted-inline">לא עודכן</span>}
           </div>
           <div role="cell" className="muted-inline">{formatDate(deposit.updatedAt)}</div>
-          <div role="cell">
+          <div role="cell" className="report-deposit-row-actions">
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => onOpen(deposit)}>
-              <Eye size={15} />פרטים
+              <Eye size={15} />צפייה במשוב
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => onEdit(deposit)}
+              disabled={!report.canEdit && !report.canCreateCorrection}
+              title={!report.canEdit && !report.canCreateCorrection ? "לא ניתן לערוך או ליצור דיווח מתקן עבור דיווח זה." : undefined}
+            >
+              <Pencil size={15} />עריכת פרטי ההפקדה
             </button>
           </div>
         </div>)}
@@ -415,14 +427,7 @@ export default function ReportsPage() {
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div>
       : "—" },
-    actions: { column: { key: "actions", label: "", width: "110px" }, render: (row) => <button type="button" className="btn btn-secondary btn-sm" onClick={() => {
-      setExpandedKeys((previous) => {
-        const next = new Set(previous);
-        if (next.has(row.id)) next.delete(row.id); else next.add(row.id);
-        return next;
-      });
-      if (!expandedContent[row.id]) void loadExpanded(row);
-    }}><Eye size={15} />פרטים</button> },
+    actions: { column: { key: "actions", label: "", width: "56px" }, render: () => null },
   }), [expandedContent, scope]);
 
   const activeColumns = visibleColumns.map((key) => allColumns[key].column);
@@ -557,6 +562,15 @@ export default function ReportsPage() {
             report={report}
             content={expandedContent[report.id]}
             onOpen={(deposit) => setSelectedDeposit({ report, deposit })}
+            onEdit={(deposit) => {
+              if (report.canEdit) {
+                void editDepositFromFeedback(report, deposit.id, deposit.employeeName);
+                return;
+              }
+              if (report.canCreateCorrection) {
+                router.push(`/reports/new?sourceReportId=${report.id}&sourceProductId=${deposit.id}&sourceMonth=${report.reportingMonth.slice(0, 7)}&sourceKind=${encodeURIComponent(String(report.reportKind))}`);
+              }
+            }}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
             onExport={(type) => void exportReport(report, type)}

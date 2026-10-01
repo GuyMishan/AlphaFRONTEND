@@ -28,6 +28,7 @@ export type ReportFeedbackRow = {
   allocatedAmount: number | null;
   actualReceivedAmount: number | null;
   inTransitAmount: number | null;
+  canEdit: boolean;
   canCreateCorrection: boolean;
   createdAt: string;
   updatedAt: string;
