@@ -396,6 +396,8 @@ export const alphaApi = {
     request<PagedResult<ResumableManualReport>>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports${qs({ skip, take })}`),
   manualReport: (organizationId: string, employerId: string, reportId: string): Promise<ManualReportDraft> =>
     request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}`),
+  deleteManualReport: (organizationId: string, employerId: string, reportId: string) =>
+    request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}`, { method: "DELETE" }),
   updateManualReportDetails: (organizationId: string, employerId: string, reportId: string, payload: { reportingMonth: string; salaryPaymentDate: string | null }) =>
     request<void>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/details`, { method: "PUT", body: JSON.stringify(payload) }),
   updateManualReportPaymentAccount: (organizationId: string, employerId: string, reportId: string, paymentAccountId: string) =>

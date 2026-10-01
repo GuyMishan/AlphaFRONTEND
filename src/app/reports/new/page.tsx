@@ -5,8 +5,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, FileCode2, FilePenLine, FileSpreadsheet, Info, Keyboard, RotateCcw, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FileCode2, FilePenLine, FileSpreadsheet, Info, Keyboard, RotateCcw, Send, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { AppModal } from "@/components/app-modal";
 import { DataTable } from "@/components/data-table";
 import { BillingGateModal } from "@/components/billing-gate-modal";
 import { ExcelEmployeeIntake, type ExcelEmployeeIntakeResult } from "@/components/excel-employee-intake";
@@ -74,6 +75,10 @@ export default function NewReportPage() {
   const router = useRouter();
   const [requestedSource, setRequestedSource] = useState({ reportId: "", productId: "", month: "", kind: "" });
   const [requestedResumeReportId, setRequestedResumeReportId] = useState("");
+  const [followUpReportId, setFollowUpReportId] = useState("");
+  const [correctionWorkspaceEntry, setCorrectionWorkspaceEntry] = useState(false);
+  const [draftToDelete, setDraftToDelete] = useState<ResumableManualReport | null>(null);
+  const [deletingDraftId, setDeletingDraftId] = useState("");
   const resumeEntryInitialized = useRef(false);
   const requestedSourceReportId = requestedSource.reportId;
   const requestedSourceProductId = requestedSource.productId;
@@ -282,6 +287,8 @@ export default function NewReportPage() {
       kind: params.get("sourceKind") ?? "",
     });
     setRequestedResumeReportId(params.get("resumeReportId") ?? "");
+    setFollowUpReportId(params.get("followUpReportId") ?? "");
+    setCorrectionWorkspaceEntry(params.get("correctionWorkspace") === "1");
   }, []);
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
   useEffect(() => {
@@ -573,6 +580,21 @@ export default function NewReportPage() {
     finally { setAdvancing(false); }
   }
 
+  async function deleteOpenDraft(draft: ResumableManualReport) {
+    if (!scope || deletingDraftId) return;
+    setDeletingDraftId(draft.id);
+    try {
+      await alphaApi.deleteManualReport(scope.organizationId, scope.employerId, draft.id);
+      setOpenReports((current) => current.filter((item) => item.id !== draft.id));
+      setDraftToDelete(null);
+      toast.success("הטיוטה נמחקה");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "מחיקת הטיוטה נכשלה");
+    } finally {
+      setDeletingDraftId("");
+    }
+  }
+
   async function sendReport() {
     if (!scope || !manualReportId || sending || sentExternalId || !canTransmitReport) return;
     if (reportKind === 2) {
@@ -596,6 +618,9 @@ export default function NewReportPage() {
       const result = await reportTransmissionApi.send(scope.organizationId, scope.employerId, manualReportId);
       setSentExternalId(result.transmission.externalId || result.transmission.id);
       toast.success("הדיווח נשלח בהצלחה");
+      if (followUpReportId) {
+        router.replace(`/reports/new?resumeReportId=${followUpReportId}&correctionStage=current`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שליחת הדיווח נכשלה");
     } finally {
@@ -632,10 +657,16 @@ export default function NewReportPage() {
             <span key="employees">{draft.employeeCount}</span>,
             <span key="products">{draft.productCount}</span>,
             <span key="updated">{formatDraftUpdate(draft.updatedAt)}</span>,
-            <button key="action" type="button" className="btn btn-primary"
-              disabled={advancing} onClick={() => void resumeReport(draft)}>
-              המשך עריכה <ArrowLeft size={15} />
-            </button>,
+            <div key="action" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "nowrap" }}>
+              <button type="button" className="btn btn-primary"
+                disabled={advancing || deletingDraftId === draft.id} onClick={() => void resumeReport(draft)}>
+                המשך עריכה <ArrowLeft size={15} />
+              </button>
+              <button type="button" className="btn btn-danger" aria-label="מחיקת טיוטה"
+                disabled={advancing || Boolean(deletingDraftId)} onClick={() => setDraftToDelete(draft)}>
+                <Trash2 size={15} />
+              </button>
+            </div>,
           ]}
         />
       </div>
@@ -647,10 +678,10 @@ export default function NewReportPage() {
     {step === summaryStep ? <>
       <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} correctionOperationCode={isCorrection ? correctionOperationCode : null} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} paymentAccount={paymentAccounts.find((x) => x.id === selectedPaymentAccountId) ?? null} sentExternalId={sentExternalId} />
       
-      {reportKind === 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>דיווח הפרשים הוא טיוטת עבודה</b><div>לא ניתן לשדר אותו ישירות למסלקה. יש ליצור ממנו דיווח שוטף מתקן או דיווח שלילי בהתאם לכיוון ההפרש.</div></div> : null}
+      {reportKind === 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>{correctionWorkspaceEntry ? "טיוטת תיקון לדיווח שנשלח" : "דיווח הפרשים הוא טיוטת עבודה"}</b><div>{correctionWorkspaceEntry ? "השינויים נשמרים כגרסה חדשה. לאחר שסיימתם, חזרו למסך דיווחים ומשובים ובחרו דיווח חוזר כדי ליצור את רצף התיקון הרשמי." : "לא ניתן לשדר אותו ישירות למסלקה. יש ליצור ממנו דיווח שוטף מתקן או דיווח שלילי בהתאם לכיוון ההפרש."}</div></div> : null}
       {billingGate?.canTransmit && reportKind !== 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}><b>חיוב Alpha תקין לשידור</b>{billingGate.billedThroughName ? <div>מחויב דרך: {billingGate.billedThroughName}</div> : null}</div> : null}
     </> : null}
-    {!(showOpenReports && step === 1) && !(isXml && step === 1) ? <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || (resumingDraft && step === 2) || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={advancing || !canCreateReport} onClick={() => { if (step === 1) { void next(); return; } if (!selectedPaymentAccountId) { setShowBillingGateModal(true); return; } if (canContinue) void next(); }}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <>{sentExternalId ? <button className="btn btn-secondary" onClick={() => router.push("/reports")}>יציאה</button> : null}<button className="btn btn-primary" disabled={reportKind === 2 || sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{reportKind === 2 ? "יש לממש את ההפרש לפני שליחה" : sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button></>}</div> : null}
+    {!(showOpenReports && step === 1) && !(isXml && step === 1) ? <div className="wizard-footer"><button className="btn btn-secondary" disabled={step === 1 || (resumingDraft && step === 2) || advancing || sending || Boolean(sentExternalId)} onClick={() => { setError(""); setStep((value) => value - 1); }}><ArrowRight size={17} />חזרה</button>{step < summaryStep ? <button className="btn btn-primary" disabled={advancing || !canCreateReport} onClick={() => { if (step === 1) { void next(); return; } if (!selectedPaymentAccountId) { setShowBillingGateModal(true); return; } if (canContinue) void next(); }}>{advancing ? "בודק ושומר..." : isExcel && step === 2 ? "אישור עובדים והמשך" : "המשך"}<ArrowLeft size={17} /></button> : <>{sentExternalId || reportKind === 2 ? <button className="btn btn-secondary" onClick={() => router.push("/reports")}>{reportKind === 2 ? "שמירה וחזרה לדיווחים" : "יציאה"}</button> : null}<button className="btn btn-primary" disabled={reportKind === 2 || sending || Boolean(sentExternalId) || !manualReportId || !canTransmitReport} onClick={() => void sendReport()}><Send size={17} />{reportKind === 2 ? "יש לממש את ההפרש לפני שליחה" : sending ? "מבצע ולידציה ושולח..." : sentExternalId ? "הדיווח נשלח" : "שליחת דיווח"}</button></>}</div> : null}
   </section>}</div>{scope && showBillingGateModal ? <BillingGateModal
     gate={billingGate ?? { canTransmit: false, error: "pension_payment_account_required", billingMode: null, source: null, billedThroughName: null, paymentMethodType: null, paymentMethodStatus: null, configured: false }}
     organizationId={scope.organizationId}
@@ -659,6 +690,21 @@ export default function NewReportPage() {
     canManageEmployerBilling={canManageEmployerBilling}
     onClose={() => setShowBillingGateModal(false)}
   /> : null}
+  {draftToDelete ? <AppModal
+    title="מחיקת טיוטה"
+    subtitle={`${kindLabel(draftToDelete.reportKind)} · ${formatMonth(draftToDelete.reportingMonth)}`}
+    width="sm"
+    onClose={() => setDraftToDelete(null)}
+    closeDisabled={deletingDraftId === draftToDelete.id}
+    actions={<>
+      <button className="btn btn-secondary" disabled={Boolean(deletingDraftId)} onClick={() => setDraftToDelete(null)}>ביטול</button>
+      <button className="btn btn-danger" disabled={Boolean(deletingDraftId)} onClick={() => void deleteOpenDraft(draftToDelete)}>
+        <Trash2 size={15} />{deletingDraftId ? "מוחק..." : "מחיקת הטיוטה"}
+      </button>
+    </>}
+  >
+    <p style={{ marginTop: 0 }}>הטיוטה עדיין לא נשלחה ולכן ניתן למחוק אותה. דיווח שהיה בו ניסיון שידור נשמר בהיסטוריה ולא ניתן למחיקה.</p>
+  </AppModal> : null}
   {validationResult ? <ReportValidationErrorsModal result={validationResult} reportMonth={month}
     onClose={() => setValidationResult(null)} /> : null}
   </AppShell>;

@@ -30,6 +30,10 @@ export type ReportFeedbackRow = {
   actualReceivedAmount: number | null;
   inTransitAmount: number | null;
   canEdit: boolean;
+  canDelete: boolean;
+  canStartCorrectionWorkspace: boolean;
+  correctionWorkspaceId: string | null;
+  pendingCorrectionCount: number;
   canCreateCorrection: boolean;
   createdAt: string;
   updatedAt: string;
@@ -68,6 +72,9 @@ export type ReportFeedbackDepositRow = {
   treatmentStatusLabel: string;
   updatedAt: string | null;
   requiresAttention: boolean;
+  pendingCorrectionReportId: string | null;
+  pendingCorrectionProductId: string | null;
+  hasPendingCorrection: boolean;
 };
 
 export type ReportFeedbackDepositDetails = {

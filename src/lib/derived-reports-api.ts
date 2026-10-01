@@ -32,6 +32,16 @@ export const derivedReportsApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  ensureCorrectionWorkspace: (organizationId: string, employerId: string, reportId: string, sourceReportProductId?: string) =>
+    request<{ reportId: string; reportProductId: string | null; created: boolean; pendingChanges: number }>(
+      `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/correction-workspace`,
+      { method: "POST", body: JSON.stringify({ sourceReportProductId: sourceReportProductId || null }) },
+    ),
+  materializeCorrection: (organizationId: string, employerId: string, workspaceId: string, correctionOperationCode: 2 | 3) =>
+    request<{ workspaceId: string; sourceReportId: string; negativeReportId: string; currentReportId: string; pendingChanges: number }>(
+      `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${workspaceId}/materialize-correction`,
+      { method: "POST", body: JSON.stringify({ correctionOperationCode }) },
+    ),
   metadata: (organizationId: string, employerId: string, reportId: string) =>
     request<ManualReportDraft>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/metadata`),
 };

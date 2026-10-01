@@ -102,6 +102,7 @@ export type ManualContributionInput = {
 };
 
 export type ManualProductInput = {
+  sourceReportProductId?: string | null;
   productType: PensionProductType;
   policyNumber: string;
   fundExternalKey?: string;
@@ -190,6 +191,8 @@ export type ManualReportDraft = {
   status: string | number;
   reportKind?: string | number;
   sourceReportId?: string | null;
+  isCorrectionWorkspace?: boolean;
+  hasCorrectionChanges?: boolean;
   paymentAccountId?: string | null;
   paymentBankId?: number | null;
   paymentBranchId?: number | null;
@@ -205,6 +208,8 @@ export type ResumableManualReport = {
   status: string | number;
   reportKind: string | number;
   sourceReportId: string | null;
+  isCorrectionWorkspace?: boolean;
+  hasCorrectionChanges?: boolean;
   paymentAccountId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -247,6 +252,8 @@ export type ManualContribution = ManualContributionInput & {
 
 export type ManualReportProduct = Omit<ManualProductInput, "employerContributions" | "employeeContributions"> & {
   id: string;
+  sourceReportProductId: string | null;
+  isCorrectionChanged: boolean;
   employerContributions: ManualContribution[];
   employeeContributions: ManualContribution[];
 };

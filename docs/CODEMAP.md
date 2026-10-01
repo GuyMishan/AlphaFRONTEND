@@ -93,3 +93,11 @@
 - Focused correction entry from Reports & Feedback passes the source report/product to `/reports/new`; derived-report creation can clone only that selected source product while preserving the normal 006 correction rules and immutable-source behavior.
 
 - Report-row three-dot actions expose formal correction entry plus the three authorized backend CSV exports (employee/contribution detail, deposit summary and manufacturer feedback); these menus are portaled above table overflow rather than rendered inside the virtualized viewport.
+
+
+## Correction drafts, retransmission and deletion
+- Reports & Feedback treats transmitted reports as immutable history. “תקן דיווח” creates or resumes one internal full-report correction workspace; per-deposit “תיקון הפקדה” edits the matching version inside that workspace instead of changing the transmitted source row.
+- Multiple deposit/report edits accumulate in the same correction workspace. “דיווח חוזר” materializes all pending changes into the official Employer Interface 006 sequence and routes the user through the generated negative cancellation before the follow-up current correction.
+- Product lineage is preserved through `sourceReportProductId` in the report editor. The shared pension-products editor carries this optional identifier through normalization so saving an employee does not break deposit history.
+- Editable drafts that have never had an external transmission may be deleted from Reports & Feedback or from “המשך דיווח קיים”. The frontend always uses the shared `AppModal` confirmation; the backend remains authoritative about whether deletion is still allowed.
+- A generated correction workspace is an internal Differences draft and is hidden from the normal resumable-drafts list. When opened explicitly from Reports & Feedback it can be edited fully, then saved and returned to Reports & Feedback for “דיווח חוזר”.

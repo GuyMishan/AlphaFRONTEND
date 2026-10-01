@@ -16,14 +16,18 @@ import {
   Pencil,
   RefreshCw,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { AppModal } from "@/components/app-modal";
 import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { DepositPaymentEditor } from "@/components/manual-deposit-data";
 import { ReportDepositFeedbackModal } from "@/components/report-deposit-feedback-modal";
 import { UiActionMenu, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { manualDepositsApi, type ManualDepositRow } from "@/lib/manual-deposits-api";
+import { derivedReportsApi } from "@/lib/derived-reports-api";
+import { alphaApi } from "@/lib/api";
 import { getEmployerSelection } from "@/lib/session";
 import {
   reportFeedbackApi,
@@ -172,9 +176,9 @@ function DepositFeedbackPanel({
                   icon: <Eye size={16} />,
                   onSelect: () => onOpen(deposit),
                 },
-                ...(report.canEdit ? [{
+                ...(report.canEdit || report.canStartCorrectionWorkspace ? [{
                   key: "edit",
-                  label: "עריכה",
+                  label: report.canEdit ? "עריכה" : deposit.hasPendingCorrection ? "המשך תיקון הפקדה" : "תיקון הפקדה",
                   icon: <Pencil size={16} />,
                   onSelect: () => onEdit(deposit),
                 }] : []),
@@ -209,7 +213,11 @@ export default function ReportsPage() {
   const [expandedMoreLoading, setExpandedMoreLoading] = useState<Record<string, boolean>>({});
   const expandedRequests = useRef(new Set<string>());
   const [selectedDeposit, setSelectedDeposit] = useState<{ report: ReportFeedbackRow; deposit: ReportFeedbackDepositRow } | null>(null);
-  const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; deposit: ManualDepositRow } | null>(null);
+  const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; editReportId: string; deposit: ManualDepositRow } | null>(null);
+  const [retransmitReport, setRetransmitReport] = useState<ReportFeedbackRow | null>(null);
+  const [deleteReport, setDeleteReport] = useState<ReportFeedbackRow | null>(null);
+  const [correctionBusyId, setCorrectionBusyId] = useState("");
+  const [deletingReportId, setDeletingReportId] = useState("");
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(() => columnOptions.filter((item) => item.defaultVisible).map((item) => item.key));
   const [exportingReportId, setExportingReportId] = useState("");
 
@@ -316,6 +324,8 @@ export default function ReportsPage() {
       setExtraFilters([]);
       setSelectedDeposit(null);
       setEditingDeposit(null);
+      setRetransmitReport(null);
+      setDeleteReport(null);
       setExpandedKeys(new Set());
       setExpandedContent({});
       setExpandedErrors({});
@@ -390,16 +400,97 @@ export default function ReportsPage() {
   }
 
   async function editDepositFromFeedback(report: ReportFeedbackRow, reportProductId: string) {
-    if (!scope) return;
+    if (!scope || correctionBusyId) return;
     setError("");
+    setCorrectionBusyId(report.id);
     try {
-      const page = await manualDepositsApi.list(scope.organizationId, scope.employerId, report.id, "", 0, 1, reportProductId);
+      let editReportId = report.id;
+      let editProductId = reportProductId;
+
+      if (!report.canEdit) {
+        if (!report.canStartCorrectionWorkspace)
+          throw new Error("הדיווח אינו פתוח לעריכה או לתיקון.");
+        const workspace = await derivedReportsApi.ensureCorrectionWorkspace(
+          scope.organizationId, scope.employerId, report.id, reportProductId,
+        );
+        if (!workspace.reportProductId)
+          throw new Error("לא ניתן היה ליצור גרסת תיקון להפַקדה.");
+        editReportId = workspace.reportId;
+        editProductId = workspace.reportProductId;
+      }
+
+      const page = await manualDepositsApi.list(
+        scope.organizationId, scope.employerId, editReportId, "", 0, 1, editProductId,
+      );
       const deposit = page.items[0];
       if (!deposit) throw new Error("לא ניתן היה לטעון את פרטי ההפקדה לעריכה.");
       setSelectedDeposit(null);
-      setEditingDeposit({ report, deposit });
+      setEditingDeposit({ report, editReportId, deposit });
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת פרטי ההפקדה לעריכה נכשלה");
+    } finally {
+      setCorrectionBusyId("");
+    }
+  }
+
+  async function openCorrectionWorkspace(report: ReportFeedbackRow) {
+    if (!scope || correctionBusyId) return;
+    setError("");
+    setCorrectionBusyId(report.id);
+    try {
+      const workspace = await derivedReportsApi.ensureCorrectionWorkspace(
+        scope.organizationId, scope.employerId, report.id,
+      );
+      router.push(`/reports/new?resumeReportId=${workspace.reportId}&correctionWorkspace=1`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "פתיחת תיקון הדיווח נכשלה");
+    } finally {
+      setCorrectionBusyId("");
+    }
+  }
+
+  async function materializeCorrection(operationCode: 2 | 3) {
+    if (!scope || !retransmitReport || !retransmitReport.correctionWorkspaceId || correctionBusyId) return;
+    const report = retransmitReport;
+    setCorrectionBusyId(report.id);
+    setError("");
+    try {
+      const result = await derivedReportsApi.materializeCorrection(
+        scope.organizationId, scope.employerId, report.correctionWorkspaceId, operationCode,
+      );
+      setRetransmitReport(null);
+      router.push(
+        `/reports/new?resumeReportId=${result.negativeReportId}&followUpReportId=${result.currentReportId}&correctionStage=negative`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "יצירת הדיווח החוזר נכשלה");
+    } finally {
+      setCorrectionBusyId("");
+    }
+  }
+
+  async function removeDraft(report: ReportFeedbackRow) {
+    if (!scope || deletingReportId) return;
+    setDeletingReportId(report.id);
+    setError("");
+    try {
+      await alphaApi.deleteManualReport(scope.organizationId, scope.employerId, report.id);
+      setDeleteReport(null);
+      setExpandedKeys((current) => {
+        const next = new Set(current);
+        next.delete(report.id);
+        return next;
+      });
+      setExpandedContent((current) => {
+        const next = { ...current };
+        delete next[report.id];
+        return next;
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "מחיקת הטיוטה נכשלה");
+    } finally {
+      setDeletingReportId("");
     }
   }
 
@@ -425,18 +516,38 @@ export default function ReportsPage() {
             icon: <Pencil size={16} />,
             onSelect: () => router.push(`/reports/new?resumeReportId=${row.id}`),
           }] : []),
-          ...(row.canCreateCorrection ? [{
+          ...(row.canStartCorrectionWorkspace ? [{
+            key: "correct-report",
+            label: row.correctionWorkspaceId ? "המשך תיקון דיווח" : "תקן דיווח",
+            icon: <Pencil size={16} />,
+            disabled: correctionBusyId === row.id,
+            onSelect: () => void openCorrectionWorkspace(row),
+          }] : []),
+          ...(row.pendingCorrectionCount > 0 && row.correctionWorkspaceId ? [{
+            key: "retransmit",
+            label: "דיווח חוזר",
+            icon: <RefreshCw size={16} />,
+            disabled: correctionBusyId === row.id,
+            onSelect: () => setRetransmitReport(row),
+          }] : []),
+          ...(row.canCreateCorrection && !row.canStartCorrectionWorkspace ? [{
             key: "correction",
-            label: "יצירת דיווח מתקן",
+            label: "יצירת דיווח שוטף מתקן",
             icon: <RefreshCw size={16} />,
             onSelect: () => router.push(`/reports/new?sourceReportId=${row.id}&sourceMonth=${row.reportingMonth.slice(0, 7)}&sourceKind=${encodeURIComponent(String(row.reportKind))}`),
+          }] : []),
+          ...(row.canDelete ? [{
+            key: "delete-draft",
+            label: "מחיקת טיוטה",
+            icon: <Trash2 size={16} />,
+            onSelect: () => setDeleteReport(row),
           }] : []),
           {
             key: "export-contributions",
             label: "ייצוא פירוט עובדים והפרשות",
             icon: <Download size={16} />,
             disabled: exportingReportId === row.id,
-            separatorBefore: row.canEdit || row.canCreateCorrection,
+            separatorBefore: row.canEdit || row.canCreateCorrection || row.canStartCorrectionWorkspace || row.canDelete,
             onSelect: () => void exportReport(row, "contributions"),
           },
           {
@@ -456,7 +567,7 @@ export default function ReportsPage() {
         ]}
       />
     </div> },
-  }), [expandedContent, scope, exportingReportId, router]);
+  }), [expandedContent, scope, exportingReportId, correctionBusyId, router]);
 
   const activeColumns = visibleColumns.map((key) => allColumns[key].column);
 
@@ -616,21 +727,56 @@ export default function ReportsPage() {
       employer={null}
       organizationId={scope.organizationId}
       employerId={scope.employerId}
-      reportId={editingDeposit.report.id}
+      reportId={editingDeposit.editReportId}
       row={editingDeposit.deposit}
       readOnly={false}
       onEvidenceChanged={() => {}}
       onClose={() => setEditingDeposit(null)}
-      onSaved={(updated) => {
+      onSaved={() => {
+        const sourceReport = editingDeposit.report;
         setEditingDeposit(null);
         setExpandedContent((current) => {
           const next = { ...current };
-          delete next[editingDeposit.report.id];
+          delete next[sourceReport.id];
           return next;
         });
-        void loadExpanded(editingDeposit.report, true);
+        void loadExpanded(sourceReport, true);
         void load();
       }}
     /> : null}
+
+    {retransmitReport ? <AppModal
+      title="דיווח חוזר"
+      subtitle={`${retransmitReport.employerName} · ${formatMonth(retransmitReport.reportingMonth)}`}
+      width="md"
+      onClose={() => setRetransmitReport(null)}
+      closeDisabled={correctionBusyId === retransmitReport.id}
+      actions={<>
+        <button className="btn btn-secondary" disabled={Boolean(correctionBusyId)} onClick={() => setRetransmitReport(null)}>ביטול</button>
+        <button className="btn btn-secondary" disabled={Boolean(correctionBusyId)} onClick={() => void materializeCorrection(2)}>ללא הפקדה נוספת</button>
+        <button className="btn btn-primary" disabled={Boolean(correctionBusyId)} onClick={() => void materializeCorrection(3)}>בוצעה הפקדה נוספת</button>
+      </>}
+    >
+      <p style={{ marginTop: 0 }}>ALPHA תאסוף את כל התיקונים הממתינים לדיווח הזה ותיצור את רצף התיקון הרשמי.</p>
+      <div className="notice notice-info">
+        מאחורי הקלעים ייווצר קודם דיווח שלילי לביטול התנועות הקודמות, ולאחריו הדיווח השוטף המתוקן. הדיווח המקורי נשאר ללא שינוי בהיסטוריה.
+      </div>
+    </AppModal> : null}
+
+    {deleteReport ? <AppModal
+      title="מחיקת טיוטה"
+      subtitle={`${deleteReport.employerName} · ${formatMonth(deleteReport.reportingMonth)}`}
+      width="sm"
+      onClose={() => setDeleteReport(null)}
+      closeDisabled={deletingReportId === deleteReport.id}
+      actions={<>
+        <button className="btn btn-secondary" disabled={Boolean(deletingReportId)} onClick={() => setDeleteReport(null)}>ביטול</button>
+        <button className="btn btn-danger" disabled={Boolean(deletingReportId)} onClick={() => void removeDraft(deleteReport)}>
+          <Trash2 size={15} />{deletingReportId ? "מוחק..." : "מחיקת הטיוטה"}
+        </button>
+      </>}
+    >
+      <p style={{ marginTop: 0 }}>הטיוטה טרם יצאה מ־ALPHA ולכן ניתן למחוק אותה. לאחר שידור או ניסיון שידור, דיווחים נשמרים בהיסטוריה ולא ניתנים למחיקה.</p>
+    </AppModal> : null}
   </AppShell>;
 }

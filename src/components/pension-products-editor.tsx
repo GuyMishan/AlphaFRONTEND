@@ -17,6 +17,7 @@ export type PensionEditorContribution = {
 };
 
 export type PensionEditorProduct = {
+  sourceReportProductId?: string | null;
   productType: PensionProductType;
   policyNumber: string;
   fundExternalKey?: string;
