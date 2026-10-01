@@ -27,6 +27,7 @@ export type ManualDepositRow = {
   trustAccountValueDate: string | null;
   actualDepositAmount: number | null;
   isCorrectionWorkspace?: boolean;
+  sourceReportProductId?: string | null;
   correctionOperationCode?: 2 | 3 | null;
   masavSenderCode: string;
   referenceNumber: string;

@@ -244,7 +244,6 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   }
 
   function changeSelection(employeeId: string, checked: boolean) {
-    if (correctionWorkspace) return;
     const current = selectedIdsRef.current;
     const next = checked ? Array.from(new Set([...current, employeeId])) : current.filter((id) => id !== employeeId);
     selectedIdsRef.current = next;
@@ -255,7 +254,6 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   }
 
   function selectAllVisibleActive() {
-    if (correctionWorkspace) return;
     const ids = visibleEmployees.filter((item) => item.status === 1).map((item) => item.id);
     const next = Array.from(new Set([...selectedIdsRef.current, ...ids]));
     selectedIdsRef.current = next;
@@ -265,7 +263,6 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   }
 
   async function employeeCreated(employee: Employee) {
-    if (correctionWorkspace) return;
     setVisibleEmployees((current) => [employee, ...current.filter((item) => item.id !== employee.id)]);
     const next = Array.from(new Set([...selectedIdsRef.current, employee.id]));
     selectedIdsRef.current = next;
@@ -293,27 +290,27 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       <div className="manual-report-badges"><span className="badge badge-blue">{selectedIds.length} עובדים</span><span className="badge badge-green">{ready} הושלמו</span></div>
     </div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}
-    {correctionWorkspace ? <div className="notice notice-info" style={{ marginBottom: 14 }}>בטיוטת תיקון ניתן לערוך את העובדים והמוצרים שהיו בדיווח המקורי. הוספה או הסרה של עובד או מוצר חדש אינה זמינה בתהליך התיקון.</div> : null}
+    {correctionWorkspace ? <div className="notice notice-info" style={{ marginBottom: 14 }}>זהו עותק העבודה של הגרסה הבאה. אפשר לערוך, להוסיף או להסיר עובדים ומוצרים; בלחיצה על “דיווח חוזר” ALPHA תחשב את הדלתא מול הגרסה שנשלחה.</div> : null}
     <div className="toolbar manual-report-toolbar">
       <div className="search"><Search size={17} /><UiInput value={query} maxLength={80} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
-      {!correctionWorkspace ? <>
+      <>
         <button type="button" className="btn btn-primary" onClick={() => setShowCreate(true)}><UserPlus size={16} />הקמת עובד חדש</button>
         <button className="btn btn-soft" disabled={!visibleEmployees.some((item) => item.status === 1)} onClick={selectAllVisibleActive}>{syncing ? "מעדכן..." : "בחירת כל הפעילים בתוצאות"}</button>
-      </> : null}
+      </>
     </div>
     <div className="manual-employee-list">
       {loading || searching ? <div className="empty">{searching ? "מחפש עובדים..." : "טוען את עובדי המעסיק..."}</div> : visibleEmployees.length === 0 ? <div className="empty"><b>לא נמצאו עובדים</b></div> : visibleEmployees.map((employee) => {
         const selected = selectedIds.includes(employee.id);
         const row = rowByEmployment.get(employee.id);
         return <div className={`manual-employee-row${selected ? " selected" : ""}`} key={employee.id}>
-          <label className="manual-employee-check"><UiCheckbox aria-label={`בחירת ${employee.firstName} ${employee.lastName} לדיווח`} checked={selected} disabled={correctionWorkspace} onChange={(event) => changeSelection(employee.id, event.target.checked)} /></label>
+          <label className="manual-employee-check"><UiCheckbox aria-label={`בחירת ${employee.firstName} ${employee.lastName} לדיווח`} checked={selected} onChange={(event) => changeSelection(employee.id, event.target.checked)} /></label>
           <div className="manual-employee-main"><b>{employee.firstName} {employee.lastName}</b><span>ת״ז {employee.nationalId} · עובד {employee.employeeNumber}{row?.monthlySalary ? ` · ₪${Number(row.monthlySalary).toLocaleString("he-IL")}` : ""}</span></div>
           <div className="manual-employee-products">{selected && row ? row.productCount ? <span className="badge badge-green"><CircleCheck size={13} />{row.productCount} מוצרים</span> : <span className="badge badge-orange"><CircleAlert size={13} />חסר תמהיל/מוצרים</span> : selected ? <span className="badge badge-gray">שומר...</span> : <span className="badge badge-gray">לא בדיווח</span>}</div>
           <button className="btn btn-soft manual-edit-btn" disabled={!selected || !row} onClick={() => row && void editEmployee(row)}><Pencil size={16} />עריכה</button>
         </div>;
       })}
     </div>
-    {!correctionWorkspace && showCreate ? <InlineEmployeeCreateModal organizationId={organizationId} employerId={employerId} onClose={() => setShowCreate(false)} onCreated={employeeCreated} /> : null}
+    {showCreate ? <InlineEmployeeCreateModal organizationId={organizationId} employerId={employerId} onClose={() => setShowCreate(false)} onCreated={employeeCreated} /> : null}
     {editing ? <EmployeeProductsModal employee={editing} month={month}
       organizationId={organizationId} employerId={employerId} correctionWorkspace={correctionWorkspace} onClose={() => setEditing(null)}
       onSave={async (monthlySalary, products) => {
@@ -433,8 +430,8 @@ function EmployeeProductsModal({ employee, month, onClose, onSave, organizationI
           month={month}
           monthlySalary={monthlySalary}
           products={products}
-          allowAdd={!correctionWorkspace}
-          allowRemove={!correctionWorkspace}
+          allowAdd
+          allowRemove
           showAllocationError={validationAttempted}
           onMonthlySalaryChange={(value) => { setMonthlySalary(value); setError(""); setValidationAttempted(false); }}
           onProductsChange={(value) => { setProducts(value); setError(""); setValidationAttempted(false); }}

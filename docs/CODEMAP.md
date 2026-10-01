@@ -113,3 +113,8 @@
 
 
 - In correction-workspace UI, structural add/remove controls are disabled: employee selection is locked and the shared pension-product editor receives `allowAdd=false` / `allowRemove=false`. Users can still edit the source-backed employee/product values and deposits that the backend can version safely.
+
+
+- Correction workspaces are full desired next-revision snapshots: employee and product add/remove controls remain available. Backend delta materialization compares the workspace with the last effective revision and emits only required V006 technical documents.
+- Existing source-backed products use correction operation 2/3 as needed; newly added products are ordinary current operation 1 records and expose the normal V006 payment/metadata editor.
+- “דיווח חוזר” remains report-level only and handles all delta shapes: negative-only, current-only, or negative followed by current.

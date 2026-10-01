@@ -380,13 +380,14 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   }
 
   const negative = isNegativeKind(metadata?.reportKind);
-  const differences = isDifferencesKind(metadata?.reportKind);
+  const correctionWorkspace = row.isCorrectionWorkspace === true;
+  const addedCorrectionProduct = correctionWorkspace && !row.sourceReportProductId;
+  const differences = isDifferencesKind(metadata?.reportKind) && !addedCorrectionProduct;
   const operationScope = negative ? "negative" : "current";
   const operation5 = negative && metadataForm.operationCode === 5;
   const operation6 = negative && metadataForm.operationCode === 6;
   const noMoneyCorrection = !negative && (metadataForm.operationCode === 2 || metadataForm.operationCode === 7);
-  const correctionWorkspace = row.isCorrectionWorkspace === true;
-  const correctionNoMoney = correctionWorkspace && correctionOperationCode === 2;
+  const correctionNoMoney = correctionWorkspace && !addedCorrectionProduct && correctionOperationCode === 2;
   const effectiveNoMoneyCorrection = noMoneyCorrection || correctionNoMoney;
   const needsPrevious = !differences && requiresPreviousReference(negative, metadataForm.operationCode);
   const configuredPensionDebit = !negative && !differences && resolvedPaymentAccount?.mandateIsActive === true
@@ -458,7 +459,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     if (readOnly) return;
     setError("");
     const errors = [...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)), ...validate006Metadata(metadata, metadataForm, previousReference)];
-    if (correctionWorkspace && correctionOperationCode === 3 && (form.actualDepositAmount == null || form.actualDepositAmount <= 0))
+    if (correctionWorkspace && !addedCorrectionProduct && correctionOperationCode === 3 && (form.actualDepositAmount == null || form.actualDepositAmount <= 0))
       errors.push("כאשר בוצעה הפקדה נוספת יש להזין את סכום ההפקדה הנוספת בפועל.");
     if (!negative && !differences && isOldPensionFund && !metadataForm.oldPensionTypeCode)
       errors.push("בקרן פנסיה ותיקה יש לבחור סוג פנסיה: מקיפה או יסוד.");
@@ -472,8 +473,8 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       const persistedPayment: ManualPaymentInput = {
         ...form,
         paymentMethod: metadataForm.paymentMethodCode == null ? form.paymentMethod : String(metadataForm.paymentMethodCode),
-        actualDepositAmount: correctionWorkspace && correctionOperationCode === 2 ? null : form.actualDepositAmount,
-        correctionOperationCode: correctionWorkspace ? correctionOperationCode : null,
+        actualDepositAmount: correctionWorkspace && !addedCorrectionProduct && correctionOperationCode === 2 ? null : form.actualDepositAmount,
+        correctionOperationCode: correctionWorkspace && !addedCorrectionProduct ? correctionOperationCode : null,
       };
       await manualDepositsApi.savePayment(organizationId, employerId, reportId, row.id, persistedPayment);
       if (!differences) {
@@ -515,14 +516,16 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
       {differences && !correctionWorkspace ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
-      {correctionWorkspace ? <div className="notice notice-info payment-error">זהו workspace פנימי לתיקון. בחרו אם התיקון כולל כסף נוסף; ALPHA תחיל את הבחירה על כל ההעברה לאותה קופה ותבנה לאחר מכן את רצף 006 הרשמי.</div> : null}
+      {correctionWorkspace ? <div className="notice notice-info payment-error">{addedCorrectionProduct
+        ? "זהו מוצר חדש בגרסה המתוקנת. הוא יישלח כרשומה חדשה (פעולה 1) בלי מזהה קודם."
+        : "זהו מוצר קיים שנערך. בחרו אם התיקון כולל כסף נוסף; ALPHA תחיל את הבחירה על ההעברה הרלוונטית ותבנה את מסמכי הדלתא הנדרשים."}</div> : null}
       {operation6 ? <div className="notice notice-info payment-error">בקוד פעולה 6 מדובר בביטול תנועה ללא החזר למעסיק, ולכן אין להעביר ערך בשדה אמצעי התשלום.</div> : null}
       {readOnly ? <div className="notice notice-info">זהו דיווח שנשמר ואינו פתוח לעריכה. ניתן לצפות בפרטי ההפקדה אך אין לשנות דיווחים שהועברו. לתיקון יש ליצור דיווח מתקן.</div> : null}
       <fieldset className="deposit-payment-editor-fields" disabled={readOnly} aria-label={readOnly ? "פרטי הפקדה לצפייה בלבד" : undefined}>
       <div className="payment-layout"><div className="payment-main">
           <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-summary-item"><span className="payment-summary-label">סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">{configuredPensionDebit ? "חשבון חיוב בהרשאה" : "חשבון מעסיק להעברה"}</span><b className="account-number">{metadataForm.paymentMethodCode !== 6 && bankRequired && (!form.employerBankCode || !form.employerAccount) ? "יש להזין פרטי חשבון להעברה" : formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
 
-          {correctionWorkspace ? <section className="payment-panel"><h3>אופן התיקון להעברה לקופה</h3><div className="payment-method-grid">
+          {correctionWorkspace && !addedCorrectionProduct ? <section className="payment-panel"><h3>אופן התיקון להעברה לקופה</h3><div className="payment-method-grid">
             <div className="field"><label>סוג תיקון *</label><EmployerInterfaceOptionSelect
               category="operation-code"
               scope="current"

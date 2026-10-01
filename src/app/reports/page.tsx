@@ -460,9 +460,14 @@ export default function ReportsPage() {
         scope.organizationId, scope.employerId, workspaceId,
       );
       setRetransmitReport(null);
-      router.push(
-        `/reports/new?resumeReportId=${result.negativeReportId}&followUpReportId=${result.currentReportId}&correctionStage=negative`,
-      );
+      if (result.negativeReportId) {
+        const followUp = result.currentReportId ? `&followUpReportId=${result.currentReportId}` : "";
+        router.push(`/reports/new?resumeReportId=${result.negativeReportId}${followUp}&correctionStage=negative`);
+      } else if (result.currentReportId) {
+        router.push(`/reports/new?resumeReportId=${result.currentReportId}&correctionStage=current`);
+      } else {
+        await load();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "יצירת הדיווח החוזר נכשלה");
     } finally {
@@ -759,9 +764,9 @@ export default function ReportsPage() {
         </button>
       </>}
     >
-      <p style={{ marginTop: 0 }}>ALPHA תאסוף את כל התיקונים הממתינים לדיווח הזה ותיצור את רצף התיקון הרשמי. סוג התיקון נקבע לכל הפקדה בנפרד לפי השינוי שנשמר בה.</p>
+      <p style={{ marginTop: 0 }}>ALPHA תשווה את גרסת העבודה לגרסה האפקטיבית האחרונה ותחשב Added / Changed / Removed.</p>
       <div className="notice notice-info">
-        מאחורי הקלעים ייווצר קודם דיווח שלילי לביטול התנועות הקודמות, ולאחריו הדיווח השוטף המתוקן. הדיווח המקורי נשאר ללא שינוי בהיסטוריה.
+        ייווצרו רק מסמכי 006 שנדרשים לדלתא: שלילי לרשומות שבוטלו או שונו, ושוטף לרשומות חדשות או מתוקנות. רשומות שלא השתנו לא יישלחו מחדש.
       </div>
     </AppModal> : null}
 

@@ -19,6 +19,9 @@ export type ReportFeedbackRow = {
   salaryPaymentDate: string | null;
   reportKind: number | string;
   status: number | string;
+  revisionRootReportId: string;
+  revisionNumber: number;
+  isRevisionSnapshot: boolean;
   feedbackStatus: Exclude<ReportFeedbackStatus, "all">;
   hasFeedback: boolean;
   issueCount: number;
