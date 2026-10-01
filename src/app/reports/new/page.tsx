@@ -120,7 +120,11 @@ export default function NewReportPage() {
   const scopeLoadKeyRef = useRef("");
 
   const selectedSource = useMemo(() => sourceReports.find((report) => report.id === selectedSourceReportId) ?? null, [sourceReports, selectedSourceReportId]);
-  const eligibleCorrectionSources = useMemo(() => sourceReports.filter((report) => report.canBeCurrentCorrectionSource), [sourceReports]);
+  const eligibleCorrectionSources = useMemo(
+    () => sourceReports.filter((report) => report.canBeCurrentCorrectionSource
+      || Boolean(requestedSourceProductId && report.id === requestedSourceReportId)),
+    [sourceReports, requestedSourceProductId, requestedSourceReportId],
+  );
   const isCorrection = reportKind === 1 && mode === "correction";
   const isExcel = reportKind === 1 && mode === "excel";
   const isXml = mode === "xml";
@@ -310,7 +314,11 @@ export default function NewReportPage() {
     if (!salaryPaymentDate) return "תאריך תשלום שכר הוא שדה חובה.";
     if (!selectedPaymentAccountId) return "יש לבחור חשבון תשלום לדיווח.";
     if (!manualReportId && (reportKind !== 1 || isCorrection) && !selectedSourceReportId) return "יש לבחור את הדיווח הקודם שעליו מבוסס הדיווח.";
-    if (isCorrection && !selectedSource?.canBeCurrentCorrectionSource) return "יש לבחור דיווח שלילי קוד 6 שכבר נשלח או יובא ממקור חיצוני.";
+    const focusedRequestedCorrection = Boolean(
+      requestedSourceProductId && selectedSourceReportId === requestedSourceReportId,
+    );
+    if (isCorrection && !selectedSource?.canBeCurrentCorrectionSource && !focusedRequestedCorrection)
+      return "יש לבחור דיווח שלילי קוד 6 שכבר נשלח או יובא ממקור חיצוני.";
     return "";
   }
 
