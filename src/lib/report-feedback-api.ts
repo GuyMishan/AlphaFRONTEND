@@ -237,7 +237,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     let message = `אירעה שגיאה (${response.status})`;
     try {
       const problem = await response.json();
-      message = problem?.error ?? problem?.detail ?? problem?.title ?? message;
+      message = problem?.error === "treatment_conflict"
+        ? "הטיפול עודכן במקביל על ידי משתמש אחר. רעננו את הפרטים ונסו שוב."
+        : problem?.error ?? problem?.detail ?? problem?.title ?? message;
     } catch { /* empty */ }
     throw new Error(message);
   }
