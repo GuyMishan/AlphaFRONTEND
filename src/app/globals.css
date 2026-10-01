@@ -1313,8 +1313,8 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
 
 .ui-action-menu { display: inline-flex; align-items: center; justify-content: center; }
 .ui-action-menu-trigger {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: inline-grid;
   place-items: center;
   border: 1px solid var(--line);
@@ -1363,15 +1363,16 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
 
 
 .data-table-inline-actions {
+  width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
   max-width: 100%;
 }
 .data-table-grid .data-table-expand-toggle-contained {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   margin-inline-end: 0;
   border: 1px solid var(--line);
   border-radius: 9px;

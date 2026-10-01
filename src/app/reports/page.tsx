@@ -413,7 +413,7 @@ export default function ReportsPage() {
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div>
       : "—" },
-    actions: { column: { key: "actions", label: "פעולות", width: "86px" }, render: (row) => <div className="report-row-actions">
+    actions: { column: { key: "actions", label: "פעולות", width: "76px" }, render: (row) => <div className="report-row-actions">
       <UiActionMenu
         ariaLabel={`פעולות לדיווח ${formatMonth(row.reportingMonth)}`}
         items={[
