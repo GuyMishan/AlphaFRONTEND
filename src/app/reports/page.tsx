@@ -452,11 +452,12 @@ export default function ReportsPage() {
   async function materializeCorrection(operationCode: 2 | 3) {
     if (!scope || !retransmitReport || !retransmitReport.correctionWorkspaceId || correctionBusyId) return;
     const report = retransmitReport;
+    const workspaceId = retransmitReport.correctionWorkspaceId;
     setCorrectionBusyId(report.id);
     setError("");
     try {
       const result = await derivedReportsApi.materializeCorrection(
-        scope.organizationId, scope.employerId, report.correctionWorkspaceId, operationCode,
+        scope.organizationId, scope.employerId, workspaceId, operationCode,
       );
       setRetransmitReport(null);
       router.push(
