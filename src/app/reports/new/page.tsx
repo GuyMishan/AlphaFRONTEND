@@ -72,10 +72,12 @@ function validationMessage(errors: string[]) {
 
 export default function NewReportPage() {
   const router = useRouter();
-  const [requestedSource, setRequestedSource] = useState({ reportId: "", productId: "", month: "" });
+  const [requestedSource, setRequestedSource] = useState({ reportId: "", productId: "", month: "", kind: "" });
   const requestedSourceReportId = requestedSource.reportId;
   const requestedSourceProductId = requestedSource.productId;
   const requestedSourceMonth = requestedSource.month;
+  const requestedSourceKind = requestedSource.kind;
+  const requestedSourceIsNegative = requestedSourceKind === "3" || requestedSourceKind === "Negative";
   const correctionEntryInitialized = useRef(false);
   const [step, setStep] = useState(1);
   const [reportKind, setReportKind] = useState<ManualReportKind>(1);
@@ -248,6 +250,7 @@ export default function NewReportPage() {
       reportId: params.get("sourceReportId") ?? "",
       productId: params.get("sourceProductId") ?? "",
       month: params.get("sourceMonth") ?? "",
+      kind: params.get("sourceKind") ?? "",
     });
   }, []);
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
@@ -255,12 +258,12 @@ export default function NewReportPage() {
   useEffect(() => {
     if (!scope || !requestedSourceReportId || correctionEntryInitialized.current) return;
     correctionEntryInitialized.current = true;
-    setReportKind(3);
-    setMode("manual");
+    setReportKind(requestedSourceIsNegative ? 1 : 3);
+    setMode(requestedSourceIsNegative ? "correction" : "manual");
     setShowOpenReports(false);
     setSourceSearch(requestedSourceMonth);
     void loadSources(true, requestedSourceMonth);
-  }, [scope?.organizationId, scope?.employerId, requestedSourceReportId, requestedSourceMonth]);
+  }, [scope?.organizationId, scope?.employerId, requestedSourceReportId, requestedSourceMonth, requestedSourceIsNegative]);
   useEffect(() => {
     const needsSources = reportKind !== 1 || mode === "correction";
     if (!needsSources || !scope || manualReportId) return;
