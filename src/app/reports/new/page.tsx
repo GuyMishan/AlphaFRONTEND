@@ -73,6 +73,8 @@ function validationMessage(errors: string[]) {
 export default function NewReportPage() {
   const router = useRouter();
   const [requestedSource, setRequestedSource] = useState({ reportId: "", productId: "", month: "", kind: "" });
+  const [requestedResumeReportId, setRequestedResumeReportId] = useState("");
+  const resumeEntryInitialized = useRef(false);
   const requestedSourceReportId = requestedSource.reportId;
   const requestedSourceProductId = requestedSource.productId;
   const requestedSourceMonth = requestedSource.month;
@@ -179,14 +181,14 @@ export default function NewReportPage() {
     finally { setLoadingOpenReports(false); }
   }
 
-  async function resumeReport(draft: ResumableManualReport) {
+  async function resumeReportById(reportId: string) {
     if (!scope || !canCreateReport || advancing) return;
     setAdvancing(true);
     try {
       // Re-fetch and enforce scope/editable state rather than trusting stale list data.
       const [current, employmentIds] = await Promise.all([
-        alphaApi.manualReport(scope.organizationId, scope.employerId, draft.id),
-        loadReportEmploymentIds(draft.id),
+        alphaApi.manualReport(scope.organizationId, scope.employerId, reportId),
+        loadReportEmploymentIds(reportId),
       ]);
       if (!["1", "2", "9", "Draft", "ReadyForValidation", "Error"].includes(String(current.status)))
         throw new Error("הדיווח כבר אינו ניתן לעריכה.");
@@ -213,6 +215,10 @@ export default function NewReportPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "לא ניתן לפתוח את הטיוטה");
     } finally { setAdvancing(false); }
+  }
+
+  async function resumeReport(draft: ResumableManualReport) {
+    await resumeReportById(draft.id);
   }
 
   async function loadSources(reset = true, search = sourceSearch) {
@@ -275,8 +281,14 @@ export default function NewReportPage() {
       month: params.get("sourceMonth") ?? "",
       kind: params.get("sourceKind") ?? "",
     });
+    setRequestedResumeReportId(params.get("resumeReportId") ?? "");
   }, []);
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
+  useEffect(() => {
+    if (!scope || !canCreateReport || !requestedResumeReportId || resumeEntryInitialized.current) return;
+    resumeEntryInitialized.current = true;
+    void resumeReportById(requestedResumeReportId);
+  }, [scope?.organizationId, scope?.employerId, canCreateReport, requestedResumeReportId]);
   useEffect(() => { const handler = (event: Event) => { if (step !== 1) return; const detail = (event as CustomEvent<{ organizationId: string; employerId?: string }>).detail; if (detail.employerId) void loadScope({ organizationId: detail.organizationId, employerId: detail.employerId }); }; window.addEventListener("alpha:scope-change", handler); return () => window.removeEventListener("alpha:scope-change", handler); }, [step]);
   useEffect(() => {
     if (!scope || !requestedSourceReportId || correctionEntryInitialized.current) return;

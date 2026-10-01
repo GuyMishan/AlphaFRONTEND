@@ -25,6 +25,8 @@ type Props<T> = {
   onExpandedRowChange?: (rowKey: string, expanded: boolean, item: T) => void;
   /** Optional row-click expansion; the expander button always works independently. */
   expandOnRowClick?: boolean;
+  /** Optional per-row predicate for suppressing expansion when details are not meaningful. */
+  canExpandRow?: (item: T) => boolean;
   /** Optional placement in another existing column; defaults to the first. */
   expandToggleColumnKey?: string;
   rowHeight?: number;
@@ -46,7 +48,7 @@ type Props<T> = {
 export function DataTable<T>({
   items, columns, rowKey, renderCells, expandedRowComponent, expandedRowComponentSize = 240,
   expandedRowKeys, defaultExpandedRowKeys = [], onExpandedRowChange, expandOnRowClick = false,
-  expandToggleColumnKey,
+  canExpandRow, expandToggleColumnKey,
   rowHeight = 56, maxHeight = 520, overscan = 10,
   loadMoreThreshold = 8, tableClassName = "", wrapperClassName = "", onRowClick,
   loading = false, loadingMore = false, loadingLabel = "טוען נתונים...",
@@ -59,8 +61,9 @@ export function DataTable<T>({
     () => new Set(defaultExpandedRowKeys),
   );
   const activeExpandedKeys = expandedRowKeys ?? internalExpandedKeys;
+  const rowCanExpand = (item: T) => Boolean(expandedRowComponent && (!canExpandRow || canExpandRow(item)));
   const toggleExpanded = (item: T) => {
-    if (!expandedRowComponent) return;
+    if (!rowCanExpand(item)) return;
     const key = rowKey(item);
     const next = !activeExpandedKeys.has(key);
     if (expandedRowKeys === undefined) {
@@ -96,7 +99,7 @@ export function DataTable<T>({
   const offsets = useMemo(() => {
     const result = [0];
     for (const item of items) {
-      const expanded = Boolean(expandedRowComponent && activeExpandedKeys.has(rowKey(item)));
+      const expanded = Boolean(rowCanExpand(item) && activeExpandedKeys.has(rowKey(item)));
       const panelHeight = expanded
         ? Math.max(1, typeof expandedRowComponentSize === "function"
           ? expandedRowComponentSize(item) : expandedRowComponentSize)
@@ -152,14 +155,14 @@ export function DataTable<T>({
                 ? expandedRowComponentSize(item) : expandedRowComponentSize) : 0;
               const panelId = `${tableId}-expanded-${index}`;
               return <Fragment key={key}>
-                <tr className="data-table-row" style={{ height: rowHeight, cursor: onRowClick || (expandedRowComponent && expandOnRowClick) ? "pointer" : undefined }}
+                <tr className="data-table-row" style={{ height: rowHeight, cursor: onRowClick || (expandOnRowClick && rowCanExpand(item)) ? "pointer" : undefined }}
                   onClick={(event) => {
                     onRowClick?.(item);
-                    if (expandOnRowClick && expandedRowComponent && !(event.target as HTMLElement).closest("button, a, input, select, textarea, [role='button']"))
+                    if (expandOnRowClick && rowCanExpand(item) && !(event.target as HTMLElement).closest("button, a, input, select, textarea, [role='button']"))
                       toggleExpanded(item);
                   }}>
                   {renderCells(item).map((cell, cellIndex) => {
-                    const hasToggle = Boolean(expandedRowComponent && (expandToggleColumnKey
+                    const hasToggle = Boolean(rowCanExpand(item) && (expandToggleColumnKey
                       ? columns[cellIndex]?.key === expandToggleColumnKey : cellIndex === 0));
                     const toggle = hasToggle ? <button type="button" className="data-table-expand-toggle"
                       aria-label={expanded ? "סגירת פרטי השורה" : "הצגת פרטי השורה"}

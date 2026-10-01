@@ -118,8 +118,6 @@ function DepositFeedbackPanel({
   onEdit,
   onLoadMore,
   loadingMore,
-  onExport,
-  exporting,
   onStartCorrection,
 }: {
   report: ReportFeedbackRow;
@@ -128,8 +126,6 @@ function DepositFeedbackPanel({
   onEdit: (deposit: ReportFeedbackDepositRow) => void;
   onLoadMore: () => void;
   loadingMore: boolean;
-  onExport: (type: "contributions" | "deposits" | "feedback") => void;
-  exporting: boolean;
   onStartCorrection: () => void;
 }) {
   return <div className="report-deposits-panel">
@@ -142,14 +138,6 @@ function DepositFeedbackPanel({
         {report.canCreateCorrection
           ? <button type="button" className="btn btn-secondary btn-sm" onClick={onStartCorrection}><RefreshCw size={15} />יצירת דיווח מתקן</button>
           : null}
-        <details className="report-control-menu">
-          <summary className="btn btn-secondary btn-sm"><Download size={15} />ייצוא</summary>
-          <div className="report-control-menu-panel">
-            <button type="button" disabled={exporting} onClick={() => onExport("contributions")}>פירוט עובדים והפרשות</button>
-            <button type="button" disabled={exporting} onClick={() => onExport("deposits")}>סיכום הפקדות</button>
-            <button type="button" disabled={exporting} onClick={() => onExport("feedback")}>משוב קופות</button>
-          </div>
-        </details>
       </div>
     </div>
     {content.deposits.length === 0
@@ -425,8 +413,21 @@ export default function ReportsPage() {
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div>
       : "—" },
-    actions: { column: { key: "actions", label: "", width: "56px" }, render: () => null },
-  }), [expandedContent, scope]);
+    actions: { column: { key: "actions", label: "פעולות", width: "245px" }, render: (row) => <div className="report-row-actions">
+      <details className="report-control-menu">
+        <summary className="btn btn-secondary btn-sm"><Download size={15} />ייצוא</summary>
+        <div className="report-control-menu-panel">
+          <button type="button" disabled={exportingReportId === row.id} onClick={() => void exportReport(row, "contributions")}>פירוט עובדים והפרשות</button>
+          <button type="button" disabled={exportingReportId === row.id} onClick={() => void exportReport(row, "deposits")}>סיכום הפקדות</button>
+          <button type="button" disabled={exportingReportId === row.id} onClick={() => void exportReport(row, "feedback")}>משוב קופות</button>
+        </div>
+      </details>
+      {row.canEdit ? <button type="button" className="btn btn-secondary btn-sm"
+        onClick={() => router.push(`/reports/new?resumeReportId=${row.id}`)}>
+        <Pencil size={15} />עריכה
+      </button> : null}
+    </div> },
+  }), [expandedContent, scope, exportingReportId, router]);
 
   const activeColumns = visibleColumns.map((key) => allColumns[key].column);
 
@@ -540,9 +541,11 @@ export default function ReportsPage() {
         rowKey={(row) => row.id}
         tableClassName="report-feedback-table"
         expandToggleColumnKey="actions"
+        canExpandRow={(report) => report.feedbackStatus !== "not-sent"}
         expandedRowKeys={expandedKeys}
         expandedRowComponentSize={430}
         onExpandedRowChange={(key, expanded, report) => {
+          if (report.feedbackStatus === "not-sent") return;
           setExpandedKeys((previous) => {
             const next = new Set(previous);
             if (expanded) next.add(key); else next.delete(key);
@@ -563,8 +566,6 @@ export default function ReportsPage() {
             onEdit={(deposit) => void editDepositFromFeedback(report, deposit.id)}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
-            onExport={(type) => void exportReport(report, type)}
-            exporting={exportingReportId === report.id}
             onStartCorrection={() => router.push(`/reports/new?sourceReportId=${report.id}&sourceMonth=${report.reportingMonth.slice(0, 7)}&sourceKind=${encodeURIComponent(String(report.reportKind))}`)}
           /> : null}
         </div>}
