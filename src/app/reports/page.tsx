@@ -182,17 +182,15 @@ function DepositFeedbackPanel({
           <div role="cell" className="muted-inline">{formatDate(deposit.updatedAt)}</div>
           <div role="cell" className="report-deposit-row-actions">
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => onOpen(deposit)}>
-              <Eye size={15} />{deposit.hasFeedback ? "צפייה במשוב" : "פרטי ההפקדה"}
+              <Eye size={15} />צפייה
             </button>
-            <button
+            {report.canEdit ? <button
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={() => onEdit(deposit)}
-              title={report.canEdit ? "עריכת פרטי ההפקדה" : "צפייה בפרטי ההפקדה כפי שנשלחו"}
             >
-              {report.canEdit ? <Pencil size={15} /> : <Eye size={15} />}
-              {report.canEdit ? "עריכת פרטי ההפקדה" : "צפייה בפרטי ההפקדה"}
-            </button>
+              <Pencil size={15} />עריכה
+            </button> : null}
           </div>
         </div>)}
       </div>}
@@ -402,7 +400,7 @@ export default function ReportsPage() {
     }
   }
 
-  async function editDepositFromFeedback(report: ReportFeedbackRow, reportProductId: string, employeeName: string) {
+  async function editDepositFromFeedback(report: ReportFeedbackRow, reportProductId: string) {
     if (!scope) return;
     setError("");
     try {
@@ -562,7 +560,7 @@ export default function ReportsPage() {
             report={report}
             content={expandedContent[report.id]}
             onOpen={(deposit) => setSelectedDeposit({ report, deposit })}
-            onEdit={(deposit) => void editDepositFromFeedback(report, deposit.id, deposit.employeeName)}
+            onEdit={(deposit) => void editDepositFromFeedback(report, deposit.id)}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
             onExport={(type) => void exportReport(report, type)}
@@ -580,22 +578,8 @@ export default function ReportsPage() {
       employerId={scope.employerId}
       reportId={selectedDeposit.report.id}
       reportProductId={selectedDeposit.deposit.id}
+      hasFeedback={selectedDeposit.deposit.hasFeedback}
       onClose={() => setSelectedDeposit(null)}
-      mode={selectedDeposit.deposit.hasFeedback ? "feedback" : "details"}
-      onTreatmentSaved={() => {
-        setExpandedContent((current) => {
-          const next = { ...current };
-          delete next[selectedDeposit.report.id];
-          return next;
-        });
-        void loadExpanded(selectedDeposit.report, true);
-        void load();
-      }}
-      onEditDeposit={(details) => void editDepositFromFeedback(selectedDeposit.report, details.product.id, details.employee.name)}
-      onStartCorrection={(details) => {
-        setSelectedDeposit(null);
-        router.push(`/reports/new?sourceReportId=${details.report.id}&sourceProductId=${details.product.id}&sourceMonth=${details.report.reportingMonth.slice(0, 7)}&sourceKind=${encodeURIComponent(String(details.report.reportKind))}`);
-      }}
     /> : null}
 
     {editingDeposit && scope ? <DepositPaymentEditor
@@ -605,7 +589,7 @@ export default function ReportsPage() {
       employerId={scope.employerId}
       reportId={editingDeposit.report.id}
       row={editingDeposit.deposit}
-      readOnly={!editingDeposit.report.canEdit}
+      readOnly={false}
       onEvidenceChanged={() => {}}
       onClose={() => setEditingDeposit(null)}
       onSaved={(updated) => {
