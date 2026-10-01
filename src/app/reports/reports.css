@@ -228,6 +228,16 @@
 .contribution-feedback-message { display: flex; align-items: center; gap: 7px; margin-top: 9px; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--teal) 8%, var(--surface)); color: var(--teal); font-size: 13px; }
 .contribution-feedback-message.error { background: color-mix(in srgb, var(--danger) 8%, var(--surface)); color: var(--danger); }
 .feedback-source { display: block; margin-top: 7px; color: var(--muted); }
+.manufacturer-extra-rows { display: grid; gap: 6px; margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--line); }
+.manufacturer-extra-rows > small { color: var(--muted); font-weight: 700; }
+.manufacturer-extra-rows > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) repeat(3, minmax(80px, .7fr));
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.manufacturer-extra-rows > div > span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
 
 .money-feedback-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .feedback-treatment-form { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(320px, 1.7fr); align-items: start; gap: 12px; }
