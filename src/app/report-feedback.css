@@ -90,3 +90,81 @@
   margin: 0;
 }
 .report-deposits-header > *, .report-deposits-item > * { align-self: center; }
+
+
+/* Deposit feedback modal: keep payment metadata compact; reconciliation already repeats contributions when feedback exists. */
+.report-deposit-feedback-modal .feedback-modal-section {
+  margin-top: 14px;
+}
+.report-deposit-feedback-modal .feedback-modal-section-head {
+  margin-bottom: 8px;
+}
+.report-deposit-feedback-modal .feedback-modal-section-head h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+}
+.report-deposit-feedback-modal .feedback-modal-section-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.report-deposit-feedback-modal .money-feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+.report-deposit-feedback-modal .money-feedback-grid > div {
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface) 96%, var(--blue-soft));
+}
+.report-deposit-feedback-modal .money-feedback-grid > div > span,
+.report-deposit-feedback-modal .money-feedback-grid > div > b {
+  display: block;
+  min-width: 0;
+}
+.report-deposit-feedback-modal .money-feedback-grid > div > span {
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+.report-deposit-feedback-modal .money-feedback-grid > div > b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.report-deposit-feedback-modal .feedback-money-detail {
+  grid-column: span 5;
+}
+.report-deposit-feedback-modal .feedback-evidence-panel {
+  margin-top: 10px;
+}
+
+@media (max-width: 1050px) {
+  .report-deposit-feedback-modal .money-feedback-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .report-deposit-feedback-modal .feedback-money-detail {
+    grid-column: span 3;
+  }
+}
+@media (max-width: 700px) {
+  .report-deposit-feedback-modal .money-feedback-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .report-deposit-feedback-modal .feedback-money-detail {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 430px) {
+  .report-deposit-feedback-modal .money-feedback-grid {
+    grid-template-columns: 1fr;
+  }
+  .report-deposit-feedback-modal .feedback-money-detail {
+    grid-column: auto;
+  }
+}

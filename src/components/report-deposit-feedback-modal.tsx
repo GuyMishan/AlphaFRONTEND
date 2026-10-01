@@ -185,7 +185,7 @@ export function ReportDepositFeedbackModal({
         </div>
       </section>
 
-      <section className="feedback-modal-section">
+      {!hasFeedback ? <section className="feedback-modal-section">
         <div className="feedback-modal-section-head">
           <div><h3>רכיבי ההפרשה שדווחו</h3><p>הנתונים שנשלחו עבור העובד והמוצר.</p></div>
         </div>
@@ -202,7 +202,7 @@ export function ReportDepositFeedbackModal({
             ? <div className="notice notice-info">לא נמצאו רכיבי הפרשה בהפקדה.</div>
             : null}
         </div>
-      </section>
+      </section> : null}
 
       {hasFeedback ? <>
         <section className="feedback-modal-section">
