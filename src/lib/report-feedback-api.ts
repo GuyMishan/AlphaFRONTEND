@@ -163,6 +163,7 @@ export type ReportFeedbackDepositDetails = {
     createdAt: string;
     updatedBy: string;
   }>;
+  canUpdateTreatment: boolean;
   canCreateCorrection: boolean;
 };
 
