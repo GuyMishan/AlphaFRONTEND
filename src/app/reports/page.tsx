@@ -48,9 +48,10 @@ const statusFilters: Array<{ value: ReportFeedbackStatus; label: string }> = [
 ];
 
 type ExtraFilterKey = "kind" | "product" | "treatment" | "attention";
-type ColumnKey = "month" | "kind" | "employees" | "total" | "status" | "attention" | "payoff" | "transmission" | "actions";
+type ColumnKey = "employer" | "month" | "kind" | "employees" | "total" | "status" | "attention" | "payoff" | "transmission" | "actions";
 
 const columnOptions: Array<{ key: ColumnKey; label: string; defaultVisible: boolean }> = [
+  { key: "employer", label: "מעסיק", defaultVisible: true },
   { key: "month", label: "חודש", defaultVisible: true },
   { key: "kind", label: "סוג דיווח", defaultVisible: true },
   { key: "employees", label: "עובדים", defaultVisible: false },
@@ -403,6 +404,7 @@ export default function ReportsPage() {
   }
 
   const allColumns = useMemo<Record<ColumnKey, { column: DataTableColumn; render: (row: ReportFeedbackRow) => ReactNode }>>(() => ({
+    employer: { column: { key: "employer", label: "מעסיק", width: "170px" }, render: (row) => <strong>{row.employerName || "—"}</strong> },
     month: { column: { key: "month", label: "חודש", width: "110px" }, render: (row) => <strong>{formatMonth(row.reportingMonth)}</strong> },
     kind: { column: { key: "kind", label: "סוג דיווח", width: "110px" }, render: (row) => kindLabel(row.reportKind) },
     employees: { column: { key: "employees", label: "עובדים", width: "90px" }, render: (row) => row.employeeCount },

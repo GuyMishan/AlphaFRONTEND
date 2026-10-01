@@ -14,6 +14,7 @@ export type ReportFeedbackFilters = {
 
 export type ReportFeedbackRow = {
   id: string;
+  employerName: string;
   reportingMonth: string;
   salaryPaymentDate: string | null;
   reportKind: number | string;
