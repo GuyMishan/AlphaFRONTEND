@@ -1,6 +1,6 @@
 "use client";
 
-import { UiAutocomplete, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
+import { UiAutocomplete, UiDateInput, UiInput } from "@/components/ui-controls";
 import { UiFileUpload } from "@/components/ui-file-upload";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
@@ -523,15 +523,20 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
           <section className="payment-panel"><h3>סיכום</h3><div className="payment-provider-grid"><div><span className="payment-summary-label">עובד ומוצר</span><b>{row.employeeName} · {form.providerName}</b><small>{row.policyNumber || "ללא מס׳ פוליסה"}</small></div><div className="payment-summary-item"><span className="payment-summary-label">סכום מחושב</span><b>₪{Number(row.totalDeposit).toLocaleString("he-IL")}</b></div><div><span className="payment-summary-label">חשבון יצרן</span><b className="account-number">{providerAccount || "לא נמצא חשבון יצרן"}</b></div><div><span className="payment-summary-label">{configuredPensionDebit ? "חשבון חיוב בהרשאה" : "חשבון מעסיק להעברה"}</span><b className="account-number">{metadataForm.paymentMethodCode !== 6 && bankRequired && (!form.employerBankCode || !form.employerAccount) ? "יש להזין פרטי חשבון להעברה" : formatEmployerAccount({ ...row, ...form }, resolvedPaymentAccount)}</b></div></div></section>
 
           {correctionWorkspace ? <section className="payment-panel"><h3>אופן התיקון להעברה לקופה</h3><div className="payment-method-grid">
-            <div className="field"><label>סוג תיקון *</label><UiSelect value={String(correctionOperationCode)} onChange={(event) => {
-              const next = Number(event.target.value) === 3 ? 3 : 2;
-              setCorrectionOperationCode(next);
-              if (next === 2) patch("actualDepositAmount", null);
-              setError("");
-            }}>
-              <option value="2">ללא הפקדה נוספת</option>
-              <option value="3">בוצעה הפקדה נוספת</option>
-            </UiSelect></div>
+            <div className="field"><label>סוג תיקון *</label><EmployerInterfaceOptionSelect
+              category="operation-code"
+              scope="current"
+              allowedCodes={[2, 3]}
+              value={correctionOperationCode}
+              required
+              placeholder="בחירת סוג תיקון"
+              onChange={(value) => {
+                const next = value === 3 ? 3 : 2;
+                setCorrectionOperationCode(next);
+                if (next === 2) patch("actualDepositAmount", null);
+                setError("");
+              }}
+            /></div>
             {correctionOperationCode === 3 ? <div className="field"><label>סכום הפקדה נוספת בפועל *</label><UiInput type="number" min="0.01" step="0.01" value={form.actualDepositAmount ?? ""} onChange={(event) => patch("actualDepositAmount", event.target.value === "" ? null : Number(event.target.value))} /></div> : null}
             <div className="field"><label>חשבון יצרן</label><UiInput value={form.providerAccount} onChange={(event) => patch("providerAccount", event.target.value)} /></div>
             <div className="field"><label>תאריך ערך</label><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /></div>
