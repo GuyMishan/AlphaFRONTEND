@@ -91,3 +91,5 @@
 - Free-plan utilization cards on Dashboard, Employees and Organization → Employers are displayed only when the entitlement plan code is `FREE`. Paid customers retain ordinary employee/employer counts and the dedicated subscription/billing interfaces; paid pricing remains visible in authorized billing/admin surfaces.
 
 - Focused correction entry from Reports & Feedback passes the source report/product to `/reports/new`; derived-report creation can clone only that selected source product while preserving the normal 006 correction rules and immutable-source behavior.
+
+- The expanded report toolbar also exposes formal correction entry and a single export menu for employee/contribution detail, deposit summary and manufacturer feedback. Exports are fetched from authorized backend CSV endpoints rather than reconstructed from the visible page.

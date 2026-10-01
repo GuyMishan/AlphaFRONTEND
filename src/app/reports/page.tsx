@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock3,
   Columns3,
+  Download,
   Eye,
   FileClock,
   Filter,
@@ -109,21 +110,42 @@ function DepositStatusBadge({ value, label }: { value: string; label: string }) 
 }
 
 function DepositFeedbackPanel({
+  report,
   content,
   onOpen,
   onLoadMore,
   loadingMore,
+  onExport,
+  exporting,
+  onStartCorrection,
 }: {
+  report: ReportFeedbackRow;
   content: ExpandedReportContent;
   onOpen: (deposit: ReportFeedbackDepositRow) => void;
   onLoadMore: () => void;
   loadingMore: boolean;
+  onExport: (type: "contributions" | "deposits" | "feedback") => void;
+  exporting: boolean;
+  onStartCorrection: () => void;
 }) {
   return <div className="report-deposits-panel">
     <div className="report-deposits-heading">
       <div>
         <b>הפקדות בדיווח</b>
         <small>כל שורה מייצגת עובד + מוצר. המשוב, מצב הכספים והטיפול נשארים מחוברים לאותה הפקדה.</small>
+      </div>
+      <div className="report-expanded-actions">
+        {["6", "8", "Sent", "Completed"].includes(String(report.status))
+          ? <button type="button" className="btn btn-secondary btn-sm" onClick={onStartCorrection}><RefreshCw size={15} />יצירת דיווח מתקן</button>
+          : null}
+        <details className="report-control-menu">
+          <summary className="btn btn-secondary btn-sm"><Download size={15} />ייצוא</summary>
+          <div className="report-control-menu-panel">
+            <button type="button" disabled={exporting} onClick={() => onExport("contributions")}>פירוט עובדים והפרשות</button>
+            <button type="button" disabled={exporting} onClick={() => onExport("deposits")}>סיכום הפקדות</button>
+            <button type="button" disabled={exporting} onClick={() => onExport("feedback")}>משוב קופות</button>
+          </div>
+        </details>
       </div>
     </div>
     {content.deposits.length === 0
@@ -188,6 +210,7 @@ export default function ReportsPage() {
   const [selectedDeposit, setSelectedDeposit] = useState<{ report: ReportFeedbackRow; deposit: ReportFeedbackDepositRow } | null>(null);
   const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; deposit: ManualDepositRow } | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(() => columnOptions.filter((item) => item.defaultVisible).map((item) => item.key));
+  const [exportingReportId, setExportingReportId] = useState("");
 
   useEffect(() => {
     try {
@@ -345,6 +368,28 @@ export default function ReportsPage() {
     if (key === "product") setFilters((current) => ({ ...current, product: "" }));
     if (key === "treatment") setFilters((current) => ({ ...current, treatmentStatus: "" }));
     if (key === "attention") setFilters((current) => ({ ...current, requiresAttention: false }));
+  }
+
+  async function exportReport(report: ReportFeedbackRow, type: "contributions" | "deposits" | "feedback") {
+    if (!scope || exportingReportId) return;
+    setExportingReportId(report.id);
+    setError("");
+    try {
+      const blob = await reportFeedbackApi.exportReport(scope.organizationId, scope.employerId, report.id, type);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      const suffix = type === "contributions" ? "contributions" : type === "deposits" ? "deposits" : "feedback";
+      anchor.href = url;
+      anchor.download = `alpha-${report.reportingMonth.slice(0, 7)}-${suffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ייצוא הדוח נכשל");
+    } finally {
+      setExportingReportId("");
+    }
   }
 
   async function editDepositFromFeedback(report: ReportFeedbackRow, reportProductId: string, employeeName: string) {
@@ -511,10 +556,14 @@ export default function ReportsPage() {
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadExpanded(report, true)}>נסה שוב</button>
           </div> : null}
           {expandedContent[report.id] ? <DepositFeedbackPanel
+            report={report}
             content={expandedContent[report.id]}
             onOpen={(deposit) => setSelectedDeposit({ report, deposit })}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
+            onExport={(type) => void exportReport(report, type)}
+            exporting={exportingReportId === report.id}
+            onStartCorrection={() => router.push(`/reports/new?sourceReportId=${report.id}&sourceMonth=${report.reportingMonth.slice(0, 7)}`)}
           /> : null}
         </div>}
         columns={activeColumns}

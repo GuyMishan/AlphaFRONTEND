@@ -138,6 +138,7 @@
 .report-deposits-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .report-deposits-heading > div { display: grid; gap: 2px; }
 .report-deposits-heading small { color: var(--muted); }
+.report-deposits-heading .report-expanded-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .report-deposits-grid {
   min-width: 900px;
   border: 1px solid var(--line);

@@ -282,4 +282,16 @@ export const reportFeedbackApi = {
     `${base(organizationId, employerId)}/${reportId}/deposits/${reportProductId}/treatment`,
     { method: "PUT", body: JSON.stringify({ statusCode, note }) },
   ),
+  exportReport: async (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    exportType: "contributions" | "deposits" | "feedback",
+  ) => {
+    const response = await backendFetch(`${base(organizationId, employerId)}/${reportId}/exports/${exportType}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`אירעה שגיאה (${response.status})`);
+    return response.blob();
+  },
 };
