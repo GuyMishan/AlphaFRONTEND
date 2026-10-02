@@ -21,13 +21,12 @@ const EMPTY: AlphaBillingAccount = {
   billingAddress: "",
   paymentMethodType: 1,
   paymentMethodStatus: 1,
-  providerCustomerId: "",
-  providerPaymentMethodId: "",
+  hasProviderPaymentMethod: false,
   cardBrand: "",
   cardLast4: "",
   cardExpiryMonth: null,
   cardExpiryYear: null,
-  bankDebitMandateReference: "",
+  hasBankDebitMandate: false,
   billingMode: 1,
   status: 1,
   defaultPaymentMethodId: null,
@@ -153,7 +152,7 @@ export function AlphaBillingAccountForm({
       setAccount(value);
       if (onSaved) await onSaved();
 
-      if (normalized.paymentMethodType === 1 && !value.providerPaymentMethodId) {
+      if (normalized.paymentMethodType === 1 && !value.hasProviderPaymentMethod) {
         const url = new URL(window.location.href);
         url.searchParams.delete("payment");
         url.searchParams.set("tab", "billing");
@@ -205,8 +204,8 @@ export function AlphaBillingAccountForm({
     }
   }
 
-  const cardConnected = account.paymentMethodType === 1 && Boolean(account.providerPaymentMethodId);
-  const bankConnected = account.paymentMethodType === 2 && Boolean(account.bankDebitMandateReference);
+  const cardConnected = account.paymentMethodType === 1 && account.hasProviderPaymentMethod;
+  const bankConnected = account.paymentMethodType === 2 && account.hasBankDebitMandate;
 
   if (loading) return <div className="empty">טוען פרטי חיוב...</div>;
 
@@ -266,7 +265,7 @@ export function AlphaBillingAccountForm({
               ? <>כרטיס מחובר דרך ספק הסליקה: {account.cardBrand || "Card"} · •••• {account.cardLast4 || "----"}{account.cardExpiryMonth && account.cardExpiryYear ? ` · ${String(account.cardExpiryMonth).padStart(2, "0")}/${account.cardExpiryYear}` : ""}</>
               : account.paymentMethodStatus === 2 ? "ממתין להשלמת החיבור אצל ספק הסליקה." : "עדיין לא חובר כרטיס דרך ספק הסליקה."
             : bankConnected
-              ? <>Bank Debit מחובר · reference: {account.bankDebitMandateReference}</>
+              ? <>Bank Debit מחובר</>
               : "Bank Debit עדיין לא חובר לספק התשלום."}
         </div> : null}
 
