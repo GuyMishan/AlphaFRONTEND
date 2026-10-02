@@ -78,7 +78,7 @@
 
 - Postal code and post-office box are edited in the employee profile only. The report product modal links to the employee card in a new tab; editing the card synchronizes matching editable draft address snapshots via backend but never alters submitted reports.
 
-- Failed employee, deposit or final validation opens `ReportValidationErrorsModal` via the shared `AppModal` shell. It presents contextual Hebrew guidance with expandable original technical codes/messages, a UTF-8 BOM CSV export, and a button to close and resume editing. Backend validation responses remain the single source of truth; no front-end silent auto-correction.
+- Failed employee, deposit or final validation opens `ReportValidationErrorsModal` via the shared `AppModal` shell. It presents contextual Hebrew guidance with expandable original technical codes/messages, an XLSX export, and a button to close and resume editing. Backend validation responses remain the single source of truth; no front-end silent auto-correction.
 
 - Shared DataTable now supports optional `expandedRowComponent(item)`, `expandedRowComponentSize` (number or callback), default/controlled expanded-row keys, change events and optional click-to-expand. Prefix-sum offsets virtualize variable-height expanded rows using stable `rowKey`, retaining expansion across infinite-load batches and keeping all columns fixed. Existing tables do not change unless an expansion renderer is provided.
 
