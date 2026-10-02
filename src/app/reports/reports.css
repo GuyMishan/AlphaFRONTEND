@@ -153,6 +153,17 @@
 .report-deposits-heading > div { display: grid; gap: 2px; }
 .report-deposits-heading small { color: var(--muted); }
 .report-deposits-heading .report-expanded-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.report-deposits-manufacturer-filter {
+  width: min(300px, 100%);
+  display: grid;
+  gap: 5px;
+  flex: 0 1 300px;
+}
+.report-deposits-manufacturer-filter > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
 .report-deposits-grid {
   min-width: 900px;
   border: 1px solid var(--line);
@@ -328,4 +339,9 @@
   .contribution-compare-mark { min-height: 24px; transform: rotate(90deg); }
   .contribution-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .manufacturer-extra-rows > div { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 760px) {
+  .report-deposits-heading { align-items: stretch; flex-direction: column; }
+  .report-deposits-manufacturer-filter { width: 100%; flex-basis: auto; }
 }
