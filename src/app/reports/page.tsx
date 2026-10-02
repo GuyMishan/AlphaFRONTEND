@@ -387,7 +387,7 @@ export default function ReportsPage() {
       const anchor = document.createElement("a");
       const suffix = type === "contributions" ? "contributions" : type === "deposits" ? "deposits" : "feedback";
       anchor.href = url;
-      anchor.download = `alpha-${report.reportingMonth.slice(0, 7)}-${suffix}.csv`;
+      anchor.download = `alpha-${report.reportingMonth.slice(0, 7)}-${suffix}.xlsx`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
