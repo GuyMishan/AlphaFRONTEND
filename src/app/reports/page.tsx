@@ -24,7 +24,7 @@ import { AppModal } from "@/components/app-modal";
 import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { DepositPaymentEditor } from "@/components/manual-deposit-data";
 import { ReportDepositFeedbackModal } from "@/components/report-deposit-feedback-modal";
-import { UiActionMenu, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
+import { UiActionMenu, UiAutocomplete, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { manualDepositsApi, type ManualDepositRow } from "@/lib/manual-deposits-api";
 import { derivedReportsApi } from "@/lib/derived-reports-api";
 import { alphaApi } from "@/lib/api";
@@ -110,6 +110,7 @@ function StatusBadge({ status }: { status: ReportFeedbackRow["feedbackStatus"] }
 type ExpandedReportContent = {
   deposits: ReportFeedbackDepositRow[];
   hasMore: boolean;
+  manufacturers: string[];
 };
 
 function DepositStatusBadge({ value, label }: { value: string; label: string }) {
@@ -123,6 +124,8 @@ function DepositFeedbackPanel({
   onEdit,
   onLoadMore,
   loadingMore,
+  manufacturerValue,
+  onManufacturerValueChange,
 }: {
   report: ReportFeedbackRow;
   content: ExpandedReportContent;
@@ -130,6 +133,8 @@ function DepositFeedbackPanel({
   onEdit: (deposit: ReportFeedbackDepositRow) => void;
   onLoadMore: () => void;
   loadingMore: boolean;
+  manufacturerValue: string;
+  onManufacturerValueChange: (value: string) => void;
 }) {
   return <div className="report-deposits-panel">
     <div className="report-deposits-heading">
@@ -137,6 +142,20 @@ function DepositFeedbackPanel({
         <b>הפקדות בדיווח</b>
         <small>כל שורה מייצגת עובד + מוצר. המשוב, מצב הכספים והטיפול נשארים מחוברים לאותה הפקדה.</small>
       </div>
+      <label className="report-deposits-manufacturer-filter">
+        <span>סינון לפי יצרן</span>
+        <UiAutocomplete
+          value={manufacturerValue}
+          onValueChange={onManufacturerValueChange}
+          options={content.manufacturers
+            .filter((manufacturer) => !manufacturerValue || manufacturer.toLocaleLowerCase("he").includes(manufacturerValue.toLocaleLowerCase("he")))
+            .map((manufacturer) => ({ value: manufacturer, label: manufacturer }))}
+          placeholder="כל היצרנים"
+          emptyText="לא נמצא יצרן בדיווח."
+          ariaLabel="סינון ההפקדות לפי יצרן"
+          onClear={() => onManufacturerValueChange("")}
+        />
+      </label>
     </div>
     {content.deposits.length === 0
       ? <div className="notice notice-info">לא נמצאו הפקדות משויכות לדיווח.</div>
@@ -211,6 +230,8 @@ export default function ReportsPage() {
   const [expandedLoading, setExpandedLoading] = useState<Record<string, boolean>>({});
   const [expandedErrors, setExpandedErrors] = useState<Record<string, string>>({});
   const [expandedMoreLoading, setExpandedMoreLoading] = useState<Record<string, boolean>>({});
+  const [expandedManufacturerInput, setExpandedManufacturerInput] = useState<Record<string, string>>({});
+  const [expandedManufacturerFilter, setExpandedManufacturerFilter] = useState<Record<string, string>>({});
   const expandedRequests = useRef(new Set<string>());
   const [selectedDeposit, setSelectedDeposit] = useState<{ report: ReportFeedbackRow; deposit: ReportFeedbackDepositRow } | null>(null);
   const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; editReportId: string; deposit: ManualDepositRow } | null>(null);
@@ -238,14 +259,24 @@ export default function ReportsPage() {
     try { window.localStorage.setItem("alpha:reports:columns", JSON.stringify(normalized)); } catch { /* ignore */ }
   }
 
-  async function loadExpanded(report: ReportFeedbackRow, force = false) {
+  async function loadExpanded(report: ReportFeedbackRow, force = false, manufacturerOverride?: string) {
     if (!scope || expandedRequests.current.has(report.id) || (!force && expandedContent[report.id])) return;
     expandedRequests.current.add(report.id);
     setExpandedLoading((previous) => ({ ...previous, [report.id]: true }));
     setExpandedErrors((previous) => ({ ...previous, [report.id]: "" }));
     try {
-      const deposits = await reportFeedbackApi.deposits(scope.organizationId, scope.employerId, report.id, "", 0, 100);
-      setExpandedContent((previous) => ({ ...previous, [report.id]: { deposits: deposits.items, hasMore: deposits.hasMore } }));
+      const manufacturer = manufacturerOverride ?? expandedManufacturerFilter[report.id] ?? "";
+      const deposits = await reportFeedbackApi.deposits(
+        scope.organizationId, scope.employerId, report.id, "", 0, 100, manufacturer,
+      );
+      setExpandedContent((previous) => ({
+        ...previous,
+        [report.id]: {
+          deposits: deposits.items,
+          hasMore: deposits.hasMore,
+          manufacturers: deposits.manufacturers,
+        },
+      }));
     } catch (err) {
       setExpandedErrors((previous) => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת ההפקדות נכשלה" }));
     } finally {
@@ -260,13 +291,20 @@ export default function ReportsPage() {
     try {
       const current = expandedContent[report.id];
       const next = await reportFeedbackApi.deposits(
-        scope.organizationId, scope.employerId, report.id, "", current.deposits.length, 100,
+        scope.organizationId,
+        scope.employerId,
+        report.id,
+        "",
+        current.deposits.length,
+        100,
+        expandedManufacturerFilter[report.id] ?? "",
       );
       setExpandedContent((previous) => ({
         ...previous,
         [report.id]: {
           deposits: [...previous[report.id].deposits, ...next.items],
           hasMore: next.hasMore,
+          manufacturers: next.manufacturers,
         },
       }));
     } catch (err) {
@@ -274,6 +312,26 @@ export default function ReportsPage() {
     } finally {
       setExpandedMoreLoading((previous) => ({ ...previous, [report.id]: false }));
     }
+  }
+
+  function changeExpandedManufacturer(report: ReportFeedbackRow, value: string) {
+    setExpandedManufacturerInput((previous) => ({ ...previous, [report.id]: value }));
+
+    const normalized = value.trim();
+    const manufacturers = expandedContent[report.id]?.manufacturers ?? [];
+    const isExactManufacturer = manufacturers.some(
+      (manufacturer) => manufacturer.localeCompare(normalized, "he", { sensitivity: "base" }) === 0,
+    );
+    if (normalized && !isExactManufacturer) return;
+
+    const nextFilter = isExactManufacturer
+      ? manufacturers.find((manufacturer) =>
+          manufacturer.localeCompare(normalized, "he", { sensitivity: "base" }) === 0) ?? normalized
+      : "";
+    if ((expandedManufacturerFilter[report.id] ?? "") === nextFilter) return;
+
+    setExpandedManufacturerFilter((previous) => ({ ...previous, [report.id]: nextFilter }));
+    void loadExpanded(report, true, nextFilter);
   }
 
   async function load(nextScope = scope, nextFilters = filters) {
@@ -329,6 +387,8 @@ export default function ReportsPage() {
       setExpandedKeys(new Set());
       setExpandedContent({});
       setExpandedErrors({});
+      setExpandedManufacturerInput({});
+      setExpandedManufacturerFilter({});
       expandedRequests.current.clear();
     };
     window.addEventListener("alpha:scope-change", handler);
@@ -712,6 +772,8 @@ export default function ReportsPage() {
             onEdit={(deposit) => void editDepositFromFeedback(report, deposit.id)}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
+            manufacturerValue={expandedManufacturerInput[report.id] ?? ""}
+            onManufacturerValueChange={(value) => changeExpandedManufacturer(report, value)}
           /> : null}
         </div>}
         columns={activeColumns}
