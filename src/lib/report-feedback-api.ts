@@ -279,9 +279,18 @@ export const reportFeedbackApi = {
   },
   details: (organizationId: string, employerId: string, reportId: string) =>
     request<ReportFeedbackDetails>(`${base(organizationId, employerId)}/${reportId}`),
-  deposits: (organizationId: string, employerId: string, reportId: string, search = "", skip = 0, take = 50) => {
+  deposits: (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    search = "",
+    skip = 0,
+    take = 50,
+    manufacturer = "",
+  ) => {
     const params = new URLSearchParams({ search, skip: String(skip), take: String(take) });
-    return request<{ items: ReportFeedbackDepositRow[]; hasMore: boolean }>(
+    if (manufacturer) params.set("manufacturer", manufacturer);
+    return request<{ items: ReportFeedbackDepositRow[]; hasMore: boolean; manufacturers: string[] }>(
       `${base(organizationId, employerId)}/${reportId}/deposits?${params}`,
     );
   },
