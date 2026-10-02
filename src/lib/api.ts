@@ -5,7 +5,6 @@ import type {
   AccessEmployer,
   AlphaBillingAccount,
   AlphaBillingAccountInput,
-  AlphaBillingProviderMetadataInput,
   AccessUser,
   ApiProblem,
   Employee,
@@ -258,8 +257,6 @@ export const alphaApi = {
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account`),
   saveOrganizationBillingAccount: (organizationId: string, payload: AlphaBillingAccountInput): Promise<AlphaBillingAccount> =>
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account`, { method: "PUT", body: JSON.stringify(payload) }),
-  updateOrganizationBillingProviderMetadata: (organizationId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
-    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/billing-account/provider-metadata`, { method: "PUT", body: JSON.stringify(payload) }),
   startOrganizationPaymentSetup: (organizationId: string, returnPath: string): Promise<PaymentMethodSetupResult> =>
     request<PaymentMethodSetupResult>(`/api/organizations/${organizationId}/billing-account/provider/setup`, { method: "POST", body: JSON.stringify({ returnPath }) }),
   syncOrganizationPaymentMethod: (organizationId: string): Promise<PaymentMethodSyncResult> =>
@@ -323,8 +320,6 @@ export const alphaApi = {
     request<BillingGateStatus>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/gate`),
   saveEmployerBillingAccount: (organizationId: string, employerId: string, payload: AlphaBillingAccountInput): Promise<AlphaBillingAccount> =>
     request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account`, { method: "PUT", body: JSON.stringify(payload) }),
-  updateEmployerBillingProviderMetadata: (organizationId: string, employerId: string, payload: AlphaBillingProviderMetadataInput): Promise<AlphaBillingAccount> =>
-    request<AlphaBillingAccount>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/provider-metadata`, { method: "PUT", body: JSON.stringify(payload) }),
   startEmployerPaymentSetup: (organizationId: string, employerId: string, returnPath: string): Promise<PaymentMethodSetupResult> =>
     request<PaymentMethodSetupResult>(`/api/organizations/${organizationId}/employers/${employerId}/billing-account/provider/setup`, { method: "POST", body: JSON.stringify({ returnPath }) }),
   syncEmployerPaymentMethod: (organizationId: string, employerId: string): Promise<PaymentMethodSyncResult> =>
