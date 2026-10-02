@@ -624,17 +624,6 @@ export type AlphaBillingAccountInput = {
   paymentMethodType: BillingPaymentMethodType;
 };
 
-export type AlphaBillingProviderMetadataInput = {
-  paymentMethodStatus: BillingPaymentMethodStatus;
-  providerCustomerId: string;
-  providerPaymentMethodId: string;
-  cardBrand: string;
-  cardLast4: string;
-  cardExpiryMonth: number | null;
-  cardExpiryYear: number | null;
-  bankDebitMandateReference: string;
-};
-
 
 export type EmployerBillingResolution = {
   employerId: string;
