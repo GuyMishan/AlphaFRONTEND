@@ -601,13 +601,12 @@ export type AlphaBillingAccount = {
   billingAddress: string;
   paymentMethodType: BillingPaymentMethodType;
   paymentMethodStatus: BillingPaymentMethodStatus;
-  providerCustomerId: string;
-  providerPaymentMethodId: string;
+  hasProviderPaymentMethod: boolean;
   cardBrand: string;
   cardLast4: string;
   cardExpiryMonth: number | null;
   cardExpiryYear: number | null;
-  bankDebitMandateReference: string;
+  hasBankDebitMandate: boolean;
   billingMode: BillingMode;
   status: BillingAccountStatus;
   defaultPaymentMethodId: string | null;
