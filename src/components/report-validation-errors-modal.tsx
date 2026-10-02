@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, AlertCircle } from "lucide-react";
+import * as XLSX from "xlsx";
 import { AppModal } from "@/components/app-modal";
 import type { ReportValidationIssue, ReportValidationResult } from "@/lib/report-validation-api";
 
@@ -65,11 +66,6 @@ function explain(issue: ReportValidationIssue, key: string): FriendlyIssue {
   };
 }
 
-function csvCell(value: string): string {
-  // Prevent spreadsheet formula injection while retaining a readable UTF-8 CSV.
-  const safe = /^[=+@\-\t\r]/.test(value) ? `'${value}` : value;
-  return `"${safe.replace(/"/g, '""')}"`;
-}
 
 export function ReportValidationErrorsModal({ result, onClose, reportMonth }: {
   result: ReportValidationResult; onClose: () => void; reportMonth: string;
@@ -84,17 +80,23 @@ export function ReportValidationErrorsModal({ result, onClose, reportMonth }: {
   function download() {
     const header = ["מספר", "תחום", "מה צריך לתקן", "איך מתקנים", "קוד טכני", "הודעה מקורית"];
     const rows = findings.map((item, index) => [
-      String(index + 1), item.category, item.title, item.guidance, item.code, item.original,
+      index + 1, item.category, item.title, item.guidance, item.code, item.original,
     ]);
-    const csv = "\uFEFF" + [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `alpha-report-errors-${reportMonth || "report"}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    worksheet["!cols"] = [
+      { wch: 9 },
+      { wch: 18 },
+      { wch: 34 },
+      { wch: 55 },
+      { wch: 24 },
+      { wch: 70 },
+    ];
+    worksheet["!autofilter"] = { ref: `A1:F${rows.length + 1}` };
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "שגיאות בדיווח");
+    workbook.Workbook = { Views: [{ RTL: true }] };
+    XLSX.writeFile(workbook, `alpha-report-errors-${reportMonth || "report"}.xlsx`, { compression: true });
   }
 
   return <AppModal title="נמצאו שגיאות בדיווח"
