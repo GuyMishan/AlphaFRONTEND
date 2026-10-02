@@ -153,7 +153,6 @@ function DepositFeedbackPanel({
           placeholder="כל היצרנים"
           emptyText="לא נמצא יצרן בדיווח."
           ariaLabel="סינון ההפקדות לפי יצרן"
-          onClear={() => onManufacturerValueChange("")}
         />
       </label>
     </div>
