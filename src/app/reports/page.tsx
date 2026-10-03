@@ -123,6 +123,7 @@ function DepositFeedbackPanel({
   onOpen,
   onEdit,
   onLoadMore,
+  loading,
   loadingMore,
   manufacturerValue,
   onManufacturerValueChange,
@@ -132,6 +133,7 @@ function DepositFeedbackPanel({
   onOpen: (deposit: ReportFeedbackDepositRow) => void;
   onEdit: (deposit: ReportFeedbackDepositRow) => void;
   onLoadMore: () => void;
+  loading: boolean;
   loadingMore: boolean;
   manufacturerValue: string;
   onManufacturerValueChange: (value: string) => void;
@@ -156,9 +158,11 @@ function DepositFeedbackPanel({
         />
       </label>
     </div>
-    {content.deposits.length === 0
-      ? <div className="notice notice-info">לא נמצאו הפקדות משויכות לדיווח.</div>
-      : <div className="report-deposits-grid" role="table" aria-label="הפקדות ומשובים לפי עובד ומוצר">
+    {loading
+      ? <div className="empty">טוען הפקדות ומשובים...</div>
+      : content.deposits.length === 0
+        ? <div className="notice notice-info">לא נמצאו הפקדות משויכות לדיווח.</div>
+        : <div className="report-deposits-grid" role="table" aria-label="הפקדות ומשובים לפי עובד ומוצר">
         <div className="report-deposits-header" role="row">
           <span role="columnheader">עובד</span>
           <span role="columnheader">יצרן / מוצר</span>
@@ -205,7 +209,7 @@ function DepositFeedbackPanel({
           </div>
         </div>)}
       </div>}
-    {content.hasMore ? <button className="btn btn-secondary btn-sm report-deposits-load-more" disabled={loadingMore} onClick={onLoadMore}>
+    {!loading && content.hasMore ? <button className="btn btn-secondary btn-sm report-deposits-load-more" disabled={loadingMore} onClick={onLoadMore}>
       {loadingMore ? "טוען..." : "טעינת הפקדות נוספות"}
     </button> : null}
   </div>;
@@ -759,7 +763,7 @@ export default function ReportsPage() {
           if (expanded) void loadExpanded(report);
         }}
         expandedRowComponent={(report) => <div className="report-deposits-expanded">
-          {expandedLoading[report.id] ? <div className="empty">טוען הפקדות ומשובים...</div> : null}
+          {expandedLoading[report.id] && !expandedContent[report.id] ? <div className="empty">טוען הפקדות ומשובים...</div> : null}
           {expandedErrors[report.id] ? <div className="notice notice-error">
             {expandedErrors[report.id]}
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadExpanded(report, true)}>נסה שוב</button>
@@ -769,6 +773,7 @@ export default function ReportsPage() {
             content={expandedContent[report.id]}
             onOpen={(deposit) => setSelectedDeposit({ report, deposit })}
             onEdit={(deposit) => void editDepositFromFeedback(report, deposit.id)}
+            loading={Boolean(expandedLoading[report.id])}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
             manufacturerValue={expandedManufacturerInput[report.id] ?? ""}
