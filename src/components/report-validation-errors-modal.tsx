@@ -96,7 +96,9 @@ export function ReportValidationErrorsModal({ result, onClose, reportMonth }: {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "שגיאות בדיווח");
     workbook.Workbook = { Views: [{ RTL: true }] };
-    XLSX.writeFile(workbook, `alpha-report-errors-${reportMonth || "report"}.xlsx`, { compression: true });
+    const [year, month] = (reportMonth || "").slice(0, 7).split("-");
+    const monthLabel = year && month ? `${month}-${year}` : "ללא חודש";
+    XLSX.writeFile(workbook, `שגיאות בדיווח - ${monthLabel}.xlsx`, { compression: true });
   }
 
   return <AppModal title="נמצאו שגיאות בדיווח"
