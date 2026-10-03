@@ -448,9 +448,15 @@ export default function ReportsPage() {
       const blob = await reportFeedbackApi.exportReport(scope.organizationId, scope.employerId, report.id, type);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
-      const suffix = type === "contributions" ? "contributions" : type === "deposits" ? "deposits" : "feedback";
+      const [year, month] = report.reportingMonth.slice(0, 7).split("-");
+      const monthLabel = year && month ? `${month}-${year}` : report.reportingMonth.slice(0, 7);
+      const fileLabel = type === "contributions"
+        ? "פירוט עובדים והפרשות"
+        : type === "deposits"
+          ? "סיכום הפקדות"
+          : "משוב קופות";
       anchor.href = url;
-      anchor.download = `alpha-${report.reportingMonth.slice(0, 7)}-${suffix}.xlsx`;
+      anchor.download = `${fileLabel} - ${monthLabel}.xlsx`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
