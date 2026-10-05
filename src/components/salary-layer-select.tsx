@@ -2,7 +2,7 @@
 
 import { UiSelect } from "@/components/ui-controls";
 import { useEffect, useState } from "react";
-import { getSession } from "@/lib/session";
+import { getPensionEditorReferenceData } from "@/lib/pension-editor-reference-data";
 
 type SalaryLayerOption = { code: number; name: string };
 
@@ -13,23 +13,12 @@ export function SalaryLayerSelect({ value, disabled = false, onChange }: { value
 
   useEffect(() => {
     let active = true;
-    const session = getSession();
-    const headers = new Headers({ Accept: "application/json" });
-    if (session?.mode === "development" && session.userId) {
-      headers.set("X-Alpha-User-Id", session.userId);
-      if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
-    }
     setLoading(true);
     setError("");
-    fetch("/api/backend/api/reference-data/salary-layers", { headers, cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`טעינת רובדי השכר נכשלה (${response.status})`);
-        return response.json() as Promise<SalaryLayerOption[]>;
-      })
-      .then((items) => { if (active) setOptions(items); })
+    getPensionEditorReferenceData()
+      .then((data) => { if (active) setOptions(data.salaryLayers); })
       .catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת רובדי השכר נכשלה"); })
       .finally(() => { if (active) setLoading(false); });
-
     return () => { active = false; };
   }, []);
 
