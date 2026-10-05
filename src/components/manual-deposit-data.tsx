@@ -92,7 +92,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
     {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <DataTable
       items={rows}
       rowKey={(row) => row.id}
-      rowHeight={48}
+      rowHeight={64}
       maxHeight={560}
       tableClassName="deposit-table"
       wrapperClassName="deposit-table-wrap"
