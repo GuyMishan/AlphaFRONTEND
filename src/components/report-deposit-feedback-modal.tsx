@@ -219,14 +219,17 @@ export function ReportDepositFeedbackModal({
               const rateMismatch = manufacturer?.contributionRate != null && !sameNumber(employer.percentage, manufacturer.contributionRate);
               const salaryMismatch = manufacturer?.calculatedSalary != null && !sameNumber(details.product.salary, manufacturer.calculatedSalary);
               const hasError = isActionableManufacturerError(manufacturer?.errorCode);
-              const hasDifference = amountMismatch || rateMismatch || salaryMismatch || hasError;
-              return <article className={`contribution-comparison-card${hasDifference ? " has-difference" : ""}`} key={employer.id}>
+              const hasNumericDifference = amountMismatch || rateMismatch || salaryMismatch;
+              const requiresAttention = hasNumericDifference || hasError;
+              return <article className={`contribution-comparison-card${requiresAttention ? " has-difference" : ""}`} key={employer.id}>
                 <div className="contribution-comparison-title">
                   <strong>{employer.label}</strong>
                   {manufacturer
-                    ? hasDifference
-                      ? <span className="feedback-state attention"><AlertTriangle size={14} />נמצא פער</span>
-                      : <span className="feedback-state completed"><CheckCircle2 size={14} />נקלט ללא פער</span>
+                    ? hasNumericDifference
+                      ? <span className="feedback-state attention"><AlertTriangle size={14} />נמצא פער בנתונים</span>
+                      : hasError
+                        ? <span className="feedback-state attention"><AlertTriangle size={14} />שגיאת יצרן</span>
+                        : <span className="feedback-state completed"><CheckCircle2 size={14} />נקלט ללא פער</span>
                     : <span className="feedback-state pending">לא התקבל פירוט יצרן לרכיב</span>}
                 </div>
                 <div className="contribution-sides">
