@@ -13,14 +13,23 @@ type Props = {
   required?: boolean;
   placeholder?: string;
   className?: string;
+  suppliedOptions?: ReferenceOption[];
+  suppliedLoading?: boolean;
+  suppliedError?: string;
 };
 
-export function ReferenceOptionSelect({ category, scope = "all", value, onChange, disabled, required, placeholder = "בחרו אפשרות", className }: Props) {
-  const [options, setOptions] = useState<ReferenceOption[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+export function ReferenceOptionSelect({ category, scope = "all", value, onChange, disabled, required, placeholder = "בחרו אפשרות", className, suppliedOptions, suppliedLoading, suppliedError }: Props) {
+  const [options, setOptions] = useState<ReferenceOption[]>(suppliedOptions ?? []);
+  const [loading, setLoading] = useState(suppliedOptions ? Boolean(suppliedLoading) : true);
+  const [error, setError] = useState(suppliedError ?? "");
 
   useEffect(() => {
+    if (suppliedOptions) {
+      setOptions(suppliedOptions);
+      setLoading(Boolean(suppliedLoading));
+      setError(suppliedError ?? "");
+      return;
+    }
     let active = true;
     setLoading(true);
     setError("");
@@ -29,7 +38,7 @@ export function ReferenceOptionSelect({ category, scope = "all", value, onChange
       .catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת האפשרויות נכשלה"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [category, scope]);
+  }, [category, scope, suppliedOptions, suppliedLoading, suppliedError]);
 
   const normalized = value == null ? "" : String(value);
   const hasCurrent = useMemo(() => options.some((item) => item.value === normalized), [options, normalized]);
