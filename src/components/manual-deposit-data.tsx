@@ -11,7 +11,7 @@ import { DataTable } from "@/components/data-table";
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
 import { bankReferenceApi, type BankBranchReference, type BankReference } from "@/lib/bank-reference-api";
-import { employerInterfaceApi, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
+import { employerInterfaceApi, type EmployerInterfaceOption, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
 import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
 import { reportAttachmentsApi, type ReportAttachment } from "@/lib/report-attachments-api";
 import { paymentConfirmationsApi, type PaymentConfirmation } from "@/lib/payment-confirmations-api";
@@ -272,6 +272,14 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [resolvedPaymentAccount, setResolvedPaymentAccount] = useState<{ bankId: number; branchId: number; maskedAccountNumber: string; mandateIsActive: boolean } | null>(null);
+  const [editorOptions, setEditorOptions] = useState<Record<string, EmployerInterfaceOption[]>>({});
+  const [editorOptionsLoading, setEditorOptionsLoading] = useState(true);
+  const [editorOptionsError, setEditorOptionsError] = useState("");
+  const [bankOpen, setBankOpen] = useState(false);
+  const [branchOpen, setBranchOpen] = useState(false);
+
+  const optionsFor = (category: string, scope = "all") =>
+    (editorOptions[category] ?? []).filter((item) => item.scope === "all" || item.scope === scope);
 
   useEffect(() => {
     let active = true; setLoadingMetadata(true);
@@ -281,7 +289,8 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       reportAttachmentsApi.list(organizationId, employerId, reportId),
       paymentConfirmationsApi.list(organizationId, employerId, reportId, row.id),
       alphaApi.employerPaymentResolution(organizationId, employerId),
-    ]).then(([item, previous, attachmentList, proofList, paymentResolution]) => {
+      employerInterfaceApi.optionsBundle(["operation-code", "old-pension-type", "refund-reason", "previous-reference-exception"]),
+    ]).then(([item, previous, attachmentList, proofList, paymentResolution, bundledOptions]) => {
       if (!active) return;
       setMetadata(item);
       const automaticDebit = !readOnly && !isNegativeKind(item.reportKind) && !isDifferencesKind(item.reportKind)
@@ -295,6 +304,9 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       setAttachments(attachmentList.items);
       setPaymentProofs(proofList); onEvidenceChanged(proofList);
       setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
+      setEditorOptions(bundledOptions);
+      setEditorOptionsError("");
+      setEditorOptionsLoading(false);
       const effectiveAccount = paymentResolution.account;
       setResolvedPaymentAccount(effectiveAccount ? { bankId: effectiveAccount.bankId, branchId: effectiveAccount.branchId, maskedAccountNumber: effectiveAccount.maskedAccountNumber, mandateIsActive: effectiveAccount.mandateIsActive } : null);
       if (automaticDebit && effectiveAccount) {
@@ -313,15 +325,21 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
         }));
       }
 
-    }).catch((err) => { if (active) setError(shortError(err instanceof Error ? err.message : "טעינת נתוני הדיווח נכשלה")); })
+    }).catch((err) => {
+      if (active) {
+        const message = shortError(err instanceof Error ? err.message : "טעינת נתוני הדיווח נכשלה");
+        setError(message);
+        setEditorOptionsError(message);
+        setEditorOptionsLoading(false);
+      }
+    })
       .finally(() => { if (active) setLoadingMetadata(false); });
     return () => { active = false; };
   }, [organizationId, employerId, reportId, row.id]);
 
   useEffect(() => {
     let active = true;
-    void bankReferenceApi.banks("", 100).then((items) => { if (active) setBanks(items); }).catch(() => { if (active) setBanks([]); });
-    if (row.fundExternalKey) {
+    if (row.fundExternalKey && !row.providerAccount) {
       void alphaApi.pensionFunds(row.productType as PensionProductType, row.fundExternalKey, 20).then((items) => {
         if (!active) return;
         const exact = items.find((item) => item.externalKey === row.fundExternalKey) ?? null;
@@ -338,6 +356,29 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     }
     return () => { active = false; };
   }, [row.fundExternalKey, row.productType]);
+
+  useEffect(() => {
+    if (!bankOpen) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void bankReferenceApi.banks(bankSelection.trim(), 100)
+        .then((items) => { if (active) setBanks(items); })
+        .catch(() => { if (active) setBanks([]); });
+    }, 180);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [bankOpen, bankSelection]);
+
+  useEffect(() => {
+    const bankCode = Number(form.employerBankCode);
+    if (!branchOpen || !bankCode) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void bankReferenceApi.branches(bankCode, branchSelection.trim(), 200)
+        .then((items) => { if (active) setBranches(items); })
+        .catch(() => { if (active) setBranches([]); });
+    }, 180);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [branchOpen, branchSelection, form.employerBankCode]);
 
   // Bank/branch option lists arrive after the payment account. Upgrade a numeric
   // selection to its full human-readable label without replacing user-typed searches.
@@ -361,14 +402,6 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       current.trim() === `${code} -`
         ? branchLabel(matching) : current);
   }, [branches, form.employerBranch]);
-
-  useEffect(() => {
-    const bankCode = Number(form.employerBankCode);
-    if (!bankCode) { setBranches([]); return; }
-    let active = true;
-    void bankReferenceApi.branches(bankCode, "", 200).then((items) => { if (active) setBranches(items); }).catch(() => { if (active) setBranches([]); });
-    return () => { active = false; };
-  }, [form.employerBankCode]);
 
   function patch<K extends keyof ManualPaymentInput>(key: K, value: ManualPaymentInput[K]) { setForm((current) => ({ ...current, [key]: value })); setError(""); }
   function patchMetadata<K extends keyof EmployerInterfaceProductMetadataInput>(key: K, value: EmployerInterfaceProductMetadataInput[K]) { setMetadataForm((current) => ({ ...current, [key]: value })); setError(""); }
@@ -541,6 +574,9 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
               category="operation-code"
               scope="current"
               allowedCodes={[2, 3]}
+              suppliedOptions={optionsFor("operation-code", "current")}
+              suppliedLoading={editorOptionsLoading}
+              suppliedError={editorOptionsError}
               value={correctionOperationCode}
               required
               placeholder="בחירת סוג תיקון"
@@ -590,14 +626,14 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
             {bankRequired || configuredPensionDebit ? <>
               <div className="field"><label>{bankRequired ? "בנק *" : "בנק"}</label><UiAutocomplete
                 required={bankRequired} ariaLabel="בחירת בנק" value={bankSelection}
-                onValueChange={chooseBank} onClear={() => {
+                onOpenChange={setBankOpen} onValueChange={chooseBank} onClear={() => {
                   setForm((current) => ({ ...current, employerBankCode: "", employerBankName: "",
                     employerBranch: "" }));
                   setBranchSelection(""); setBranches([]);
                 }}
                 options={banks.map((bank) => ({ value: String(bank.bankCode), label: bankLabel(bank) }))}
                 placeholder="חיפוש בנק" /></div>
-              <div className="field"><label>{bankRequired ? "סניף *" : "סניף"}</label><UiInput required={bankRequired} list={`branches-${row.id}`} value={branchSelection} onChange={(e) => chooseBranch(e.target.value)} placeholder={form.employerBankCode ? "חיפוש סניף" : "יש לבחור בנק תחילה"} disabled={!form.employerBankCode} /><datalist id={`branches-${row.id}`}>{branches.map((branch) => <option key={branch.branchCode} value={branchLabel(branch)} />)}</datalist></div>
+              <div className="field"><label>{bankRequired ? "סניף *" : "סניף"}</label><UiAutocomplete required={bankRequired} ariaLabel="בחירת סניף" value={branchSelection} onOpenChange={setBranchOpen} onValueChange={chooseBranch} disabled={!form.employerBankCode} options={branches.map((branch) => ({ value: String(branch.branchCode), label: branchLabel(branch) }))} placeholder={form.employerBankCode ? "חיפוש סניף" : "יש לבחור בנק תחילה"} /></div>
               <div className="field"><label>{bankRequired ? "מס׳ חשבון *" : "מס׳ חשבון"}</label><UiInput required={bankRequired} inputMode="numeric" maxLength={20}
                 value={form.employerAccount && !/^0+$/.test(form.employerAccount) ? form.employerAccount : ""} onChange={(e) => patch("employerAccount", e.target.value.replace(/\D/g, "").slice(0, 20))} /></div>
             </> : null}
@@ -606,14 +642,14 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
           {!readOnly ? paymentEvidencePanel : null}
 
           {!differences && !negative && isOldPensionFund ? <section className="payment-panel"><h3>השלמה נדרשת לקרן ותיקה</h3><div className="payment-method-grid">
-            <div className="field"><label>סוג פנסיה *</label><EmployerInterfaceOptionSelect category="old-pension-type" scope="current" value={metadataForm.oldPensionTypeCode} required onChange={(value) => patchMetadata("oldPensionTypeCode", value)} /></div>
+            <div className="field"><label>סוג פנסיה *</label><EmployerInterfaceOptionSelect category="old-pension-type" scope="current" value={metadataForm.oldPensionTypeCode} suppliedOptions={optionsFor("old-pension-type", "current")} suppliedLoading={editorOptionsLoading} suppliedError={editorOptionsError} required onChange={(value) => patchMetadata("oldPensionTypeCode", value)} /></div>
             <div className="field"><label>חלקיות משרה (%)</label><UiInput type="number" min="1" max="100" step="0.01" value={metadataForm.employmentPercentage ?? ""} onChange={(e) => patchMetadata("employmentPercentage", e.target.value === "" ? null : Number(e.target.value))} /></div>
             <div className="field"><label>ימי עבודה בחודש</label><UiInput type="number" min="0" max="31" step="1" value={metadataForm.workDaysInMonth ?? ""} onChange={(e) => patchMetadata("workDaysInMonth", e.target.value === "" ? null : Number(e.target.value))} /></div>
           </div></section> : null}
 
           {negative ? <section className="payment-panel"><h3>פרטי הבקשה</h3><div className="payment-method-grid">
-            <div className="field"><label>סוג פעולה *</label><EmployerInterfaceOptionSelect category="operation-code" scope="negative" value={metadataForm.operationCode} required onChange={(value) => patchMetadata("operationCode", value)} /></div>
-            <div className="field"><label>סיבת בקשה להחזר/ביטול *</label><EmployerInterfaceOptionSelect category="refund-reason" scope="negative" value={metadataForm.refundReason} required onChange={(value) => patchMetadata("refundReason", value)} /></div>
+            <div className="field"><label>סוג פעולה *</label><EmployerInterfaceOptionSelect category="operation-code" scope="negative" value={metadataForm.operationCode} suppliedOptions={optionsFor("operation-code", "negative")} suppliedLoading={editorOptionsLoading} suppliedError={editorOptionsError} required onChange={(value) => patchMetadata("operationCode", value)} /></div>
+            <div className="field"><label>סיבת בקשה להחזר/ביטול *</label><EmployerInterfaceOptionSelect category="refund-reason" scope="negative" value={metadataForm.refundReason} suppliedOptions={optionsFor("refund-reason", "negative")} suppliedLoading={editorOptionsLoading} suppliedError={editorOptionsError} required onChange={(value) => patchMetadata("refundReason", value)} /></div>
           </div></section> : null}
 
 
@@ -646,7 +682,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
           {needsPrevious ? <section className="payment-panel"><h3>קישור לדיווח המקורי</h3><div className="notice notice-info" style={{ marginBottom: 12 }}>בפעולת תיקון או ביטול יש לקשר לדיווח המקורי. ניתן להזין אחד מהמזהים או לבחור חריג מתאים.</div><div className="payment-method-grid">
             <div className="field"><label>מספר זיהוי קודם (GUID)</label><UiInput maxLength={36} value={previousReference.previousIdentifier} onChange={(e) => patchPrevious("previousIdentifier", e.target.value)} placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" /></div>
             <div className="field"><label>מספר מסלקה קודם (GUID)</label><UiInput maxLength={36} value={previousReference.previousClearingIdentifier} onChange={(e) => patchPrevious("previousClearingIdentifier", e.target.value)} placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" /></div>
-            <div className="field"><label>חריג להיעדר מזהה קודם</label><EmployerInterfaceOptionSelect category="previous-reference-exception" value={previousReference.previousReferenceExceptionCode} onChange={(value) => patchPrevious("previousReferenceExceptionCode", value)} /></div>
+            <div className="field"><label>חריג להיעדר מזהה קודם</label><EmployerInterfaceOptionSelect category="previous-reference-exception" value={previousReference.previousReferenceExceptionCode} suppliedOptions={optionsFor("previous-reference-exception")} suppliedLoading={editorOptionsLoading} suppliedError={editorOptionsError} onChange={(value) => patchPrevious("previousReferenceExceptionCode", value)} /></div>
           </div></section> : null}
         </div>
       </div>
