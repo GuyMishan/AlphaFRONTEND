@@ -392,6 +392,8 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   const [branches, setBranches] = useState<BankBranchOption[]>([]);
   const [bankSearch, setBankSearch] = useState("");
   const [branchSearch, setBranchSearch] = useState("");
+  const [bankOpen, setBankOpen] = useState(false);
+  const [branchOpen, setBranchOpen] = useState(false);
   const [mandateStatus, setMandateStatus] = useState<BankDebitMandateStatus>(1);
   const [externalMandateId, setExternalMandateId] = useState("");
   const [documentId, setDocumentId] = useState("");
@@ -434,11 +436,12 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   useEffect(() => { void loadResolution(); }, [organizationId, employerId]);
 
   useEffect(() => {
+    if (!bankOpen) return;
     const timer = window.setTimeout(() => {
       alphaApi.banks(bankSearch.trim(), 50).then(setBanks).catch(() => setBanks([]));
     }, 200);
     return () => window.clearTimeout(timer);
-  }, [bankSearch]);
+  }, [bankOpen, bankSearch]);
 
   useEffect(() => {
     const bank = banks.find((item) => item.bankCode === form.bankId);
@@ -446,12 +449,12 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   }, [banks, form.bankId, bankSearch]);
 
   useEffect(() => {
-    if (!form.bankId) { setBranches([]); return; }
+    if (!branchOpen || !form.bankId) return;
     const timer = window.setTimeout(() => {
       alphaApi.bankBranches(form.bankId, branchSearch.trim(), 100).then(setBranches).catch(() => setBranches([]));
     }, 200);
     return () => window.clearTimeout(timer);
-  }, [form.bankId, branchSearch]);
+  }, [branchOpen, form.bankId, branchSearch]);
 
   useEffect(() => {
     const branch = branches.find((item) => item.branchCode === form.branchId);
@@ -653,11 +656,11 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
           <div className="grid compact-payment-grid">
             <div className="field">
               <label>בנק *</label>
-              <UiAutocomplete required value={bankSearch} ariaLabel="בחירת בנק" placeholder="שם או מספר בנק" emptyText="לא נמצאו בנקים." options={banks.map((bank) => ({ value: String(bank.bankCode), label: `${bank.bankCode} - ${bank.bankName}` }))} onClear={() => { setForm((current) => ({ ...current, bankId: 0, branchId: 0 })); setBranchSearch(""); setBranches([]); }} onValueChange={(value) => { setBankSearch(value); const selected = banks.find((bank) => value === `${bank.bankCode} - ${bank.bankName}`); setForm((current) => ({ ...current, bankId: selected?.bankCode ?? 0, branchId: 0 })); setBranchSearch(""); }} />
+              <UiAutocomplete required value={bankSearch} ariaLabel="בחירת בנק" onOpenChange={setBankOpen} placeholder="שם או מספר בנק" emptyText="לא נמצאו בנקים." options={banks.map((bank) => ({ value: String(bank.bankCode), label: `${bank.bankCode} - ${bank.bankName}` }))} onClear={() => { setForm((current) => ({ ...current, bankId: 0, branchId: 0 })); setBranchSearch(""); setBranches([]); }} onValueChange={(value) => { setBankSearch(value); const selected = banks.find((bank) => value === `${bank.bankCode} - ${bank.bankName}`); setForm((current) => ({ ...current, bankId: selected?.bankCode ?? 0, branchId: 0 })); setBranchSearch(""); }} />
             </div>
             <div className="field">
               <label>סניף *</label>
-              <UiAutocomplete required disabled={!form.bankId} value={branchSearch} ariaLabel="בחירת סניף" placeholder="סניף או עיר" emptyText="לא נמצאו סניפים." options={branches.map((branch) => ({ value: String(branch.branchCode), label: `${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}` }))} onClear={() => setForm((current) => ({ ...current, branchId: 0 }))} onValueChange={(value) => { setBranchSearch(value); const selected = branches.find((branch) => value === `${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`); setForm((current) => ({ ...current, branchId: selected?.branchCode ?? 0 })); }} />
+              <UiAutocomplete required disabled={!form.bankId} value={branchSearch} ariaLabel="בחירת סניף" onOpenChange={setBranchOpen} placeholder="סניף או עיר" emptyText="לא נמצאו סניפים." options={branches.map((branch) => ({ value: String(branch.branchCode), label: `${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}` }))} onClear={() => setForm((current) => ({ ...current, branchId: 0 }))} onValueChange={(value) => { setBranchSearch(value); const selected = branches.find((branch) => value === `${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`); setForm((current) => ({ ...current, branchId: selected?.branchCode ?? 0 })); }} />
             </div>
             <div className="field"><label>מספר חשבון *</label><UiInput required inputMode="numeric" maxLength={30} value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })} /></div>
             <div className="field"><label>שם בעל החשבון *</label><UiInput required maxLength={150} value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} /></div>
