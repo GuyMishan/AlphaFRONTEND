@@ -305,9 +305,9 @@ function ContributionEditor({ context, title, party, product, items, editable, o
     maxHeight={360}
     columns={[
       { key: "component", label: "רכיב", width: "25%" },
-      { key: "amount", label: "סכום", width: "24%" },
-      { key: "percentage", label: "אחוז", width: "21%" },
-      { key: "exempt", label: "פטורים", width: "30%" },
+      { key: "amount", label: "סכום", width: "25%" },
+      { key: "percentage", label: "אחוז", width: "25%" },
+      { key: "exempt", label: "פטורים", width: "25%" },
     ]}
     renderCells={({ value, label }) => {
       const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 };
