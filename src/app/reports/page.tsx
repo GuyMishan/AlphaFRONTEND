@@ -127,6 +127,25 @@ function DepositStatusBadge({ value, label }: { value: string; label: string }) 
   return <span className={`feedback-state ${value}`}>{label}</span>;
 }
 
+function feedbackErrorScopeLabel(scope: keyof ReportFeedbackDepositRow["feedbackErrorSummary"]) {
+  switch (scope) {
+    case "deposit": return "ברמת הפקדה / מוצר";
+    case "employee": return "ברמת עובד";
+    case "money": return "ברמת כספים";
+    case "report": return "ברמת דיווח";
+    case "contribution": return "ברמת רכיב הפרשה";
+  }
+}
+
+function feedbackErrorSummaryRows(deposit: ReportFeedbackDepositRow) {
+  const order: Array<keyof ReportFeedbackDepositRow["feedbackErrorSummary"]> = [
+    "deposit", "employee", "money", "report", "contribution",
+  ];
+  return order
+    .map((scope) => ({ scope, count: deposit.feedbackErrorSummary?.[scope] ?? 0 }))
+    .filter((item) => item.count > 0);
+}
+
 function DepositFeedbackPanel({
   report,
   content,
@@ -198,10 +217,15 @@ function DepositFeedbackPanel({
               ? <Tooltip
                   className="report-deposit-feedback-info"
                   label="פירוט שגיאות במשוב"
-                  content={<span className="report-deposit-feedback-error-list">
-                    {deposit.feedbackErrors.map((message, index) =>
-                      <span key={`${index}:${message}`}>{message}</span>)}
-                  </span>}
+                  content={deposit.feedbackErrors.length > 3
+                    ? <span className="report-deposit-feedback-error-list">
+                        {feedbackErrorSummaryRows(deposit).map(({ scope, count }) =>
+                          <span key={scope}>{count} {count === 1 ? "שגיאה" : "שגיאות"} {feedbackErrorScopeLabel(scope)}</span>)}
+                      </span>
+                    : <span className="report-deposit-feedback-error-list">
+                        {deposit.feedbackErrors.map((message, index) =>
+                          <span key={`${index}:${message}`}>{message}</span>)}
+                      </span>}
                 />
               : null}
           </div>
