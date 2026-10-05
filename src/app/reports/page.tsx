@@ -186,7 +186,7 @@ function DepositFeedbackPanel({
         </div>
         {content.deposits.map((deposit) => <div className="report-deposits-item" role="row" key={deposit.id}>
           <div role="cell"><b>{deposit.employeeName}</b></div>
-          <div role="cell"><span className="report-deposit-product-type">{pensionProductTypeLabel(deposit.productType)}</span></div>
+          <div role="cell">{pensionProductTypeLabel(deposit.productType)}</div>
           <div role="cell">
             <b>{deposit.fundCompanyName || deposit.fundName || "מוצר פנסיוני"}</b>
             <small>{deposit.fundName && deposit.fundCompanyName ? deposit.fundName : deposit.policyNumber || "ללא מספר פוליסה"}</small>
