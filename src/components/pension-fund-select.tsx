@@ -49,6 +49,17 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
       return;
     }
 
+    // Once an option is selected, query contains the full display label
+    // ("code · fund · company"). That is presentation text, not a search term,
+    // so do not issue a redundant API request for the already-selected value.
+    const selectedLabel = valueLabel(value).trim();
+    if ((value.fundExternalKey ?? "").trim() && query.trim() === selectedLabel) {
+      setOptions([]);
+      setError("");
+      setLoading(false);
+      return;
+    }
+
     const timer = window.setTimeout(() => {
       let active = true;
       setLoading(true);
