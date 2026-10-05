@@ -1450,3 +1450,42 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
   height: 17px;
   margin: 0;
 }
+
+
+.resume-report-actions {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+.resume-report-actions .resume-report-continue {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-inline: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.resume-report-actions .resume-report-delete {
+  flex: 0 0 36px;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+}
+.resume-report-actions .resume-report-delete > svg {
+  display: block;
+  margin: 0;
+}
+
+.deposit-proof-empty {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  text-align: center;
+}
