@@ -30,6 +30,10 @@ function isActionableManufacturerError(code: number | null | undefined) {
   return code != null && code !== 1 && code !== 31;
 }
 
+function isDepositLevelManufacturerError(code: number | null | undefined) {
+  return code === 116;
+}
+
 function contributionTypeLabel(code: number | null | undefined) {
   switch (code) {
     case 1: return "פיצויים";
@@ -209,7 +213,29 @@ export function ReportDepositFeedbackModal({
           <div className="feedback-modal-section-head">
             <div><h3>מעסיק מול יצרן</h3><p>השוואה בין מה שדווח לבין הנתונים שהוחזרו במשוב הרשמי.</p></div>
           </div>
-          <div className="contribution-comparison-list">
+          {(() => {
+            const depositLevelErrors = Array.from(new Map(
+              details.manufacturerContributions
+                .filter((item) => isDepositLevelManufacturerError(item.errorCode))
+                .map((item) => [
+                  item.errorCode,
+                  item.errorDescription || `קוד שגיאה ${item.errorCode}`,
+                ]),
+            ).entries());
+
+            return <>
+              {depositLevelErrors.length ? <div className="deposit-level-feedback-errors" role="alert">
+                <div className="deposit-level-feedback-errors-title">
+                  <AlertTriangle size={16} />
+                  <strong>שגיאת יצרן ברמת ההפקדה</strong>
+                </div>
+                {depositLevelErrors.map(([code, description]) =>
+                  <div key={code}>
+                    <span>{description}</span>
+                    <small>השגיאה חלה על ההפקדה למוצר כולו ולא על רכיב הפרשה מסוים.</small>
+                  </div>)}
+              </div> : null}
+              <div className="contribution-comparison-list">
             {details.employerContributions.map((employer) => {
               const manufacturerRows = details.manufacturerContributions.filter((item) => item.contributionId === employer.id);
               const manufacturer = manufacturerRows.find((item) => item.contributionTypeCode === employer.contributionTypeCode)
@@ -218,7 +244,8 @@ export function ReportDepositFeedbackModal({
               const amountMismatch = manufacturer?.contributionAmount != null && !sameNumber(employer.amount, manufacturer.contributionAmount);
               const rateMismatch = manufacturer?.contributionRate != null && !sameNumber(employer.percentage, manufacturer.contributionRate);
               const salaryMismatch = manufacturer?.calculatedSalary != null && !sameNumber(details.product.salary, manufacturer.calculatedSalary);
-              const hasError = isActionableManufacturerError(manufacturer?.errorCode);
+              const hasError = isActionableManufacturerError(manufacturer?.errorCode)
+                && !isDepositLevelManufacturerError(manufacturer?.errorCode);
               const hasNumericDifference = amountMismatch || rateMismatch || salaryMismatch;
               const requiresAttention = hasNumericDifference || hasError;
               return <article className={`contribution-comparison-card${requiresAttention ? " has-difference" : ""}`} key={employer.id}>
@@ -269,7 +296,9 @@ export function ReportDepositFeedbackModal({
                 </div> : null}
               </article>;
             })}
-          </div>
+              </div>
+            </>;
+          })()}
         </section>
 
         <section className="feedback-modal-section">
