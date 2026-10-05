@@ -30,10 +30,6 @@ function isActionableManufacturerError(code: number | null | undefined) {
   return code != null && code !== 1 && code !== 31;
 }
 
-function isDepositLevelManufacturerError(code: number | null | undefined) {
-  return code === 116;
-}
-
 function contributionTypeLabel(code: number | null | undefined) {
   switch (code) {
     case 1: return "פיצויים";
@@ -214,25 +210,54 @@ export function ReportDepositFeedbackModal({
             <div><h3>מעסיק מול יצרן</h3><p>השוואה בין מה שדווח לבין הנתונים שהוחזרו במשוב הרשמי.</p></div>
           </div>
           {(() => {
-            const depositLevelErrors = Array.from(new Map(
-              details.manufacturerContributions
-                .filter((item) => isDepositLevelManufacturerError(item.errorCode))
-                .map((item) => [
-                  item.errorCode,
-                  item.errorDescription || `קוד שגיאה ${item.errorCode}`,
-                ]),
-            ).entries());
+            const contributionCount = details.employerContributions.length;
+            const rowsByErrorCode = new Map<number, typeof details.manufacturerContributions>();
+            for (const item of details.manufacturerContributions) {
+              if (!isActionableManufacturerError(item.errorCode) || item.errorCode == null) continue;
+              const current = rowsByErrorCode.get(item.errorCode) ?? [];
+              current.push(item);
+              rowsByErrorCode.set(item.errorCode, current);
+            }
+
+            const promotedErrorCodes = new Set<number>();
+            for (const [code, rows] of rowsByErrorCode) {
+              const semanticGeneralError = rows.some((row) => row.errorScope !== "contribution");
+              const affectedContributions = new Set(rows.map((row) => row.contributionId));
+              const repeatedAcrossEntireDeposit = contributionCount > 0 && affectedContributions.size >= contributionCount;
+              if (semanticGeneralError || repeatedAcrossEntireDeposit) promotedErrorCodes.add(code);
+            }
+
+            const scopeLabel = (scope: (typeof details.manufacturerContributions)[number]["errorScope"]) => {
+              switch (scope) {
+                case "employee": return "ברמת העובד";
+                case "money": return "ברמת הכספים";
+                case "report": return "ברמת הדיווח";
+                case "deposit": return "ברמת ההפקדה / המוצר";
+                default: return "ברמת ההפקדה";
+              }
+            };
+
+            const depositLevelErrors = Array.from(promotedErrorCodes)
+              .map((code) => {
+                const rows = rowsByErrorCode.get(code) ?? [];
+                const first = rows[0];
+                return {
+                  code,
+                  description: first?.errorDescription || `קוד שגיאה ${code}`,
+                  scope: first?.errorScope ?? "deposit",
+                };
+              });
 
             return <>
               {depositLevelErrors.length ? <div className="deposit-level-feedback-errors" role="alert">
                 <div className="deposit-level-feedback-errors-title">
                   <AlertTriangle size={16} />
-                  <strong>שגיאת יצרן ברמת ההפקדה</strong>
+                  <strong>בעיות כלליות בהפקדה</strong>
                 </div>
-                {depositLevelErrors.map(([code, description]) =>
+                {depositLevelErrors.map(({ code, description, scope }) =>
                   <div key={code}>
                     <span>{description}</span>
-                    <small>השגיאה חלה על ההפקדה למוצר כולו ולא על רכיב הפרשה מסוים.</small>
+                    <small>{scopeLabel(scope)} · מוצג פעם אחת ולא בכל רכיב הפרשה.</small>
                   </div>)}
               </div> : null}
               <div className="contribution-comparison-list">
@@ -240,12 +265,18 @@ export function ReportDepositFeedbackModal({
               const manufacturerRows = details.manufacturerContributions.filter((item) => item.contributionId === employer.id);
               const manufacturer = manufacturerRows.find((item) => item.contributionTypeCode === employer.contributionTypeCode)
                 ?? manufacturerRows[0];
-              const additionalManufacturerRows = manufacturerRows.filter((item) => item !== manufacturer);
+              const localErrorRows = manufacturerRows.filter((item) =>
+                isActionableManufacturerError(item.errorCode)
+                && item.errorCode != null
+                && !promotedErrorCodes.has(item.errorCode));
+              const localError = localErrorRows[0];
+              const additionalManufacturerRows = manufacturerRows.filter((item) =>
+                item !== manufacturer
+                && (item.errorCode == null || !promotedErrorCodes.has(item.errorCode)));
               const amountMismatch = manufacturer?.contributionAmount != null && !sameNumber(employer.amount, manufacturer.contributionAmount);
               const rateMismatch = manufacturer?.contributionRate != null && !sameNumber(employer.percentage, manufacturer.contributionRate);
               const salaryMismatch = manufacturer?.calculatedSalary != null && !sameNumber(details.product.salary, manufacturer.calculatedSalary);
-              const hasError = isActionableManufacturerError(manufacturer?.errorCode)
-                && !isDepositLevelManufacturerError(manufacturer?.errorCode);
+              const hasError = Boolean(localError);
               const hasNumericDifference = amountMismatch || rateMismatch || salaryMismatch;
               const requiresAttention = hasNumericDifference || hasError;
               return <article className={`contribution-comparison-card${requiresAttention ? " has-difference" : ""}`} key={employer.id}>
@@ -256,7 +287,7 @@ export function ReportDepositFeedbackModal({
                       ? <span className="feedback-state attention"><AlertTriangle size={14} />נמצא פער בנתונים</span>
                       : hasError
                         ? <span className="feedback-state attention"><AlertTriangle size={14} />שגיאת יצרן</span>
-                        : <span className="feedback-state completed"><CheckCircle2 size={14} />נקלט ללא פער</span>
+                        : <span className="feedback-state completed"><CheckCircle2 size={14} />{depositLevelErrors.length ? "ללא פער ברכיב" : "נקלט ללא פער"}</span>
                     : <span className="feedback-state pending">לא התקבל פירוט יצרן לרכיב</span>}
                 </div>
                 <div className="contribution-sides">
@@ -276,10 +307,10 @@ export function ReportDepositFeedbackModal({
                     </> : <div className="manufacturer-pending">לא התקבל פירוט יצרן לרכיב זה.</div>}
                   </div>
                 </div>
-                {manufacturer && (hasError || manufacturer.errorDescription)
-                  ? <div className={`contribution-feedback-message${hasError ? " error" : ""}`}>
-                      {hasError ? <AlertTriangle size={15} /> : <CheckCircle2 size={15} />}
-                      <span>{manufacturer.errorDescription || `קוד שגיאה ${manufacturer.errorCode}`}</span>
+                {localError
+                  ? <div className="contribution-feedback-message error">
+                      <AlertTriangle size={15} />
+                      <span>{localError.errorDescription || `קוד שגיאה ${localError.errorCode}`}</span>
                     </div>
                   : null}
                 {manufacturer?.sourceFileName
