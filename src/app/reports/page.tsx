@@ -11,6 +11,7 @@ import {
   Download,
   Eye,
   FileClock,
+  Info,
   Filter,
   Plus,
   Pencil,
@@ -180,7 +181,22 @@ function DepositFeedbackPanel({
             <small>{deposit.fundName && deposit.fundCompanyName ? deposit.fundName : deposit.policyNumber || "ללא מספר פוליסה"}</small>
           </div>
           <div role="cell" className="report-deposits-money">{money(deposit.totalAmount)}</div>
-          <div role="cell"><DepositStatusBadge value={deposit.feedbackStatus} label={deposit.feedbackLabel} /></div>
+          <div role="cell" className="report-deposit-feedback-status-cell">
+            <DepositStatusBadge value={deposit.feedbackStatus} label={deposit.feedbackLabel} />
+            {deposit.feedbackStatus === "attention" && deposit.feedbackErrors?.length
+              ? <span
+                  className="report-deposit-feedback-info"
+                  tabIndex={0}
+                  aria-label={`פירוט שגיאות: ${deposit.feedbackErrors.join("; ")}`}
+                >
+                  <Info size={14} aria-hidden="true" />
+                  <span className="report-deposit-feedback-tooltip" role="tooltip">
+                    {deposit.feedbackErrors.map((message, index) =>
+                      <span key={`${index}:${message}`}>{message}</span>)}
+                  </span>
+                </span>
+              : null}
+          </div>
           <div role="cell"><DepositStatusBadge value={deposit.moneyStatus} label={deposit.moneyStatusLabel} /></div>
           <div role="cell">
             {deposit.treatmentStatusLabel
