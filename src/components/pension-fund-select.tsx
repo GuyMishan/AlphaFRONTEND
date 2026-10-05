@@ -49,6 +49,11 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
       return;
     }
 
+    if (!open) {
+      setLoading(false);
+      return;
+    }
+
     // Once an option is selected, query contains the full display label
     // ("code · fund · company"). That is presentation text, not a search term,
     // so do not issue a redundant API request for the already-selected value.
@@ -83,10 +88,10 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [productType, query]);
+  }, [productType, query, open]);
 
   if (productType === 99) {
     return <div className="field"><label>קופה</label><UiInput disabled value="לא נדרש עבור מוצר מסוג אחר" /></div>;
   }
 
-  return <div className="field"><label>קופה *</label><UiAutocomplete value={query} disabled={disabled} required invalid={showValidation && !(value.fundExternalKey ?? "").trim()} loading={loading} ariaLabel="בחירת קופה" placeholder="חיפוש לפי שם / מספר קופה" loadingText="טוען קופות..." emptyText={error || "לא נמצאו קופות מהסוג שנבחר."} options={options.map(item=>({value:item.externalKey,label:optionLabel(item)}))} onClear={()=>{setOptions([]);onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}} onValueChange={(next)=>{onInteraction?.();setQuery(next);const item=options.find(x=>optionLabel(x)===next);if(item){setError("");onChange({fundExternalKey:item.externalKey,fundCode:item.fundCode,fundName:item.fundName,fundCompanyName:item.companyName,fundClassification:item.classification||""})}else if(value.fundExternalKey){onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}}}/></div>}
+  return <div className="field"><label>קופה *</label><UiAutocomplete value={query} disabled={disabled} required onOpenChange={setOpen} invalid={showValidation && !(value.fundExternalKey ?? "").trim()} loading={loading} ariaLabel="בחירת קופה" placeholder="חיפוש לפי שם / מספר קופה" loadingText="טוען קופות..." emptyText={error || "לא נמצאו קופות מהסוג שנבחר."} options={options.map(item=>({value:item.externalKey,label:optionLabel(item)}))} onClear={()=>{setOptions([]);onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}} onValueChange={(next)=>{onInteraction?.();setQuery(next);const item=options.find(x=>optionLabel(x)===next);if(item){setError("");onChange({fundExternalKey:item.externalKey,fundCode:item.fundCode,fundName:item.fundName,fundCompanyName:item.companyName,fundClassification:item.classification||""})}else if(value.fundExternalKey){onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}}}/></div>}
