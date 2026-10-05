@@ -23,34 +23,13 @@ export type PensionEditorReferenceData = {
   salaryLayers: PensionEditorSalaryLayer[];
 };
 
-let bundlePromise: Promise<PensionEditorReferenceData> | null = null;
-let bundleCache: PensionEditorReferenceData | null = null;
-
-export function getPensionEditorReferenceData(force = false): Promise<PensionEditorReferenceData> {
-  if (force) {
-    bundlePromise = null;
-    bundleCache = null;
-  }
-  if (bundleCache) return Promise.resolve(bundleCache);
-  if (!bundlePromise) {
-    const headers = new Headers({ Accept: "application/json" });
-    bundlePromise = backendFetch("/api/reference-data/pension-editor-options", { headers, cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`טעינת אפשרויות עורך המוצרים נכשלה (${response.status})`);
-        return response.json() as Promise<PensionEditorReferenceData>;
-      })
-      .then((data) => {
-        bundleCache = data;
-        return data;
-      })
-      .finally(() => {
-        bundlePromise = null;
-      });
-  }
-  return bundlePromise;
-}
-
-export function invalidatePensionEditorReferenceData() {
-  bundlePromise = null;
-  bundleCache = null;
+export async function loadPensionEditorReferenceData(): Promise<PensionEditorReferenceData> {
+  const headers = new Headers({ Accept: "application/json" });
+  const response = await backendFetch("/api/reference-data/pension-editor-options", {
+    headers,
+    cache: "no-store",
+  });
+  if (!response.ok)
+    throw new Error(`טעינת אפשרויות עורך המוצרים נכשלה (${response.status})`);
+  return response.json() as Promise<PensionEditorReferenceData>;
 }
