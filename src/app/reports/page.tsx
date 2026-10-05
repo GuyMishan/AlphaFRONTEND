@@ -11,7 +11,6 @@ import {
   Download,
   Eye,
   FileClock,
-  Info,
   Filter,
   Plus,
   Pencil,
@@ -25,6 +24,7 @@ import { AppModal } from "@/components/app-modal";
 import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { DepositPaymentEditor } from "@/components/manual-deposit-data";
 import { ReportDepositFeedbackModal } from "@/components/report-deposit-feedback-modal";
+import { Tooltip } from "@/components/tooltip";
 import { UiActionMenu, UiAutocomplete, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { manualDepositsApi, type ManualDepositRow } from "@/lib/manual-deposits-api";
 import { derivedReportsApi } from "@/lib/derived-reports-api";
@@ -195,17 +195,14 @@ function DepositFeedbackPanel({
           <div role="cell" className="report-deposit-feedback-status-cell">
             <DepositStatusBadge value={deposit.feedbackStatus} label={deposit.feedbackLabel} />
             {deposit.feedbackStatus === "attention" && deposit.feedbackErrors?.length
-              ? <span
+              ? <Tooltip
                   className="report-deposit-feedback-info"
-                  tabIndex={0}
-                  aria-label={`פירוט שגיאות: ${deposit.feedbackErrors.join("; ")}`}
-                >
-                  <Info size={14} aria-hidden="true" />
-                  <span className="report-deposit-feedback-tooltip" role="tooltip">
+                  label="פירוט שגיאות במשוב"
+                  content={<span className="report-deposit-feedback-error-list">
                     {deposit.feedbackErrors.map((message, index) =>
                       <span key={`${index}:${message}`}>{message}</span>)}
-                  </span>
-                </span>
+                  </span>}
+                />
               : null}
           </div>
           <div role="cell"><DepositStatusBadge value={deposit.moneyStatus} label={deposit.moneyStatusLabel} /></div>
