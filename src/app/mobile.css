@@ -23,8 +23,8 @@
     flex: 0 0 40px;
     border: 1px solid var(--line);
     border-radius: 10px;
-    background: white;
-    color: var(--navy);
+    background: var(--surface);
+    color: var(--text);
     cursor: pointer;
   }
 
@@ -204,4 +204,32 @@
 
   .notice { max-width: 100%; overflow-wrap: anywhere; }
   .steps { max-width: 100%; }
+
+  /* Wide operational tables stay readable on phones and scroll inside their own viewport. */
+  .deposit-table-wrap,
+  .resume-report-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+  }
+  .deposit-table {
+    min-width: 1120px;
+  }
+  .resume-report-table {
+    min-width: 760px;
+  }
+  .deposit-table .data-table-row > td,
+  .resume-report-table .data-table-row > td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+  }
+  .deposit-table .data-table-row > td > *,
+  .resume-report-table .data-table-row > td > * {
+    min-width: 0;
+    max-width: 100%;
+  }
 }
