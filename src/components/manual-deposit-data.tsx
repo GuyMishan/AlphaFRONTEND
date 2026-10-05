@@ -97,16 +97,16 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
       minTableWidth={1080}
       columns={[
         { key: "employee", label: "עובד", width: "11%" },
-        { key: "provider", label: "שם יצרן / מוצר", width: "18%" },
-        { key: "providerAccount", label: "חשבון יצרן", width: "10%" },
+        { key: "provider", label: "שם יצרן / מוצר", width: "17%" },
+        { key: "providerAccount", label: "חשבון יצרן", width: "9%" },
         { key: "amount", label: "סכום", width: "8%" },
-        { key: "employerAccount", label: "חשבון מעסיק", width: "12%" },
-        { key: "reference", label: "אסמכתא", width: "9%" },
-        { key: "date", label: "תאריך ערך", width: "9%" },
+        { key: "employerAccount", label: "חשבון מעסיק", width: "11%" },
+        { key: "reference", label: "אסמכתא", width: "8%" },
+        { key: "date", label: "תאריך ערך", width: "8%" },
         { key: "type", label: "סוג תקבול", width: "10%" },
         { key: "status", label: "סטטוס", width: "7%" },
         { key: "files", label: "קבצים", width: "5%" },
-        { key: "edit", label: "", width: "5%" },
+        { key: "edit", label: "", width: "6%" },
       ]}
       renderCells={(row) => [
         <b>{row.employeeName}</b>,
