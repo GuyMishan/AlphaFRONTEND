@@ -14,6 +14,9 @@ export function EmployerInterfaceOptionSelect({
   placeholder = "בחירה",
   operationCode,
   allowedCodes,
+  suppliedOptions,
+  suppliedLoading,
+  suppliedError,
 }: {
   category: string;
   scope?: string;
@@ -24,12 +27,21 @@ export function EmployerInterfaceOptionSelect({
   placeholder?: string;
   operationCode?: number | null;
   allowedCodes?: readonly number[];
+  suppliedOptions?: EmployerInterfaceOption[];
+  suppliedLoading?: boolean;
+  suppliedError?: string;
 }) {
-  const [options, setOptions] = useState<EmployerInterfaceOption[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [options, setOptions] = useState<EmployerInterfaceOption[]>(suppliedOptions ?? []);
+  const [loading, setLoading] = useState(suppliedOptions ? Boolean(suppliedLoading) : true);
+  const [error, setError] = useState(suppliedError ?? "");
 
   useEffect(() => {
+    if (suppliedOptions) {
+      setOptions(suppliedOptions);
+      setLoading(Boolean(suppliedLoading));
+      setError(suppliedError ?? "");
+      return;
+    }
     let active = true;
     setLoading(true);
     setError("");
@@ -38,7 +50,7 @@ export function EmployerInterfaceOptionSelect({
       .catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת האפשרויות נכשלה"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [category, operationCode, scope]);
+  }, [category, operationCode, scope, suppliedOptions, suppliedLoading, suppliedError]);
 
   const visibleOptions = useMemo(
     () => allowedCodes?.length ? options.filter((item) => allowedCodes.includes(item.code)) : options,
