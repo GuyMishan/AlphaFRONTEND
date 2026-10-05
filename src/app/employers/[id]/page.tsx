@@ -44,6 +44,12 @@ const baseTabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
   { key: "reporting", label: "הגדרות דיווח", icon: FileSliders },
 ];
 
+function autocompleteLookupTerm(value: string) {
+  const trimmed = value.trim();
+  const selectedCode = trimmed.match(/^(\d+)\s*(?:-|·)/);
+  return selectedCode?.[1] ?? trimmed;
+}
+
 const EMPTY_CAPABILITIES: EmployerCapabilities = {
   canManageEmployer: false,
   canEditEmployer: false,
@@ -438,7 +444,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   useEffect(() => {
     if (!bankOpen) return;
     const timer = window.setTimeout(() => {
-      alphaApi.banks(bankSearch.trim(), 50).then(setBanks).catch(() => setBanks([]));
+      alphaApi.banks(autocompleteLookupTerm(bankSearch), 50).then(setBanks).catch(() => setBanks([]));
     }, 200);
     return () => window.clearTimeout(timer);
   }, [bankOpen, bankSearch]);
@@ -451,7 +457,7 @@ function PensionPaymentTab({ organizationId, employerId, canManage, accounts, se
   useEffect(() => {
     if (!branchOpen || !form.bankId) return;
     const timer = window.setTimeout(() => {
-      alphaApi.bankBranches(form.bankId, branchSearch.trim(), 100).then(setBranches).catch(() => setBranches([]));
+      alphaApi.bankBranches(form.bankId, autocompleteLookupTerm(branchSearch), 100).then(setBranches).catch(() => setBranches([]));
     }, 200);
     return () => window.clearTimeout(timer);
   }, [branchOpen, form.bankId, branchSearch]);
