@@ -229,36 +229,54 @@ export function ReportDepositFeedbackModal({
 
             const scopeLabel = (scope: (typeof details.manufacturerContributions)[number]["errorScope"]) => {
               switch (scope) {
-                case "employee": return "ברמת העובד";
-                case "money": return "ברמת הכספים";
-                case "report": return "ברמת הדיווח";
-                case "deposit": return "ברמת ההפקדה / המוצר";
-                default: return "ברמת ההפקדה";
+                case "employee": return "עובד";
+                case "money": return "כספים";
+                case "report": return "דיווח";
+                case "deposit": return "הפקדה / מוצר";
+                case "contribution": return "רכיבי הפרשה";
+                default: return "מידע";
               }
             };
 
-            const depositLevelErrors = Array.from(promotedErrorCodes)
-              .map((code) => {
-                const rows = rowsByErrorCode.get(code) ?? [];
-                const first = rows[0];
-                return {
-                  code,
-                  description: first?.errorDescription || `קוד שגיאה ${code}`,
-                  scope: first?.errorScope ?? "deposit",
-                };
-              });
+            const scopeOrder: Array<(typeof details.manufacturerContributions)[number]["errorScope"]> = [
+              "deposit", "employee", "money", "report", "contribution",
+            ];
+            const groupedErrors = scopeOrder
+              .map((scope) => {
+                const items = Array.from(rowsByErrorCode.entries())
+                  .map(([code, rows]) => ({ code, rows }))
+                  .filter(({ rows }) => rows.some((row) => row.errorScope === scope))
+                  .map(({ code, rows }) => {
+                    const first = rows.find((row) => row.errorScope === scope) ?? rows[0];
+                    return {
+                      code,
+                      description: first?.errorDescription || `קוד שגיאה ${code}`,
+                    };
+                  });
+                return { scope, items };
+              })
+              .filter((group) => group.items.length > 0);
 
             return <>
-              {depositLevelErrors.length ? <div className="deposit-level-feedback-errors" role="alert">
-                <div className="deposit-level-feedback-errors-title">
+              {groupedErrors.length ? <div className="feedback-error-groups" role="alert">
+                <div className="feedback-error-groups-title">
                   <AlertTriangle size={16} />
-                  <strong>בעיות כלליות בהפקדה</strong>
+                  <strong>בעיות שנמצאו במשוב</strong>
                 </div>
-                {depositLevelErrors.map(({ code, description, scope }) =>
-                  <div key={code}>
-                    <span>{description}</span>
-                    <small>{scopeLabel(scope)}</small>
-                  </div>)}
+                {groupedErrors.map(({ scope, items }) =>
+                  <section className="feedback-error-group" key={scope}>
+                    <div className="feedback-error-group-head">
+                      <strong>{scopeLabel(scope)}</strong>
+                      <span>{items.length} {items.length === 1 ? "שגיאה" : "שגיאות"}</span>
+                    </div>
+                    <div className="feedback-error-group-list">
+                      {items.map(({ code, description }) =>
+                        <div key={code}>
+                          <b>קוד {code}</b>
+                          <span>{description}</span>
+                        </div>)}
+                    </div>
+                  </section>)}
               </div> : null}
               <div className="contribution-comparison-list">
             {details.employerContributions.map((employer) => {
@@ -287,7 +305,7 @@ export function ReportDepositFeedbackModal({
                       ? <span className="feedback-state attention"><AlertTriangle size={14} />נמצא פער בנתונים</span>
                       : hasError
                         ? <span className="feedback-state attention"><AlertTriangle size={14} />שגיאת יצרן</span>
-                        : <span className="feedback-state completed"><CheckCircle2 size={14} />{depositLevelErrors.length ? "ללא פער ברכיב" : "נקלט ללא פער"}</span>
+                        : <span className="feedback-state completed"><CheckCircle2 size={14} />{groupedErrors.length ? "ללא פער ברכיב" : "נקלט ללא פער"}</span>
                     : <span className="feedback-state pending">לא התקבל פירוט יצרן לרכיב</span>}
                 </div>
                 <div className="contribution-sides">
