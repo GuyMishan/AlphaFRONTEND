@@ -427,7 +427,7 @@ export function UiCard({
 }
 
 export type UiAutocompleteOption = { value: string; label: string; disabled?: boolean };
-export function UiAutocomplete({value,onValueChange,options,loading=false,disabled=false,required=false,invalid=false,placeholder="התחילו להקליד",emptyText="לא נמצאו תוצאות.",loadingText="טוען...",ariaLabel="בחירה",maxLength,onClear}:{value:string;onValueChange:(value:string)=>void;options:UiAutocompleteOption[];loading?:boolean;disabled?:boolean;required?:boolean;invalid?:boolean;placeholder?:string;emptyText?:string;loadingText?:string;ariaLabel?:string;maxLength?:number;onClear?:()=>void}) {
+export function UiAutocomplete({value,onValueChange,options,loading=false,disabled=false,required=false,invalid=false,placeholder="התחילו להקליד",emptyText="לא נמצאו תוצאות.",loadingText="טוען...",ariaLabel="בחירה",maxLength,onClear,onOpenChange}:{value:string;onValueChange:(value:string)=>void;options:UiAutocompleteOption[];loading?:boolean;disabled?:boolean;required?:boolean;invalid?:boolean;placeholder?:string;emptyText?:string;loadingText?:string;ariaLabel?:string;maxLength?:number;onClear?:()=>void;onOpenChange?:(open:boolean)=>void}) {
  const [open,setOpen]=useState(false); const [active,setActive]=useState(-1); const [inputGeneration,setInputGeneration]=useState(0);
  const [mounted,setMounted]=useState(false);
  const [placement,setPlacement]=useState<CSSProperties>({visibility:"hidden"});
@@ -436,6 +436,7 @@ export function UiAutocomplete({value,onValueChange,options,loading=false,disabl
  const menuId=useId();
  useEffect(()=>{setMounted(true)},[]);
  useEffect(()=>{if(disabled)setOpen(false)},[disabled]);
+ useEffect(()=>{onOpenChange?.(open)},[open,onOpenChange]);
  useEffect(()=>{
    if(!open||!mounted||disabled)return;
    const position=()=>{
