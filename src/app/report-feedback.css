@@ -51,10 +51,10 @@
 .report-deposits-heading { display: flex; width: 100%; gap: 14px; align-items: center; justify-content: flex-start; flex-wrap: wrap; text-align: right; }
 .report-deposits-heading > div { display: grid; gap: 3px; }
 .report-deposits-heading small { color: var(--muted); font-size: 12px; }
-.report-deposits-grid { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 750px; }
+.report-deposits-grid { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 1080px; }
 .report-deposits-header, .report-deposits-item {
   display: grid;
-  grid-template-columns: minmax(115px,1fr) minmax(150px,1.35fr) minmax(90px,.65fr) minmax(185px,1.6fr) minmax(88px,.55fr);
+  grid-template-columns: minmax(115px,1fr) minmax(95px,.7fr) minmax(150px,1.35fr) minmax(90px,.65fr) minmax(135px,1fr) minmax(120px,.9fr) minmax(120px,.9fr) minmax(105px,.75fr) minmax(76px,.5fr);
   gap: 12px; align-items: center; padding: 10px 12px;
 }
 .report-deposits-header { background: var(--blue-soft); color: var(--text); font-size: 12px; font-weight: 700; }
@@ -72,7 +72,7 @@
 .report-deposits-immutable { margin: 0; color: var(--muted); font-size: 12px; }
 @media(max-width:850px) {
   .report-deposits-expanded { overflow-x: auto; }
-  .report-deposits-grid { min-width: 730px; }
+  .report-deposits-grid { min-width: 1080px; }
 }
 
 /* RTL: keep Details at the start and pin the expansion button to the far end of its cell. */
@@ -168,3 +168,5 @@
     grid-column: auto;
   }
 }
+
+.report-deposit-product-type { display:inline-flex; align-items:center; width:max-content; max-width:100%; padding:4px 8px; border-radius:999px; background:var(--blue-soft); color:var(--text); font-size:12px; font-weight:700; white-space:nowrap; }
