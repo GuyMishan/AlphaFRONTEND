@@ -64,6 +64,7 @@ type EmployeePensionMixProps = {
   organizationId: string;
   employerId: string;
   employeeId: string;
+  employee?: Employee;
   editable: boolean;
   saveLabel?: string;
   onSaved?: () => void | Promise<void>;
@@ -72,8 +73,8 @@ type EmployeePensionMixProps = {
   onSavingChange?: (saving: boolean) => void;
 };
 
-export function EmployeePensionMix({ organizationId, employerId, employeeId, editable, saveLabel, onSaved, externalSaveSignal = 0, hideHeaderSave = false, onSavingChange }: EmployeePensionMixProps) {
-  const [employee, setEmployee] = useState<Employee | null>(null);
+export function EmployeePensionMix({ organizationId, employerId, employeeId, employee: initialEmployee, editable, saveLabel, onSaved, externalSaveSignal = 0, hideHeaderSave = false, onSavingChange }: EmployeePensionMixProps) {
+  const [employee, setEmployee] = useState<Employee | null>(initialEmployee ?? null);
   const [monthlySalary, setMonthlySalary] = useState(0);
   const [products, setProducts] = useState<PensionEditorProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +88,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
     setLoading(true);
     setError("");
     Promise.all([
-      alphaApi.employee(organizationId, employerId, employeeId),
+      initialEmployee ? Promise.resolve(initialEmployee) : alphaApi.employee(organizationId, employerId, employeeId),
       alphaApi.employeePensionMix(organizationId, employerId, employeeId),
     ]).then(([employeeResult, items]) => {
       setEmployee(employeeResult);
@@ -95,7 +96,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, edi
       setProducts(items.map(toEditorProduct).map(sanitizePensionProductContributions));
     }).catch((err) => setError(err instanceof Error ? err.message : "טעינת תמהיל העובד נכשלה"))
       .finally(() => setLoading(false));
-  }, [organizationId, employerId, employeeId]);
+  }, [organizationId, employerId, employeeId, initialEmployee]);
 
   const activeCount = useMemo(() => products.filter((product) => product.isActive !== false).length, [products]);
 
