@@ -71,6 +71,13 @@ export type ReportFeedbackDepositRow = {
   feedbackStatus: "completed" | "attention" | "partial" | "pending";
   feedbackLabel: string;
   feedbackErrors: string[];
+  feedbackErrorSummary: {
+    deposit: number;
+    employee: number;
+    money: number;
+    report: number;
+    contribution: number;
+  };
   moneyStatus: "allocated" | "in-transit" | "received-partial" | "unresolved" | "pending";
   moneyStatusLabel: string;
   treatmentStatus: string;
