@@ -638,15 +638,15 @@ export default function NewReportPage() {
           items={openReports}
           rowKey={(draft) => draft.id}
           columns={[
-            { key: "kind", label: "סוג דיווח" },
-            { key: "month", label: "חודש" },
-            { key: "employees", label: "עובדים" },
-            { key: "products", label: "מוצרים" },
-            { key: "updated", label: "עודכן לאחרונה" },
-            { key: "action", label: "פעולה" },
+            { key: "kind", label: "סוג דיווח", width: "16%" },
+            { key: "month", label: "חודש", width: "12%" },
+            { key: "employees", label: "עובדים", width: "10%" },
+            { key: "products", label: "מוצרים", width: "10%" },
+            { key: "updated", label: "עודכן לאחרונה", width: "27%" },
+            { key: "action", label: "פעולה", width: "25%" },
           ]}
           rowHeight={54} maxHeight={340} overscan={5}
-          wrapperClassName="resume-report-table-wrap" tableClassName="resume-report-table"
+          minTableWidth={680}
           loading={loadingOpenReports && openReports.length === 0}
           loadingMore={loadingOpenReports && openReports.length > 0}
           hasMore={openReportsHasMore} onLoadMore={loadMoreOpenReports}
