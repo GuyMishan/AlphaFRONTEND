@@ -1,5 +1,4 @@
 import { backendFetch } from "./backend-fetch";
-import { getPensionEditorReferenceData } from "./pension-editor-reference-data";
 import type { ManualReportKind } from "./types";
 
 
@@ -136,10 +135,6 @@ export const employerInterfaceApi = {
   importUpload: (organizationId: string, employerId: string, file: File, paymentAccountId: string, salaryPaymentDate: string) =>
     uploadEmployerInterface<EmployerInterfaceImportResult>(`${employerPath(organizationId, employerId)}/import`, file, { paymentAccountId, salaryPaymentDate }),
   options: (category: string, scope = "all", operationCode?: number | null) => {
-    if (scope === "all" && operationCode == null && (category === "receipt-type" || category === "section14-code")) {
-      return getPensionEditorReferenceData().then((data) =>
-        (data.interfaceOptions[category] ?? []) as EmployerInterfaceOption[]);
-    }
     const params = new URLSearchParams({ category, scope });
     if (operationCode != null) params.set("operationCode", String(operationCode));
     return request<EmployerInterfaceOption[]>(`/api/reference-data/employer-interface-006/options?${params}`);
