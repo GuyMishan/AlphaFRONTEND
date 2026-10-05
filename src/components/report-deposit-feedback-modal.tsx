@@ -286,9 +286,12 @@ export function ReportDepositFeedbackModal({
                   ? <small className="feedback-source">מקור: {manufacturer.sourceFileName} · {formatDateTimeDDMMYYYY(manufacturer.receivedAt, "—")}</small>
                   : null}
                 {additionalManufacturerRows.length ? <div className="manufacturer-extra-rows">
-                  <small>נתוני יצרן נוספים שהוחזרו לאותה רשומה</small>
+                  <small>משובי יצרן נוספים לאותו רכיב</small>
                   {additionalManufacturerRows.map((item) => <div key={`${item.recordIdentifier}:${item.sequence}`}>
-                    <span>{contributionTypeLabel(item.contributionTypeCode)}</span>
+                    <span className="manufacturer-extra-error">
+                      <b>{item.errorCode != null ? `קוד ${item.errorCode}` : contributionTypeLabel(item.contributionTypeCode)}</b>
+                      <small>{item.errorDescription || "ללא פירוט שגיאה"}</small>
+                    </span>
                     <span>{money(item.contributionAmount)}</span>
                     <span>{percent(item.contributionRate)}</span>
                     <span>{money(item.calculatedSalary)}</span>
