@@ -1,6 +1,7 @@
 "use client";
 
 import { UiDateInput, UiInput  } from "@/components/ui-controls";
+import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table";
 import { CircleAlert, CircleCheck, Plus, Trash2 } from "lucide-react";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
@@ -8,6 +9,7 @@ import { PensionFundSelect } from "@/components/pension-fund-select";
 import { ReferenceOptionSelect } from "@/components/reference-option-select";
 import { SalaryLayerSelect } from "@/components/salary-layer-select";
 import type { ContributionComponent, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
+import { loadPensionEditorReferenceData, type PensionEditorReferenceData } from "@/lib/pension-editor-reference-data";
 
 export type PensionEditorContribution = {
   component: ContributionComponent;
@@ -231,6 +233,23 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
   onProductsChange: (products: PensionEditorProduct[]) => void;
   onFieldInteraction?: () => void;
 }) {
+  const [referenceData, setReferenceData] = useState<PensionEditorReferenceData | null>(null);
+  const [referenceDataError, setReferenceDataError] = useState("");
+  const [referenceDataLoading, setReferenceDataLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setReferenceDataLoading(true);
+    setReferenceDataError("");
+    loadPensionEditorReferenceData()
+      .then((data) => { if (active) setReferenceData(data); })
+      .catch((err) => { if (active) setReferenceDataError(err instanceof Error ? err.message : "טעינת אפשרויות עורך המוצרים נכשלה"); })
+      .finally(() => { if (active) setReferenceDataLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const referenceOptions = (category: string) => referenceData?.referenceOptions[category] ?? [];
+  const interfaceOptions = (category: string) => referenceData?.interfaceOptions[category] ?? [];
   const allocation = resolvePensionAllocations(monthlySalary, products);
   const updateProduct = (index: number, patch: Partial<PensionEditorProduct>) => onProductsChange(products.map((product, i) => i === index ? { ...product, ...patch } : product));
   const changeProductType = (index: number, productType: PensionProductType) => onProductsChange(products.map((product, i) => i !== index ? product : sanitizePensionProductContributions({
@@ -270,18 +289,18 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
       return <section className="report-product-card" key={index} style={{ opacity: product.isActive === false ? .72 : 1 }}>
         <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <div className="status-pill-active"><CircleCheck size={13} /><div>פעיל</div></div>}{editable && allowRemove ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
         <div className="grid report-product-fields">
-          {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
-          <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required onChange={(value) => changeProductType(index, Number(value) as PensionProductType)} /></div>
+          {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} suppliedOptions={referenceOptions("product-active-status")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
+          <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required suppliedOptions={referenceOptions("pension-product-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => changeProductType(index, Number(value) as PensionProductType)} /></div>
           <PensionFundSelect disabled={!editable} productType={product.productType} value={product} onInteraction={onFieldInteraction} showValidation={showAllocationError} onChange={(fund) => updateProduct(index, { ...fund, ...(context === "employee" ? { institutionalBody: fund.fundCompanyName || product.institutionalBody, manufacturer: fund.fundCompanyName || product.manufacturer } : {}) })} />
           <div className="field"><label>מספר פוליסה / חשבון</label><UiInput disabled={!editable} maxLength={20} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} placeholder="אופציונלי" /></div>
           {context === "report" ? <div className="field"><label>חודש שכר *</label><UiDateInput mode="month" disabled={!editable} required value={(product.salaryMonth ?? month ?? "").slice(0, 7)} onValueChange={(value) => updateProduct(index, { salaryMonth: value ? `${value}-01` : "" })} /></div> : null}
-          <div className="field"><label>שיטת הקצאת שכר *</label><ReferenceOptionSelect category="salary-allocation-type" disabled={!editable} value={allocationType} required onChange={(value) => { const next = Number(value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: next, salaryAllocationValue: next === 4 ? null : next === 1 ? monthlySalary : product.salaryAllocationValue ?? product.salary ?? 0 }); }} /></div>
+          <div className="field"><label>שיטת הקצאת שכר *</label><ReferenceOptionSelect category="salary-allocation-type" disabled={!editable} value={allocationType} required suppliedOptions={referenceOptions("salary-allocation-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => { const next = Number(value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: next, salaryAllocationValue: next === 4 ? null : next === 1 ? monthlySalary : product.salaryAllocationValue ?? product.salary ?? 0 }); }} /></div>
           {allocationType !== 4 ? <div className="field"><label>{allocationValueLabel(allocationType)} *</label><UiInput disabled={!editable || allocationType === 1} type="number" min="0" max={allocationType === 2 ? 100 : undefined} step="0.01" value={allocationType === 1 ? monthlySalary : product.salaryAllocationValue ?? ""} onChange={(e) => updateProduct(index, { salaryAllocationValue: Number(e.target.value) })} /></div> : <div className="field"><label>ערך הקצאה</label><UiInput disabled value="מחושב אוטומטית" /></div>}
           <div className="field"><label>שכר מבוטח מחושב</label><UiInput disabled value={`₪${insuredSalary.toLocaleString("he-IL")}`} /></div>
           {context === "employee" ? <><div className="field"><label>גוף מוסדי</label><UiInput disabled={!editable} maxLength={160} value={product.institutionalBody ?? ""} onChange={(e) => updateProduct(index, { institutionalBody: e.target.value })} /></div><div className="field"><label>יצרן</label><UiInput disabled={!editable} maxLength={160} value={product.manufacturer ?? ""} onChange={(e) => updateProduct(index, { manufacturer: e.target.value })} /></div><div className="field"><label>תחילת תוקף *</label><UiDateInput disabled={!editable} value={product.effectiveFrom ?? ""} onValueChange={(value) => updateProduct(index, { effectiveFrom: value })} /></div><div className="field"><label>סיום תוקף</label><UiDateInput disabled={!editable} min={product.effectiveFrom || undefined} value={product.effectiveTo ?? ""} onValueChange={(value) => updateProduct(index, { effectiveTo: value || null })} /></div></> : null}
-          <div className="field"><label>{context === "employee" ? "סוג תקבול ברירת מחדל *" : "סוג תקבול *"}</label><EmployerInterfaceOptionSelect category="receipt-type" value={Number(product.reportingType) || null} disabled={!editable} required onChange={(value) => updateProduct(index, { reportingType: value == null ? "" : String(value) })} /></div>
-          <div className="field"><label>רובד שכר *</label><SalaryLayerSelect disabled={!editable} value={product.salaryLayer} onChange={(value) => updateProduct(index, { salaryLayer: value })} /></div>
-          <div className="field"><label>סעיף 14 *</label><EmployerInterfaceOptionSelect category="section14-code" value={section14Code} disabled={!editable} required onChange={(value) => { const code = Number(value ?? 3) as Section14Code; updateProduct(index, { section14Code: code, section14: code === 1 || code === 2, section14StartDate: code === 2 || code === 4 ? product.section14StartDate : null }); }} /></div>
+          <div className="field"><label>{context === "employee" ? "סוג תקבול ברירת מחדל *" : "סוג תקבול *"}</label><EmployerInterfaceOptionSelect category="receipt-type" value={Number(product.reportingType) || null} disabled={!editable} required suppliedOptions={interfaceOptions("receipt-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { reportingType: value == null ? "" : String(value) })} /></div>
+          <div className="field"><label>רובד שכר *</label><SalaryLayerSelect disabled={!editable} value={product.salaryLayer} suppliedOptions={referenceData?.salaryLayers ?? []} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { salaryLayer: value })} /></div>
+          <div className="field"><label>סעיף 14 *</label><EmployerInterfaceOptionSelect category="section14-code" value={section14Code} disabled={!editable} required suppliedOptions={interfaceOptions("section14-code")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => { const code = Number(value ?? 3) as Section14Code; updateProduct(index, { section14Code: code, section14: code === 1 || code === 2, section14StartDate: code === 2 || code === 4 ? product.section14StartDate : null }); }} /></div>
           <div className="field"><label>תאריך תחולה/ביטול סעיף 14{section14DateRequired ? " *" : ""}</label><UiDateInput disabled={!editable || !section14DateRequired} required={section14DateRequired} value={section14DateRequired ? product.section14StartDate ?? "" : ""} onValueChange={(value) => updateProduct(index, { section14StartDate: value || null })} /></div>
         </div>
         <div className="contribution-grid"><ContributionEditor context={context} title="הפקדות מעסיק" party="employer" product={product} items={product.employerContributions} editable={editable} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} /><ContributionEditor context={context} title="הפקדות עובד" party="employee" product={product} items={product.employeeContributions} editable={editable} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} /></div>
