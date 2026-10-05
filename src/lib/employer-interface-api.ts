@@ -134,6 +134,10 @@ export const employerInterfaceApi = {
     uploadEmployerInterface<EmployerInterfaceUploadValidation>(`${employerPath(organizationId, employerId)}/validate`, file),
   importUpload: (organizationId: string, employerId: string, file: File, paymentAccountId: string, salaryPaymentDate: string) =>
     uploadEmployerInterface<EmployerInterfaceImportResult>(`${employerPath(organizationId, employerId)}/import`, file, { paymentAccountId, salaryPaymentDate }),
+  optionsBundle: (categories: string[]) => {
+    const params = new URLSearchParams({ categories: Array.from(new Set(categories)).join(",") });
+    return request<Record<string, EmployerInterfaceOption[]>>(`/api/reference-data/employer-interface-006/options-bundle?${params}`);
+  },
   options: (category: string, scope = "all", operationCode?: number | null) => {
     const params = new URLSearchParams({ category, scope });
     if (operationCode != null) params.set("operationCode", String(operationCode));
