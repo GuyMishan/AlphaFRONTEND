@@ -1407,3 +1407,46 @@ html[data-theme="dark"] .data-table-grid > thead > tr > th {
   height: 16px;
   margin: auto;
 }
+
+
+/* Keep resumable-report content contained inside the parent report card. */
+.resume-report-section,
+.resume-report-list {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.resume-report-list > h3 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.resume-report-list .data-table {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.resume-report-list .data-table-viewport {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Dense table icon actions always center their glyph inside the button box. */
+.deposit-edit-icon,
+.deposit-proof-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 !important;
+  display: inline-grid !important;
+  place-items: center;
+  line-height: 0;
+}
+.deposit-edit-icon > svg,
+.deposit-proof-icon > svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+}
