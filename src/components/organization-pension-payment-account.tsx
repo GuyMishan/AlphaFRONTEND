@@ -13,6 +13,12 @@ import type {
   EmployerPaymentAccountInput,
 } from "@/lib/types";
 
+function autocompleteLookupTerm(value: string) {
+  const trimmed = value.trim();
+  const selectedCode = trimmed.match(/^(\d+)\s*(?:-|·)/);
+  return selectedCode?.[1] ?? trimmed;
+}
+
 const EMPTY: EmployerPaymentAccountInput = {
   bankId: 0,
   branchId: 0,
@@ -62,7 +68,7 @@ export function OrganizationPensionPaymentAccount({
   useEffect(() => {
     if (!bankOpen) return;
     const timer = window.setTimeout(() => {
-      alphaApi.banks(bankSearch.trim(), 50).then(setBanks).catch(() => setBanks([]));
+      alphaApi.banks(autocompleteLookupTerm(bankSearch), 50).then(setBanks).catch(() => setBanks([]));
     }, 200);
     return () => window.clearTimeout(timer);
   }, [bankOpen, bankSearch]);
@@ -70,7 +76,7 @@ export function OrganizationPensionPaymentAccount({
   useEffect(() => {
     if (!branchOpen || !form.bankId) return;
     const timer = window.setTimeout(() => {
-      alphaApi.bankBranches(form.bankId, branchSearch.trim(), 100).then(setBranches).catch(() => setBranches([]));
+      alphaApi.bankBranches(form.bankId, autocompleteLookupTerm(branchSearch), 100).then(setBranches).catch(() => setBranches([]));
     }, 200);
     return () => window.clearTimeout(timer);
   }, [branchOpen, form.bankId, branchSearch]);
