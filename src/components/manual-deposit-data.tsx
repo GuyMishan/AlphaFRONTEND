@@ -92,14 +92,25 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
     {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <DataTable
       items={rows}
       rowKey={(row) => row.id}
-      rowHeight={64}
+      rowHeight={56}
       maxHeight={560}
-      tableClassName="deposit-table"
-      wrapperClassName="deposit-table-wrap"
-      columns={[{ key: "employee", label: "עובד" }, { key: "provider", label: "שם יצרן / מוצר" }, { key: "providerAccount", label: "חשבון יצרן" }, { key: "amount", label: "סכום" }, { key: "employerAccount", label: "חשבון מעסיק" }, { key: "reference", label: "אסמכתא" }, { key: "date", label: "תאריך ערך" }, { key: "type", label: "סוג תקבול" }, { key: "status", label: "סטטוס" }, { key: "files", label: "קבצים" }, { key: "edit", label: "" }]}
+      minTableWidth={1080}
+      columns={[
+        { key: "employee", label: "עובד", width: "11%" },
+        { key: "provider", label: "שם יצרן / מוצר", width: "18%" },
+        { key: "providerAccount", label: "חשבון יצרן", width: "10%" },
+        { key: "amount", label: "סכום", width: "8%" },
+        { key: "employerAccount", label: "חשבון מעסיק", width: "12%" },
+        { key: "reference", label: "אסמכתא", width: "9%" },
+        { key: "date", label: "תאריך ערך", width: "9%" },
+        { key: "type", label: "סוג תקבול", width: "10%" },
+        { key: "status", label: "סטטוס", width: "7%" },
+        { key: "files", label: "קבצים", width: "3%" },
+        { key: "edit", label: "", width: "3%" },
+      ]}
       renderCells={(row) => [
         <b>{row.employeeName}</b>,
-        <><b>{row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני"}</b><span>{row.policyNumber || "ללא מס׳ פוליסה"}</span></>,
+        <span title={[row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני", row.policyNumber || ""].filter(Boolean).join(" · ")}>{row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני"}</span>,
         <span className="account-number">{row.providerAccount || "—"}</span>,
         `₪${Number(row.totalDeposit).toLocaleString("he-IL")}`,
         <span className="account-number">{formatEmployerAccount(row, paymentAccount)}</span>,
