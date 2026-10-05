@@ -166,6 +166,11 @@ function providerAccountFromReference(product: PensionFundOption | null) {
 }
 function bankLabel(bank: BankReference) { return `${bank.bankCode} - ${bank.bankName}`; }
 function branchLabel(branch: BankBranchReference) { return `${branch.branchCode} - ${branch.branchName}${branch.city ? ` · ${branch.city}` : ""}`; }
+function autocompleteLookupTerm(value: string) {
+  const trimmed = value.trim();
+  const selectedCode = trimmed.match(/^(\d+)\s*(?:-|·)/);
+  return selectedCode?.[1] ?? trimmed;
+}
 
 function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, form: EmployerInterfaceProductMetadataInput, previous: EmployerInterfacePreviousReference) {
   const errors: string[] = [];
@@ -361,7 +366,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     if (!bankOpen) return;
     let active = true;
     const timer = window.setTimeout(() => {
-      void bankReferenceApi.banks(bankSelection.trim(), 100)
+      void bankReferenceApi.banks(autocompleteLookupTerm(bankSelection), 100)
         .then((items) => { if (active) setBanks(items); })
         .catch(() => { if (active) setBanks([]); });
     }, 180);
@@ -373,7 +378,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     if (!branchOpen || !bankCode) return;
     let active = true;
     const timer = window.setTimeout(() => {
-      void bankReferenceApi.branches(bankCode, branchSelection.trim(), 200)
+      void bankReferenceApi.branches(bankCode, autocompleteLookupTerm(branchSelection), 200)
         .then((items) => { if (active) setBranches(items); })
         .catch(() => { if (active) setBranches([]); });
     }, 180);
@@ -592,10 +597,12 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
             <div className="field"><label>תאריך ערך</label><UiDateInput value={form.valueDate?.slice(0, 10) || ""} onValueChange={(value) => patch("valueDate", value || null)} /></div>
             <div className="field"><label>מס׳ אסמכתא</label><UiInput maxLength={50} value={form.referenceNumber} onChange={(event) => patch("referenceNumber", event.target.value)} /></div>
             <div className="field"><label>בנק</label><UiAutocomplete ariaLabel="בחירת בנק" value={bankSelection}
-              onValueChange={chooseBank} onClear={() => { setForm((current) => ({ ...current, employerBankCode: "", employerBankName: "", employerBranch: "" })); setBranchSelection(""); setBranches([]); }}
+              onOpenChange={setBankOpen} onValueChange={chooseBank} onClear={() => { setForm((current) => ({ ...current, employerBankCode: "", employerBankName: "", employerBranch: "" })); setBranchSelection(""); setBranches([]); }}
               options={banks.map((bank) => ({ value: String(bank.bankCode), label: bankLabel(bank) }))} placeholder="חיפוש בנק" /></div>
-            <div className="field"><label>סניף</label><UiInput list={`branches-correction-${row.id}`} value={branchSelection} onChange={(event) => chooseBranch(event.target.value)} disabled={!form.employerBankCode} />
-              <datalist id={`branches-correction-${row.id}`}>{branches.map((branch) => <option key={branch.branchCode} value={branchLabel(branch)} />)}</datalist></div>
+            <div className="field"><label>סניף</label><UiAutocomplete ariaLabel="בחירת סניף" value={branchSelection}
+              onOpenChange={setBranchOpen} onValueChange={chooseBranch} disabled={!form.employerBankCode}
+              options={branches.map((branch) => ({ value: String(branch.branchCode), label: branchLabel(branch) }))}
+              placeholder={form.employerBankCode ? "חיפוש סניף" : "יש לבחור בנק תחילה"} /></div>
             <div className="field"><label>מס׳ חשבון</label><UiInput inputMode="numeric" maxLength={20} value={form.employerAccount && !/^0+$/.test(form.employerAccount) ? form.employerAccount : ""} onChange={(event) => patch("employerAccount", event.target.value.replace(/\D/g, "").slice(0, 20))} /></div>
           </div></section> : null}
 
