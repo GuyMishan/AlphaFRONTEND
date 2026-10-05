@@ -174,7 +174,7 @@
 .report-deposits-header,
 .report-deposits-item {
   display: grid;
-  grid-template-columns: minmax(145px, 1.1fr) minmax(190px, 1.5fr) 110px 130px 140px minmax(150px, 1fr) 110px 48px;
+  grid-template-columns: minmax(125px,1fr) 82px minmax(165px,1.35fr) 90px 118px 126px minmax(125px,1fr) 96px 44px;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -186,6 +186,10 @@
 .report-deposits-item b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .report-deposits-item small { display: block; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .report-deposits-money { font-weight: 750; white-space: nowrap; }
+.report-deposit-feedback-status-cell { display: inline-flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; }
+.report-deposit-feedback-info { flex: 0 0 auto; }
+.report-deposit-feedback-error-list { display: grid; gap: 5px; max-width: 300px; }
+.report-deposit-feedback-error-list > span + span { padding-top: 5px; border-top: 1px solid var(--line); }
 .report-deposits-load-more { justify-self: center; }
 .report-deposit-row-actions { display: flex; align-items: center; justify-content: flex-end; }
 
