@@ -283,6 +283,27 @@
 .manufacturer-pending { grid-column: 1 / -1; color: var(--muted); font-size: 13px; align-self: center; }
 .contribution-feedback-message { display: flex; align-items: center; gap: 7px; margin-top: 9px; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--teal) 8%, var(--surface)); color: var(--teal); font-size: 13px; }
 .contribution-feedback-message.error { background: color-mix(in srgb, var(--danger) 8%, var(--surface)); color: var(--danger); }
+.deposit-level-feedback-errors {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--danger) 42%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+}
+.deposit-level-feedback-errors-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--danger);
+}
+.deposit-level-feedback-errors > div:not(.deposit-level-feedback-errors-title) {
+  display: grid;
+  gap: 3px;
+}
+.deposit-level-feedback-errors span { font-size: 13px; line-height: 1.5; }
+.deposit-level-feedback-errors small { color: var(--muted); font-size: 11px; line-height: 1.45; }
 .feedback-source { display: block; margin-top: 7px; color: var(--muted); }
 .manufacturer-extra-rows { display: grid; gap: 6px; margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--line); }
 .manufacturer-extra-rows > small { color: var(--muted); font-weight: 700; }
@@ -335,9 +356,23 @@
   .feedback-modal-summary,
   .money-feedback-grid,
   .feedback-treatment-view { grid-template-columns: 1fr; }
-  .contribution-sides { grid-template-columns: 1fr; }
+  .contribution-comparison-list { justify-items: start; }
+  .contribution-comparison-card {
+    width: fit-content;
+    max-width: min(100%, 360px);
+    justify-self: start;
+  }
+  .contribution-sides {
+    width: fit-content;
+    max-width: 100%;
+    grid-template-columns: 1fr;
+  }
   .contribution-compare-mark { min-height: 24px; transform: rotate(90deg); }
-  .contribution-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .contribution-side {
+    width: fit-content;
+    max-width: 100%;
+    grid-template-columns: repeat(2, minmax(84px, max-content));
+  }
   .manufacturer-extra-rows > div { grid-template-columns: 1fr 1fr; }
 }
 
