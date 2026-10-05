@@ -61,6 +61,7 @@ export type ReportFeedbackDepositRow = {
   reportEmployeeId: string;
   employmentId: string;
   employeeName: string;
+  productType: number | string;
   fundName: string;
   fundCompanyName: string;
   policyNumber: string;
