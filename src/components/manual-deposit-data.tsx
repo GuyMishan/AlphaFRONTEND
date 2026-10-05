@@ -105,8 +105,8 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
         { key: "date", label: "תאריך ערך", width: "9%" },
         { key: "type", label: "סוג תקבול", width: "10%" },
         { key: "status", label: "סטטוס", width: "7%" },
-        { key: "files", label: "קבצים", width: "3%" },
-        { key: "edit", label: "", width: "3%" },
+        { key: "files", label: "קבצים", width: "5%" },
+        { key: "edit", label: "", width: "5%" },
       ]}
       renderCells={(row) => [
         <b>{row.employeeName}</b>,
@@ -127,7 +127,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
               <FileText size={17} />
             </button>
           : <span className="deposit-proof-empty">-</span>,
-        <button className="icon-button" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
+        <button className="icon-button deposit-edit-icon" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}
     {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing}
