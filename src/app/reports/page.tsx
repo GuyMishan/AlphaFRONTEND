@@ -87,6 +87,15 @@ function kindLabel(value: string | number) {
   return "שוטף";
 }
 
+function pensionProductTypeLabel(value: string | number) {
+  if (value === 1 || value === "1" || value === "PensionFund") return "פנסיה";
+  if (value === 2 || value === "2" || value === "StudyFund") return "השתלמות";
+  if (value === 3 || value === "3" || value === "ManagersInsurance") return "ביטוח מנהלים";
+  if (value === 4 || value === "4" || value === "ProvidentFund") return "קופת גמל";
+  return "אחר";
+}
+
+
 function feedbackLabel(status: ReportFeedbackRow["feedbackStatus"]) {
   switch (status) {
     case "completed": return "הושלם";
@@ -166,6 +175,7 @@ function DepositFeedbackPanel({
         : <div className="report-deposits-grid" role="table" aria-label="הפקדות ומשובים לפי עובד ומוצר">
         <div className="report-deposits-header" role="row">
           <span role="columnheader">עובד</span>
+          <span role="columnheader">סוג מוצר</span>
           <span role="columnheader">יצרן / מוצר</span>
           <span role="columnheader">סכום</span>
           <span role="columnheader">משוב</span>
@@ -176,6 +186,7 @@ function DepositFeedbackPanel({
         </div>
         {content.deposits.map((deposit) => <div className="report-deposits-item" role="row" key={deposit.id}>
           <div role="cell"><b>{deposit.employeeName}</b></div>
+          <div role="cell"><span className="report-deposit-product-type">{pensionProductTypeLabel(deposit.productType)}</span></div>
           <div role="cell">
             <b>{deposit.fundCompanyName || deposit.fundName || "מוצר פנסיוני"}</b>
             <small>{deposit.fundName && deposit.fundCompanyName ? deposit.fundName : deposit.policyNumber || "ללא מספר פוליסה"}</small>
