@@ -45,7 +45,7 @@ export default function EmployeeProfilePage() {
     {employee ? <AppTabs items={tabs} activeKey={tab} onChange={setTab} ariaLabel="פרופיל עובד" /> : null}
     {error ? <div className="notice notice-error">{error}</div> : employee ? tab === "details"
       ? <div className="employee-profile-layout"><EmployeeForm organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /></div>
-      : <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={employee.id} editable={canEditEmployee} />
+      : <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={employee.id} employee={employee} editable={canEditEmployee} />
       : <div className="empty">טוען פרופיל...</div>}
   </AppShell>;
 }
