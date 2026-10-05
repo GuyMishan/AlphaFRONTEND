@@ -220,15 +220,6 @@ html[data-theme="dark"] .session-timeout-icon>span{background:var(--surface);bor
 
 
 /* Reporting operational tables and mobile navigation use theme tokens in dark mode. */
-html[data-theme="dark"] .deposit-table .data-table-row > td,
-html[data-theme="dark"] .resume-report-table .data-table-row > td {
-  background: var(--surface);
-  color: var(--text);
-}
-html[data-theme="dark"] .deposit-table .data-table-row:hover > td,
-html[data-theme="dark"] .resume-report-table .data-table-row:hover > td {
-  background: color-mix(in srgb, var(--surface) 88%, var(--blue-soft));
-}
 html[data-theme="dark"] .mobile-menu {
   background: var(--surface);
   color: var(--text);
