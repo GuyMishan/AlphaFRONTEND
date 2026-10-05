@@ -303,7 +303,12 @@ function ContributionEditor({ context, title, party, product, items, editable, o
     rowKey={(item) => String(item.value)}
     tableClassName="contribution-table"
     maxHeight={360}
-    columns={[{ key: "component", label: "רכיב" }, { key: "amount", label: "סכום" }, { key: "percentage", label: "אחוז" }, { key: "exempt", label: "תשלומים פטורים" }]}
+    columns={[
+      { key: "component", label: "רכיב", width: "25%" },
+      { key: "amount", label: "סכום", width: "24%" },
+      { key: "percentage", label: "אחוז", width: "21%" },
+      { key: "exempt", label: "פטורים", width: "30%" },
+    ]}
     renderCells={({ value, label }) => {
       const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 };
       const max = maxPercentage(product.productType, party, value);
