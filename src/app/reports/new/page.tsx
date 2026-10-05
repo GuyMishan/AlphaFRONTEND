@@ -657,12 +657,12 @@ export default function NewReportPage() {
             <span key="employees">{draft.employeeCount}</span>,
             <span key="products">{draft.productCount}</span>,
             <span key="updated">{formatDraftUpdate(draft.updatedAt)}</span>,
-            <div key="action" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "nowrap" }}>
-              <button type="button" className="btn btn-primary"
+            <div key="action" className="resume-report-actions">
+              <button type="button" className="btn btn-primary resume-report-continue"
                 disabled={advancing || deletingDraftId === draft.id} onClick={() => void resumeReport(draft)}>
                 המשך עריכה <ArrowLeft size={15} />
               </button>
-              <button type="button" className="btn btn-danger" aria-label="מחיקת טיוטה"
+              <button type="button" className="btn btn-danger resume-report-delete" aria-label="מחיקת טיוטה"
                 disabled={advancing || Boolean(deletingDraftId)} onClick={() => setDraftToDelete(draft)}>
                 <Trash2 size={15} />
               </button>
