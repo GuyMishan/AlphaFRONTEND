@@ -123,6 +123,7 @@ export type ReportFeedbackDepositDetails = {
     intakeStatus: number | null;
     errorCode: number | null;
     errorDescription: string;
+    errorScope: "contribution" | "deposit" | "employee" | "money" | "report" | "informational";
     errorAmount: number | null;
     errorDate: string | null;
     contributionTypeCode: number | null;
