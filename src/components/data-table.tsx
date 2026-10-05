@@ -35,6 +35,7 @@ type Props<T> = {
   loadMoreThreshold?: number;
   tableClassName?: string;
   wrapperClassName?: string;
+  minTableWidth?: number | string;
   onRowClick?: (item: T) => void;
   loading?: boolean;
   loadingMore?: boolean;
@@ -50,7 +51,7 @@ export function DataTable<T>({
   expandedRowKeys, defaultExpandedRowKeys = [], onExpandedRowChange, expandOnRowClick = false,
   canExpandRow, expandToggleColumnKey,
   rowHeight = 56, maxHeight = 520, overscan = 10,
-  loadMoreThreshold = 8, tableClassName = "", wrapperClassName = "", onRowClick,
+  loadMoreThreshold = 8, tableClassName = "", wrapperClassName = "", minTableWidth, onRowClick,
   loading = false, loadingMore = false, loadingLabel = "טוען נתונים...",
   loadingMoreLabel = "טוען נתונים נוספים...", emptyState = "לא נמצאו נתונים.",
   hasMore = false, onLoadMore,
@@ -141,7 +142,10 @@ export function DataTable<T>({
 
   return <div className="data-table">
     <div ref={viewportRef} className={`table-wrap data-table-viewport ${wrapperClassName}`.trim()} style={{ maxHeight, overflow: "auto", scrollbarGutter: "stable" }} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}>
-      <table className={`data-table-grid ${tableClassName}`.trim()} style={{ "--data-table-row-height": `${rowHeight}px` } as CSSProperties}>
+      <table className={`data-table-grid ${tableClassName}`.trim()} style={{
+        "--data-table-row-height": `${rowHeight}px`,
+        ...(minTableWidth ? { minWidth: typeof minTableWidth === "number" ? `${minTableWidth}px` : minTableWidth } : {}),
+      } as CSSProperties}>
         <colgroup>{columns.map((column) => <col key={column.key} style={column.width ? { width: column.width } : undefined} />)}</colgroup>
         <thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead>
         <tbody>
