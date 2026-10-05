@@ -283,6 +283,34 @@ body:has(.report-modal-backdrop) {
 }
 
 @media (max-width: 760px) {
+  .report-editor-app-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .report-editor-app-modal .app-modal-body,
+  .report-editor-app-modal .product-editor-list,
+  .report-editor-app-modal .report-product-card,
+  .report-editor-app-modal .report-product-fields,
+  .report-editor-app-modal .contribution-grid,
+  .report-editor-app-modal .contribution-section {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .report-editor-app-modal .contribution-section .data-table,
+  .report-editor-app-modal .contribution-section .data-table-viewport {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .report-editor-app-modal .contribution-table {
+    min-width: 520px;
+  }
+  .report-editor-app-modal .contribution-section .data-table-viewport {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
   .report-modal .report-product-card {
     display: block;
   }
