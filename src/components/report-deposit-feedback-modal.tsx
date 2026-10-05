@@ -257,7 +257,7 @@ export function ReportDepositFeedbackModal({
                 {depositLevelErrors.map(({ code, description, scope }) =>
                   <div key={code}>
                     <span>{description}</span>
-                    <small>{scopeLabel(scope)} · מוצג פעם אחת ולא בכל רכיב הפרשה.</small>
+                    <small>{scopeLabel(scope)}</small>
                   </div>)}
               </div> : null}
               <div className="contribution-comparison-list">
