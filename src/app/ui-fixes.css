@@ -309,6 +309,14 @@ body:has(.report-modal-backdrop) {
     min-width: 0;
     table-layout: fixed;
   }
+  .report-editor-app-modal .contribution-table col,
+  .report-editor-app-modal .contribution-table th,
+  .report-editor-app-modal .contribution-table td {
+    width: 25% !important;
+    min-width: 0 !important;
+    max-width: 25% !important;
+    box-sizing: border-box;
+  }
   .report-editor-app-modal .contribution-section .data-table-viewport {
     overflow-x: hidden !important;
   }
