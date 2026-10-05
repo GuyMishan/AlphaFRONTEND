@@ -69,6 +69,7 @@ export type ReportFeedbackDepositRow = {
   hasFeedback: boolean;
   feedbackStatus: "completed" | "attention" | "partial" | "pending";
   feedbackLabel: string;
+  feedbackErrors: string[];
   moneyStatus: "allocated" | "in-transit" | "received-partial" | "unresolved" | "pending";
   moneyStatusLabel: string;
   treatmentStatus: string;
