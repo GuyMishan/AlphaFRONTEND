@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Save, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { alphaApi } from "@/lib/api";
-import { employerInterfaceApi } from "@/lib/employer-interface-api";
+import { employerInterfaceApi, type EmployerInterfaceOption } from "@/lib/employer-interface-api";
 import type { Employee, EmployeeInput, Employer } from "@/lib/types";
 import { isIsraeliId, isValidEmail } from "@/lib/validation";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
@@ -53,7 +53,21 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
   const [saving, setSaving] = useState(false);
   useEffect(() => { onSavingChange?.(saving); }, [saving, onSavingChange]);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [formOptions, setFormOptions] = useState<Record<string, EmployerInterfaceOption[]>>({});
+  const [formOptionsLoading, setFormOptionsLoading] = useState(true);
+  const [formOptionsError, setFormOptionsError] = useState("");
   const title = employee ? `${employee.firstName} ${employee.lastName}` : "עובד חדש";
+
+  useEffect(() => {
+    let active = true;
+    setFormOptionsLoading(true);
+    setFormOptionsError("");
+    employerInterfaceApi.optionsBundle(["employee-identifier-type", "gender"])
+      .then((items) => { if (active) setFormOptions(items); })
+      .catch((err) => { if (active) setFormOptionsError(err instanceof Error ? err.message : "טעינת אפשרויות העובד נכשלה"); })
+      .finally(() => { if (active) setFormOptionsLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (!employee) return;
@@ -167,13 +181,13 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
       <div className="grid employee-details-grid">
         <Field label="שם פרטי *" error={errors.firstName}><UiInput aria-invalid={Boolean(errors.firstName)} required minLength={2} maxLength={100} disabled={!editable} value={form.firstName} onChange={(event) => update("firstName", event.target.value)} /></Field>
         <Field label="שם משפחה *" error={errors.lastName}><UiInput aria-invalid={Boolean(errors.lastName)} required minLength={2} maxLength={100} disabled={!editable} value={form.lastName} onChange={(event) => update("lastName", event.target.value)} /></Field>
-        <Field label="סוג מזהה *" error={errors.identifierType}><EmployerInterfaceOptionSelect category="employee-identifier-type" value={form.identifierType} disabled={!editable} required placeholder="בחרו סוג מזהה" onChange={(value) => update("identifierType", value === 2 ? 2 : 1)} /></Field>
+        <Field label="סוג מזהה *" error={errors.identifierType}><EmployerInterfaceOptionSelect category="employee-identifier-type" value={form.identifierType} disabled={!editable} required placeholder="בחרו סוג מזהה" suppliedOptions={formOptions["employee-identifier-type"] ?? []} suppliedLoading={formOptionsLoading} suppliedError={formOptionsError} onChange={(value) => update("identifierType", value === 2 ? 2 : 1)} /></Field>
         <Field label={form.identifierType === 2 ? "מספר דרכון *" : "תעודת זהות *"} error={errors.nationalId}><UiInput aria-invalid={Boolean(errors.nationalId)} required disabled={!editable} inputMode={form.identifierType === 1 ? "numeric" : "text"} maxLength={form.identifierType === 1 ? 9 : 16} value={form.nationalId} onChange={(event) => update("nationalId", form.identifierType === 1 ? event.target.value.replace(/\D/g, "").slice(0, 9) : event.target.value.replace(/\s/g, "").slice(0, 16))} /></Field>
         <Field label="מספר עובד אצל המעסיק *" error={errors.employeeNumber}><UiInput aria-invalid={Boolean(errors.employeeNumber)} required maxLength={50} disabled={!editable} value={form.employeeNumber} onChange={(event) => update("employeeNumber", event.target.value)} /></Field>
         <Field label="תאריך תחילת עבודה *" error={errors.startDate}><UiDateInput aria-invalid={Boolean(errors.startDate)} required disabled={!editable} value={form.startDate} onValueChange={(value) => update("startDate", value)} /></Field>
         <Field label="שכר חודשי" error={errors.monthlySalary}><UiInput aria-invalid={Boolean(errors.monthlySalary)} disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={form.monthlySalary || ""} onChange={(event) => update("monthlySalary", Number(event.target.value))} /></Field>
         <Field label="תאריך לידה *" error={errors.birthDate}><UiDateInput disabled={!editable} required value={form.birthDate ?? ""} onValueChange={(value) => update("birthDate", value || null)} /></Field>
-        <Field label="מין *" error={errors.gender}><EmployerInterfaceOptionSelect category="gender" value={form.gender ?? null} disabled={!editable} required onChange={(value) => update("gender", value)} /></Field>
+        <Field label="מין *" error={errors.gender}><EmployerInterfaceOptionSelect category="gender" value={form.gender ?? null} disabled={!editable} required suppliedOptions={formOptions.gender ?? []} suppliedLoading={formOptionsLoading} suppliedError={formOptionsError} onChange={(value) => update("gender", value)} /></Field>
         <Field label="אימייל *" error={errors.email}><UiInput disabled={!editable} required type="email" maxLength={50} value={form.email} onChange={(event) => update("email", event.target.value)} /></Field>
         <Field label="נייד *" error={errors.mobile}><UiInput disabled={!editable} required inputMode="numeric" maxLength={15} value={form.mobile} onChange={(event) => update("mobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
         <AddressAutocompleteFields
