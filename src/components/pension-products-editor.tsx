@@ -152,8 +152,7 @@ export function normalizePensionEditorProducts(monthlySalary: number, products: 
 
 function validateContributionRows(product: PensionEditorProduct, productIndex: number, contributionLimits: PensionEditorContributionLimit[] = [], context: "employee" | "report" = "employee") {
   const insuredSalary = Number(product.salary || 0);
-  const depositStatus = product.depositStatus ?? 1;
-  const usesEmployeeEmployerRegulation19 = context === "employee" || depositStatus !== 2;
+  const usesEmployeeEmployerRegulation19 = context === "employee";
   const validateParty = (items: PensionEditorContribution[], party: "employer" | "employee", label: string) => {
     const populated = items.filter((item) => Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0);
     if (!populated.length) return `מוצר ${productIndex + 1}: יש להזין לפחות רכיב הפקדה אחד ב${label}.`;
@@ -198,10 +197,6 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
   if (employerError) return employerError;
   const employeeError = validateParty(product.employeeContributions, "employee", "הפקדות עובד");
   if (employeeError) return employeeError;
-  if (context === "report" && depositStatus === 1 && product.reportingType === "1"
-      && [...product.employerContributions, ...product.employeeContributions].some((item) => Number(item.amount || 0) > 0)
-      && insuredSalary <= 0)
-    return `מוצר ${productIndex + 1}: קוד שגיאה 75 — בהפקדת שכיר שוטפת חובה לדווח שכר גדול מאפס.`;
   return "";
 }
 
