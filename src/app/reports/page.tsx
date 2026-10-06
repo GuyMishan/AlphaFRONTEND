@@ -23,7 +23,8 @@ import { AppShell } from "@/components/app-shell";
 import { AppModal } from "@/components/app-modal";
 import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { DepositPaymentEditor } from "@/components/manual-deposit-data";
-import { ReportDepositFeedbackModal } from "@/components/report-deposit-feedback-modal";
+import { ReportFeedbackModal, type ReportFeedbackModalMode } from "@/components/report-feedback-modal";
+import { FeedbackResolveButton } from "@/components/feedback-resolve-button";
 import { Tooltip } from "@/components/tooltip";
 import { UiActionMenu, UiAutocomplete, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { manualDepositsApi, type ManualDepositContributionLimit, type ManualDepositRow } from "@/lib/manual-deposits-api";
@@ -237,6 +238,12 @@ function DepositFeedbackPanel({
           </div>
           <div role="cell" className="muted-inline">{formatDate(deposit.updatedAt)}</div>
           <div role="cell" className="report-deposit-row-actions">
+            {deposit.feedbackStatus === "attention" ? <FeedbackResolveButton
+              compact
+              count={deposit.feedbackErrors?.length || undefined}
+              label={deposit.feedbackErrors?.length ? `תקלות · ${deposit.feedbackErrors.length}` : "תקלות"}
+              onClick={() => onOpen(deposit)}
+            /> : null}
             <UiActionMenu
               ariaLabel={`פעולות עבור ${deposit.employeeName}`}
               items={[
@@ -284,7 +291,8 @@ export default function ReportsPage() {
   const [expandedManufacturerInput, setExpandedManufacturerInput] = useState<Record<string, string>>({});
   const [expandedManufacturerFilter, setExpandedManufacturerFilter] = useState<Record<string, string>>({});
   const expandedRequests = useRef(new Set<string>());
-  const [selectedDeposit, setSelectedDeposit] = useState<{ report: ReportFeedbackRow; deposit: ReportFeedbackDepositRow } | null>(null);
+  const [feedbackModal, setFeedbackModal] = useState<{ mode: ReportFeedbackModalMode; report?: ReportFeedbackRow; deposit?: ReportFeedbackDepositRow } | null>(null);
+  const [employerIssueCount, setEmployerIssueCount] = useState(0);
   const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; editReportId: string; deposit: ManualDepositRow; contributionLimits: ManualDepositContributionLimit[] } | null>(null);
   const [retransmitReport, setRetransmitReport] = useState<ReportFeedbackRow | null>(null);
   const [deleteReport, setDeleteReport] = useState<ReportFeedbackRow | null>(null);
@@ -292,6 +300,18 @@ export default function ReportsPage() {
   const [deletingReportId, setDeletingReportId] = useState("");
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(() => columnOptions.filter((item) => item.defaultVisible).map((item) => item.key));
   const [exportingReportId, setExportingReportId] = useState("");
+
+  useEffect(() => {
+    if (!scope) {
+      setEmployerIssueCount(0);
+      return;
+    }
+    let cancelled = false;
+    reportFeedbackApi.employerContext(scope.organizationId, scope.employerId)
+      .then((result) => { if (!cancelled) setEmployerIssueCount(result.issues.length); })
+      .catch(() => { if (!cancelled) setEmployerIssueCount(0); });
+    return () => { cancelled = true; };
+  }, [scope]);
 
   useEffect(() => {
     try {
@@ -629,7 +649,12 @@ export default function ReportsPage() {
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div>
       : "—" },
-    actions: { column: { key: "actions", label: "פעולות", width: "76px" }, render: (row) => <div className="report-row-actions">
+    actions: { column: { key: "actions", label: "פעולות", width: "170px" }, render: (row) => <div className="report-row-actions">
+      {row.requiresAttentionCount > 0 ? <FeedbackResolveButton
+        compact
+        label={`תקלות · ${row.requiresAttentionCount}`}
+        onClick={() => setFeedbackModal({ mode: "report", report: row })}
+      /> : null}
       <UiActionMenu
         ariaLabel={`פעולות לדיווח ${formatMonth(row.reportingMonth)}`}
         items={[
@@ -701,6 +726,10 @@ export default function ReportsPage() {
         <p>מעקב, משוב, מצב כספים וטיפול ידני — במקום אחד.</p>
       </div>
       <div className="report-page-actions">
+        {scope ? <FeedbackResolveButton
+          label={employerIssueCount > 0 ? `תקלות מעסיק · ${employerIssueCount}` : "משוב מעסיק"}
+          onClick={() => setFeedbackModal({ mode: "employer" })}
+        /> : null}
         <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={!scope || loading}>
           <RefreshCw size={16} />רענון
         </button>
@@ -825,7 +854,7 @@ export default function ReportsPage() {
           {expandedContent[report.id] ? <DepositFeedbackPanel
             report={report}
             content={expandedContent[report.id]}
-            onOpen={(deposit) => setSelectedDeposit({ report, deposit })}
+            onOpen={(deposit) => setFeedbackModal({ mode: "deposit", report, deposit })}
             onEdit={(deposit) => void editDepositFromFeedback(report, deposit.id)}
             loading={Boolean(expandedLoading[report.id])}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
@@ -839,13 +868,14 @@ export default function ReportsPage() {
       />
     </div>
 
-    {selectedDeposit && scope ? <ReportDepositFeedbackModal
+    {feedbackModal && scope ? <ReportFeedbackModal
+      mode={feedbackModal.mode}
       organizationId={scope.organizationId}
       employerId={scope.employerId}
-      reportId={selectedDeposit.report.id}
-      reportProductId={selectedDeposit.deposit.id}
-      hasFeedback={selectedDeposit.deposit.hasFeedback}
-      onClose={() => setSelectedDeposit(null)}
+      reportId={feedbackModal.report?.id}
+      reportProductId={feedbackModal.deposit?.id}
+      hasFeedback={feedbackModal.deposit?.hasFeedback ?? false}
+      onClose={() => setFeedbackModal(null)}
     /> : null}
 
     {editingDeposit && scope ? <DepositPaymentEditor
