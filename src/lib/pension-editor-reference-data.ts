@@ -17,10 +17,19 @@ export type PensionEditorSalaryLayer = {
   name: string;
 };
 
+export type PensionEditorContributionLimit = {
+  year: number;
+  productType: number;
+  party: number;
+  component: number;
+  maxPercentage: number;
+};
+
 export type PensionEditorReferenceData = {
   referenceOptions: Record<string, PensionEditorReferenceOption[]>;
   interfaceOptions: Record<string, PensionEditorInterfaceOption[]>;
   salaryLayers: PensionEditorSalaryLayer[];
+  contributionLimits: PensionEditorContributionLimit[];
 };
 
 export async function loadPensionEditorReferenceData(): Promise<PensionEditorReferenceData> {
