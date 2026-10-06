@@ -28,7 +28,7 @@
 - `src/lib/access-scope.ts`.
 
 ## Pension products and reference controls
-- `src/components/pension-products-editor.tsx` — shared pension editor uses the same canonical contribution mapping as the backend (employee Benefits -> official SUG-HAFRASHA 2; employee Severance -> official code 4) and performs immediate client-side V006 prevention for contribution consistency, future salary month, duplicate same-product/month rows, Regulation 19 percentage caps and errors 16/17/23/27/28/43/53/71/72/75. Historical identifier/correction checks (50/100/101) remain authoritative backend validation and surface through the standard report validation errors modal.
+- `src/components/pension-products-editor.tsx` — shared pension editor uses the same canonical contribution mapping as the backend (employee Benefits -> official SUG-HAFRASHA 2; employee Severance -> official code 4) and performs immediate client-side V006 prevention for contribution consistency, future salary month, duplicate same-product/month rows, Regulation 19 percentage caps and errors 16/17/23/27/28/43/53/71/72/75. Percentage caps are supplied by the existing mount-local pension-editor options bundle from the backend rather than hardcoded in the UI. Historical identifier/correction checks (50/100/101) remain authoritative backend validation and surface through the standard report validation errors modal.
 - `src/components/employee-pension-mix.tsx`.
 - `src/components/pension-fund-select.tsx`.
 - `src/components/reference-option-select.tsx`, `address-autocomplete-fields.tsx`, `salary-layer-select.tsx`.
