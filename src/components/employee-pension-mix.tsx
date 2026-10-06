@@ -5,6 +5,7 @@ import { Save } from "lucide-react";
 import { PensionProductsEditor, normalizePensionEditorProducts, sanitizePensionProductContributions, validatePensionEditorProducts, type PensionEditorProduct } from "@/components/pension-products-editor";
 import { alphaApi } from "@/lib/api";
 import type { Employee, EmployeePensionProductInput, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
+import type { PensionEditorContributionLimit } from "@/lib/pension-editor-reference-data";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -83,6 +84,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const [contributionLimits, setContributionLimits] = useState<PensionEditorContributionLimit[]>([]);
 
   useEffect(() => {
     setLoading(true);
@@ -104,7 +106,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
     if (!editable || !employee) return;
     setValidationAttempted(true);
     const normalized = normalizePensionEditorProducts(monthlySalary, products);
-    const validationError = normalized.error || validatePensionEditorProducts(normalized.products, "employee");
+    const validationError = normalized.error || validatePensionEditorProducts(normalized.products, "employee", contributionLimits);
     if (validationError) { setError(validationError); return; }
 
     setSaving(true);
@@ -166,6 +168,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
       editable={editable}
       showAllocationError={validationAttempted}
       onFieldInteraction={() => { setError(""); setValidationAttempted(false); }}
+      onReferenceDataLoaded={(data) => setContributionLimits(data.contributionLimits ?? [])}
       onMonthlySalaryChange={(value) => { setMonthlySalary(value); setSaved(false); setError(""); setValidationAttempted(false); }}
       onProductsChange={(value) => { setProducts(value.map(sanitizePensionProductContributions)); setSaved(false); setError(""); setValidationAttempted(false); }}
     />
