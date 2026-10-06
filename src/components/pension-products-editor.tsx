@@ -57,8 +57,18 @@ const today = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
-const roundMoney = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
-const roundPercentage = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
+const roundDecimal = (value: number, decimals: number) => {
+  const safe = Number.isFinite(value) ? value : 0;
+  return Number(Math.round(Number(`${safe}e${decimals}`)) + `e-${decimals}`);
+};
+const roundMoney = (value: number) => roundDecimal(value, 2);
+const roundPercentage = (value: number) => roundDecimal(value, 2);
+const calculateContributionAmount = (salary: number, percentage: number) => {
+  const salaryCents = Math.round(Number(`${roundMoney(salary)}e2`));
+  const percentageHundredths = Math.round(Number(`${roundPercentage(percentage)}e2`));
+  const amountCents = Math.floor((salaryCents * percentageHundredths + 5_000) / 10_000);
+  return amountCents / 100;
+};
 
 export function inferPensionSection14Code(product: Pick<PensionEditorProduct, "section14" | "section14Code" | "section14StartDate">): Section14Code {
   if (product.section14Code && [1, 2, 3, 4, 5].includes(Number(product.section14Code))) return Number(product.section14Code) as Section14Code;
@@ -120,7 +130,7 @@ export function normalizePensionEditorProducts(monthlySalary: number, products: 
       const salary = allocation.resolved.get(index) ?? 0;
       const normalize = (item: PensionEditorContribution): PensionEditorContribution => ({
         ...item,
-        amount: roundMoney(salary * Number(item.percentage || 0) / 100),
+        amount: calculateContributionAmount(salary, Number(item.percentage || 0)),
         exemptPayments: roundMoney(Number(item.exemptPayments || 0)),
       });
       return {
@@ -151,7 +161,7 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
       if (pct > max) return `מוצר ${productIndex + 1}: אחוז ב${label} עבור הרכיב שנבחר לא יכול לעבור ${max}%.`;
       if (insuredSalary > 0 && amount > insuredSalary + 0.01) return `מוצר ${productIndex + 1}: סכום הפקדה ב${label} לא יכול להיות גבוה מהשכר המבוטח.`;
       if (exempt < 0 || exempt > amount) return `מוצר ${productIndex + 1}: תשלומים פטורים ב${label} חייבים להיות בין 0 לסכום ההפקדה.`;
-      const expected = roundMoney(insuredSalary * pct / 100);
+      const expected = calculateContributionAmount(insuredSalary, pct);
       if (insuredSalary > 0 && Math.abs(roundMoney(amount) - expected) > 0.001) return `מוצר ${productIndex + 1}: סכום ההפקדה ב${label} חייב להתאים לשכר המבוטח כפול אחוז ההפקדה.`;
     }
     return "";
@@ -320,7 +330,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
       [party]: product[party].map((item) => {
         if (item.component !== component) return item;
         const safe = Math.max(0, Number.isFinite(value) ? value : 0);
-        if (key === "percentage") return { ...item, percentage: roundPercentage(safe), amount: roundMoney(salary * safe / 100) };
+        if (key === "percentage") return { ...item, percentage: roundPercentage(safe), amount: calculateContributionAmount(salary, safe) };
         if (key === "amount") return { ...item, amount: roundMoney(safe), percentage: salary > 0 ? roundPercentage(safe / salary * 100) : 0 };
         return { ...item, exemptPayments: roundMoney(safe) };
       }),
