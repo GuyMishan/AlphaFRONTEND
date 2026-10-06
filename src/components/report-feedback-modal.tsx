@@ -65,7 +65,7 @@ function IssueGroups({ issues, order }: { issues: ReportFeedbackContextIssue[]; 
             <b>{item.code > 0 ? `קוד ${item.code}` : "תקלה"}</b>
             <span>{item.description}</span>
           </div>
-          <FeedbackResolveButton compact />
+          <FeedbackResolveButton compact disabled />
         </div>)}
       </div>
     </section>)}
