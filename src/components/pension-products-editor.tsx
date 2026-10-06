@@ -53,9 +53,23 @@ const employeeComponents: { value: ContributionComponent; label: string }[] = [
   { value: 1, label: "תג 47" }, { value: 2, label: "תגמולי עובד (תג 45)" }, { value: 3, label: "אכ״ע" }, { value: 4, label: "שונות" },
 ];
 
+const israelDateParts = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jerusalem",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return { year: value("year"), month: value("month"), day: value("day") };
+};
 const today = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const { year, month, day } = israelDateParts();
+  return `${year}-${month}-${day}`;
+};
+const currentIsraelMonth = () => {
+  const { year, month } = israelDateParts();
+  return `${year}-${month}`;
 };
 const roundDecimal = (value: number, decimals: number) => {
   const safe = Number.isFinite(value) ? value : 0;
@@ -221,9 +235,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
     if (!/^\d+$/.test(product.salaryLayer || "")) return `מוצר ${index + 1}: יש לבחור רובד שכר תקין.`;
     if (context === "report" && product.salaryMonth) {
       const salaryMonth = product.salaryMonth.slice(0, 7);
-      const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      if (salaryMonth > currentMonth)
+      if (salaryMonth > currentIsraelMonth())
         return `מוצר ${index + 1}: קוד שגיאה 27 — לא ניתן לדווח הפקדה בגין חודש שכר עתידי.`;
     }
     const code = inferPensionSection14Code(product);
