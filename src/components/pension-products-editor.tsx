@@ -58,7 +58,7 @@ const today = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 const roundMoney = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
-const roundPercentage = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 10000) / 10000;
+const roundPercentage = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
 
 export function inferPensionSection14Code(product: Pick<PensionEditorProduct, "section14" | "section14Code" | "section14StartDate">): Section14Code {
   if (product.section14Code && [1, 2, 3, 4, 5].includes(Number(product.section14Code))) return Number(product.section14Code) as Section14Code;
@@ -152,7 +152,7 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
       if (insuredSalary > 0 && amount > insuredSalary + 0.01) return `מוצר ${productIndex + 1}: סכום הפקדה ב${label} לא יכול להיות גבוה מהשכר המבוטח.`;
       if (exempt < 0 || exempt > amount) return `מוצר ${productIndex + 1}: תשלומים פטורים ב${label} חייבים להיות בין 0 לסכום ההפקדה.`;
       const expected = roundMoney(insuredSalary * pct / 100);
-      if (insuredSalary > 0 && Math.abs(amount - expected) > 0.02) return `מוצר ${productIndex + 1}: סכום ההפקדה ב${label} חייב להתאים לשכר המבוטח כפול אחוז ההפקדה.`;
+      if (insuredSalary > 0 && Math.abs(roundMoney(amount) - expected) > 0.001) return `מוצר ${productIndex + 1}: סכום ההפקדה ב${label} חייב להתאים לשכר המבוטח כפול אחוז ההפקדה.`;
     }
     return "";
   };
@@ -387,7 +387,7 @@ function ContributionEditor({ context, title, party, product, items, contributio
       return [
         <b key="component">{label}</b>,
         <UiInput key="amount" className="contribution-input" disabled={!editable} type="number" min="0" max={product.salary || undefined} step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} />,
-        <UiInput key="percentage" className="contribution-input" disabled={!editable} type="number" min="0" max={max ?? undefined} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} />,
+        <UiInput key="percentage" className="contribution-input" disabled={!editable} type="number" min="0" max={max ?? undefined} step="0.01" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", roundPercentage(Number(e.target.value)))} />,
         <UiInput key="exempt" className="contribution-input" disabled={!editable} type="number" min="0" max={item.amount || undefined} step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} />,
       ];
     }}
