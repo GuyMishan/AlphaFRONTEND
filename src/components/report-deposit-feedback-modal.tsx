@@ -230,7 +230,7 @@ export function ReportDepositFeedbackModal({
             const scopeLabel = (scope: (typeof details.manufacturerContributions)[number]["errorScope"]) => {
               switch (scope) {
                 case "employee": return "עובד";
-                case "money": return "כספים";
+                case "money": return "מעסיק";
                 case "report": return "דיווח";
                 case "deposit": return "הפקדה / מוצר";
                 case "contribution": return "רכיבי הפרשה";
