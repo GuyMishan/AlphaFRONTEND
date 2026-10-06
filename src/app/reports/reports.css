@@ -174,7 +174,7 @@
 .report-deposits-header,
 .report-deposits-item {
   display: grid;
-  grid-template-columns: minmax(0,1fr) minmax(0,.65fr) minmax(0,1.35fr) minmax(0,.75fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.75fr) 40px;
+  grid-template-columns: minmax(0,1fr) minmax(0,.65fr) minmax(0,1.35fr) minmax(0,.75fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.75fr) minmax(120px,.9fr);
   align-items: center;
   gap: 8px; padding: 10px 12px;
 }
@@ -190,7 +190,7 @@
 .report-deposit-feedback-error-list { display: grid; gap: 5px; max-width: 300px; }
 .report-deposit-feedback-error-list > span + span { padding-top: 5px; border-top: 1px solid var(--line); }
 .report-deposits-load-more { justify-self: center; }
-.report-deposit-row-actions { display: flex; align-items: center; justify-content: center; min-width: 0; width: 40px; white-space: nowrap; }
+.report-deposit-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; min-width: 0; white-space: nowrap; }
 .report-deposit-row-actions .ui-action-menu { display: inline-flex; flex: 0 0 auto; }
 
 .report-deposit-feedback-modal .app-modal-body { overflow-y: auto; overflow-x: hidden; min-width: 0; }
@@ -484,4 +484,91 @@
 @media (max-width: 760px) {
   .report-deposits-heading { align-items: stretch; flex-direction: column; }
   .report-deposits-manufacturer-filter { width: 100%; flex-basis: auto; }
+}
+
+
+.feedback-resolve-button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--teal) 45%, var(--blue));
+  border-radius: 10px;
+  padding: 0 13px;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--teal) 14%, var(--surface)),
+      color-mix(in srgb, var(--blue) 12%, var(--surface)));
+  color: color-mix(in srgb, var(--teal) 68%, var(--text));
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--blue) 10%, transparent);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.feedback-resolve-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--teal) 65%, var(--blue));
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--blue) 16%, transparent);
+}
+.feedback-resolve-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--blue) 20%, transparent);
+  outline-offset: 2px;
+}
+.feedback-resolve-button.compact {
+  min-height: 32px;
+  padding-inline: 10px;
+  font-size: 12px;
+  border-radius: 9px;
+}
+.feedback-resolve-button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.feedback-error-action-row {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center !important;
+  justify-content: space-between;
+  gap: 12px !important;
+}
+.feedback-error-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+.feedback-contribution-error-action {
+  justify-content: space-between;
+}
+.feedback-contribution-error-action > span {
+  flex: 1 1 auto;
+}
+.report-context-feedback-modal .feedback-modal-section-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+@media (max-width: 640px) {
+  .feedback-error-action-row {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+  .feedback-error-copy {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+  .feedback-error-action-row .feedback-resolve-button,
+  .report-page-actions .feedback-resolve-button {
+    width: 100%;
+  }
 }
