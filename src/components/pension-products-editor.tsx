@@ -53,7 +53,10 @@ const employeeComponents: { value: ContributionComponent; label: string }[] = [
   { value: 1, label: "תג 47" }, { value: 2, label: "תגמולי עובד (תג 45)" }, { value: 3, label: "אכ״ע" }, { value: 4, label: "שונות" },
 ];
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
 const roundMoney = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
 const roundPercentage = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 10000) / 10000;
 
