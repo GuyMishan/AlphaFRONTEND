@@ -61,6 +61,7 @@ function toEditorProduct(product: ManualProductInput, index: number): PensionEdi
     section14: product.section14,
     section14Code: product.section14Code == null ? undefined : Number(product.section14Code) as Section14Code,
     section14StartDate: product.section14StartDate,
+    depositStatus: product.depositStatus ?? 1,
     employerContributions: product.employerContributions.map((entry) => ({
       component: entry.component,
       amount: Number(entry.amount || 0),
@@ -128,6 +129,7 @@ function toManualProduct(product: PensionEditorProduct, month: string): ManualPr
     section14: product.section14,
     section14Code: product.section14Code,
     section14StartDate: product.section14StartDate,
+    depositStatus: product.depositStatus ?? 1,
     employerContributions: product.employerContributions.map((entry) => ({
       component: entry.component,
       amount: Number(entry.amount || 0),
