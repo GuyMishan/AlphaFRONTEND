@@ -89,6 +89,50 @@ export type ReportFeedbackDepositRow = {
   hasPendingCorrection: boolean;
 };
 
+
+export type ReportFeedbackScope = "deposit" | "employee" | "employer" | "money" | "report" | "contribution" | "informational";
+
+export type ReportFeedbackContextIssue = {
+  code: number;
+  description: string;
+  scope: ReportFeedbackScope;
+  reportId: string;
+  reportProductId: string | null;
+  contributionId: string | null;
+  receivedAt: string;
+};
+
+export type EmployerFeedbackContext = {
+  employer: {
+    id: string;
+    legalName: string;
+    registrationNumber: string;
+    withholdingFileNumber: string;
+    status: string;
+    contactName: string;
+    contactPhone: string;
+    contactEmail: string;
+    contactMobile: string;
+  };
+  issues: ReportFeedbackContextIssue[];
+};
+
+export type ReportFeedbackContext = {
+  employer: { id: string; legalName: string };
+  report: {
+    id: string;
+    reportingMonth: string;
+    salaryPaymentDate: string | null;
+    reportKind: number | string;
+    status: number | string;
+    employeeCount: number;
+    totalAmount: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  issues: ReportFeedbackContextIssue[];
+};
+
 export type ReportFeedbackDepositDetails = {
   report: {
     id: string;
@@ -277,6 +321,10 @@ function base(organizationId: string, employerId: string) {
 const treatmentStatusCache = new Map<string, Promise<TreatmentStatusOption[]>>();
 
 export const reportFeedbackApi = {
+  employerContext: (organizationId: string, employerId: string) =>
+    request<EmployerFeedbackContext>(`${base(organizationId, employerId)}/employer-context`),
+  reportContext: (organizationId: string, employerId: string, reportId: string) =>
+    request<ReportFeedbackContext>(`${base(organizationId, employerId)}/${reportId}/context`),
   list: (organizationId: string, employerId: string, filters: ReportFeedbackFilters = {}, skip = 0, take = 50) => {
     const params = new URLSearchParams({ skip: String(skip), take: String(take), feedbackStatus: filters.status ?? "all" });
     if (filters.month) params.set("month", filters.month);
