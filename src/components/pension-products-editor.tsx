@@ -1,7 +1,7 @@
 "use client";
 
 import { UiDateInput, UiInput  } from "@/components/ui-controls";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table";
 import { CircleAlert, CircleCheck, Plus, Trash2 } from "lucide-react";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
@@ -274,6 +274,8 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
   onReferenceDataLoaded?: (data: PensionEditorReferenceData) => void;
 }) {
   const [referenceData, setReferenceData] = useState<PensionEditorReferenceData | null>(null);
+  const onReferenceDataLoadedRef = useRef(onReferenceDataLoaded);
+  useEffect(() => { onReferenceDataLoadedRef.current = onReferenceDataLoaded; }, [onReferenceDataLoaded]);
   const [referenceDataError, setReferenceDataError] = useState("");
   const [referenceDataLoading, setReferenceDataLoading] = useState(true);
 
@@ -285,12 +287,12 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
       .then((data) => {
         if (!active) return;
         setReferenceData(data);
-        onReferenceDataLoaded?.(data);
+        onReferenceDataLoadedRef.current?.(data);
       })
       .catch((err) => { if (active) setReferenceDataError(err instanceof Error ? err.message : "טעינת אפשרויות עורך המוצרים נכשלה"); })
       .finally(() => { if (active) setReferenceDataLoading(false); });
     return () => { active = false; };
-  }, [onReferenceDataLoaded]);
+  }, []);
 
   const referenceOptions = (category: string) => referenceData?.referenceOptions[category] ?? [];
   const interfaceOptions = (category: string) => referenceData?.interfaceOptions[category] ?? [];
