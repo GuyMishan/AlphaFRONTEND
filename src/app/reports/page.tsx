@@ -451,7 +451,7 @@ export default function ReportsPage() {
       setScope({ organizationId: detail.organizationId, employerId: detail.employerId });
       setFilters({ status: "all" });
       setExtraFilters([]);
-      setSelectedDeposit(null);
+      setFeedbackModal(null);
       setEditingDeposit(null);
       setRetransmitReport(null);
       setDeleteReport(null);
@@ -561,7 +561,7 @@ export default function ReportsPage() {
       );
       const deposit = page.items[0];
       if (!deposit) throw new Error("לא ניתן היה לטעון את פרטי ההפקדה לעריכה.");
-      setSelectedDeposit(null);
+      setFeedbackModal(null);
       setEditingDeposit({ report, editReportId, deposit, contributionLimits: page.contributionLimits });
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת פרטי ההפקדה לעריכה נכשלה");
