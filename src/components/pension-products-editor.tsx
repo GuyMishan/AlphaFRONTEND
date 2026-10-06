@@ -9,7 +9,7 @@ import { PensionFundSelect } from "@/components/pension-fund-select";
 import { ReferenceOptionSelect } from "@/components/reference-option-select";
 import { SalaryLayerSelect } from "@/components/salary-layer-select";
 import type { ContributionComponent, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
-import { loadPensionEditorReferenceData, type PensionEditorReferenceData } from "@/lib/pension-editor-reference-data";
+import { loadPensionEditorReferenceData, type PensionEditorContributionLimit, type PensionEditorReferenceData } from "@/lib/pension-editor-reference-data";
 
 export type PensionEditorContribution = {
   component: ContributionComponent;
@@ -134,7 +134,7 @@ export function normalizePensionEditorProducts(monthlySalary: number, products: 
   };
 }
 
-function validateContributionRows(product: PensionEditorProduct, productIndex: number) {
+function validateContributionRows(product: PensionEditorProduct, productIndex: number, contributionLimits: PensionEditorContributionLimit[] = []) {
   const insuredSalary = Number(product.salary || 0);
   const validateParty = (items: PensionEditorContribution[], party: "employer" | "employee", label: string) => {
     const populated = items.filter((item) => Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0);
@@ -142,7 +142,8 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
     for (const item of populated) {
       const pct = Number(item.percentage || 0), amount = Number(item.amount || 0), exempt = Number(item.exemptPayments || 0);
       if (pct <= 0 || amount <= 0) return `מוצר ${productIndex + 1}: בכל שורת ${label} שמדווחת נדרשים גם אחוז וגם סכום גדולים מאפס.`;
-      const max = maxPercentage(product.productType, party, item.component);
+      const year = Number((product.salaryMonth || today()).slice(0, 4));
+      const max = maxPercentage(product.productType, party, item.component, year, contributionLimits);
       if (pct > max) return `מוצר ${productIndex + 1}: אחוז ב${label} עבור הרכיב שנבחר לא יכול לעבור ${max}%.`;
       if (insuredSalary > 0 && amount > insuredSalary + 0.01) return `מוצר ${productIndex + 1}: סכום הפקדה ב${label} לא יכול להיות גבוה מהשכר המבוטח.`;
       if (exempt < 0 || exempt > amount) return `מוצר ${productIndex + 1}: תשלומים פטורים ב${label} חייבים להיות בין 0 לסכום ההפקדה.`;
@@ -182,7 +183,7 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
   return "";
 }
 
-export function validatePensionEditorProducts(products: PensionEditorProduct[], context: "employee" | "report") {
+export function validatePensionEditorProducts(products: PensionEditorProduct[], context: "employee" | "report", contributionLimits: PensionEditorContributionLimit[] = []) {
   const activeProducts = products.filter((product) => product.isActive !== false);
   if (context === "report") {
     const seen = new Set<string>();
@@ -221,7 +222,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
       const forbiddenEmployee = product.employeeContributions.some((item) => (item.component === 3 || item.component === 4) && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
       if (forbiddenEmployer || forbiddenEmployee) return `מוצר ${index + 1}: בקרן פנסיה ובקופת גמל ניתן לדווח בממשק מעסיקים 006 רק רכיבי פיצויים ותגמולים. יש להסיר אכ״ע/שונות.`;
     }
-    const contributionError = validateContributionRows(product, index);
+    const contributionError = validateContributionRows(product, index, contributionLimits);
     if (contributionError) return contributionError;
     if (context === "employee") {
       if (!product.effectiveFrom) return `מוצר ${index + 1}: יש להזין תאריך תחילת תוקף.`;
@@ -248,18 +249,17 @@ function allocationValueLabel(type: SalaryAllocationType) {
   return "שכר קבוע (₪)";
 }
 
-function maxPercentage(productType: PensionProductType, party: "employer" | "employee", component: ContributionComponent) {
-  if (component === 4) return 100;
-  if (party === "employer") {
-    if (component === 1) return 8.33;
-    if (component === 2) return 7.5;
-    if (component === 3) return 2.5;
-  }
-  if (party === "employee" && component === 2) return productType === 2 ? 2.5 : 7;
-  return 100;
+function maxPercentage(productType: PensionProductType, party: "employer" | "employee", component: ContributionComponent, year: number, contributionLimits: PensionEditorContributionLimit[]) {
+  const partyCode = party === "employer" ? 1 : 2;
+  const match = contributionLimits.find((item) =>
+    item.year === year
+    && Number(item.productType) === Number(productType)
+    && Number(item.party) === partyCode
+    && Number(item.component) === Number(component));
+  return match?.maxPercentage ?? 100;
 }
 
-export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, allowAdd = true, allowRemove = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction }: {
+export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, allowAdd = true, allowRemove = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction, onReferenceDataLoaded }: {
   context: "employee" | "report";
   month?: string;
   monthlySalary: number;
@@ -271,6 +271,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
   onMonthlySalaryChange: (value: number) => void;
   onProductsChange: (products: PensionEditorProduct[]) => void;
   onFieldInteraction?: () => void;
+  onReferenceDataLoaded?: (data: PensionEditorReferenceData) => void;
 }) {
   const [referenceData, setReferenceData] = useState<PensionEditorReferenceData | null>(null);
   const [referenceDataError, setReferenceDataError] = useState("");
@@ -281,11 +282,15 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
     setReferenceDataLoading(true);
     setReferenceDataError("");
     loadPensionEditorReferenceData()
-      .then((data) => { if (active) setReferenceData(data); })
+      .then((data) => {
+        if (!active) return;
+        setReferenceData(data);
+        onReferenceDataLoaded?.(data);
+      })
       .catch((err) => { if (active) setReferenceDataError(err instanceof Error ? err.message : "טעינת אפשרויות עורך המוצרים נכשלה"); })
       .finally(() => { if (active) setReferenceDataLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [onReferenceDataLoaded]);
 
   const referenceOptions = (category: string) => referenceData?.referenceOptions[category] ?? [];
   const interfaceOptions = (category: string) => referenceData?.interfaceOptions[category] ?? [];
@@ -369,7 +374,8 @@ function ContributionEditor({ context, title, party, product, items, editable, o
     ]}
     renderCells={({ value, label }) => {
       const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 };
-      const max = maxPercentage(product.productType, party, value);
+      const year = Number((product.salaryMonth || today()).slice(0, 4));
+      const max = maxPercentage(product.productType, party, value, year, referenceData?.contributionLimits ?? []);
       return [
         <b key="component">{label}</b>,
         <UiInput key="amount" className="contribution-input" disabled={!editable} type="number" min="0" max={product.salary || undefined} step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} />,
