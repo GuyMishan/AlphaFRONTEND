@@ -151,10 +151,6 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
     }
     return "";
   };
-  const employerError = validateParty(product.employerContributions, "employer", "הפקדות מעסיק");
-  if (employerError) return employerError;
-  const employeeError = validateParty(product.employeeContributions, "employee", "הפקדות עובד");
-  if (employeeError) return employeeError;
   const employerRewardsRow = product.employerContributions.find((item) => item.component === 2);
   const employeeRewardsRow = product.employeeContributions.find((item) => item.component === 2);
   const severanceRow = product.employerContributions.find((item) => item.component === 1);
@@ -175,7 +171,11 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
       && Math.abs(employeeRewards - employerRewards) > 0.0001)
     return `מוצר ${productIndex + 1}: קוד שגיאה 71 — תגמולי עובד ומעסיק עד 5% חייבים להיות באותו אחוז.`;
   if (employerRewards + disability > 7.5 + 0.0001)
-    return `מוצר ${productIndex + 1}: תגמולי מעסיק ואכ״ע יחד לא יכולים לעבור 7.5%.`;
+    return `מוצר ${productIndex + 1}: קוד שגיאה 72 — תגמולי מעסיק ואכ״ע יחד לא יכולים לעבור 7.5%.`;
+  const employerError = validateParty(product.employerContributions, "employer", "הפקדות מעסיק");
+  if (employerError) return employerError;
+  const employeeError = validateParty(product.employeeContributions, "employee", "הפקדות עובד");
+  if (employeeError) return employeeError;
   if (product.reportingType === "1" && [...product.employerContributions, ...product.employeeContributions].some((item) => Number(item.amount || 0) > 0)
       && insuredSalary <= 0)
     return `מוצר ${productIndex + 1}: קוד שגיאה 75 — בהפקדת שכיר שוטפת חובה לדווח שכר גדול מאפס.`;
