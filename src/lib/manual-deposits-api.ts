@@ -1,5 +1,20 @@
 import { backendFetch } from "./backend-fetch";
 
+export type ManualDepositContribution = {
+  component: number;
+  amount: number;
+  percentage: number;
+  exemptPayments: number;
+};
+
+export type ManualDepositContributionLimit = {
+  year: number;
+  productType: number;
+  party: number;
+  component: number;
+  maxPercentage: number;
+};
+
 export type ManualDepositRow = {
   id: string;
   reportEmployeeId: string;
@@ -19,6 +34,8 @@ export type ManualDepositRow = {
   salaryLayer: string;
   section14: boolean;
   section14StartDate: string | null;
+  employerContributions: ManualDepositContribution[];
+  employeeContributions: ManualDepositContribution[];
   totalDeposit: number;
   providerName: string;
   providerAccount: string;
@@ -45,7 +62,7 @@ export type ManualPaymentInput = Pick<ManualDepositRow,
     correctionOperationCode?: 2 | 3 | null;
   };
 
-export type DepositPage = { items: ManualDepositRow[]; hasMore: boolean };
+export type DepositPage = { items: ManualDepositRow[]; hasMore: boolean; contributionLimits: ManualDepositContributionLimit[] };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
