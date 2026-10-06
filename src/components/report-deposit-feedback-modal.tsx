@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, FileText } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
+import { FeedbackResolveButton } from "@/components/feedback-resolve-button";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
 import {
   reportFeedbackApi,
@@ -239,7 +240,7 @@ export function ReportDepositFeedbackModal({
             };
 
             const scopeOrder: Array<(typeof details.manufacturerContributions)[number]["errorScope"]> = [
-              "deposit", "employee", "money", "report", "contribution",
+              "employee", "deposit", "contribution", "report", "money",
             ];
             const groupedErrors = scopeOrder
               .map((scope) => {
@@ -271,9 +272,12 @@ export function ReportDepositFeedbackModal({
                     </div>
                     <div className="feedback-error-group-list">
                       {items.map(({ code, description }) =>
-                        <div key={code}>
-                          <b>קוד {code}</b>
-                          <span>{description}</span>
+                        <div className="feedback-error-action-row" key={code}>
+                          <div className="feedback-error-copy">
+                            <b>קוד {code}</b>
+                            <span>{description}</span>
+                          </div>
+                          <FeedbackResolveButton compact />
                         </div>)}
                     </div>
                   </section>)}
@@ -326,9 +330,10 @@ export function ReportDepositFeedbackModal({
                   </div>
                 </div>
                 {localError
-                  ? <div className="contribution-feedback-message error">
+                  ? <div className="contribution-feedback-message error feedback-contribution-error-action">
                       <AlertTriangle size={15} />
                       <span>{localError.errorDescription || `קוד שגיאה ${localError.errorCode}`}</span>
+                      <FeedbackResolveButton compact />
                     </div>
                   : null}
                 {manufacturer?.sourceFileName
