@@ -9,6 +9,7 @@ import { PensionProductsEditor, normalizePensionEditorProducts, validatePensionE
 import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
 import type { Employee, EmployeePensionProduct, EmployeePensionProductInput, ManualProductInput, ManualReportEmployeeDetail, ManualReportEmployeeSummary, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
+import type { PensionEditorContributionLimit } from "@/lib/pension-editor-reference-data";
 
 type Props = {
   organizationId: string;
@@ -385,10 +386,11 @@ function EmployeeProductsModal({ employee, month, onClose, onSave, organizationI
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const [contributionLimits, setContributionLimits] = useState<PensionEditorContributionLimit[]>([]);
   async function save() {
     setValidationAttempted(true);
     const normalized = normalizePensionEditorProducts(monthlySalary, products);
-    const validationError = normalized.error || validatePensionEditorProducts(normalized.products, "report");
+    const validationError = normalized.error || validatePensionEditorProducts(normalized.products, "report", contributionLimits);
     if (validationError) {
       setError(validationError);
       notify.error(validationError);
@@ -435,6 +437,7 @@ function EmployeeProductsModal({ employee, month, onClose, onSave, organizationI
           showAllocationError={validationAttempted}
           onMonthlySalaryChange={(value) => { setMonthlySalary(value); setError(""); setValidationAttempted(false); }}
           onProductsChange={(value) => { setProducts(value); setError(""); setValidationAttempted(false); }}
+          onReferenceDataLoaded={(data) => setContributionLimits(data.contributionLimits ?? [])}
         />
     </AppModal>;
 }
