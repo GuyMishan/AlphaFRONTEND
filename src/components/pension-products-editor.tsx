@@ -50,7 +50,7 @@ const employerComponents: { value: ContributionComponent; label: string }[] = [
   { value: 1, label: "פיצויים" }, { value: 2, label: "תגמולים" }, { value: 3, label: "אכ״ע" }, { value: 4, label: "שונות" },
 ];
 const employeeComponents: { value: ContributionComponent; label: string }[] = [
-  { value: 1, label: "תג 45 שכיר" }, { value: 2, label: "תג 47 עצמאי" }, { value: 3, label: "אכ״ע" }, { value: 4, label: "שונות" },
+  { value: 1, label: "תג 47" }, { value: 2, label: "תגמולי עובד (תג 45)" }, { value: 3, label: "אכ״ע" }, { value: 4, label: "שונות" },
 ];
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -94,7 +94,7 @@ export function resolvePensionAllocations(monthlySalary: number, products: Pensi
 
 export function sanitizePensionProductContributions(product: PensionEditorProduct): PensionEditorProduct {
   const allowed = (party: "employer" | "employee", component: ContributionComponent) => {
-    if (product.productType === 2) return party === "employee" ? component === 1 : component === 2;
+    if (product.productType === 2) return party === "employee" ? component === 2 : component === 2;
     if (product.productType === 1 || product.productType === 4) return component !== 3 && component !== 4;
     return true;
   };
@@ -156,7 +156,7 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
   const employeeError = validateParty(product.employeeContributions, "employee", "הפקדות עובד");
   if (employeeError) return employeeError;
   const employerRewardsRow = product.employerContributions.find((item) => item.component === 2);
-  const employeeRewardsRow = product.employeeContributions.find((item) => item.component === 1);
+  const employeeRewardsRow = product.employeeContributions.find((item) => item.component === 2);
   const severanceRow = product.employerContributions.find((item) => item.component === 1);
   const employerRewards = Number(employerRewardsRow?.percentage || 0);
   const employeeRewards = Number(employeeRewardsRow?.percentage || 0);
@@ -212,7 +212,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
     if ((code === 2 || code === 4) && !product.section14StartDate) return `מוצר ${index + 1}: יש להזין תאריך תחולה/ביטול לסעיף 14.`;
     if (product.productType === 2) {
       const invalidEmployer = product.employerContributions.some((item) => item.component !== 2 && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
-      const invalidEmployee = product.employeeContributions.some((item) => item.component !== 1 && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
+      const invalidEmployee = product.employeeContributions.some((item) => item.component !== 2 && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
       if (invalidEmployer || invalidEmployee) return `מוצר ${index + 1}: בקרן השתלמות ממשק מעסיקים 006 מאפשר רק תגמולי עובד (קוד 2) ותגמולי מעסיק (קוד 3).`;
     }
     if (product.productType === 1 || product.productType === 4) {
