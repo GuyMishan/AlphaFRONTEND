@@ -155,14 +155,46 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
   if (employerError) return employerError;
   const employeeError = validateParty(product.employeeContributions, "employee", "הפקדות עובד");
   if (employeeError) return employeeError;
-  const employerRewards = Number(product.employerContributions.find((item) => item.component === 2)?.percentage || 0);
+  const employerRewardsRow = product.employerContributions.find((item) => item.component === 2);
+  const employeeRewardsRow = product.employeeContributions.find((item) => item.component === 1);
+  const severanceRow = product.employerContributions.find((item) => item.component === 1);
+  const employerRewards = Number(employerRewardsRow?.percentage || 0);
+  const employeeRewards = Number(employeeRewardsRow?.percentage || 0);
+  const employerRewardsAmount = Number(employerRewardsRow?.amount || 0);
+  const employeeRewardsAmount = Number(employeeRewardsRow?.amount || 0);
+  const severanceAmount = Number(severanceRow?.amount || 0);
   const disability = Number(product.employerContributions.find((item) => item.component === 3)?.percentage || 0);
+
+  if (employeeRewardsAmount > 0 && employerRewardsAmount <= 0)
+    return `מוצר ${productIndex + 1}: קוד שגיאה 16 — לא ניתן להפקיד תגמולי עובד ללא תגמולי מעסיק.`;
+  if (employerRewardsAmount > 0 && employeeRewardsAmount <= 0)
+    return `מוצר ${productIndex + 1}: קוד שגיאה 17 — לא ניתן להפקיד תגמולי מעסיק ללא תגמולי עובד.`;
+  if (severanceAmount > 0 && (employeeRewardsAmount <= 0 || employerRewardsAmount <= 0))
+    return `מוצר ${productIndex + 1}: קוד שגיאה 23 — לא ניתן להפקיד פיצויים ללא תגמולי עובד ותגמולי מעסיק.`;
+  if (employeeRewards > 0 && employerRewards > 0 && employeeRewards <= 5 && employerRewards <= 5
+      && Math.abs(employeeRewards - employerRewards) > 0.0001)
+    return `מוצר ${productIndex + 1}: קוד שגיאה 71 — תגמולי עובד ומעסיק עד 5% חייבים להיות באותו אחוז.`;
   if (employerRewards + disability > 7.5 + 0.0001)
     return `מוצר ${productIndex + 1}: תגמולי מעסיק ואכ״ע יחד לא יכולים לעבור 7.5%.`;
+  if (product.reportingType === "1" && [...product.employerContributions, ...product.employeeContributions].some((item) => Number(item.amount || 0) > 0)
+      && insuredSalary <= 0)
+    return `מוצר ${productIndex + 1}: קוד שגיאה 75 — בהפקדת שכיר שוטפת חובה לדווח שכר גדול מאפס.`;
   return "";
 }
 
 export function validatePensionEditorProducts(products: PensionEditorProduct[], context: "employee" | "report") {
+  const activeProducts = products.filter((product) => product.isActive !== false);
+  if (context === "report") {
+    const seen = new Set<string>();
+    for (const product of activeProducts) {
+      const identity = (product.policyNumber.trim() || product.fundExternalKey || product.fundCode || "").toLowerCase();
+      const key = `${Number(product.productType)}|${identity}|${(product.salaryMonth || "").slice(0, 7)}`;
+      if (identity && seen.has(key))
+        return "קוד שגיאה 28/43 — אותו מוצר ואותו חודש שכר מופיעים יותר מפעם אחת בדיווח. יש להסיר את התנועה הכפולה.";
+      seen.add(key);
+    }
+  }
+
   for (let index = 0; index < products.length; index++) {
     const product = products[index];
     if (product.isActive === false) continue;
@@ -170,6 +202,12 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
     if (product.productType !== 99 && !(product.fundExternalKey ?? "").trim()) return `מוצר ${index + 1}: יש לבחור קופה.`;
     if (!/^\d+$/.test(product.reportingType || "")) return `מוצר ${index + 1}: יש לבחור סוג תקבול תקין.`;
     if (!/^\d+$/.test(product.salaryLayer || "")) return `מוצר ${index + 1}: יש לבחור רובד שכר תקין.`;
+    if (context === "report" && product.salaryMonth) {
+      const salaryMonth = product.salaryMonth.slice(0, 7);
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      if (salaryMonth > currentMonth)
+        return `מוצר ${index + 1}: קוד שגיאה 27 — לא ניתן לדווח הפקדה בגין חודש שכר עתידי.`;
+    }
     const code = inferPensionSection14Code(product);
     if ((code === 2 || code === 4) && !product.section14StartDate) return `מוצר ${index + 1}: יש להזין תאריך תחולה/ביטול לסעיף 14.`;
     if (product.productType === 2) {
