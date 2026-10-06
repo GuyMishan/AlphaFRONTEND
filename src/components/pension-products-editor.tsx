@@ -350,14 +350,14 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
           <div className="field"><label>סעיף 14 *</label><EmployerInterfaceOptionSelect category="section14-code" value={section14Code} disabled={!editable} required suppliedOptions={interfaceOptions("section14-code")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => { const code = Number(value ?? 3) as Section14Code; updateProduct(index, { section14Code: code, section14: code === 1 || code === 2, section14StartDate: code === 2 || code === 4 ? product.section14StartDate : null }); }} /></div>
           <div className="field"><label>תאריך תחולה/ביטול סעיף 14{section14DateRequired ? " *" : ""}</label><UiDateInput disabled={!editable || !section14DateRequired} required={section14DateRequired} value={section14DateRequired ? product.section14StartDate ?? "" : ""} onValueChange={(value) => updateProduct(index, { section14StartDate: value || null })} /></div>
         </div>
-        <div className="contribution-grid"><ContributionEditor context={context} title="הפקדות מעסיק" party="employer" product={product} items={product.employerContributions} editable={editable} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} /><ContributionEditor context={context} title="הפקדות עובד" party="employee" product={product} items={product.employeeContributions} editable={editable} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} /></div>
+        <div className="contribution-grid"><ContributionEditor context={context} title="הפקדות מעסיק" party="employer" product={product} items={product.employerContributions} contributionLimits={referenceData?.contributionLimits ?? []} editable={editable} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} /><ContributionEditor context={context} title="הפקדות עובד" party="employee" product={product} items={product.employeeContributions} contributionLimits={referenceData?.contributionLimits ?? []} editable={editable} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} /></div>
       </section>;
     })}</div>
     {editable && allowAdd ? <button className="btn btn-soft wide" onClick={() => onProductsChange([...products, createEmptyPensionEditorProduct(context, products.length, month)])}><Plus size={15} />הוספת מוצר</button> : null}
   </>;
 }
 
-function ContributionEditor({ context, title, party, product, items, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
+function ContributionEditor({ context, title, party, product, items, contributionLimits, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; contributionLimits: PensionEditorContributionLimit[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
   const allLabels = party === "employee" ? employeeComponents : employerComponents;
   const labels = product.productType === 2
     ? allLabels.filter(({ value }) => value === 2)
@@ -378,7 +378,7 @@ function ContributionEditor({ context, title, party, product, items, editable, o
     renderCells={({ value, label }) => {
       const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 };
       const year = Number((product.salaryMonth || today()).slice(0, 4));
-      const max = maxPercentage(product.productType, party, value, year, referenceData?.contributionLimits ?? []);
+      const max = maxPercentage(product.productType, party, value, year, contributionLimits);
       return [
         <b key="component">{label}</b>,
         <UiInput key="amount" className="contribution-input" disabled={!editable} type="number" min="0" max={product.salary || undefined} step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} />,
