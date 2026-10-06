@@ -329,7 +329,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
 
   return <>
     <div className="grid two-cols" style={{ marginBottom: 12 }}>
-      <div className="field"><label>{context === "report" ? "שכר חודשי של העובד בדיווח *" : "שכר חודשי של העובד *"}</label><UiInput disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={monthlySalary || ""} onChange={(e) => onMonthlySalaryChange(Number(e.target.value))} /></div>
+      <div className="field"><label>{context === "report" ? "שכר חודשי של העובד בדיווח *" : "שכר חודשי של העובד *"}</label><UiInput disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={monthlySalary || ""} onChange={(e) => onMonthlySalaryChange(roundMoney(Number(e.target.value)))} /></div>
       <div className="field"><label>סה״כ שכר מבוטח מחושב</label><UiInput disabled value={`₪${Array.from(allocation.resolved.values()).reduce((sum, value) => sum + value, 0).toLocaleString("he-IL")}`} /></div>
     </div>
     {showAllocationError && allocation.error ? <div className="notice notice-error" style={{ marginBottom: 12 }}>{allocation.error}</div> : null}
