@@ -17,6 +17,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: node scripts/check-hardcoded-select-options.mjs
       - run: npm run check:ui
+      - run: npm run check:v006
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build

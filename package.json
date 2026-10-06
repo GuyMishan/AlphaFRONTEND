@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check:ui": "node scripts/check-ui-primitives.mjs",
-    "verify": "node scripts/check-hardcoded-select-options.mjs && npm run check:ui && npm run lint && npm run typecheck && npm run build"
+    "verify": "node scripts/check-hardcoded-select-options.mjs && npm run check:ui && npm run check:v006 && npm run lint && npm run typecheck && npm run build",
+    "check:v006": "node scripts/check-v006-preventable-validations.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
