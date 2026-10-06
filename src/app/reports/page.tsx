@@ -650,9 +650,9 @@ export default function ReportsPage() {
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div>
       : "—" },
     actions: { column: { key: "actions", label: "פעולות", width: "170px" }, render: (row) => <div className="report-row-actions">
-      {row.requiresAttentionCount > 0 ? <FeedbackResolveButton
+      {!row.canEdit ? <FeedbackResolveButton
         compact
-        label={`תקלות · ${row.requiresAttentionCount}`}
+        label="משוב דיווח"
         onClick={() => setFeedbackModal({ mode: "report", report: row })}
       /> : null}
       <UiActionMenu
