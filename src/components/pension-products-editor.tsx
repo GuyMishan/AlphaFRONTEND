@@ -94,7 +94,7 @@ export function resolvePensionAllocations(monthlySalary: number, products: Pensi
 
 export function sanitizePensionProductContributions(product: PensionEditorProduct): PensionEditorProduct {
   const allowed = (party: "employer" | "employee", component: ContributionComponent) => {
-    if (product.productType === 2) return party === "employee" ? component === 2 : component === 2;
+    if (product.productType === 2) return component === 2;
     if (product.productType === 1 || product.productType === 4) return component !== 3 && component !== 4;
     return true;
   };
@@ -352,7 +352,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
 function ContributionEditor({ context, title, party, product, items, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
   const allLabels = party === "employee" ? employeeComponents : employerComponents;
   const labels = product.productType === 2
-    ? allLabels.filter(({ value }) => party === "employee" ? value === 1 : value === 2)
+    ? allLabels.filter(({ value }) => value === 2)
     : (product.productType === 1 || product.productType === 4)
       ? allLabels.filter(({ value }) => value !== 3 && value !== 4)
       : allLabels;
