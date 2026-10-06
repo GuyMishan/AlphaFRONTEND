@@ -10,6 +10,7 @@ import { ReferenceOptionSelect } from "@/components/reference-option-select";
 import { SalaryLayerSelect } from "@/components/salary-layer-select";
 import type { ContributionComponent, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
 import { loadPensionEditorReferenceData, type PensionEditorContributionLimit, type PensionEditorReferenceData } from "@/lib/pension-editor-reference-data";
+import { calculateContributionAmount, roundMoney, roundPercentage } from "@/lib/pension-contribution-math";
 
 export type PensionEditorContribution = {
   component: ContributionComponent;
@@ -72,19 +73,6 @@ const currentIsraelMonth = () => {
   const { year, month } = israelDateParts();
   return `${year}-${month}`;
 };
-const roundDecimal = (value: number, decimals: number) => {
-  const safe = Number.isFinite(value) ? value : 0;
-  return Number(Math.round(Number(`${safe}e${decimals}`)) + `e-${decimals}`);
-};
-const roundMoney = (value: number) => roundDecimal(value, 2);
-const roundPercentage = (value: number) => roundDecimal(value, 2);
-const calculateContributionAmount = (salary: number, percentage: number) => {
-  const salaryCents = Math.round(Number(`${roundMoney(salary)}e2`));
-  const percentageHundredths = Math.round(Number(`${roundPercentage(percentage)}e2`));
-  const amountCents = Math.floor((salaryCents * percentageHundredths + 5_000) / 10_000);
-  return amountCents / 100;
-};
-
 export function inferPensionSection14Code(product: Pick<PensionEditorProduct, "section14" | "section14Code" | "section14StartDate">): Section14Code {
   if (product.section14Code && [1, 2, 3, 4, 5].includes(Number(product.section14Code))) return Number(product.section14Code) as Section14Code;
   if (!product.section14 && product.section14StartDate) return 4;
