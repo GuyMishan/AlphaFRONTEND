@@ -158,13 +158,20 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
     if (!populated.length) return `מוצר ${productIndex + 1}: יש להזין לפחות רכיב הפקדה אחד ב${label}.`;
     for (const item of populated) {
       const pct = Number(item.percentage || 0), amount = Number(item.amount || 0), exempt = Number(item.exemptPayments || 0);
+      if (exempt < 0 || exempt > amount) return `מוצר ${productIndex + 1}: תשלומים פטורים ב${label} חייבים להיות בין 0 לסכום ההפקדה.`;
+
+      // In a report draft the official deposit status is selected later, in Deposits.
+      // Do not guess salaried Regulation-19 rules here: self-employed/status-suppressed rows
+      // have different rules. The deposit editor and authoritative backend final validation
+      // apply errors 16/17/23/53/71/72/75 once the real status is known.
+      if (!usesEmployeeEmployerRegulation19) continue;
+
       if (pct <= 0 || amount <= 0) return `מוצר ${productIndex + 1}: בכל שורת ${label} שמדווחת נדרשים גם אחוז וגם סכום גדולים מאפס.`;
       const year = Number((product.salaryMonth || today()).slice(0, 4));
       const max = maxPercentage(product.productType, party, item.component, year, contributionLimits);
       if (max == null) return `מוצר ${productIndex + 1}: לא הוגדרה תקרת הפקדה רשמית לשנת ${year} עבור הרכיב שנבחר. לא ניתן לשמור עד לעדכון טבלת התקרות.`;
       if (pct > max) return `מוצר ${productIndex + 1}: אחוז ב${label} עבור הרכיב שנבחר לא יכול לעבור ${max}%.`;
       if (insuredSalary > 0 && amount > insuredSalary + 0.01) return `מוצר ${productIndex + 1}: סכום הפקדה ב${label} לא יכול להיות גבוה מהשכר המבוטח.`;
-      if (exempt < 0 || exempt > amount) return `מוצר ${productIndex + 1}: תשלומים פטורים ב${label} חייבים להיות בין 0 לסכום ההפקדה.`;
       const expected = calculateContributionAmount(insuredSalary, pct);
       if (insuredSalary > 0 && Math.abs(roundMoney(amount) - expected) > 0.001) return `מוצר ${productIndex + 1}: סכום ההפקדה ב${label} חייב להתאים לשכר המבוטח כפול אחוז ההפקדה.`;
     }
