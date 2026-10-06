@@ -121,6 +121,7 @@ export type ManualProductInput = {
   section14: boolean;
   section14Code?: Section14Code;
   section14StartDate: string | null;
+  depositStatus?: number | null;
   employerContributions: ManualContributionInput[];
   employeeContributions: ManualContributionInput[];
 };

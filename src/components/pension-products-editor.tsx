@@ -37,6 +37,7 @@ export type PensionEditorProduct = {
   section14: boolean;
   section14Code?: Section14Code;
   section14StartDate: string | null;
+  depositStatus?: number | null;
   isActive?: boolean;
   effectiveFrom?: string;
   effectiveTo?: string | null;
@@ -161,8 +162,10 @@ export function normalizePensionEditorProducts(monthlySalary: number, products: 
   };
 }
 
-function validateContributionRows(product: PensionEditorProduct, productIndex: number, contributionLimits: PensionEditorContributionLimit[] = []) {
+function validateContributionRows(product: PensionEditorProduct, productIndex: number, contributionLimits: PensionEditorContributionLimit[] = [], context: "employee" | "report" = "employee") {
   const insuredSalary = Number(product.salary || 0);
+  const depositStatus = product.depositStatus ?? 1;
+  const usesEmployeeEmployerRegulation19 = context === "employee" || depositStatus !== 2;
   const validateParty = (items: PensionEditorContribution[], party: "employer" | "employee", label: string) => {
     const populated = items.filter((item) => Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0);
     if (!populated.length) return `מוצר ${productIndex + 1}: יש להזין לפחות רכיב הפקדה אחד ב${label}.`;
@@ -190,22 +193,25 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
   const severanceAmount = Number(severanceRow?.amount || 0);
   const disability = Number(product.employerContributions.find((item) => item.component === 3)?.percentage || 0);
 
-  if (employeeRewardsAmount > 0 && employerRewardsAmount <= 0)
-    return `מוצר ${productIndex + 1}: קוד שגיאה 16 — לא ניתן להפקיד תגמולי עובד ללא תגמולי מעסיק.`;
-  if (employerRewardsAmount > 0 && employeeRewardsAmount <= 0)
-    return `מוצר ${productIndex + 1}: קוד שגיאה 17 — לא ניתן להפקיד תגמולי מעסיק ללא תגמולי עובד.`;
-  if (severanceAmount > 0 && (employeeRewardsAmount <= 0 || employerRewardsAmount <= 0))
-    return `מוצר ${productIndex + 1}: קוד שגיאה 23 — לא ניתן להפקיד פיצויים ללא תגמולי עובד ותגמולי מעסיק.`;
-  if (employeeRewards > 0 && employerRewards > 0 && employeeRewards <= 5 && employerRewards <= 5
-      && Math.abs(employeeRewards - employerRewards) > 0.0001)
-    return `מוצר ${productIndex + 1}: קוד שגיאה 71 — תגמולי עובד ומעסיק עד 5% חייבים להיות באותו אחוז.`;
-  if (employerRewards + disability > 7.5 + 0.0001)
-    return `מוצר ${productIndex + 1}: קוד שגיאה 72 — תגמולי מעסיק ואכ״ע יחד לא יכולים לעבור 7.5%.`;
+  if (usesEmployeeEmployerRegulation19) {
+    if (employeeRewardsAmount > 0 && employerRewardsAmount <= 0)
+      return `מוצר ${productIndex + 1}: קוד שגיאה 16 — לא ניתן להפקיד תגמולי עובד ללא תגמולי מעסיק.`;
+    if (employerRewardsAmount > 0 && employeeRewardsAmount <= 0)
+      return `מוצר ${productIndex + 1}: קוד שגיאה 17 — לא ניתן להפקיד תגמולי מעסיק ללא תגמולי עובד.`;
+    if (Number(product.productType) === 1 && severanceAmount > 0 && (employeeRewardsAmount <= 0 || employerRewardsAmount <= 0))
+      return `מוצר ${productIndex + 1}: קוד שגיאה 23 — בקרן פנסיה לא ניתן להפקיד פיצויים ללא תגמולי עובד ותגמולי מעסיק.`;
+    if (employeeRewards > 0 && employerRewards > 0 && employeeRewards <= 5 && employerRewards <= 5
+        && Math.abs(employeeRewards - employerRewards) > 0.0001)
+      return `מוצר ${productIndex + 1}: קוד שגיאה 71 — תגמולי עובד ומעסיק עד 5% חייבים להיות באותו אחוז.`;
+    if (employerRewards + disability > 7.5 + 0.0001)
+      return `מוצר ${productIndex + 1}: קוד שגיאה 72 — תגמולי מעסיק ואכ״ע יחד לא יכולים לעבור 7.5%.`;
+  }
   const employerError = validateParty(product.employerContributions, "employer", "הפקדות מעסיק");
   if (employerError) return employerError;
   const employeeError = validateParty(product.employeeContributions, "employee", "הפקדות עובד");
   if (employeeError) return employeeError;
-  if (product.reportingType === "1" && [...product.employerContributions, ...product.employeeContributions].some((item) => Number(item.amount || 0) > 0)
+  if (context === "report" && depositStatus === 1 && product.reportingType === "1"
+      && [...product.employerContributions, ...product.employeeContributions].some((item) => Number(item.amount || 0) > 0)
       && insuredSalary <= 0)
     return `מוצר ${productIndex + 1}: קוד שגיאה 75 — בהפקדת שכיר שוטפת חובה לדווח שכר גדול מאפס.`;
   return "";
@@ -250,7 +256,7 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
       const forbiddenEmployee = product.employeeContributions.some((item) => (item.component === 3 || item.component === 4) && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
       if (forbiddenEmployer || forbiddenEmployee) return `מוצר ${index + 1}: בקרן פנסיה ובקופת גמל ניתן לדווח בממשק מעסיקים 006 רק רכיבי פיצויים ותגמולים. יש להסיר אכ״ע/שונות.`;
     }
-    const contributionError = validateContributionRows(product, index, contributionLimits);
+    const contributionError = validateContributionRows(product, index, contributionLimits, context);
     if (contributionError) return contributionError;
     if (context === "employee") {
       if (!product.effectiveFrom) return `מוצר ${index + 1}: יש להזין תאריך תחילת תוקף.`;
