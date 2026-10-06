@@ -119,7 +119,7 @@
 - Existing source-backed products use correction operation 2/3 as needed; newly added products are ordinary current operation 1 records and expose the normal V006 payment/metadata editor.
 - “דיווח חוזר” remains report-level only and handles all delta shapes: negative-only, current-only, or negative followed by current.
 
-- Reports & Feedback deposit rows summarize crowded manufacturer feedback tooltips by business scope once there are more than three distinct errors. Deposit details show all actionable errors grouped by deposit/product, employee, money, report and contribution scopes, while contribution cards still show local numeric/context detail.
+- Reports & Feedback deposit rows summarize crowded manufacturer feedback tooltips by business scope once there are more than three distinct errors. Deposit details show all actionable errors grouped for users by deposit/product, employee, employer, report and contribution scopes (the internal backend scope remains `money` for compatibility), while contribution cards still show local numeric/context detail.
 
 - `PensionProductsEditor` owns pension-editor reference data in component-local state. It loads the bundled `/api/reference-data/pension-editor-options` response once per mounted editor and supplies the resulting option arrays to all child selects. No module/global cache is used, so closing the editor releases the data and multiple product rows do not duplicate reference-data requests.
 
