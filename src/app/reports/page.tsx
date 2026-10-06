@@ -26,7 +26,7 @@ import { DepositPaymentEditor } from "@/components/manual-deposit-data";
 import { ReportDepositFeedbackModal } from "@/components/report-deposit-feedback-modal";
 import { Tooltip } from "@/components/tooltip";
 import { UiActionMenu, UiAutocomplete, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
-import { manualDepositsApi, type ManualDepositRow } from "@/lib/manual-deposits-api";
+import { manualDepositsApi, type ManualDepositContributionLimit, type ManualDepositRow } from "@/lib/manual-deposits-api";
 import { derivedReportsApi } from "@/lib/derived-reports-api";
 import { alphaApi } from "@/lib/api";
 import { getEmployerSelection } from "@/lib/session";
@@ -285,7 +285,7 @@ export default function ReportsPage() {
   const [expandedManufacturerFilter, setExpandedManufacturerFilter] = useState<Record<string, string>>({});
   const expandedRequests = useRef(new Set<string>());
   const [selectedDeposit, setSelectedDeposit] = useState<{ report: ReportFeedbackRow; deposit: ReportFeedbackDepositRow } | null>(null);
-  const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; editReportId: string; deposit: ManualDepositRow } | null>(null);
+  const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; editReportId: string; deposit: ManualDepositRow; contributionLimits: ManualDepositContributionLimit[] } | null>(null);
   const [retransmitReport, setRetransmitReport] = useState<ReportFeedbackRow | null>(null);
   const [deleteReport, setDeleteReport] = useState<ReportFeedbackRow | null>(null);
   const [correctionBusyId, setCorrectionBusyId] = useState("");
@@ -542,7 +542,7 @@ export default function ReportsPage() {
       const deposit = page.items[0];
       if (!deposit) throw new Error("לא ניתן היה לטעון את פרטי ההפקדה לעריכה.");
       setSelectedDeposit(null);
-      setEditingDeposit({ report, editReportId, deposit });
+      setEditingDeposit({ report, editReportId, deposit, contributionLimits: page.contributionLimits });
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת פרטי ההפקדה לעריכה נכשלה");
     } finally {
@@ -855,6 +855,7 @@ export default function ReportsPage() {
       employerId={scope.employerId}
       reportId={editingDeposit.editReportId}
       row={editingDeposit.deposit}
+      contributionLimits={editingDeposit.contributionLimits}
       readOnly={false}
       onEvidenceChanged={() => {}}
       onClose={() => setEditingDeposit(null)}
