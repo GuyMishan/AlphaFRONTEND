@@ -131,7 +131,7 @@ function feedbackErrorScopeLabel(scope: keyof ReportFeedbackDepositRow["feedback
   switch (scope) {
     case "deposit": return "ברמת הפקדה / מוצר";
     case "employee": return "ברמת עובד";
-    case "money": return "ברמת כספים";
+    case "money": return "ברמת מעסיק";
     case "report": return "ברמת דיווח";
     case "contribution": return "ברמת רכיב הפרשה";
   }
