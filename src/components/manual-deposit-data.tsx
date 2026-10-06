@@ -12,7 +12,8 @@ import { notify } from "@/components/notifications";
 import { alphaApi } from "@/lib/api";
 import { bankReferenceApi, type BankBranchReference, type BankReference } from "@/lib/bank-reference-api";
 import { employerInterfaceApi, type EmployerInterfaceOption, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
-import { manualDepositsApi, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
+import { manualDepositsApi, type ManualDepositContributionLimit, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
+import { calculateContributionAmount, roundMoney } from "@/lib/pension-contribution-math";
 import { reportAttachmentsApi, type ReportAttachment } from "@/lib/report-attachments-api";
 import { paymentConfirmationsApi, type PaymentConfirmation } from "@/lib/payment-confirmations-api";
 import type { Employer, PensionFundOption, PensionProductType } from "@/lib/types";
@@ -29,6 +30,7 @@ const shortError = (message: string) => message.trim().replace(/\s+/g, " ").slic
 
 export function ManualDepositData({ organizationId, employerId, reportId }: { organizationId: string; employerId: string; reportId: string }) {
   const [rows, setRows] = useState<ManualDepositRow[]>([]);
+  const [contributionLimits, setContributionLimits] = useState<ManualDepositContributionLimit[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,7 +43,11 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
 
   async function load(search = query) {
     setLoading(true); setError("");
-    try { setRows((await manualDepositsApi.list(organizationId, employerId, reportId, search.trim(), 0, 100)).items); }
+    try {
+      const page = await manualDepositsApi.list(organizationId, employerId, reportId, search.trim(), 0, 100);
+      setRows(page.items);
+      setContributionLimits(page.contributionLimits ?? []);
+    }
     catch (err) { const message = shortError(err instanceof Error ? err.message : "טעינת נתוני ההפקדות נכשלה"); setError(message); notify.error(message); }
     finally { setLoading(false); }
   }
@@ -130,7 +136,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
         <button className="icon-button deposit-edit-icon" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}
-    {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing}
+    {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} contributionLimits={contributionLimits}
       onEvidenceChanged={(items) => setProofs((current) => ({ ...current, [editing.id]: items }))}
       onClose={() => setEditing(null)} onSaved={(updated) => {
       setRows((current) => current.map((item) => item.id === updated.id ? updated : item));
@@ -213,6 +219,90 @@ function validate006Metadata(metadata: EmployerInterfaceProductMetadata | null, 
   return errors;
 }
 
+const noContributionEmployeeStatuses = new Set([3, 4, 5, 8, 9, 10, 11, 12, 17]);
+
+function validatePreventableContributionRules(
+  row: ManualDepositRow,
+  metadata: EmployerInterfaceProductMetadata | null,
+  meta: EmployerInterfaceProductMetadataInput,
+  limits: ManualDepositContributionLimit[],
+) {
+  const errors: string[] = [];
+  if (!metadata || isNegativeKind(metadata.reportKind) || isDifferencesKind(metadata.reportKind)) return errors;
+  if (!meta.depositStatus || noContributionEmployeeStatuses.has(Number(meta.employeeStatus))) return errors;
+
+  // Deposit status 2 is עמית עצמאי. Regulation 19 employee/employer rules apply to
+  // salaried deposits (including controlling shareholders), while independent deposits
+  // follow the separate Regulation 19A/error-code family.
+  if (meta.depositStatus === 2) return errors;
+
+  const employeeBenefits = row.employeeContributions.filter((item) => Number(item.component) === 2);
+  const employerBenefits = row.employerContributions.filter((item) => Number(item.component) === 2);
+  const employerSeverance = row.employerContributions.filter((item) => Number(item.component) === 1);
+  const employerDisability = row.employerContributions.filter((item) => Number(item.component) === 3);
+  const sumAmount = (items: typeof row.employeeContributions) => items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const sumPct = (items: typeof row.employeeContributions) => items.filter((item) => Number(item.amount || 0) > 0)
+    .reduce((sum, item) => sum + Number(item.percentage || 0), 0);
+
+  const employeeBenefitsAmount = sumAmount(employeeBenefits);
+  const employerBenefitsAmount = sumAmount(employerBenefits);
+  const severanceAmount = sumAmount(employerSeverance);
+  if (employeeBenefitsAmount > 0 && employerBenefitsAmount <= 0)
+    errors.push("קוד שגיאה 16: לא ניתן להפקיד תגמולי עובד ללא תגמולי מעסיק.");
+  if (employerBenefitsAmount > 0 && employeeBenefitsAmount <= 0)
+    errors.push("קוד שגיאה 17: לא ניתן להפקיד תגמולי מעסיק ללא תגמולי עובד.");
+  if (Number(row.productType) === 1 && severanceAmount > 0 && (employeeBenefitsAmount <= 0 || employerBenefitsAmount <= 0))
+    errors.push("קוד שגיאה 23: בקרן פנסיה לא ניתן להפקיד פיצויים ללא תגמולי עובד ותגמולי מעסיק.");
+
+  const salary = Number(row.salary || 0);
+  const allRows = [
+    ...row.employerContributions.map((item) => ({ ...item, party: 1 })),
+    ...row.employeeContributions.map((item) => ({ ...item, party: 2 })),
+  ];
+  for (const item of allRows) {
+    const amount = Number(item.amount || 0);
+    const percentage = Number(item.percentage || 0);
+    if (amount <= 0 && percentage <= 0) continue;
+    if (salary > 0) {
+      const expected = calculateContributionAmount(salary, percentage);
+      if (amount <= 0 || percentage <= 0 || roundMoney(amount) !== expected) {
+        errors.push("קוד שגיאה 53: אין התאמה בין אחוז ההפרשה, סכום ההפרשה והשכר.");
+        break;
+      }
+    }
+
+    const year = Number(String(row.salaryMonth || "").slice(0, 4));
+    const limit = limits.find((entry) => entry.year === year
+      && Number(entry.productType) === Number(row.productType)
+      && Number(entry.party) === Number(item.party)
+      && Number(entry.component) === Number(item.component));
+    if (!limit) {
+      errors.push(`קוד שגיאה 72: לא הוגדרה תקרת הפקדה רשמית לשנת ${year} עבור אחד מרכיבי ההפקדה.`);
+      break;
+    }
+    if (percentage > Number(limit.maxPercentage)) {
+      errors.push(`קוד שגיאה 72: אחוז ההפרשה ${percentage}% חורג מהתקרה הרשמית ${limit.maxPercentage}%.`);
+      break;
+    }
+  }
+
+  const employeeRate = sumPct(employeeBenefits);
+  const employerRate = sumPct(employerBenefits);
+  if (employeeRate > 0 && employerRate > 0 && employeeRate <= 5 && employerRate <= 5
+      && Math.abs(employeeRate - employerRate) > 0.0001)
+    errors.push("קוד שגיאה 71: תגמולי עובד ותגמולי מעסיק עד 5% מהשכר חייבים להיות זהים.");
+
+  const disabilityRate = sumPct(employerDisability);
+  if (employerRate + disabilityRate > 7.5 + 0.0001)
+    errors.push("קוד שגיאה 72: תגמולי מעסיק ואכ״ע יחד לא יכולים לעבור 7.5% מהשכר.");
+
+  const hasPositiveContribution = allRows.some((item) => Number(item.amount || 0) > 0);
+  if (meta.depositStatus === 1 && String(row.reportingType) === "1" && hasPositiveContribution && salary <= 0)
+    errors.push("קוד שגיאה 75: במעמד הפקדת שכיר ובתקבול שוטף חובה לדווח את השכר שממנו הועברו התשלומים.");
+
+  return errors;
+}
+
 function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInterfaceProductMetadata | null, meta: EmployerInterfaceProductMetadataInput, totalDeposit: number) {
   const errors: string[] = [];
   if (!form.providerName.trim()) errors.push("לא נמצאו פרטי יצרן למוצר.");
@@ -246,8 +336,9 @@ function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInte
   return errors;
 }
 
-export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, onClose, onSaved, onEvidenceChanged, readOnly = false }: {
+export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, contributionLimits, onClose, onSaved, onEvidenceChanged, readOnly = false }: {
   employer: Employer | null; organizationId: string; employerId: string; reportId: string; row: ManualDepositRow;
+  contributionLimits: ManualDepositContributionLimit[];
   onClose: () => void; onSaved: (row: ManualDepositRow) => void; onEvidenceChanged: (items: PaymentConfirmation[]) => void;
   readOnly?: boolean;
 }) {
@@ -507,7 +598,11 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   async function save() {
     if (readOnly) return;
     setError("");
-    const errors = [...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)), ...validate006Metadata(metadata, metadataForm, previousReference)];
+    const errors = [
+      ...validatePreventableContributionRules(row, metadata, metadataForm, contributionLimits),
+      ...validatePaymentDetails(form, metadata, metadataForm, Number(row.totalDeposit)),
+      ...validate006Metadata(metadata, metadataForm, previousReference),
+    ];
     if (correctionWorkspace && !addedCorrectionProduct && correctionOperationCode === 3 && (form.actualDepositAmount == null || form.actualDepositAmount <= 0))
       errors.push("כאשר בוצעה הפקדה נוספת יש להזין את סכום ההפקדה הנוספת בפועל.");
     if (!negative && !differences && isOldPensionFund && !metadataForm.oldPensionTypeCode)
