@@ -192,7 +192,9 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
   if (context === "report") {
     const seen = new Set<string>();
     for (const product of activeProducts) {
-      const identity = (product.policyNumber.trim() || product.fundExternalKey || product.fundCode || "").toLowerCase();
+      const fundIdentity = ((product.fundCode || product.fundExternalKey || "").trim()).toLowerCase();
+      const policyIdentity = (product.policyNumber || "").trim().toLowerCase();
+      const identity = fundIdentity ? `${fundIdentity}|${policyIdentity || "<no-policy>"}` : "";
       const key = `${Number(product.productType)}|${identity}|${(product.salaryMonth || "").slice(0, 7)}`;
       if (identity && seen.has(key))
         return "קוד שגיאה 28/43 — אותו מוצר ואותו חודש שכר מופיעים יותר מפעם אחת בדיווח. יש להסיר את התנועה הכפולה.";
