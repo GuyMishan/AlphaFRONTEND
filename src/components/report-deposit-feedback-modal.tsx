@@ -277,7 +277,7 @@ export function ReportDepositFeedbackModal({
                             <b>קוד {code}</b>
                             <span>{description}</span>
                           </div>
-                          <FeedbackResolveButton compact />
+                          <FeedbackResolveButton compact disabled />
                         </div>)}
                     </div>
                   </section>)}
@@ -333,7 +333,7 @@ export function ReportDepositFeedbackModal({
                   ? <div className="contribution-feedback-message error feedback-contribution-error-action">
                       <AlertTriangle size={15} />
                       <span>{localError.errorDescription || `קוד שגיאה ${localError.errorCode}`}</span>
-                      <FeedbackResolveButton compact />
+                      <FeedbackResolveButton compact disabled />
                     </div>
                   : null}
                 {manufacturer?.sourceFileName
