@@ -144,6 +144,7 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
       if (pct <= 0 || amount <= 0) return `מוצר ${productIndex + 1}: בכל שורת ${label} שמדווחת נדרשים גם אחוז וגם סכום גדולים מאפס.`;
       const year = Number((product.salaryMonth || today()).slice(0, 4));
       const max = maxPercentage(product.productType, party, item.component, year, contributionLimits);
+      if (max == null) return `מוצר ${productIndex + 1}: לא הוגדרה תקרת הפקדה רשמית לשנת ${year} עבור הרכיב שנבחר. לא ניתן לשמור עד לעדכון טבלת התקרות.`;
       if (pct > max) return `מוצר ${productIndex + 1}: אחוז ב${label} עבור הרכיב שנבחר לא יכול לעבור ${max}%.`;
       if (insuredSalary > 0 && amount > insuredSalary + 0.01) return `מוצר ${productIndex + 1}: סכום הפקדה ב${label} לא יכול להיות גבוה מהשכר המבוטח.`;
       if (exempt < 0 || exempt > amount) return `מוצר ${productIndex + 1}: תשלומים פטורים ב${label} חייבים להיות בין 0 לסכום ההפקדה.`;
@@ -256,7 +257,7 @@ function maxPercentage(productType: PensionProductType, party: "employer" | "emp
     && Number(item.productType) === Number(productType)
     && Number(item.party) === partyCode
     && Number(item.component) === Number(component));
-  return match?.maxPercentage ?? 100;
+  return match?.maxPercentage ?? null;
 }
 
 export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, allowAdd = true, allowRemove = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction, onReferenceDataLoaded }: {
@@ -381,7 +382,7 @@ function ContributionEditor({ context, title, party, product, items, editable, o
       return [
         <b key="component">{label}</b>,
         <UiInput key="amount" className="contribution-input" disabled={!editable} type="number" min="0" max={product.salary || undefined} step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} />,
-        <UiInput key="percentage" className="contribution-input" disabled={!editable} type="number" min="0" max={max} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} />,
+        <UiInput key="percentage" className="contribution-input" disabled={!editable} type="number" min="0" max={max ?? undefined} step="0.0001" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", Number(e.target.value))} />,
         <UiInput key="exempt" className="contribution-input" disabled={!editable} type="number" min="0" max={item.amount || undefined} step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} />,
       ];
     }}
