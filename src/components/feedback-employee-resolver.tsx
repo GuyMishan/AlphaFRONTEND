@@ -125,7 +125,7 @@ export function FeedbackEmployeeResolver({
 
     {saved ? <div className="notice notice-info">
       <CheckCircle2 size={16} aria-hidden="true" />
-      פרטי העובד עודכנו. המשוב ההיסטורי נשאר פתוח עד שיישלח תיקון ויתקבל משוב חדש.
+      פרטי העובד עודכנו. שגיאות Edit שעברו את ולידציית המסך סומנו כמתוקנות; שגיאות Decision נשארו לטיפול נפרד.
     </div> : null}
 
     {loading ? <div className="empty">טוען את פרטי העובד...</div> : null}
@@ -154,9 +154,25 @@ export function FeedbackEmployeeResolver({
         }}
         onSaved={async savedEmployee => {
           setEmployee(savedEmployee);
-          setSaved(true);
-          setFormVersion(value => value + 1);
-          onChanged();
+          const editableProblems = group.problems
+            .filter(item => item.resolutionType === "edit")
+            .map(item => item.problemId);
+          try {
+            if (editableProblems.length) {
+              await reportFeedbackApi.resolveProblems(
+                organizationId,
+                employerId,
+                problem.reportId,
+                editableProblems,
+                "employee-save",
+              );
+            }
+            setSaved(true);
+            setFormVersion(value => value + 1);
+            onChanged();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "פרטי העובד נשמרו אך סימון התקלה כמתוקנת נכשל.");
+          }
         }}
       />
     </div> : null}

@@ -20,6 +20,7 @@ import { alphaApi } from "@/lib/api";
 import { getScopeContext } from "@/lib/app-data-cache";
 import { derivedReportsApi } from "@/lib/derived-reports-api";
 import { reportValidationApi, type ReportValidationResult } from "@/lib/report-validation-api";
+import { reportFeedbackApi } from "@/lib/report-feedback-api";
 import { ReportValidationErrorsModal } from "@/components/report-validation-errors-modal";
 import { reportTransmissionApi } from "@/lib/report-transmission-api";
 import { getEmployerSelection } from "@/lib/session";
@@ -79,6 +80,8 @@ export default function NewReportPage() {
   const [correctionWorkspaceEntry, setCorrectionWorkspaceEntry] = useState(false);
   const [focusedReportProductId, setFocusedReportProductId] = useState("");
   const [resolutionResolver, setResolutionResolver] = useState("");
+  const [resolutionSourceReportId, setResolutionSourceReportId] = useState("");
+  const [resolutionProblemIds, setResolutionProblemIds] = useState<string[]>([]);
   const [draftToDelete, setDraftToDelete] = useState<ResumableManualReport | null>(null);
   const [deletingDraftId, setDeletingDraftId] = useState("");
   const resumeEntryInitialized = useRef(false);
@@ -294,6 +297,13 @@ export default function NewReportPage() {
     setCorrectionWorkspaceEntry(params.get("correctionWorkspace") === "1");
     setFocusedReportProductId(params.get("focusReportProductId") ?? "");
     setResolutionResolver(params.get("resolutionResolver") ?? "");
+    setResolutionSourceReportId(params.get("resolutionSourceReportId") ?? "");
+    setResolutionProblemIds(
+      (params.get("resolutionProblemIds") ?? "")
+        .split(",")
+        .map(value => value.trim())
+        .filter(Boolean),
+    );
   }, []);
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
   useEffect(() => {
@@ -352,6 +362,22 @@ export default function NewReportPage() {
     if (!result.isValid) {
       setValidationResult(result);
       throw new Error(validationMessage(result.errors));
+    }
+
+    if (correctionWorkspaceEntry && resolutionSourceReportId && resolutionProblemIds.length) {
+      const expectedStage = resolutionResolver === "employmentStatus" ? "deposits" : "employees";
+      if (stage === expectedStage) {
+        await reportFeedbackApi.resolveProblems(
+          scope.organizationId,
+          scope.employerId,
+          resolutionSourceReportId,
+          resolutionProblemIds,
+          "workspace-validation",
+          manualReportId,
+        );
+        setResolutionProblemIds([]);
+        toast.success("השגיאות שעברו את הוולידציה סומנו כמתוקנות.");
+      }
     }
   }
 

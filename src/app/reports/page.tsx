@@ -289,7 +289,14 @@ export default function ReportsPage() {
     resolveOnOpen?: boolean;
   } | null>(null);
   const [employerIssueCount, setEmployerIssueCount] = useState(0);
-  const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; editReportId: string; deposit: ManualDepositRow; contributionLimits: ManualDepositContributionLimit[] } | null>(null);
+  const [editingDeposit, setEditingDeposit] = useState<{
+    report: ReportFeedbackRow;
+    sourceDeposit: ReportFeedbackDepositRow;
+    editReportId: string;
+    deposit: ManualDepositRow;
+    contributionLimits: ManualDepositContributionLimit[];
+    resolutionProblemIds: string[];
+  } | null>(null);
   const [retransmitReport, setRetransmitReport] = useState<ReportFeedbackRow | null>(null);
   const [deleteReport, setDeleteReport] = useState<ReportFeedbackRow | null>(null);
   const [correctionBusyId, setCorrectionBusyId] = useState("");
@@ -532,7 +539,12 @@ export default function ReportsPage() {
     }
   }
 
-  async function editDepositFromFeedback(report: ReportFeedbackRow, reportProductId: string) {
+  async function editDepositFromFeedback(
+    report: ReportFeedbackRow,
+    sourceDeposit: ReportFeedbackDepositRow,
+    resolutionProblemIds: string[] = [],
+  ) {
+    const reportProductId = sourceDeposit.id;
     if (!scope || correctionBusyId) return;
     setError("");
     setCorrectionBusyId(report.id);
@@ -558,7 +570,14 @@ export default function ReportsPage() {
       const deposit = page.items[0];
       if (!deposit) throw new Error("לא ניתן היה לטעון את פרטי ההפקדה לעריכה.");
       setFeedbackModal(null);
-      setEditingDeposit({ report, editReportId, deposit, contributionLimits: page.contributionLimits });
+      setEditingDeposit({
+        report,
+        sourceDeposit,
+        editReportId,
+        deposit,
+        contributionLimits: page.contributionLimits,
+        resolutionProblemIds,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "טעינת פרטי ההפקדה לעריכה נכשלה");
     } finally {
@@ -882,11 +901,11 @@ export default function ReportsPage() {
         && feedbackModal.report
         && feedbackModal.deposit
         && (feedbackModal.report.canEdit || feedbackModal.report.canStartCorrectionWorkspace)
-        ? () => {
+        ? (problemIds = []) => {
             const report = feedbackModal.report!;
             const deposit = feedbackModal.deposit!;
             setFeedbackModal(null);
-            void editDepositFromFeedback(report, deposit.id);
+            void editDepositFromFeedback(report, deposit, problemIds);
           }
         : undefined}
     /> : null}
@@ -902,16 +921,43 @@ export default function ReportsPage() {
       readOnly={false}
       onEvidenceChanged={() => {}}
       onClose={() => setEditingDeposit(null)}
-      onSaved={() => {
+      onSaved={async () => {
         const sourceReport = editingDeposit.report;
-        setEditingDeposit(null);
-        setExpandedContent((current) => {
-          const next = { ...current };
-          delete next[sourceReport.id];
-          return next;
-        });
-        void loadExpanded(sourceReport, true);
-        void load();
+        const sourceDeposit = editingDeposit.sourceDeposit;
+        const problemIds = editingDeposit.resolutionProblemIds;
+        try {
+          if (problemIds.length) {
+            await reportFeedbackApi.resolveProblems(
+              scope.organizationId,
+              scope.employerId,
+              sourceReport.id,
+              problemIds,
+              "deposit-save",
+              editingDeposit.editReportId,
+            );
+          }
+          setEditingDeposit(null);
+          setExpandedContent((current) => {
+            const next = { ...current };
+            delete next[sourceReport.id];
+            return next;
+          });
+          await Promise.all([loadExpanded(sourceReport, true), load()]);
+          if (problemIds.length) {
+            setFeedbackModal({
+              mode: "deposit",
+              report: sourceReport,
+              deposit: sourceDeposit,
+              depositView: "errors",
+              resolveOnOpen: true,
+            });
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "ההפקדה נשמרה אך סימון התקלה כמתוקנת נכשל.");
+          setEditingDeposit(null);
+          void loadExpanded(sourceReport, true);
+          void load();
+        }
       }}
     /> : null}
 
