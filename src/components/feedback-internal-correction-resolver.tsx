@@ -92,6 +92,21 @@ const resolverConfig: Record<string, {
       ["errorDate", "תאריך שגיאה", "feedback"],
     ],
   },
+  refund: {
+    title: "תיקון החזר / תנועה מקורית",
+    description: "המשוב דורש תיקון שמבוסס על התנועה המקורית. ALPHA שומרת את הקשר לתקלה ופותחת סביבת תיקון שממנה ניתן להפיק את התנועה השלילית הנדרשת.",
+    button: "פתיחת תיקון החזר",
+    fields: [
+      ["previousRecordIdentifier", "מזהה תנועה מקורית"],
+      ["recordIdentifier", "מזהה רשומה"],
+      ["contributionAmount", "סכום"],
+      ["contributionPercentage", "אחוז"],
+      ["refundAmount", "סכום החזר", "feedback"],
+      ["policyNumber", "מספר פוליסה"],
+      ["fundName", "מוצר"],
+      ["fundCompanyName", "יצרן"],
+    ],
+  },
   reportCorrection: {
     title: "תיקון הדיווח",
     description: "המשוב מחייב תיקון ברמת הדיווח. נפתח או נמשיך סביבת תיקון של הדיווח המקורי.",
@@ -159,7 +174,8 @@ export function FeedbackInternalCorrectionResolver({
   const canPrepareWorkspace = group.problems.every(item =>
     item.resolutionType === "edit"
     && item.correctionBehavior === "correctionWorkspace"
-    && item.availableActions.includes("prepareCorrection"));
+    && (item.availableActions.includes("prepareCorrection")
+      || item.availableActions.includes("prepareNegative")));
 
   const nonWorkspaceMessage = group.problems.every(item => item.correctionBehavior === "externalFollowUp")
     ? "הטיפול דורש השלמת מסמכים/מעקב חיצוני ואינו יוצר דיווח הפרשים. הפעולה המתאימה תישאר חסומה עד מסלול המסמכים הייעודי."

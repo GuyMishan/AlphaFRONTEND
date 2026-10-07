@@ -276,7 +276,7 @@ export function FeedbackResolutionMode({
             onChanged={() => setRefreshToken(value => value + 1)}
           />
         : editableGroup
-          && ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection"].includes(activeGroup.resolverType)
+          && ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection", "refund"].includes(activeGroup.resolverType)
           ? <FeedbackInternalCorrectionResolver
               organizationId={organizationId}
               employerId={employerId}
