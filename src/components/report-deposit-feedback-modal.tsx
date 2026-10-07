@@ -218,10 +218,9 @@ export function ReportDepositFeedbackModal({
       {hasFeedback ? <>
         <section className="feedback-modal-section">
           <div className="feedback-modal-section-head">
-            <div><h3>שגיאות בהפקדה</h3><p>תקלות עובד, הפקדה/מוצר ורכיבי הפרשה בלבד.</p></div>
+            <div><h3>{errorsOnly ? "שגיאות בהפקדה" : "מעסיק מול יצרן"}</h3><p>{errorsOnly ? "תקלות עובד והפקדה מוצגות למעלה; תקלות הפרשה מוצגות ליד הרכיב המתאים." : "השוואה בין מה שדווח לבין הנתונים שהוחזרו במשוב הרשמי."}</p></div>
           </div>
           {(() => {
-            const contributionCount = details.employerContributions.length;
             const rowsByErrorCode = new Map<number, typeof details.manufacturerContributions>();
             for (const item of details.manufacturerContributions) {
               if (!isActionableManufacturerError(item.errorCode) || item.errorCode == null) continue;
@@ -233,9 +232,7 @@ export function ReportDepositFeedbackModal({
             const promotedErrorCodes = new Set<number>();
             for (const [code, rows] of rowsByErrorCode) {
               const semanticGeneralError = rows.some((row) => row.errorScope !== "contribution");
-              const affectedContributions = new Set(rows.map((row) => row.contributionId));
-              const repeatedAcrossEntireDeposit = contributionCount > 0 && affectedContributions.size >= contributionCount;
-              if (semanticGeneralError || repeatedAcrossEntireDeposit) promotedErrorCodes.add(code);
+              if (semanticGeneralError) promotedErrorCodes.add(code);
             }
 
             const scopeLabel = (scope: (typeof details.manufacturerContributions)[number]["errorScope"]) => {
@@ -250,7 +247,7 @@ export function ReportDepositFeedbackModal({
             };
 
             const scopeOrder: Array<(typeof details.manufacturerContributions)[number]["errorScope"]> = [
-              "employee", "deposit", "contribution",
+              "employee", "deposit",
             ];
             const groupedErrors = scopeOrder
               .map((scope) => {
@@ -301,14 +298,13 @@ export function ReportDepositFeedbackModal({
                 isActionableManufacturerError(item.errorCode)
                 && item.errorCode != null
                 && !promotedErrorCodes.has(item.errorCode));
-              const localError = localErrorRows[0];
               const additionalManufacturerRows = manufacturerRows.filter((item) =>
                 item !== manufacturer
-                && (item.errorCode == null || !promotedErrorCodes.has(item.errorCode)));
+                && !isActionableManufacturerError(item.errorCode));
               const amountMismatch = manufacturer?.contributionAmount != null && !sameNumber(employer.amount, manufacturer.contributionAmount);
               const rateMismatch = manufacturer?.contributionRate != null && !sameNumber(employer.percentage, manufacturer.contributionRate);
               const salaryMismatch = manufacturer?.calculatedSalary != null && !sameNumber(details.product.salary, manufacturer.calculatedSalary);
-              const hasError = Boolean(localError);
+              const hasError = localErrorRows.length > 0;
               const hasNumericDifference = amountMismatch || rateMismatch || salaryMismatch;
               const requiresAttention = errorsOnly && (hasNumericDifference || hasError);
               return <article className={`contribution-comparison-card${requiresAttention ? " has-difference" : ""}`} key={employer.id}>
@@ -339,11 +335,16 @@ export function ReportDepositFeedbackModal({
                     </> : <div className="manufacturer-pending">לא התקבל פירוט יצרן לרכיב זה.</div>}
                   </div>
                 </div>
-                {errorsOnly && localError
-                  ? <div className="contribution-feedback-message error feedback-contribution-error-action">
-                      <AlertTriangle size={15} />
-                      <span>{localError.errorDescription || `קוד שגיאה ${localError.errorCode}`}</span>
-                      <FeedbackResolveButton compact disabled />
+                {errorsOnly && localErrorRows.length
+                  ? <div className="contribution-error-list">
+                      {localErrorRows.map((localError, index) => <div
+                        className="contribution-feedback-message error feedback-contribution-error-action"
+                        key={`${localError.errorCode ?? "error"}:${localError.sequence}:${index}`}
+                      >
+                        <AlertTriangle size={15} />
+                        <span>{localError.errorDescription || `קוד שגיאה ${localError.errorCode}`}</span>
+                        <FeedbackResolveButton compact disabled />
+                      </div>)}
                     </div>
                   : null}
                 {manufacturer?.sourceFileName
