@@ -180,6 +180,7 @@ export function FeedbackInternalCorrectionResolver({
         group.groupKey,
         group.resolverType,
         problem.reportProductId,
+        group.problems.map(item => item.problemId),
       );
       const product = result.workspaceReportProductId
         ? `&focusReportProductId=${encodeURIComponent(result.workspaceReportProductId)}`

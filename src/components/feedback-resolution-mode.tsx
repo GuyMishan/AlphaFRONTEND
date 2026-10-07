@@ -142,6 +142,10 @@ export function FeedbackResolutionMode({
   const safeIndex = Math.min(activeIndex, Math.max(groups.length - 1, 0));
   const activeGroup = groups[safeIndex];
   const primaryProblem = activeGroup?.problems[0];
+  const editableProblems = activeGroup?.problems.filter(problem => problem.resolutionType === "edit") ?? [];
+  const editableGroup = activeGroup && editableProblems.length
+    ? { ...activeGroup, problems: editableProblems }
+    : null;
 
   useEffect(() => {
     if (activeIndex !== safeIndex) setActiveIndex(safeIndex);
@@ -258,12 +262,12 @@ export function FeedbackResolutionMode({
             canEdit={Boolean(context?.canEditEmployee)}
             onChanged={() => setRefreshToken(value => value + 1)}
           />
-        : ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection"].includes(activeGroup.resolverType)
-          && activeGroup.problems.every(problem => problem.resolutionType === "edit")
+        : editableGroup
+          && ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection"].includes(activeGroup.resolverType)
           ? <FeedbackInternalCorrectionResolver
               organizationId={organizationId}
               employerId={employerId}
-              group={activeGroup}
+              group={editableGroup}
               onEditDeposit={onEditDeposit}
               onChanged={() => setRefreshToken(value => value + 1)}
             />

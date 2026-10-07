@@ -400,6 +400,7 @@ export const reportFeedbackApi = {
     groupKey: string,
     resolverType: string,
     reportProductId?: string | null,
+    problemIds?: string[],
   ) => request<{
     workspaceReportId: string;
     workspaceReportProductId: string | null;
@@ -416,6 +417,7 @@ export const reportFeedbackApi = {
         groupKey,
         resolverType,
         reportProductId: reportProductId || null,
+        problemIds: problemIds?.length ? problemIds : null,
       }),
     },
   ),
