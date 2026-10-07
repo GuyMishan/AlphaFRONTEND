@@ -216,19 +216,14 @@ function DepositFeedbackPanel({
           <div role="cell" className="report-deposits-money">{money(deposit.totalAmount)}</div>
           <div role="cell" className="report-deposit-feedback-status-cell">
             <DepositStatusBadge value={deposit.feedbackStatus} label={deposit.feedbackLabel} />
-            {deposit.feedbackStatus === "attention" && deposit.feedbackErrors?.length
+            {depositOwnedErrorCount(deposit) > 0
               ? <Tooltip
                   className="report-deposit-feedback-info"
                   label="פירוט שגיאות במשוב"
-                  content={deposit.feedbackErrors.length > 3
-                    ? <span className="report-deposit-feedback-error-list">
-                        {feedbackErrorSummaryRows(deposit).map(({ scope, count }) =>
-                          <span key={scope}>{count} {count === 1 ? "שגיאה" : "שגיאות"} {feedbackErrorScopeLabel(scope)}</span>)}
-                      </span>
-                    : <span className="report-deposit-feedback-error-list">
-                        {deposit.feedbackErrors.map((message, index) =>
-                          <span key={`${index}:${message}`}>{message}</span>)}
-                      </span>}
+                  content={<span className="report-deposit-feedback-error-list">
+                    {feedbackErrorSummaryRows(deposit).map(({ scope, count }) =>
+                      <span key={scope}>{count} {count === 1 ? "שגיאה" : "שגיאות"} {feedbackErrorScopeLabel(scope)}</span>)}
+                  </span>}
                 />
               : null}
           </div>
