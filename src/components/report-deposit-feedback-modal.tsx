@@ -342,7 +342,10 @@ export function ReportDepositFeedbackModal({
                         key={`${localError.errorCode ?? "error"}:${localError.sequence}:${index}`}
                       >
                         <AlertTriangle size={15} />
-                        <span>{localError.errorDescription || `קוד שגיאה ${localError.errorCode}`}</span>
+                        <span className="contribution-feedback-error-copy">
+                          {localError.errorCode != null ? <b>קוד {localError.errorCode}</b> : null}
+                          <span>{localError.errorDescription || "ללא פירוט שגיאה"}</span>
+                        </span>
                         <FeedbackResolveButton compact disabled />
                       </div>)}
                     </div>
