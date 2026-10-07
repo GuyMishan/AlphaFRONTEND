@@ -795,7 +795,8 @@
   flex-wrap: wrap;
 }
 .feedback-resolution-type,
-.feedback-resolution-scope {
+.feedback-resolution-scope,
+.feedback-resolution-resolver {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -821,6 +822,10 @@
   color: var(--muted);
   background: color-mix(in srgb, var(--muted) 9%, var(--surface));
 }
+.feedback-resolution-resolver {
+  color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 10%, var(--surface));
+}
 .feedback-resolution-problem-copy {
   display: grid;
   gap: 5px;
@@ -841,6 +846,34 @@
 }
 .feedback-resolution-problem-copy small {
   color: var(--muted);
+}
+.feedback-resolution-group-problems {
+  display: grid;
+  gap: 9px;
+  padding-top: 2px;
+}
+.feedback-resolution-group-problem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+}
+.feedback-resolution-group-problem:first-child {
+  border-top: 0;
+}
+.feedback-resolution-group-problem > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.feedback-resolution-group-problem > div span {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.feedback-resolution-group-problem .feedback-resolution-type {
+  white-space: nowrap;
 }
 .feedback-resolution-placeholder {
   display: flex;
@@ -873,6 +906,9 @@
   .feedback-resolution-problem-copy > div {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+  .feedback-resolution-group-problem {
+    grid-template-columns: 1fr;
   }
   .feedback-resolution-placeholder {
     padding: 12px;

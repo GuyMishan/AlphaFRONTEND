@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, CheckCircle2, ExternalLink, FilePenLine, ListChecks } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, FilePenLine, ListChecks } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import {
   reportFeedbackApi,
   type FeedbackResolutionContext,
   type FeedbackResolutionContextType,
+  type FeedbackResolutionGroup,
   type FeedbackResolutionProblem,
   type FeedbackResolutionProblemSelector,
 } from "@/lib/report-feedback-api";
@@ -38,6 +39,23 @@ function scopeLabel(value: string) {
   }
 }
 
+function resolverLabel(value: string) {
+  switch (value) {
+    case "employee": return "פרטי עובד";
+    case "employmentStatus": return "סטטוס העסקה";
+    case "productPolicy": return "מוצר ופוליסה";
+    case "contribution": return "הפרשות";
+    case "reportCorrection": return "תיקון דיווח";
+    case "payment": return "פרטי תשלום";
+    case "refund": return "החזר כספים";
+    case "documents": return "מסמכים";
+    case "split": return "פיצול ושיוך";
+    case "conditionalField": return "שדות דיווח";
+    case "externalCase": return "טיפול מול גוף חיצוני";
+    default: return value;
+  }
+}
+
 function loadContext(
   contextType: FeedbackResolutionContextType,
   organizationId: string,
@@ -57,17 +75,34 @@ function loadContext(
   );
 }
 
-function filterProblems(
+function fallbackGroups(problems: FeedbackResolutionProblem[]): FeedbackResolutionGroup[] {
+  const byKey = new Map<string, FeedbackResolutionGroup>();
+  for (const problem of problems) {
+    const existing = byKey.get(problem.groupKey);
+    if (existing) {
+      existing.problems.push(problem);
+      continue;
+    }
+    byKey.set(problem.groupKey, {
+      groupKey: problem.groupKey,
+      resolverType: problem.resolverType,
+      groupStrategy: problem.groupStrategy,
+      problems: [problem],
+    });
+  }
+  return [...byKey.values()];
+}
+
+function filterGroups(
   context: FeedbackResolutionContext,
   selector?: FeedbackResolutionProblemSelector | null,
 ) {
-  if (!selector) return context.problems;
-  if (selector.contributionId) {
-    return context.problems.filter(problem =>
-      problem.code === selector.code
-      && problem.contributionId === selector.contributionId);
-  }
-  return context.problems.filter(problem => problem.code === selector.code);
+  const groups = context.groups?.length ? context.groups : fallbackGroups(context.problems);
+  if (!selector) return groups;
+
+  return groups.filter(group => group.problems.some(problem =>
+    problem.code === selector.code
+    && (!selector.contributionId || problem.contributionId === selector.contributionId)));
 }
 
 export function FeedbackResolutionMode({
@@ -112,34 +147,50 @@ export function FeedbackResolutionMode({
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [contextType, organizationId, employerId, reportId, reportProductId, selector?.code, selector?.contributionId]);
+  }, [contextType, organizationId, employerId, reportId, reportProductId]);
 
-  const problems = useMemo(
-    () => context ? filterProblems(context, selector) : [],
+  const groups = useMemo(
+    () => context?.canResolve ? filterGroups(context, selector) : [],
     [context, selector],
   );
-  const active = problems[Math.min(activeIndex, Math.max(problems.length - 1, 0))];
+  const safeIndex = Math.min(activeIndex, Math.max(groups.length - 1, 0));
+  const activeGroup = groups[safeIndex];
+  const primaryProblem = activeGroup?.problems[0];
+
+  useEffect(() => {
+    if (activeIndex !== safeIndex) setActiveIndex(safeIndex);
+  }, [activeIndex, safeIndex]);
 
   return <AppModal
     width="xl"
     className="report-deposit-feedback-modal feedback-resolution-modal"
     title="מצב פתרון בעיות"
-    subtitle={active
-      ? `בעיה ${Math.min(activeIndex + 1, problems.length)} מתוך ${problems.length} · קוד ${active.code}`
+    subtitle={activeGroup
+      ? `קבוצת טיפול ${safeIndex + 1} מתוך ${groups.length} · ${activeGroup.problems.length} ${activeGroup.problems.length === 1 ? "תקלה" : "תקלות"}`
       : "טעינת תהליך הטיפול"}
     onClose={onClose}
     actions={<>
       <button type="button" className="btn btn-secondary" onClick={onBack}>
         <ArrowRight size={16} aria-hidden="true" />חזרה לצפייה
       </button>
-      {problems.length > 1 ? <button
-        type="button"
-        className="btn btn-primary"
-        disabled={activeIndex >= problems.length - 1}
-        onClick={() => setActiveIndex(index => Math.min(index + 1, problems.length - 1))}
-      >
-        לבעיה הבאה
-      </button> : null}
+      {groups.length > 1 ? <>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          disabled={safeIndex === 0}
+          onClick={() => setActiveIndex(index => Math.max(index - 1, 0))}
+        >
+          <ArrowRight size={16} aria-hidden="true" />הקבוצה הקודמת
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={safeIndex >= groups.length - 1}
+          onClick={() => setActiveIndex(index => Math.min(index + 1, groups.length - 1))}
+        >
+          הקבוצה הבאה<ArrowLeft size={16} aria-hidden="true" />
+        </button>
+      </> : null}
     </>}
   >
     {loading ? <div className="empty">טוען את נתוני הפתרון...</div> : null}
@@ -154,47 +205,67 @@ export function FeedbackResolutionMode({
       ? <div className="notice notice-error">אין לך הרשאה לבצע פעולות פתרון בהקשר הזה.</div>
       : null}
 
-    {!loading && !error && context && problems.length === 0
+    {!loading && !error && context?.canResolve && groups.length === 0
       ? <div className="notice notice-info">
           <CheckCircle2 size={16} aria-hidden="true" />לא נמצאו תקלות פעילות שמתאימות לטיפול שנבחר.
         </div>
       : null}
 
-    {!loading && !error && active ? <>
-      <section className="feedback-resolution-progress" aria-label="התקדמות בטיפול">
+    {!loading && !error && activeGroup && primaryProblem ? <>
+      <section className="feedback-resolution-progress" aria-label="התקדמות בתור הטיפול">
         <div>
-          <span>בעיה נוכחית</span>
-          <strong>{activeIndex + 1} / {problems.length}</strong>
+          <span>קבוצת טיפול נוכחית</span>
+          <strong>{safeIndex + 1} / {groups.length}</strong>
         </div>
         <div className="feedback-resolution-progress-track" aria-hidden="true">
-          <span style={{ width: `${((activeIndex + 1) / problems.length) * 100}%` }} />
+          <span style={{ width: `${((safeIndex + 1) / groups.length) * 100}%` }} />
         </div>
       </section>
 
       <section className="feedback-resolution-problem-card">
         <div className="feedback-resolution-problem-head">
-          <span className={`feedback-resolution-type ${active.resolutionType}`}>
-            {resolutionIcon(active.resolutionType)}
-            {resolutionTypeLabel(active.resolutionType)}
+          <span className="feedback-resolution-resolver">
+            <ListChecks size={16} aria-hidden="true" />
+            {resolverLabel(activeGroup.resolverType)}
           </span>
-          <span className="feedback-resolution-scope">{scopeLabel(active.scope)}</span>
+          <span className="feedback-resolution-scope">
+            {new Set(activeGroup.problems.map(problem => problem.scope)).size === 1
+              ? scopeLabel(primaryProblem.scope)
+              : "מספר תחומים"}
+          </span>
         </div>
+
         <div className="feedback-resolution-problem-copy">
-          <div><b>קוד {active.code}</b><span>{active.description}</span></div>
-          {active.employeeName ? <small>עובד: {active.employeeName}</small> : null}
-          {active.fundCompanyName || active.productName
-            ? <small>מוצר: {active.fundCompanyName || active.productName}{active.policyNumber ? ` · פוליסה ${active.policyNumber}` : ""}</small>
+          {primaryProblem.employeeName ? <small>עובד: {primaryProblem.employeeName}</small> : null}
+          {primaryProblem.fundCompanyName || primaryProblem.productName
+            ? <small>מוצר: {primaryProblem.fundCompanyName || primaryProblem.productName}{primaryProblem.policyNumber ? ` · פוליסה ${primaryProblem.policyNumber}` : ""}</small>
             : null}
+        </div>
+
+        <div className="feedback-resolution-group-problems" role="list" aria-label="תקלות בקבוצת הטיפול">
+          {activeGroup.problems.map(problem => <div key={problem.problemId} className="feedback-resolution-group-problem" role="listitem">
+            <span className={`feedback-resolution-type ${problem.resolutionType}`}>
+              {resolutionIcon(problem.resolutionType)}
+              {resolutionTypeLabel(problem.resolutionType)}
+            </span>
+            <div>
+              <b>קוד {problem.code}</b>
+              <span>{problem.description}</span>
+            </div>
+          </div>)}
         </div>
       </section>
 
       <section className="feedback-resolution-placeholder">
         <AlertTriangle size={20} aria-hidden="true" />
         <div>
-          <strong>תשתית מצב הפתרון מחוברת.</strong>
+          <strong>קבוצת הטיפול מוכנה ל־resolver.</strong>
           <p>
-            Resolver מסוג <b dir="ltr">{active.resolverType}</b> נטען עבור התקלה הזאת.
-            מסך העריכה/ההחלטה עצמו ייכנס בשלבים הבאים; בשלב זה לא מתבצע שינוי בנתונים.
+            {activeGroup.problems.length === 1
+              ? "התקלה תטופל כיחידה אחת."
+              : `${activeGroup.problems.length} התקלות בקבוצה דורשות אותו יעד טיפול ולכן ירוכזו יחד.`}
+            {" "}Resolver מסוג <b dir="ltr">{activeGroup.resolverType}</b> יטפל בקבוצה בשלבים הבאים;
+            בשלב 4 עדיין לא מתבצע שינוי בנתונים.
           </p>
         </div>
       </section>

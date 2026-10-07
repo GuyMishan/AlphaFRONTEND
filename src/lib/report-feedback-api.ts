@@ -270,6 +270,13 @@ export type FeedbackResolutionProblem = {
   receivedAt: string;
 };
 
+export type FeedbackResolutionGroup = {
+  groupKey: string;
+  resolverType: string;
+  groupStrategy: string;
+  problems: FeedbackResolutionProblem[];
+};
+
 export type FeedbackResolutionContext = {
   contextType: FeedbackResolutionContextType;
   employerId: string;
@@ -278,6 +285,7 @@ export type FeedbackResolutionContext = {
   canResolve: boolean;
   unsupportedCodes: number[];
   problems: FeedbackResolutionProblem[];
+  groups: FeedbackResolutionGroup[];
 };
 
 export type FeedbackResolutionProblemSelector = {
