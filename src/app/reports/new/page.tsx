@@ -307,6 +307,31 @@ export default function NewReportPage() {
   }, []);
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
   useEffect(() => {
+    if (!scope || !manualReportId || !correctionWorkspaceEntry || resolutionProblemIds.length) return;
+    let cancelled = false;
+    reportFeedbackApi.correctionWorkspaceResolutionLinks(
+      scope.organizationId,
+      scope.employerId,
+      manualReportId,
+    ).then((result) => {
+      if (cancelled || !result.problemIds.length) return;
+      setResolutionSourceReportId(result.sourceReportId ?? "");
+      setResolutionProblemIds(result.problemIds);
+      if (!resolutionResolver && result.resolverTypes.length === 1)
+        setResolutionResolver(result.resolverTypes[0]);
+    }).catch(() => {
+      // A correction workspace can also be opened for ordinary report correction without feedback.
+    });
+    return () => { cancelled = true; };
+  }, [
+    scope?.organizationId,
+    scope?.employerId,
+    manualReportId,
+    correctionWorkspaceEntry,
+    resolutionProblemIds.length,
+    resolutionResolver,
+  ]);
+  useEffect(() => {
     if (!scope || !canCreateReport || !requestedResumeReportId || resumeEntryInitialized.current) return;
     resumeEntryInitialized.current = true;
     void resumeReportById(requestedResumeReportId);
@@ -364,22 +389,20 @@ export default function NewReportPage() {
       throw new Error(validationMessage(result.errors));
     }
 
-    if (correctionWorkspaceEntry && resolutionSourceReportId && resolutionProblemIds.length) {
-      const expectedStage = ["contribution", "employmentStatus", "payment", "reportCorrection"].includes(resolutionResolver)
-        ? "deposits"
-        : "employees";
-      if (stage === expectedStage) {
-        await reportFeedbackApi.resolveProblems(
-          scope.organizationId,
-          scope.employerId,
-          resolutionSourceReportId,
-          resolutionProblemIds,
-          "workspace-validation",
-          manualReportId,
-        );
-        setResolutionProblemIds([]);
-        toast.success("השגיאות שעברו את הוולידציה סומנו כמתוקנות.");
-      }
+    if (stage === "deposits"
+      && correctionWorkspaceEntry
+      && resolutionSourceReportId
+      && resolutionProblemIds.length) {
+      await reportFeedbackApi.resolveProblems(
+        scope.organizationId,
+        scope.employerId,
+        resolutionSourceReportId,
+        resolutionProblemIds,
+        "workspace-validation",
+        manualReportId,
+      );
+      setResolutionProblemIds([]);
+      toast.success("השגיאות שעברו ולידציה בבקאנד סומנו כמתוקנות.");
     }
   }
 

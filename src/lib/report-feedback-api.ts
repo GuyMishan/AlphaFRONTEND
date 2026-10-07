@@ -573,6 +573,18 @@ export const reportFeedbackApi = {
     { method: "POST", body: JSON.stringify({ problemId, outcome, note }) },
   ),
 
+  correctionWorkspaceResolutionLinks: (
+    organizationId: string,
+    employerId: string,
+    workspaceReportId: string,
+  ) => request<{
+    sourceReportId: string | null;
+    problemIds: string[];
+    resolverTypes: string[];
+  }>(
+    `${base(organizationId, employerId)}/correction-workspaces/${workspaceReportId}/resolution-links`,
+  ),
+
   resolveProblems: (
     organizationId: string,
     employerId: string,
