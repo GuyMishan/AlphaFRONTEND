@@ -81,6 +81,7 @@ export function ReportFeedbackModal({
   hasFeedback = false,
   onClose,
   onEditDeposit,
+  depositView = "details",
 }: {
   mode: ReportFeedbackModalMode;
   organizationId: string;
@@ -90,6 +91,7 @@ export function ReportFeedbackModal({
   hasFeedback?: boolean;
   onClose: () => void;
   onEditDeposit?: () => void;
+  depositView?: "details" | "errors";
 }) {
   const [employerContext, setEmployerContext] = useState<EmployerFeedbackContext | null>(null);
   const [reportContext, setReportContext] = useState<ReportFeedbackContext | null>(null);
@@ -130,7 +132,8 @@ export function ReportFeedbackModal({
       reportProductId={reportProductId}
       hasFeedback={hasFeedback}
       onClose={onClose}
-      onEdit={onEditDeposit}
+      onEdit={depositView === "details" ? onEditDeposit : undefined}
+      viewMode={depositView}
     />;
   }
 
@@ -144,7 +147,7 @@ export function ReportFeedbackModal({
     width="xl"
     className="report-deposit-feedback-modal report-context-feedback-modal"
     title={title}
-    subtitle={mode === "employer" ? "תקלות ברמת המעסיק" : "תקלות הדיווח ותקלות המעסיק שמשפיעות עליו"}
+    subtitle={mode === "employer" ? "תקלות ברמת המעסיק" : "תקלות ברמת הדיווח"}
     onClose={onClose}
     actions={<button type="button" className="btn btn-secondary" onClick={onClose}>סגירה</button>}
   >
@@ -189,9 +192,9 @@ export function ReportFeedbackModal({
       </section>
       <section className="feedback-modal-section">
         <div className="feedback-modal-section-head">
-          <div><h3><FileText size={17} aria-hidden="true" /> תקלות בדיווח</h3><p>קודם תקלות ברמת הדיווח, אחריהן תקלות מעסיק שמשפיעות על הדיווח.</p></div>
+          <div><h3><FileText size={17} aria-hidden="true" /> תקלות בדיווח</h3><p>תקלות ששייכות לדיווח עצמו בלבד.</p></div>
         </div>
-        <IssueGroups issues={issues} order={["report", "employer"]} />
+        <IssueGroups issues={issues} order={["report"]} />
       </section>
     </> : null}
   </AppModal>;
