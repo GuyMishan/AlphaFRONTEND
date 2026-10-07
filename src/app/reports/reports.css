@@ -100,6 +100,7 @@
 }
 .report-feedback-table .data-table-row > td:last-child .report-cell-content {
   justify-content: flex-end;
+  gap: 8px;
 }
 .report-row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
 .report-money { font-weight: 700; white-space: nowrap; }
