@@ -389,6 +389,32 @@ export const reportFeedbackApi = {
     request<FeedbackResolutionContext>(
       `${base(organizationId, employerId)}/${reportId}/deposits/${reportProductId}/resolution-context`,
     ),
+  prepareInternalResolution: (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    groupKey: string,
+    resolverType: string,
+    reportProductId?: string | null,
+  ) => request<{
+    workspaceReportId: string;
+    workspaceReportProductId: string | null;
+    created: boolean;
+    pendingChanges: number;
+    groupKey: string;
+    resolverType: string;
+  }>(
+    `${base(organizationId, employerId)}/${reportId}/resolution-actions/internal/prepare`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        groupKey,
+        resolverType,
+        reportProductId: reportProductId || null,
+      }),
+    },
+  ),
+
   validateEmployeeResolutionAction: (
     organizationId: string,
     employerId: string,

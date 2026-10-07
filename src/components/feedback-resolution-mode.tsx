@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, FilePenLine, ListChecks } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { FeedbackEmployeeResolver } from "@/components/feedback-employee-resolver";
+import { FeedbackInternalCorrectionResolver } from "@/components/feedback-internal-correction-resolver";
 import {
   reportFeedbackApi,
   type FeedbackResolutionContext,
@@ -246,7 +247,13 @@ export function FeedbackResolutionMode({
             canEdit={activeGroup.canExecute}
             onChanged={() => setRefreshToken(value => value + 1)}
           />
-        : <section className="feedback-resolution-placeholder">
+        : ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection"].includes(activeGroup.resolverType)
+          ? <FeedbackInternalCorrectionResolver
+              organizationId={organizationId}
+              employerId={employerId}
+              group={activeGroup}
+            />
+          : <section className="feedback-resolution-placeholder">
             <AlertTriangle size={20} aria-hidden="true" />
             <div>
               <strong>קבוצת הטיפול מוכנה ל־resolver.</strong>
