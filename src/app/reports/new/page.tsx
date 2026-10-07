@@ -77,6 +77,8 @@ export default function NewReportPage() {
   const [requestedResumeReportId, setRequestedResumeReportId] = useState("");
   const [followUpReportId, setFollowUpReportId] = useState("");
   const [correctionWorkspaceEntry, setCorrectionWorkspaceEntry] = useState(false);
+  const [focusedReportProductId, setFocusedReportProductId] = useState("");
+  const [resolutionResolver, setResolutionResolver] = useState("");
   const [draftToDelete, setDraftToDelete] = useState<ResumableManualReport | null>(null);
   const [deletingDraftId, setDeletingDraftId] = useState("");
   const resumeEntryInitialized = useRef(false);
@@ -215,7 +217,8 @@ export default function NewReportPage() {
       setStepOneAttempted(false);
       setShowOpenReports(false);
       setError("");
-      setStep(2);
+      const depositResolvers = new Set(["employmentStatus", "payment", "documents"]);
+      setStep(focusedReportProductId && depositResolvers.has(resolutionResolver) ? 3 : 2);
       toast.success("הטיוטה נטענה. ניתן להמשיך לערוך ולשמור.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "לא ניתן לפתוח את הטיוטה");
@@ -289,6 +292,8 @@ export default function NewReportPage() {
     setRequestedResumeReportId(params.get("resumeReportId") ?? "");
     setFollowUpReportId(params.get("followUpReportId") ?? "");
     setCorrectionWorkspaceEntry(params.get("correctionWorkspace") === "1");
+    setFocusedReportProductId(params.get("focusReportProductId") ?? "");
+    setResolutionResolver(params.get("resolutionResolver") ?? "");
   }, []);
   useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
   useEffect(() => {
@@ -674,7 +679,7 @@ export default function NewReportPage() {
     {step === 1 && !showOpenReports && isXml && scope ? <EmployerInterfaceXmlIntake organizationId={scope.organizationId} employerId={scope.employerId} paymentAccountId={selectedPaymentAccountId} salaryPaymentDate={salaryPaymentDate} disabled={!canCreateReport || !selectedPaymentAccountId} onBeforeImport={ensureBillingAccess} onReportImported={handleXmlImported} /> : null}
     {step === 2 && isExcel && scope ? <ExcelEmployeeIntake organizationId={scope.organizationId} employerId={scope.employerId} reportingMonth={month} onChange={(result) => { setExcelIntake(result); setFileName(result?.fileName ?? ""); setError(""); }} /> : null}
     {((!isExcel && step === 2) || (isExcel && step === 3)) && manualReportId && scope ? <ManualReportData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} month={month} employees={employees} selectedIds={selectedIds} setSelectedIds={setSelectedIds} correctionWorkspace={correctionWorkspaceEntry} /> : null}
-    {((!isExcel && step === 3) || (isExcel && step === 4)) && manualReportId && scope ? <ManualDepositData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} /> : null}
+    {((!isExcel && step === 3) || (isExcel && step === 4)) && manualReportId && scope ? <ManualDepositData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} focusReportProductId={focusedReportProductId} /> : null}
     {step === summaryStep ? <>
       <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} correctionOperationCode={isCorrection ? correctionOperationCode : null} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} paymentAccount={paymentAccounts.find((x) => x.id === selectedPaymentAccountId) ?? null} sentExternalId={sentExternalId} />
       

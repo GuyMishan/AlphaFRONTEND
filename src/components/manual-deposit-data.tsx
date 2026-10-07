@@ -28,7 +28,7 @@ const productNames: Record<number, string> = { 1: "קרן פנסיה", 2: "קר�
 const emptyPreviousReference = (): EmployerInterfacePreviousReference => ({ previousIdentifier: "", previousClearingIdentifier: "", previousReferenceExceptionCode: null });
 const shortError = (message: string) => message.trim().replace(/\s+/g, " ").slice(0, 220) + (message.trim().replace(/\s+/g, " ").length > 220 ? "…" : "");
 
-export function ManualDepositData({ organizationId, employerId, reportId }: { organizationId: string; employerId: string; reportId: string }) {
+export function ManualDepositData({ organizationId, employerId, reportId, focusReportProductId = "" }: { organizationId: string; employerId: string; reportId: string; focusReportProductId?: string }) {
   const [rows, setRows] = useState<ManualDepositRow[]>([]);
   const [contributionLimits, setContributionLimits] = useState<ManualDepositContributionLimit[]>([]);
   const [query, setQuery] = useState("");
@@ -44,9 +44,16 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
   async function load(search = query) {
     setLoading(true); setError("");
     try {
-      const page = await manualDepositsApi.list(organizationId, employerId, reportId, search.trim(), 0, 100);
+      const page = await manualDepositsApi.list(
+        organizationId, employerId, reportId, search.trim(), 0, 100,
+        focusReportProductId && !search.trim() ? focusReportProductId : "",
+      );
       setRows(page.items);
       setContributionLimits(page.contributionLimits ?? []);
+      if (focusReportProductId && !editing) {
+        const focused = page.items.find((item) => item.id === focusReportProductId);
+        if (focused) setEditing(focused);
+      }
     }
     catch (err) { const message = shortError(err instanceof Error ? err.message : "טעינת נתוני ההפקדות נכשלה"); setError(message); notify.error(message); }
     finally { setLoading(false); }
@@ -73,7 +80,7 @@ export function ManualDepositData({ organizationId, employerId, reportId }: { or
         return groups;
       }, {})))
       .catch(() => setProofs({}));
-  }, [organizationId, employerId, reportId]);
+  }, [organizationId, employerId, reportId, focusReportProductId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(query), 300);

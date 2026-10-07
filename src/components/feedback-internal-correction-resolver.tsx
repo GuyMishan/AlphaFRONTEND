@@ -156,7 +156,8 @@ export function FeedbackInternalCorrectionResolver({
       const product = result.workspaceReportProductId
         ? `&focusReportProductId=${encodeURIComponent(result.workspaceReportProductId)}`
         : "";
-      router.push(`/reports/new?resumeReportId=${result.workspaceReportId}&correctionWorkspace=1${product}`);
+      const resolver = `&resolutionResolver=${encodeURIComponent(group.resolverType)}`;
+      router.push(`/reports/new?resumeReportId=${result.workspaceReportId}&correctionWorkspace=1${product}${resolver}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "פתיחת סביבת התיקון נכשלה.");
     } finally {
