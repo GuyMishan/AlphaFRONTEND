@@ -150,18 +150,6 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
         employmentId = saved.id;
         personId = saved.personId;
       }
-      await employerInterfaceApi.updateEmployeeProfile(organizationId, employerId, employmentId, {
-        birthDate: normalized.birthDate,
-        gender: normalized.gender,
-        email: normalized.email,
-        mobile: normalized.mobile,
-        city: normalized.city,
-        street: normalized.street,
-        houseNumber: normalized.houseNumber,
-        apartment: normalized.apartment,
-        postalCode: normalized.postalCode,
-        postOfficeBox: normalized.postOfficeBox,
-      });
       const savedEmployee: Employee = {
         id: employmentId,
         personId,
