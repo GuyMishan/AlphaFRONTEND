@@ -365,7 +365,9 @@ export default function NewReportPage() {
     }
 
     if (correctionWorkspaceEntry && resolutionSourceReportId && resolutionProblemIds.length) {
-      const expectedStage = resolutionResolver === "employmentStatus" ? "deposits" : "employees";
+      const expectedStage = ["contribution", "employmentStatus", "payment", "reportCorrection"].includes(resolutionResolver)
+        ? "deposits"
+        : "employees";
       if (stage === expectedStage) {
         await reportFeedbackApi.resolveProblems(
           scope.organizationId,
