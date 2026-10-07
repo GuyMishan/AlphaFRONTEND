@@ -133,3 +133,6 @@
 
 
 - Feedback resolution progress is persisted per `problemId` rather than per group. Payment edits opened from Reports & Feedback carry only the active group's problem IDs into the existing deposit editor; after that editor's validation/save succeeds, the backend resolves those individual problems and the feedback modal reopens on the remaining queue. Document resolver rows upload one malware-checked PDF per problem and resolve only that problem. Correction-workspace routes carry source-report/problem IDs in the handoff and resolve them only after the relevant employees/deposits validation stage succeeds; decision problems are never auto-resolved by an edit save.
+
+
+- Stage 7 adds `feedback-decision-resolver.tsx` for per-problem Decision/Review handling inside the existing resolution modal. It renders only actions projected by the backend playbook contract, keeps decisions independent inside grouped UI, shows the latest persisted decision/note, routes correction decisions into the existing correction workspace with the exact `ProblemId`, and keeps external/reconcile/link-original handoffs visibly pending rather than falsely closing them. Employee-master editing still uses the shared `FeedbackEmployeeResolver` and its own `canEditEmployee` capability even when the surrounding Decision group is executable via report permissions.
