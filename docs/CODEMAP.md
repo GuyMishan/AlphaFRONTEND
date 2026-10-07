@@ -136,3 +136,5 @@
 
 
 - Stage 7 adds `feedback-decision-resolver.tsx` for per-problem Decision/Review handling inside the existing resolution modal. It renders only actions projected by the backend playbook contract, keeps decisions independent inside grouped UI, shows the latest persisted decision/note, routes correction decisions into the existing correction workspace with the exact `ProblemId`, and keeps external/reconcile/link-original handoffs visibly pending rather than falsely closing them. Employee-master editing still uses the shared `FeedbackEmployeeResolver` and its own `canEditEmployee` capability even when the surrounding Decision group is executable via report permissions.
+
+ Mixed Edit+Decision groups render both resolver surfaces against filtered problem subsets; actions pass explicit ProblemIds to the backend so grouped navigation never changes per-error resolution semantics.
