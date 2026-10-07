@@ -171,7 +171,30 @@ export function FeedbackDecisionResolver({
               type="button"
               className="btn btn-secondary"
               disabled={busy || !group.canExecute}
-              onClick={() => void decide(problem, "external")}
+              onClick={() => void (async () => {
+                const note = notes[problem.problemId]?.trim() ?? "";
+                if (!note) {
+                  setError("יש לכתוב הערה קצרה לפני פתיחת תיק טיפול חיצוני.");
+                  return;
+                }
+                setBusyProblemId(problem.problemId);
+                setError("");
+                try {
+                  await reportFeedbackApi.openExternalCase(
+                    organizationId,
+                    employerId,
+                    problem.reportId,
+                    group.groupKey,
+                    [problem.problemId],
+                    note,
+                  );
+                  onChanged();
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "פתיחת תיק הטיפול נכשלה.");
+                } finally {
+                  setBusyProblemId("");
+                }
+              })()}
             >
               <ExternalLink size={16} />העברה לטיפול חיצוני
             </button> : null}
