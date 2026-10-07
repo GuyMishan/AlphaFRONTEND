@@ -58,6 +58,7 @@ export function ReportDepositFeedbackModal({
   reportProductId,
   hasFeedback,
   onClose,
+  onEdit,
 }: {
   organizationId: string;
   employerId: string;
@@ -65,6 +66,7 @@ export function ReportDepositFeedbackModal({
   reportProductId: string;
   hasFeedback: boolean;
   onClose: () => void;
+  onEdit?: () => void;
 }) {
   const [details, setDetails] = useState<ReportFeedbackDepositDetails | null>(null);
   const [evidence, setEvidence] = useState<PaymentConfirmation[]>([]);
@@ -129,7 +131,10 @@ export function ReportDepositFeedbackModal({
           .filter(Boolean).join(" · ")
       : ""}
     onClose={onClose}
-    actions={<button type="button" className="btn btn-secondary" onClick={onClose}>סגירה</button>}
+    actions={<>
+      <button type="button" className="btn btn-secondary" onClick={onClose}>סגירה</button>
+      {onEdit ? <button type="button" className="btn btn-primary" onClick={onEdit}>תיקון הפקדה</button> : null}
+    </>}
   >
     {loading ? <div className="empty">טוען פרטי הפקדה ומשוב...</div> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
@@ -240,7 +245,7 @@ export function ReportDepositFeedbackModal({
             };
 
             const scopeOrder: Array<(typeof details.manufacturerContributions)[number]["errorScope"]> = [
-              "employee", "deposit", "contribution", "report", "money",
+              "employee", "deposit", "contribution",
             ];
             const groupedErrors = scopeOrder
               .map((scope) => {
