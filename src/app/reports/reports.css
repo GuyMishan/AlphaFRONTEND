@@ -692,3 +692,12 @@
     padding-inline-start: 12px;
   }
 }
+
+.contribution-error-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+}
+.contribution-error-list .contribution-feedback-message {
+  margin-top: 0;
+}
