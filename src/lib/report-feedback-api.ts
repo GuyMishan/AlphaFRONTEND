@@ -271,6 +271,9 @@ export type FeedbackResolutionProblem = {
   latestDecision: string | null;
   latestDecisionNote: string;
   latestDecisionAt: string | null;
+  externalCaseId: string | null;
+  externalCaseStatus: string;
+  externalCaseAssigneeName: string;
   receivedAt: string;
 };
 
@@ -293,6 +296,44 @@ export type FeedbackResolutionContext = {
   unsupportedCodes: number[];
   problems: FeedbackResolutionProblem[];
   groups: FeedbackResolutionGroup[];
+};
+
+export type ExternalFeedbackCase = {
+  id: string;
+  caseKey: string;
+  status: "open" | "waiting" | "resolved";
+  destination: string;
+  subject: string;
+  messageTemplate: string;
+  assignedToUserId: string | null;
+  assigneeName: string;
+  createdAt: string;
+  updatedAt: string;
+  closedAt: string | null;
+  problems: Array<{
+    problemId: string;
+    reportId: string;
+    reportProductId: string | null;
+    errorCode: number;
+    description: string;
+    createdAt: string;
+  }>;
+  events: Array<{
+    id: string;
+    eventType: string;
+    note: string;
+    actorUserId: string;
+    actorName: string;
+    createdAt: string;
+  }>;
+  attachments: Array<{
+    id: string;
+    originalFileName: string;
+    contentType: string;
+    sizeBytes: number;
+    sha256: string;
+    createdAt: string;
+  }>;
 };
 
 export type FeedbackResolutionProblemSelector = {
@@ -421,6 +462,96 @@ export const reportFeedbackApi = {
       }),
     },
   ),
+
+  openExternalCase: (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    groupKey: string,
+    problemIds: string[],
+    note = "",
+  ) => request<ExternalFeedbackCase>(
+    `${base(organizationId, employerId)}/${reportId}/resolution-actions/external-case/open`,
+    { method: "POST", body: JSON.stringify({ groupKey, problemIds, note }) },
+  ),
+
+  externalCase: (organizationId: string, employerId: string, caseId: string) =>
+    request<ExternalFeedbackCase>(
+      `${base(organizationId, employerId)}/external-cases/${caseId}`,
+    ),
+
+  addExternalCaseNote: (
+    organizationId: string,
+    employerId: string,
+    caseId: string,
+    note: string,
+  ) => request<ExternalFeedbackCase>(
+    `${base(organizationId, employerId)}/external-cases/${caseId}/events`,
+    { method: "POST", body: JSON.stringify({ note }) },
+  ),
+
+  assignExternalCase: (
+    organizationId: string,
+    employerId: string,
+    caseId: string,
+    assignToMe: boolean,
+  ) => request<ExternalFeedbackCase>(
+    `${base(organizationId, employerId)}/external-cases/${caseId}/assignment`,
+    { method: "PUT", body: JSON.stringify({ assignToMe }) },
+  ),
+
+  updateExternalCaseStatus: (
+    organizationId: string,
+    employerId: string,
+    caseId: string,
+    status: "open" | "waiting" | "resolved",
+    note = "",
+  ) => request<ExternalFeedbackCase>(
+    `${base(organizationId, employerId)}/external-cases/${caseId}/status`,
+    { method: "PUT", body: JSON.stringify({ status, note }) },
+  ),
+
+  updateExternalCaseTemplate: (
+    organizationId: string,
+    employerId: string,
+    caseId: string,
+    destination: string,
+    subject: string,
+    messageTemplate: string,
+  ) => request<ExternalFeedbackCase>(
+    `${base(organizationId, employerId)}/external-cases/${caseId}/template`,
+    { method: "PUT", body: JSON.stringify({ destination, subject, messageTemplate }) },
+  ),
+
+  uploadExternalCaseAttachment: async (
+    organizationId: string,
+    employerId: string,
+    caseId: string,
+    file: File,
+  ) => {
+    const body = new FormData();
+    body.set("file", file);
+    const response = await backendFetch(
+      `${base(organizationId, employerId)}/external-cases/${caseId}/attachments`,
+      { method: "POST", body, cache: "no-store" },
+    );
+    if (!response.ok) throw new Error(`העלאת הקובץ נכשלה (${response.status}).`);
+    return response.json() as Promise<ExternalFeedbackCase>;
+  },
+
+  downloadExternalCaseAttachment: async (
+    organizationId: string,
+    employerId: string,
+    caseId: string,
+    attachmentId: string,
+  ) => {
+    const response = await backendFetch(
+      `${base(organizationId, employerId)}/external-cases/${caseId}/attachments/${attachmentId}`,
+      { cache: "no-store" },
+    );
+    if (!response.ok) throw new Error(`הורדת הקובץ נכשלה (${response.status}).`);
+    return response.blob();
+  },
 
   decideProblem: (
     organizationId: string,
