@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft, FilePenLine, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { UiFileUpload } from "@/components/ui-controls";
+import { UiFileUpload } from "@/components/ui-file-upload";
 import {
   reportFeedbackApi,
   type FeedbackResolutionGroup,
