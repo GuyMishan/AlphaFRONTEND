@@ -101,7 +101,7 @@
 .report-feedback-table .data-table-row > td:last-child .report-cell-content {
   justify-content: flex-end;
 }
-.report-row-actions { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 0; }
+.report-row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
 .report-money { font-weight: 700; white-space: nowrap; }
 .report-feedback-badge,
 .feedback-state {
@@ -190,7 +190,7 @@
 .report-deposit-feedback-error-list { display: grid; gap: 5px; max-width: 300px; }
 .report-deposit-feedback-error-list > span + span { padding-top: 5px; border-top: 1px solid var(--line); }
 .report-deposits-load-more { justify-self: center; }
-.report-deposit-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; min-width: 0; white-space: nowrap; }
+.report-deposit-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; min-width: 0; padding-inline-start: 8px; white-space: nowrap; }
 .report-deposit-row-actions .ui-action-menu { display: inline-flex; flex: 0 0 auto; }
 
 .report-deposit-feedback-modal .app-modal-body { overflow-y: auto; overflow-x: hidden; min-width: 0; }
@@ -621,9 +621,23 @@
   text-align: right;
   cursor: pointer;
 }
-.employer-error-section > span {
+.employer-error-section > span:not(.employer-error-section-cta) {
   display: grid;
   gap: 1px;
+}
+.employer-error-section-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  margin-inline-start: 8px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 .employer-error-section b {
   font-size: 13px;
@@ -640,4 +654,8 @@
   .report-page-actions .feedback-errors-button {
     width: 100%;
   }
+}
+
+.feedback-errors-only .contribution-comparison-list {
+  display: none;
 }
