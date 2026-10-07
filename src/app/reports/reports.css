@@ -875,6 +875,48 @@
 .feedback-resolution-group-problem .feedback-resolution-type {
   white-space: nowrap;
 }
+.feedback-employee-resolver {
+  display: grid;
+  gap: 14px;
+}
+.feedback-resolution-section-head h3 {
+  margin: 0;
+}
+.feedback-resolution-section-head p {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+.feedback-resolution-compare {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.feedback-resolution-compare-head,
+.feedback-resolution-compare-row {
+  display: grid;
+  grid-template-columns: minmax(110px, .8fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 12px;
+}
+.feedback-resolution-compare-head {
+  background: color-mix(in srgb, var(--bg) 60%, var(--surface));
+  border-bottom: 1px solid var(--line);
+}
+.feedback-resolution-compare-row + .feedback-resolution-compare-row {
+  border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+}
+.feedback-resolution-compare-row > span:first-child {
+  color: var(--muted);
+  font-weight: 700;
+}
+.feedback-resolution-compare-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.feedback-resolution-employee-form {
+  padding-top: 2px;
+}
 .feedback-resolution-placeholder {
   display: flex;
   align-items: flex-start;
@@ -909,6 +951,14 @@
   }
   .feedback-resolution-group-problem {
     grid-template-columns: 1fr;
+  }
+  .feedback-resolution-compare-head,
+  .feedback-resolution-compare-row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  .feedback-resolution-compare-head b:not(:first-child) {
+    display: none;
   }
   .feedback-resolution-placeholder {
     padding: 12px;

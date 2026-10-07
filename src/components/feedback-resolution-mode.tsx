@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, FilePenLine, ListChecks } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
+import { FeedbackEmployeeResolver } from "@/components/feedback-employee-resolver";
 import {
   reportFeedbackApi,
   type FeedbackResolutionContext,
@@ -108,6 +109,7 @@ export function FeedbackResolutionMode({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,7 +129,7 @@ export function FeedbackResolutionMode({
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [contextType, organizationId, employerId, reportId, reportProductId]);
+  }, [contextType, organizationId, employerId, reportId, reportProductId, refreshToken]);
 
   const groups = useMemo(
     () => context?.canResolve ? filterGroups(context, selector) : [],
@@ -236,19 +238,26 @@ export function FeedbackResolutionMode({
         </div>
       </section>
 
-      <section className="feedback-resolution-placeholder">
-        <AlertTriangle size={20} aria-hidden="true" />
-        <div>
-          <strong>קבוצת הטיפול מוכנה ל־resolver.</strong>
-          <p>
-            {activeGroup.problems.length === 1
-              ? "התקלה תטופל כיחידה אחת."
-              : `${activeGroup.problems.length} התקלות בקבוצה דורשות אותו יעד טיפול ולכן ירוכזו יחד.`}
-            {" "}Resolver מסוג <b dir="ltr">{activeGroup.resolverType}</b> יטפל בקבוצה בשלבים הבאים;
-            בשלב 4 עדיין לא מתבצע שינוי בנתונים.
-          </p>
-        </div>
-      </section>
+      {activeGroup.resolverType === "employee"
+        ? <FeedbackEmployeeResolver
+            organizationId={organizationId}
+            employerId={employerId}
+            group={activeGroup}
+            canEdit={context.canEditEmployee}
+            onChanged={() => setRefreshToken(value => value + 1)}
+          />
+        : <section className="feedback-resolution-placeholder">
+            <AlertTriangle size={20} aria-hidden="true" />
+            <div>
+              <strong>קבוצת הטיפול מוכנה ל־resolver.</strong>
+              <p>
+                {activeGroup.problems.length === 1
+                  ? "התקלה תטופל כיחידה אחת."
+                  : `${activeGroup.problems.length} התקלות בקבוצה דורשות אותו יעד טיפול ולכן ירוכזו יחד.`}
+                {" "}Resolver מסוג <b dir="ltr">{activeGroup.resolverType}</b> ייכנס בשלבים הבאים.
+              </p>
+            </div>
+          </section>}
     </> : null}
   </AppModal>;
 }
