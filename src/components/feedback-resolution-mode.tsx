@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, FilePenLine, ListChecks } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { FeedbackEmployeeResolver } from "@/components/feedback-employee-resolver";
+import { FeedbackDecisionResolver } from "@/components/feedback-decision-resolver";
 import { FeedbackInternalCorrectionResolver } from "@/components/feedback-internal-correction-resolver";
 import {
   reportFeedbackApi,
@@ -241,12 +242,20 @@ export function FeedbackResolutionMode({
         </div>
       </section>
 
+      {activeGroup.problems.some(problem => problem.resolutionType === "decision") ? <FeedbackDecisionResolver
+          organizationId={organizationId}
+          employerId={employerId}
+          group={activeGroup}
+          onChanged={() => setRefreshToken(value => value + 1)}
+          onEditDeposit={onEditDeposit}
+        /> : null}
+
       {activeGroup.resolverType === "employee"
         ? <FeedbackEmployeeResolver
             organizationId={organizationId}
             employerId={employerId}
             group={activeGroup}
-            canEdit={activeGroup.canExecute}
+            canEdit={Boolean(context?.canEditEmployee)}
             onChanged={() => setRefreshToken(value => value + 1)}
           />
         : ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection"].includes(activeGroup.resolverType)
@@ -258,7 +267,9 @@ export function FeedbackResolutionMode({
               onEditDeposit={onEditDeposit}
               onChanged={() => setRefreshToken(value => value + 1)}
             />
-          : <section className="feedback-resolution-placeholder">
+          : activeGroup.problems.some(problem => problem.resolutionType === "decision")
+            ? null
+            : <section className="feedback-resolution-placeholder">
             <AlertTriangle size={20} aria-hidden="true" />
             <div>
               <strong>קבוצת הטיפול מוכנה ל־resolver.</strong>

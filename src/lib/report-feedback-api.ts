@@ -268,6 +268,9 @@ export type FeedbackResolutionProblem = {
   reportedValues: Record<string, string | null>;
   currentValues: Record<string, string | null>;
   feedbackValues: Record<string, string | null>;
+  latestDecision: string | null;
+  latestDecisionNote: string;
+  latestDecisionAt: string | null;
   receivedAt: string;
 };
 
@@ -415,6 +418,26 @@ export const reportFeedbackApi = {
         reportProductId: reportProductId || null,
       }),
     },
+  ),
+
+  decideProblem: (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    problemId: string,
+    outcome: "confirm" | "correction" | "external" | "reconcile" | "link-original",
+    note = "",
+  ) => request<{
+    decisionId: string;
+    problemId: string;
+    outcome: string;
+    resolved: boolean;
+    workspaceReportId: string | null;
+    workspaceReportProductId: string | null;
+    workspaceReportEmployeeId: string | null;
+  }>(
+    `${base(organizationId, employerId)}/${reportId}/resolution-actions/decision`,
+    { method: "POST", body: JSON.stringify({ problemId, outcome, note }) },
   ),
 
   resolveProblems: (
