@@ -70,13 +70,6 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    if (!employee) return;
-    employerInterfaceApi.employeeProfile(organizationId, employerId, employee.id).then((profile) => {
-      setForm((current) => ({ ...current, ...profile }));
-    }).catch(() => { /* profile may not yet be completed */ });
-  }, [organizationId, employerId, employee?.id]);
-
   function update(key: keyof EmployeeInput, value: string | number | null) {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: undefined }));
