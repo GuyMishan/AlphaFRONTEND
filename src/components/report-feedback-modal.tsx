@@ -80,6 +80,7 @@ export function ReportFeedbackModal({
   reportProductId,
   hasFeedback = false,
   onClose,
+  onEditDeposit,
 }: {
   mode: ReportFeedbackModalMode;
   organizationId: string;
@@ -88,6 +89,7 @@ export function ReportFeedbackModal({
   reportProductId?: string;
   hasFeedback?: boolean;
   onClose: () => void;
+  onEditDeposit?: () => void;
 }) {
   const [employerContext, setEmployerContext] = useState<EmployerFeedbackContext | null>(null);
   const [reportContext, setReportContext] = useState<ReportFeedbackContext | null>(null);
@@ -128,6 +130,7 @@ export function ReportFeedbackModal({
       reportProductId={reportProductId}
       hasFeedback={hasFeedback}
       onClose={onClose}
+      onEdit={onEditDeposit}
     />;
   }
 
