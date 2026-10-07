@@ -657,6 +657,38 @@
   }
 }
 
-.feedback-errors-only .contribution-comparison-list {
-  display: none;
+@media (max-width: 760px) {
+  .report-feedback-table th:last-child,
+  .report-feedback-table td:last-child {
+    min-width: 210px;
+    width: 210px;
+  }
+
+  .report-feedback-table .data-table-row > td:last-child .report-cell-content,
+  .report-row-actions {
+    min-width: 190px;
+  }
+
+  .report-deposits-grid {
+    min-width: 1120px;
+  }
+
+  .report-deposits-header,
+  .report-deposits-item {
+    grid-template-columns:
+      minmax(115px,1fr)
+      minmax(90px,.7fr)
+      minmax(150px,1.25fr)
+      minmax(90px,.7fr)
+      minmax(110px,.9fr)
+      minmax(110px,.9fr)
+      minmax(110px,.9fr)
+      minmax(110px,.8fr)
+      minmax(190px,1.05fr);
+  }
+
+  .report-deposit-row-actions {
+    min-width: 180px;
+    padding-inline-start: 12px;
+  }
 }
