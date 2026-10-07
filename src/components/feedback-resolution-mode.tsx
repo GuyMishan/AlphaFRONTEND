@@ -5,6 +5,7 @@ import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, FileP
 import { AppModal } from "@/components/app-modal";
 import { FeedbackEmployeeResolver } from "@/components/feedback-employee-resolver";
 import { FeedbackDecisionResolver } from "@/components/feedback-decision-resolver";
+import { FeedbackExternalCaseResolver } from "@/components/feedback-external-case-resolver";
 import { FeedbackInternalCorrectionResolver } from "@/components/feedback-internal-correction-resolver";
 import {
   reportFeedbackApi,
@@ -253,6 +254,16 @@ export function FeedbackResolutionMode({
           onChanged={() => setRefreshToken(value => value + 1)}
           onEditDeposit={onEditDeposit}
         /> : null}
+
+      {activeGroup.problems.some(problem =>
+        problem.resolutionType === "external" || Boolean(problem.externalCaseId))
+        ? <FeedbackExternalCaseResolver
+            organizationId={organizationId}
+            employerId={employerId}
+            group={activeGroup}
+            onChanged={() => setRefreshToken(value => value + 1)}
+          />
+        : null}
 
       {activeGroup.resolverType === "employee"
         ? <FeedbackEmployeeResolver
