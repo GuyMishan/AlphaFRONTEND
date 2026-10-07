@@ -128,3 +128,5 @@
 
 
 - Stage 6 activates the internal-correction resolvers for `contribution`, `productPolicy`, `employmentStatus`, `payment`, `documents` and `reportCorrection`. Each resolver shows only its relevant reported/current/feedback fields in the resolution modal, then asks the backend to validate the active resolver group and create/reuse the formal correction workspace. Editing continues in the existing report/deposit/product/document components through `/reports/new`, so submitted source reports remain immutable and no parallel resolver-specific forms are introduced.
+
+- Feedback-resolution audit hardening keeps permission-blocked groups visible in the queue instead of dropping them from the denominator. Internal correction UI is now enabled only when every problem in the group is `edit`, has `correctionWorkspace` behavior and advertises `prepareCorrection`; payment revalidation/dynamic flows and document external-follow-up flows therefore remain fail-closed until their dedicated resolver actions are implemented. Grouped resolver comparisons render data for every problem in the group rather than only the first feedback row.
