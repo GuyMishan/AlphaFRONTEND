@@ -554,6 +554,41 @@ export const reportFeedbackApi = {
     return response.blob();
   },
 
+  originalMovementCandidates: (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    problemId: string,
+  ) => request<{ items: Array<{
+    contributionId: string;
+    recordIdentifier: string;
+    reportId: string;
+    reportingMonth: string;
+    salaryMonth: string;
+    amount: number;
+    percentage: number;
+    productName: string;
+    policyNumber: string;
+  }> }>(
+    `${base(organizationId, employerId)}/${reportId}/resolution-actions/${encodeURIComponent(problemId)}/original-movement-candidates`,
+  ),
+
+  linkOriginalMovement: (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    problemId: string,
+    contributionId: string,
+  ) => request<{
+    resolvedProblemId: string;
+    recordIdentifier: string;
+    workspaceReportId: string;
+    workspaceReportProductId: string | null;
+  }>(
+    `${base(organizationId, employerId)}/${reportId}/resolution-actions/${encodeURIComponent(problemId)}/link-original`,
+    { method: "POST", body: JSON.stringify({ contributionId }) },
+  ),
+
   decideProblem: (
     organizationId: string,
     employerId: string,

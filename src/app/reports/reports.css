@@ -1118,3 +1118,17 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+.feedback-original-movement-picker {
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .feedback-original-movement-picker {
+    grid-template-columns: 1fr;
+  }
+}

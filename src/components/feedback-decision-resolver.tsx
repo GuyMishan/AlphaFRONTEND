@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, CheckCircle2, ExternalLink, FilePenLine, Link2, Scale, WalletCards } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { UiTextarea } from "@/components/ui-controls";
+import { UiSelect, UiTextarea } from "@/components/ui-controls";
 import {
   reportFeedbackApi,
   type FeedbackResolutionGroup,
@@ -45,6 +45,8 @@ export function FeedbackDecisionResolver({
   const router = useRouter();
   const [busyProblemId, setBusyProblemId] = useState("");
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [movementCandidates, setMovementCandidates] = useState<Record<string, Awaited<ReturnType<typeof reportFeedbackApi.originalMovementCandidates>>["items"]>>({});
+  const [selectedMovement, setSelectedMovement] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
 
   const decisionProblems = group.problems.filter(problem => problem.resolutionType === "decision");
@@ -106,7 +108,7 @@ export function FeedbackDecisionResolver({
     <div className="feedback-decision-list">
       {decisionProblems.map(problem => {
         const actions = new Set(problem.availableActions);
-        const requiresNote = actions.has("openExternalCase") || actions.has("reconcile") || actions.has("linkOriginalRecord");
+        const requiresNote = actions.has("openExternalCase") || actions.has("reconcile");
         const latest = latestDecisionLabel(problem.latestDecision);
         const busy = busyProblemId === problem.problemId;
 
@@ -232,14 +234,85 @@ export function FeedbackDecisionResolver({
               <Scale size={16} />העברה להתאמת כספים
             </button> : null}
 
-            {actions.has("linkOriginalRecord") ? <button
-              type="button"
-              className="btn btn-secondary"
-              disabled={busy || !group.canExecute}
-              onClick={() => void decide(problem, "link-original")}
-            >
-              <Link2 size={16} />איתור תנועה מקורית
-            </button> : null}
+            {actions.has("linkOriginalRecord") ? <>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={busy || !group.canExecute}
+                onClick={() => void (async () => {
+                  setBusyProblemId(problem.problemId);
+                  setError("");
+                  try {
+                    const result = await reportFeedbackApi.originalMovementCandidates(
+                      organizationId,
+                      employerId,
+                      problem.reportId,
+                      problem.problemId,
+                    );
+                    setMovementCandidates((current) => ({ ...current, [problem.problemId]: result.items }));
+                    if (result.items.length === 1) {
+                      setSelectedMovement((current) => ({
+                        ...current,
+                        [problem.problemId]: result.items[0].contributionId,
+                      }));
+                    }
+                    if (!result.items.length) setError("לא נמצאה תנועה קודמת מתאימה. ניתן להעביר את הבעיה לטיפול חיצוני אם הפעולה זמינה.");
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "איתור התנועות הקודמות נכשל.");
+                  } finally {
+                    setBusyProblemId("");
+                  }
+                })()}
+              >
+                <Link2 size={16} />איתור תנועה מקורית
+              </button>
+              {movementCandidates[problem.problemId] ? <div className="feedback-original-movement-picker">
+                <UiSelect
+                  aria-label="בחירת תנועה מקורית"
+                  value={selectedMovement[problem.problemId] ?? ""}
+                  disabled={busy || !movementCandidates[problem.problemId].length}
+                  onChange={(event) => setSelectedMovement((current) => ({
+                    ...current,
+                    [problem.problemId]: event.target.value,
+                  }))}
+                >
+                  <option value="">בחירת תנועה קודמת</option>
+                  {movementCandidates[problem.problemId].map((candidate) => <option
+                    key={candidate.contributionId}
+                    value={candidate.contributionId}
+                  >
+                    {candidate.reportingMonth.slice(0, 7)} · {candidate.productName || candidate.policyNumber || "מוצר"} · {candidate.amount.toLocaleString("he-IL")} ₪
+                  </option>)}
+                </UiSelect>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={busy || !selectedMovement[problem.problemId]}
+                  onClick={() => void (async () => {
+                    const contributionId = selectedMovement[problem.problemId];
+                    if (!contributionId) return;
+                    setBusyProblemId(problem.problemId);
+                    setError("");
+                    try {
+                      await reportFeedbackApi.linkOriginalMovement(
+                        organizationId,
+                        employerId,
+                        problem.reportId,
+                        problem.problemId,
+                        contributionId,
+                      );
+                      onChanged();
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "קישור התנועה המקורית נכשל.");
+                    } finally {
+                      setBusyProblemId("");
+                    }
+                  })()}
+                >
+                  קישור ושמירה
+                </button>
+              </div> : null}
+            </> : null}
           </div>
         </article>;
       })}
