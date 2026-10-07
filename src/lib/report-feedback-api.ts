@@ -388,6 +388,17 @@ export const reportFeedbackApi = {
     request<FeedbackResolutionContext>(
       `${base(organizationId, employerId)}/${reportId}/deposits/${reportProductId}/resolution-context`,
     ),
+  validateEmployeeResolutionAction: (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    reportProductId: string,
+    groupKey: string,
+    employmentId: string,
+  ) => request<{ groupKey: string; employmentId: string }>(
+    `${base(organizationId, employerId)}/${reportId}/deposits/${reportProductId}/resolution-actions/employee/validate`,
+    { method: "POST", body: JSON.stringify({ groupKey, employmentId }) },
+  ),
 
   employerContext: (organizationId: string, employerId: string) =>
     request<EmployerFeedbackContext>(`${base(organizationId, employerId)}/employer-context`),

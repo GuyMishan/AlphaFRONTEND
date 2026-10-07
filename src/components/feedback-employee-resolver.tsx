@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { EmployeeForm } from "@/components/employee-form";
 import { alphaApi } from "@/lib/api";
-import type { FeedbackResolutionGroup } from "@/lib/report-feedback-api";
+import { reportFeedbackApi, type FeedbackResolutionGroup } from "@/lib/report-feedback-api";
 import type { Employee } from "@/lib/types";
 
 const fields = [
@@ -140,6 +140,18 @@ export function FeedbackEmployeeResolver({
         editable={canEdit}
         embedded
         submitLabel="שמירת פרטי העובד"
+        beforeSave={async () => {
+          if (!problem.reportId || !problem.reportProductId || !employmentId)
+            throw new Error("הקשר הפתרון אינו מלא. רעננו את המשוב ונסו שוב.");
+          await reportFeedbackApi.validateEmployeeResolutionAction(
+            organizationId,
+            employerId,
+            problem.reportId,
+            problem.reportProductId,
+            group.groupKey,
+            employmentId,
+          );
+        }}
         onSaved={async savedEmployee => {
           setEmployee(savedEmployee);
           setSaved(true);

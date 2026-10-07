@@ -27,9 +27,10 @@ type EmployeeFormProps = {
   formId?: string;
   hideActions?: boolean;
   onSavingChange?: (saving: boolean) => void;
+  beforeSave?: (employee: EmployeeInput) => void | Promise<void>;
 };
 
-export function EmployeeForm({ organizationId, employerId, employee, employer, editable = true, embedded = false, onSaved, onCancel, submitLabel, formId, hideActions = false, onSavingChange }: EmployeeFormProps) {
+export function EmployeeForm({ organizationId, employerId, employee, employer, editable = true, embedded = false, onSaved, onCancel, submitLabel, formId, hideActions = false, onSavingChange, beforeSave }: EmployeeFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<EmployeeInput>({
     nationalId: employee?.nationalId ?? "",
@@ -138,6 +139,7 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
     if (Object.values(nextErrors).some(Boolean)) { toast.error("יש לתקן את השדות המסומנים באדום."); return; }
     setSaving(true);
     try {
+      await beforeSave?.(normalized);
       let employmentId: string;
       let personId = employee?.personId ?? "";
       if (employee) {
