@@ -140,15 +140,20 @@ function feedbackErrorScopeLabel(scope: keyof ReportFeedbackDepositRow["feedback
 
 function feedbackErrorSummaryRows(deposit: ReportFeedbackDepositRow) {
   const order: Array<keyof ReportFeedbackDepositRow["feedbackErrorSummary"]> = [
-    "deposit", "employee", "money", "report", "contribution",
+    "employee", "deposit", "contribution",
   ];
   return order
     .map((scope) => ({ scope, count: deposit.feedbackErrorSummary?.[scope] ?? 0 }))
     .filter((item) => item.count > 0);
 }
 
+function depositOwnedErrorCount(deposit: ReportFeedbackDepositRow) {
+  return (deposit.feedbackErrorSummary?.employee ?? 0)
+    + (deposit.feedbackErrorSummary?.deposit ?? 0)
+    + (deposit.feedbackErrorSummary?.contribution ?? 0);
+}
+
 function DepositFeedbackPanel({
-  report,
   content,
   onOpen,
   onLoadMore,
@@ -157,7 +162,6 @@ function DepositFeedbackPanel({
   manufacturerValue,
   onManufacturerValueChange,
 }: {
-  report: ReportFeedbackRow;
   content: ExpandedReportContent;
   onOpen: (deposit: ReportFeedbackDepositRow, view: "details" | "errors") => void;
   onLoadMore: () => void;
@@ -236,9 +240,9 @@ function DepositFeedbackPanel({
           </div>
           <div role="cell" className="muted-inline">{formatDate(deposit.updatedAt)}</div>
           <div role="cell" className="report-deposit-row-actions">
-            {deposit.feedbackStatus === "attention" ? <FeedbackErrorsButton
+            {depositOwnedErrorCount(deposit) > 0 ? <FeedbackErrorsButton
               compact
-              count={deposit.feedbackErrors?.length || undefined}
+              count={depositOwnedErrorCount(deposit)}
               onClick={() => onOpen(deposit, "errors")}
             /> : null}
             <UiActionMenu
@@ -849,7 +853,6 @@ export default function ReportsPage() {
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadExpanded(report, true)}>נסה שוב</button>
           </div> : null}
           {expandedContent[report.id] ? <DepositFeedbackPanel
-            report={report}
             content={expandedContent[report.id]}
             onOpen={(deposit, depositView) => setFeedbackModal({ mode: "deposit", report, deposit, depositView })}
             loading={Boolean(expandedLoading[report.id])}
