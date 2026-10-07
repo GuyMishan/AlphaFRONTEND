@@ -248,6 +248,7 @@ export function FeedbackResolutionMode({
             onChanged={() => setRefreshToken(value => value + 1)}
           />
         : ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection"].includes(activeGroup.resolverType)
+          && activeGroup.problems.every(problem => problem.resolutionType === "edit")
           ? <FeedbackInternalCorrectionResolver
               organizationId={organizationId}
               employerId={employerId}
