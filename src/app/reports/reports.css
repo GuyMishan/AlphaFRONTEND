@@ -655,6 +655,15 @@
   .report-page-actions .feedback-errors-button {
     width: 100%;
   }
+  .employer-error-section {
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: right;
+  }
+  .employer-error-section-cta {
+    margin-inline-start: auto;
+    margin-inline-end: 0;
+  }
 }
 
 @media (max-width: 760px) {
