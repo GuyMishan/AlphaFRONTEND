@@ -133,8 +133,8 @@ export function FeedbackResolutionMode({
   }, [contextType, organizationId, employerId, reportId, reportProductId, refreshToken]);
 
   const groups = useMemo(() => {
-    if (!context?.canResolve || context.unsupportedCodes.length) return [];
-    return filterGroups(context, selector).filter(group => group.canExecute);
+    if (!context || context.unsupportedCodes.length) return [];
+    return filterGroups(context, selector);
   }, [context, selector]);
   const safeIndex = Math.min(activeIndex, Math.max(groups.length - 1, 0));
   const activeGroup = groups[safeIndex];
@@ -247,8 +247,11 @@ export function FeedbackResolutionMode({
             canEdit={activeGroup.canExecute}
             onChanged={() => setRefreshToken(value => value + 1)}
           />
-        : ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection"].includes(activeGroup.resolverType)
-          && activeGroup.problems.every(problem => problem.resolutionType === "edit")
+        : ["contribution", "productPolicy", "employmentStatus", "reportCorrection"].includes(activeGroup.resolverType)
+          && activeGroup.problems.every(problem =>
+            problem.resolutionType === "edit"
+            && problem.correctionBehavior === "correctionWorkspace"
+            && problem.availableActions.includes("prepareCorrection"))
           ? <FeedbackInternalCorrectionResolver
               organizationId={organizationId}
               employerId={employerId}
