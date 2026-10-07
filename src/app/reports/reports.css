@@ -660,13 +660,13 @@
 @media (max-width: 760px) {
   .report-feedback-table th:last-child,
   .report-feedback-table td:last-child {
-    min-width: 210px;
-    width: 210px;
+    min-width: 240px;
+    width: 240px;
   }
 
   .report-feedback-table .data-table-row > td:last-child .report-cell-content,
   .report-row-actions {
-    min-width: 190px;
+    min-width: 220px;
   }
 
   .report-deposits-grid {
@@ -684,12 +684,13 @@
       minmax(110px,.9fr)
       minmax(110px,.9fr)
       minmax(110px,.8fr)
-      minmax(190px,1.05fr);
+      minmax(140px,140px);
   }
 
   .report-deposit-row-actions {
-    min-width: 180px;
-    padding-inline-start: 12px;
+    min-width: 140px;
+    max-width: 140px;
+    padding-inline-start: 8px;
   }
 }
 
