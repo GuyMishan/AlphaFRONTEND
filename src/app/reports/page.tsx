@@ -24,7 +24,6 @@ import { AppModal } from "@/components/app-modal";
 import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { DepositPaymentEditor } from "@/components/manual-deposit-data";
 import { ReportFeedbackModal, type ReportFeedbackModalMode } from "@/components/report-feedback-modal";
-import { FeedbackResolveButton } from "@/components/feedback-resolve-button";
 import { FeedbackErrorsButton } from "@/components/feedback-errors-button";
 import { Tooltip } from "@/components/tooltip";
 import { UiActionMenu, UiAutocomplete, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
@@ -152,7 +151,6 @@ function DepositFeedbackPanel({
   report,
   content,
   onOpen,
-  onEdit,
   onLoadMore,
   loading,
   loadingMore,
@@ -162,7 +160,6 @@ function DepositFeedbackPanel({
   report: ReportFeedbackRow;
   content: ExpandedReportContent;
   onOpen: (deposit: ReportFeedbackDepositRow) => void;
-  onEdit: (deposit: ReportFeedbackDepositRow) => void;
   onLoadMore: () => void;
   loading: boolean;
   loadingMore: boolean;
@@ -650,9 +647,9 @@ export default function ReportsPage() {
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div>
       : "—" },
     actions: { column: { key: "actions", label: "פעולות", width: "170px" }, render: (row) => <div className="report-row-actions">
-      {!row.canEdit && row.requiresAttentionCount > 0 ? <FeedbackErrorsButton
+      {!row.canEdit && row.reportIssueCount > 0 ? <FeedbackErrorsButton
         compact
-        label={`שגיאות · ${row.requiresAttentionCount}`}
+        label={`שגיאות · ${row.reportIssueCount}`}
         onClick={() => setFeedbackModal({ mode: "report", report: row })}
       /> : null}
       <UiActionMenu
@@ -860,7 +857,6 @@ export default function ReportsPage() {
             report={report}
             content={expandedContent[report.id]}
             onOpen={(deposit) => setFeedbackModal({ mode: "deposit", report, deposit })}
-            onEdit={(deposit) => void editDepositFromFeedback(report, deposit.id)}
             loading={Boolean(expandedLoading[report.id])}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
