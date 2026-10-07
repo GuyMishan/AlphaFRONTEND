@@ -877,7 +877,10 @@ export default function ReportsPage() {
       reportProductId={feedbackModal.deposit?.id}
       hasFeedback={feedbackModal.deposit?.hasFeedback ?? false}
       onClose={() => setFeedbackModal(null)}
-      onEditDeposit={feedbackModal.mode === "deposit" && feedbackModal.report && feedbackModal.deposit
+      onEditDeposit={feedbackModal.mode === "deposit"
+        && feedbackModal.report
+        && feedbackModal.deposit
+        && (feedbackModal.report.canEdit || feedbackModal.report.canStartCorrectionWorkspace)
         ? () => {
             const report = feedbackModal.report!;
             const deposit = feedbackModal.deposit!;
