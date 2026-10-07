@@ -175,6 +175,7 @@ export type ReportFeedbackDepositDetails = {
     intakeStatus: number | null;
     errorCode: number | null;
     errorDescription: string;
+    isResolved: boolean;
     errorScope: "contribution" | "deposit" | "employee" | "money" | "report" | "informational";
     errorAmount: number | null;
     errorDate: string | null;

@@ -28,8 +28,8 @@ function sameNumber(a: number | null | undefined, b: number | null | undefined) 
   return Math.abs(Number(a) - Number(b)) < 0.01;
 }
 
-function isActionableManufacturerError(code: number | null | undefined) {
-  return code != null && code !== 1 && code !== 31;
+function isActionableManufacturerError(code: number | null | undefined, isResolved = false) {
+  return !isResolved && code != null && code !== 1 && code !== 31;
 }
 
 function contributionTypeLabel(code: number | null | undefined) {
@@ -228,7 +228,7 @@ export function ReportDepositFeedbackModal({
           {(() => {
             const rowsByErrorCode = new Map<number, typeof details.manufacturerContributions>();
             for (const item of details.manufacturerContributions) {
-              if (!isActionableManufacturerError(item.errorCode) || item.errorCode == null) continue;
+              if (!isActionableManufacturerError(item.errorCode, item.isResolved) || item.errorCode == null) continue;
               const current = rowsByErrorCode.get(item.errorCode) ?? [];
               current.push(item);
               rowsByErrorCode.set(item.errorCode, current);
@@ -307,12 +307,12 @@ export function ReportDepositFeedbackModal({
               const manufacturer = manufacturerRows.find((item) => item.contributionTypeCode === employer.contributionTypeCode)
                 ?? manufacturerRows[0];
               const localErrorRows = manufacturerRows.filter((item) =>
-                isActionableManufacturerError(item.errorCode)
+                isActionableManufacturerError(item.errorCode, item.isResolved)
                 && item.errorCode != null
                 && !promotedErrorCodes.has(item.errorCode));
               const additionalManufacturerRows = manufacturerRows.filter((item) =>
                 item !== manufacturer
-                && !isActionableManufacturerError(item.errorCode));
+                && !isActionableManufacturerError(item.errorCode, item.isResolved));
               const amountMismatch = manufacturer?.contributionAmount != null && !sameNumber(employer.amount, manufacturer.contributionAmount);
               const rateMismatch = manufacturer?.contributionRate != null && !sameNumber(employer.percentage, manufacturer.contributionRate);
               const salaryMismatch = manufacturer?.calculatedSalary != null && !sameNumber(details.product.salary, manufacturer.calculatedSalary);
