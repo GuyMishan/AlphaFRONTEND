@@ -256,7 +256,9 @@ export function FeedbackResolutionMode({
         /> : null}
 
       {activeGroup.problems.some(problem =>
-        problem.resolutionType === "external" || Boolean(problem.externalCaseId))
+        problem.resolutionType === "external"
+        || Boolean(problem.externalCaseId)
+        || (problem.resolutionType === "edit" && problem.availableActions.includes("openExternalCase")))
         ? <FeedbackExternalCaseResolver
             organizationId={organizationId}
             employerId={employerId}
@@ -282,7 +284,9 @@ export function FeedbackResolutionMode({
               onEditDeposit={onEditDeposit}
               onChanged={() => setRefreshToken(value => value + 1)}
             />
-          : activeGroup.problems.some(problem => problem.resolutionType === "decision")
+          : activeGroup.problems.some(problem =>
+              problem.resolutionType === "decision"
+              || problem.resolutionType === "external")
             ? null
             : <section className="feedback-resolution-placeholder">
             <AlertTriangle size={20} aria-hidden="true" />
