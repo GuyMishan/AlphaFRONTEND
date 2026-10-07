@@ -59,6 +59,7 @@ export function ReportDepositFeedbackModal({
   hasFeedback,
   onClose,
   onEdit,
+  viewMode = "details",
 }: {
   organizationId: string;
   employerId: string;
@@ -67,6 +68,7 @@ export function ReportDepositFeedbackModal({
   hasFeedback: boolean;
   onClose: () => void;
   onEdit?: () => void;
+  viewMode?: "details" | "errors";
 }) {
   const [details, setDetails] = useState<ReportFeedbackDepositDetails | null>(null);
   const [evidence, setEvidence] = useState<PaymentConfirmation[]>([]);
@@ -74,6 +76,7 @@ export function ReportDepositFeedbackModal({
   const [downloadingId, setDownloadingId] = useState("");
   const [error, setError] = useState("");
   const [evidenceError, setEvidenceError] = useState("");
+  const errorsOnly = viewMode === "errors";
 
   useEffect(() => {
     let cancelled = false;
@@ -124,8 +127,8 @@ export function ReportDepositFeedbackModal({
 
   return <AppModal
     width="xl"
-    className="report-deposit-feedback-modal"
-    title={details ? `פרטי הפקדה ומשוב · ${details.employee.name}` : "פרטי הפקדה ומשוב"}
+    className={`report-deposit-feedback-modal${errorsOnly ? " feedback-errors-only" : ""}`}
+    title={details ? `${errorsOnly ? "שגיאות בהפקדה" : "פרטי הפקדה ומשוב"} · ${details.employee.name}` : errorsOnly ? "שגיאות בהפקדה" : "פרטי הפקדה ומשוב"}
     subtitle={details
       ? [details.product.fundCompanyName, details.product.fundName, details.product.policyNumber ? `פוליסה ${details.product.policyNumber}` : ""]
           .filter(Boolean).join(" · ")
@@ -133,7 +136,7 @@ export function ReportDepositFeedbackModal({
     onClose={onClose}
     actions={<>
       <button type="button" className="btn btn-secondary" onClick={onClose}>סגירה</button>
-      {onEdit ? <button type="button" className="btn btn-primary" onClick={onEdit}>תיקון הפקדה</button> : null}
+      {!errorsOnly && onEdit ? <button type="button" className="btn btn-primary" onClick={onEdit}>תיקון הפקדה</button> : null}
     </>}
   >
     {loading ? <div className="empty">טוען פרטי הפקדה ומשוב...</div> : null}
@@ -153,7 +156,7 @@ export function ReportDepositFeedbackModal({
           : <span className="feedback-state pending">טרם התקבל משוב</span>}
       </div>
 
-      <section className="feedback-modal-section">
+      {!errorsOnly ? <section className="feedback-modal-section">
         <div className="feedback-modal-section-head">
           <div><h3>פרטי ההפקדה</h3><p>פרטי התשלום והאסמכתאות כפי שנשמרו בדיווח.</p></div>
         </div>
@@ -189,9 +192,9 @@ export function ReportDepositFeedbackModal({
             </button>)}
           </div> : !evidenceError ? <div className="muted-inline">לא צורפו אישורי תשלום.</div> : null}
         </div>
-      </section>
+      </section> : null}
 
-      {!hasFeedback ? <section className="feedback-modal-section">
+      {!errorsOnly ? <section className="feedback-modal-section">
         <div className="feedback-modal-section-head">
           <div><h3>רכיבי ההפרשה שדווחו</h3><p>הנתונים שנשלחו עבור העובד והמוצר.</p></div>
         </div>
@@ -210,10 +213,10 @@ export function ReportDepositFeedbackModal({
         </div>
       </section> : null}
 
-      {hasFeedback ? <>
+      {hasFeedback && errorsOnly ? <>
         <section className="feedback-modal-section">
           <div className="feedback-modal-section-head">
-            <div><h3>מעסיק מול יצרן</h3><p>השוואה בין מה שדווח לבין הנתונים שהוחזרו במשוב הרשמי.</p></div>
+            <div><h3>שגיאות בהפקדה</h3><p>תקלות עובד, הפקדה/מוצר ורכיבי הפרשה בלבד.</p></div>
           </div>
           {(() => {
             const contributionCount = details.employerContributions.length;
@@ -362,7 +365,9 @@ export function ReportDepositFeedbackModal({
             </>;
           })()}
         </section>
+      </> : null}
 
+      {hasFeedback && !errorsOnly ? <>
         <section className="feedback-modal-section">
           <div className="feedback-modal-section-head">
             <div><h3>מצב כספים</h3><p>מצב הכספים שהוחזר במשוב הרשמי ברמת העברת הכספים.</p></div>
