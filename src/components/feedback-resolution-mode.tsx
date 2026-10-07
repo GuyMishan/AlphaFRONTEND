@@ -133,8 +133,7 @@ export function FeedbackResolutionMode({
 
   const groups = useMemo(() => {
     if (!context?.canResolve || context.unsupportedCodes.length) return [];
-    return filterGroups(context, selector).filter(group =>
-      group.resolverType === "employee" ? context.canEditEmployee : context.canCreateReport);
+    return filterGroups(context, selector).filter(group => group.canExecute);
   }, [context, selector]);
   const safeIndex = Math.min(activeIndex, Math.max(groups.length - 1, 0));
   const activeGroup = groups[safeIndex];
@@ -244,7 +243,7 @@ export function FeedbackResolutionMode({
             organizationId={organizationId}
             employerId={employerId}
             group={activeGroup}
-            canEdit={Boolean(context?.canEditEmployee)}
+            canEdit={activeGroup.canExecute}
             onChanged={() => setRefreshToken(value => value + 1)}
           />
         : <section className="feedback-resolution-placeholder">

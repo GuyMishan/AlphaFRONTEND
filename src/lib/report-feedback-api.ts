@@ -274,6 +274,7 @@ export type FeedbackResolutionGroup = {
   groupKey: string;
   resolverType: string;
   groupStrategy: string;
+  canExecute: boolean;
   problems: FeedbackResolutionProblem[];
 };
 
