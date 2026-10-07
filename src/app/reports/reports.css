@@ -711,3 +711,19 @@
 .contribution-error-list .contribution-feedback-message {
   margin-top: 0;
 }
+
+.contribution-feedback-error-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.contribution-feedback-error-copy > b {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.contribution-feedback-error-copy > span {
+  min-width: 0;
+}
