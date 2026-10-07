@@ -7,6 +7,7 @@ import { FeedbackResolveButton } from "@/components/feedback-resolve-button";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
 import {
   reportFeedbackApi,
+  type FeedbackResolutionProblemSelector,
   type ReportFeedbackDepositDetails,
 } from "@/lib/report-feedback-api";
 import {
@@ -59,6 +60,8 @@ export function ReportDepositFeedbackModal({
   hasFeedback,
   onClose,
   onEdit,
+  onResolveOne,
+  onResolveAll,
   viewMode = "details",
 }: {
   organizationId: string;
@@ -68,6 +71,8 @@ export function ReportDepositFeedbackModal({
   hasFeedback: boolean;
   onClose: () => void;
   onEdit?: () => void;
+  onResolveOne?: (selector: FeedbackResolutionProblemSelector) => void;
+  onResolveAll?: () => void;
   viewMode?: "details" | "errors";
 }) {
   const [details, setDetails] = useState<ReportFeedbackDepositDetails | null>(null);
@@ -268,8 +273,11 @@ export function ReportDepositFeedbackModal({
             return <>
               {errorsOnly && groupedErrors.length ? <div className="feedback-error-groups" role="alert">
                 <div className="feedback-error-groups-title">
-                  <AlertTriangle size={16} />
-                  <strong>בעיות שנמצאו במשוב</strong>
+                  <div className="feedback-error-groups-title-copy">
+                    <AlertTriangle size={16} />
+                    <strong>בעיות שנמצאו במשוב</strong>
+                  </div>
+                  {onResolveAll ? <FeedbackResolveButton label="פתור בעיות" onClick={onResolveAll} /> : null}
                 </div>
                 {groupedErrors.map(({ scope, items }) =>
                   <section className="feedback-error-group" key={scope}>
@@ -284,7 +292,11 @@ export function ReportDepositFeedbackModal({
                             <b>קוד {code}</b>
                             <span>{description}</span>
                           </div>
-                          <FeedbackResolveButton compact disabled />
+                          <FeedbackResolveButton
+                            compact
+                            onClick={() => onResolveOne?.({ code })}
+                            disabled={!onResolveOne}
+                          />
                         </div>)}
                     </div>
                   </section>)}
@@ -346,7 +358,13 @@ export function ReportDepositFeedbackModal({
                           {localError.errorCode != null ? <b>קוד {localError.errorCode}</b> : null}
                           <span>{localError.errorDescription || "ללא פירוט שגיאה"}</span>
                         </span>
-                        <FeedbackResolveButton compact disabled />
+                        <FeedbackResolveButton
+                          compact
+                          onClick={() => localError.errorCode != null
+                            ? onResolveOne?.({ code: localError.errorCode, contributionId: localError.contributionId })
+                            : undefined}
+                          disabled={!onResolveOne || localError.errorCode == null}
+                        />
                       </div>)}
                     </div>
                   : null}

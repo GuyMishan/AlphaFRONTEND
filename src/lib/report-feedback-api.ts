@@ -237,6 +237,54 @@ export type ReportFeedbackDepositDetails = {
   canCreateCorrection: boolean;
 };
 
+export type FeedbackResolutionContextType = "employer" | "report" | "deposit";
+export type FeedbackResolutionType = "edit" | "decision" | "external" | "informational";
+
+export type FeedbackResolutionProblem = {
+  problemId: string;
+  code: number;
+  description: string;
+  scope: ReportFeedbackScope;
+  resolutionType: FeedbackResolutionType;
+  family: string;
+  resolverType: string;
+  groupStrategy: string;
+  groupKey: string;
+  correctionBehavior: string;
+  availableActions: string[];
+  canEscalateExternally: boolean;
+  feedbackId: string;
+  reportId: string;
+  reportProductId: string | null;
+  contributionId: string | null;
+  reportEmployeeId: string | null;
+  employmentId: string | null;
+  personId: string | null;
+  employeeName: string;
+  productName: string;
+  fundCompanyName: string;
+  policyNumber: string;
+  reportedValues: Record<string, string | null>;
+  currentValues: Record<string, string | null>;
+  feedbackValues: Record<string, string | null>;
+  receivedAt: string;
+};
+
+export type FeedbackResolutionContext = {
+  contextType: FeedbackResolutionContextType;
+  employerId: string;
+  reportId: string | null;
+  reportProductId: string | null;
+  canResolve: boolean;
+  unsupportedCodes: number[];
+  problems: FeedbackResolutionProblem[];
+};
+
+export type FeedbackResolutionProblemSelector = {
+  code: number;
+  contributionId?: string | null;
+};
+
 export type ReportFeedbackIssue = {
   source: string;
   code: string;
@@ -322,6 +370,15 @@ function base(organizationId: string, employerId: string) {
 const treatmentStatusCache = new Map<string, Promise<TreatmentStatusOption[]>>();
 
 export const reportFeedbackApi = {
+  employerResolutionContext: (organizationId: string, employerId: string) =>
+    request<FeedbackResolutionContext>(`${base(organizationId, employerId)}/resolution-context`),
+  reportResolutionContext: (organizationId: string, employerId: string, reportId: string) =>
+    request<FeedbackResolutionContext>(`${base(organizationId, employerId)}/${reportId}/resolution-context`),
+  depositResolutionContext: (organizationId: string, employerId: string, reportId: string, reportProductId: string) =>
+    request<FeedbackResolutionContext>(
+      `${base(organizationId, employerId)}/${reportId}/deposits/${reportProductId}/resolution-context`,
+    ),
+
   employerContext: (organizationId: string, employerId: string) =>
     request<EmployerFeedbackContext>(`${base(organizationId, employerId)}/employer-context`),
   reportContext: (organizationId: string, employerId: string, reportId: string) =>

@@ -281,7 +281,13 @@ export default function ReportsPage() {
   const [expandedManufacturerInput, setExpandedManufacturerInput] = useState<Record<string, string>>({});
   const [expandedManufacturerFilter, setExpandedManufacturerFilter] = useState<Record<string, string>>({});
   const expandedRequests = useRef(new Set<string>());
-  const [feedbackModal, setFeedbackModal] = useState<{ mode: ReportFeedbackModalMode; report?: ReportFeedbackRow; deposit?: ReportFeedbackDepositRow; depositView?: "details" | "errors" } | null>(null);
+  const [feedbackModal, setFeedbackModal] = useState<{
+    mode: ReportFeedbackModalMode;
+    report?: ReportFeedbackRow;
+    deposit?: ReportFeedbackDepositRow;
+    depositView?: "details" | "errors";
+    resolveOnOpen?: boolean;
+  } | null>(null);
   const [employerIssueCount, setEmployerIssueCount] = useState(0);
   const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; editReportId: string; deposit: ManualDepositRow; contributionLimits: ManualDepositContributionLimit[] } | null>(null);
   const [retransmitReport, setRetransmitReport] = useState<ReportFeedbackRow | null>(null);
@@ -719,7 +725,7 @@ export default function ReportsPage() {
         {scope && employerIssueCount > 0 ? <button
           type="button"
           className="employer-error-section"
-          onClick={() => setFeedbackModal({ mode: "employer" })}
+          onClick={() => setFeedbackModal({ mode: "employer", resolveOnOpen: true })}
           aria-label={`שגיאות מעסיק · ${employerIssueCount}`}
         >
           <AlertTriangle size={18} aria-hidden="true" />
@@ -870,6 +876,7 @@ export default function ReportsPage() {
       reportProductId={feedbackModal.deposit?.id}
       hasFeedback={feedbackModal.deposit?.hasFeedback ?? false}
       depositView={feedbackModal.depositView ?? "details"}
+      resolveOnOpen={feedbackModal.resolveOnOpen ?? false}
       onClose={() => setFeedbackModal(null)}
       onEditDeposit={feedbackModal.mode === "deposit"
         && feedbackModal.report

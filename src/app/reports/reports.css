@@ -727,3 +727,154 @@
 .contribution-feedback-error-copy > span {
   min-width: 0;
 }
+
+
+/* Feedback resolution mode: same modal shell, separate treatment state. */
+.feedback-error-groups-title {
+  justify-content: space-between;
+  gap: 12px;
+}
+.feedback-error-groups-title-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.feedback-resolution-modal .app-modal-body {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+.feedback-resolution-progress {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--bg) 45%, var(--surface));
+}
+.feedback-resolution-progress > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.feedback-resolution-progress span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.feedback-resolution-progress strong {
+  font-variant-numeric: tabular-nums;
+}
+.feedback-resolution-progress-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 72%, transparent);
+}
+.feedback-resolution-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--teal);
+  transition: width .2s ease;
+}
+.feedback-resolution-problem-card {
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger) 4%, var(--surface));
+}
+.feedback-resolution-problem-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.feedback-resolution-type,
+.feedback-resolution-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 750;
+}
+.feedback-resolution-type.edit {
+  color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 10%, var(--surface));
+}
+.feedback-resolution-type.decision {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 11%, var(--surface));
+}
+.feedback-resolution-type.external {
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+}
+.feedback-resolution-scope {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 9%, var(--surface));
+}
+.feedback-resolution-problem-copy {
+  display: grid;
+  gap: 5px;
+}
+.feedback-resolution-problem-copy > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+.feedback-resolution-problem-copy > div b {
+  white-space: nowrap;
+}
+.feedback-resolution-problem-copy > div span,
+.feedback-resolution-problem-copy small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.feedback-resolution-problem-copy small {
+  color: var(--muted);
+}
+.feedback-resolution-placeholder {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 15px;
+  border: 1px dashed color-mix(in srgb, var(--teal) 42%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--teal) 5%, var(--surface));
+}
+.feedback-resolution-placeholder > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--teal);
+}
+.feedback-resolution-placeholder p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .feedback-error-groups-title {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .feedback-error-groups-title .feedback-resolve-button {
+    width: 100%;
+  }
+  .feedback-resolution-problem-copy > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .feedback-resolution-placeholder {
+    padding: 12px;
+  }
+}

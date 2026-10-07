@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Building2, FileText } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { FeedbackResolveButton } from "@/components/feedback-resolve-button";
+import { FeedbackResolutionMode } from "@/components/feedback-resolution-mode";
 import { ReportDepositFeedbackModal } from "@/components/report-deposit-feedback-modal";
 import {
   reportFeedbackApi,
   type EmployerFeedbackContext,
+  type FeedbackResolutionProblemSelector,
   type ReportFeedbackContext,
   type ReportFeedbackContextIssue,
 } from "@/lib/report-feedback-api";
@@ -39,7 +41,17 @@ function scopeLabel(scope: string) {
   }
 }
 
-function IssueGroups({ issues, order }: { issues: ReportFeedbackContextIssue[]; order: string[] }) {
+function IssueGroups({
+  issues,
+  order,
+  onResolveOne,
+  onResolveAll,
+}: {
+  issues: ReportFeedbackContextIssue[];
+  order: string[];
+  onResolveOne: (selector: FeedbackResolutionProblemSelector) => void;
+  onResolveAll: () => void;
+}) {
   const groups = useMemo(() => order
     .map(scope => ({
       scope,
@@ -51,8 +63,11 @@ function IssueGroups({ issues, order }: { issues: ReportFeedbackContextIssue[]; 
 
   return <div className="feedback-error-groups" role="list">
     <div className="feedback-error-groups-title">
-      <AlertTriangle size={16} />
-      <strong>תקלות שדורשות טיפול</strong>
+      <div className="feedback-error-groups-title-copy">
+        <AlertTriangle size={16} />
+        <strong>תקלות שדורשות טיפול</strong>
+      </div>
+      <FeedbackResolveButton count={issues.length} label="פתור בעיות" onClick={onResolveAll} />
     </div>
     {groups.map(group => <section className="feedback-error-group" key={group.scope} role="listitem">
       <div className="feedback-error-group-head">
@@ -65,7 +80,10 @@ function IssueGroups({ issues, order }: { issues: ReportFeedbackContextIssue[]; 
             <b>{item.code > 0 ? `קוד ${item.code}` : "תקלה"}</b>
             <span>{item.description}</span>
           </div>
-          <FeedbackResolveButton compact disabled />
+          {item.code > 0 ? <FeedbackResolveButton
+            compact
+            onClick={() => onResolveOne({ code: item.code, contributionId: item.contributionId })}
+          /> : null}
         </div>)}
       </div>
     </section>)}
@@ -82,6 +100,7 @@ export function ReportFeedbackModal({
   onClose,
   onEditDeposit,
   depositView = "details",
+  resolveOnOpen = false,
 }: {
   mode: ReportFeedbackModalMode;
   organizationId: string;
@@ -92,11 +111,15 @@ export function ReportFeedbackModal({
   onClose: () => void;
   onEditDeposit?: () => void;
   depositView?: "details" | "errors";
+  resolveOnOpen?: boolean;
 }) {
   const [employerContext, setEmployerContext] = useState<EmployerFeedbackContext | null>(null);
   const [reportContext, setReportContext] = useState<ReportFeedbackContext | null>(null);
   const [loading, setLoading] = useState(mode !== "deposit");
   const [error, setError] = useState("");
+  const [resolutionSelector, setResolutionSelector] = useState<FeedbackResolutionProblemSelector | null | undefined>(
+    resolveOnOpen ? null : undefined,
+  );
 
   useEffect(() => {
     if (mode === "deposit") return;
@@ -123,6 +146,19 @@ export function ReportFeedbackModal({
     return () => { cancelled = true; };
   }, [mode, organizationId, employerId, reportId]);
 
+  if (resolutionSelector !== undefined) {
+    return <FeedbackResolutionMode
+      contextType={mode}
+      organizationId={organizationId}
+      employerId={employerId}
+      reportId={reportId}
+      reportProductId={reportProductId}
+      selector={resolutionSelector}
+      onBack={() => setResolutionSelector(undefined)}
+      onClose={onClose}
+    />;
+  }
+
   if (mode === "deposit") {
     if (!reportId || !reportProductId) return null;
     return <ReportDepositFeedbackModal
@@ -133,6 +169,8 @@ export function ReportFeedbackModal({
       hasFeedback={hasFeedback}
       onClose={onClose}
       onEdit={depositView === "details" ? onEditDeposit : undefined}
+      onResolveOne={(selector) => setResolutionSelector(selector)}
+      onResolveAll={() => setResolutionSelector(null)}
       viewMode={depositView}
     />;
   }
@@ -175,7 +213,12 @@ export function ReportFeedbackModal({
         <div className="feedback-modal-section-head">
           <div><h3>תקלות מעסיק</h3><p>תקלות רוחב ברמת המעסיק והעברת הכספים.</p></div>
         </div>
-        <IssueGroups issues={issues} order={["employer"]} />
+        <IssueGroups
+          issues={issues}
+          order={["employer"]}
+          onResolveOne={(selector) => setResolutionSelector(selector)}
+          onResolveAll={() => setResolutionSelector(null)}
+        />
       </section>
     </> : null}
 
@@ -194,7 +237,12 @@ export function ReportFeedbackModal({
         <div className="feedback-modal-section-head">
           <div><h3><FileText size={17} aria-hidden="true" /> תקלות בדיווח</h3><p>תקלות ששייכות לדיווח עצמו בלבד.</p></div>
         </div>
-        <IssueGroups issues={issues} order={["report"]} />
+        <IssueGroups
+          issues={issues}
+          order={["report"]}
+          onResolveOne={(selector) => setResolutionSelector(selector)}
+          onResolveAll={() => setResolutionSelector(null)}
+        />
       </section>
     </> : null}
   </AppModal>;
