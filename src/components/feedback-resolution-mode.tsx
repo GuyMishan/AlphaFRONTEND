@@ -7,7 +7,6 @@ import {
   reportFeedbackApi,
   type FeedbackResolutionContext,
   type FeedbackResolutionContextType,
-  type FeedbackResolutionGroup,
   type FeedbackResolutionProblem,
   type FeedbackResolutionProblemSelector,
 } from "@/lib/report-feedback-api";
@@ -75,32 +74,13 @@ function loadContext(
   );
 }
 
-function fallbackGroups(problems: FeedbackResolutionProblem[]): FeedbackResolutionGroup[] {
-  const byKey = new Map<string, FeedbackResolutionGroup>();
-  for (const problem of problems) {
-    const existing = byKey.get(problem.groupKey);
-    if (existing) {
-      existing.problems.push(problem);
-      continue;
-    }
-    byKey.set(problem.groupKey, {
-      groupKey: problem.groupKey,
-      resolverType: problem.resolverType,
-      groupStrategy: problem.groupStrategy,
-      problems: [problem],
-    });
-  }
-  return [...byKey.values()];
-}
-
 function filterGroups(
   context: FeedbackResolutionContext,
   selector?: FeedbackResolutionProblemSelector | null,
 ) {
-  const groups = context.groups?.length ? context.groups : fallbackGroups(context.problems);
-  if (!selector) return groups;
+  if (!selector) return context.groups;
 
-  return groups.filter(group => group.problems.some(problem =>
+  return context.groups.filter(group => group.problems.some(problem =>
     problem.code === selector.code
     && (!selector.contributionId || problem.contributionId === selector.contributionId)));
 }
