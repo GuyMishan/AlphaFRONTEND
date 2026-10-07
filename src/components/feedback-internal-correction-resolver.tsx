@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, FilePenLine } from "lucide-react";
+import { ArrowLeft, FilePenLine, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { UiFileUpload } from "@/components/ui-controls";
 import {
   reportFeedbackApi,
   type FeedbackResolutionGroup,
@@ -116,13 +117,18 @@ export function FeedbackInternalCorrectionResolver({
   organizationId,
   employerId,
   group,
+  onEditDeposit,
+  onChanged,
 }: {
   organizationId: string;
   employerId: string;
   group: FeedbackResolutionGroup;
+  onEditDeposit?: (problemIds: string[]) => void;
+  onChanged?: () => void;
 }) {
   const router = useRouter();
   const [preparing, setPreparing] = useState(false);
+  const [uploadingProblemId, setUploadingProblemId] = useState("");
   const [error, setError] = useState("");
   const problem = group.problems[0];
   const config = resolverConfig[group.resolverType];
@@ -182,11 +188,32 @@ export function FeedbackInternalCorrectionResolver({
       const employee = result.workspaceReportEmployeeId
         ? `&focusReportEmployeeId=${encodeURIComponent(result.workspaceReportEmployeeId)}`
         : "";
-      router.push(`/reports/new?resumeReportId=${result.workspaceReportId}&correctionWorkspace=1${product}${employee}${resolver}`);
+      const sourceReport = `&resolutionSourceReportId=${encodeURIComponent(problem.reportId)}`;
+      const problems = `&resolutionProblemIds=${encodeURIComponent(group.problems.map(item => item.problemId).join(","))}`;
+      router.push(`/reports/new?resumeReportId=${result.workspaceReportId}&correctionWorkspace=1${product}${employee}${resolver}${sourceReport}${problems}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "פתיחת סביבת התיקון נכשלה.");
     } finally {
       setPreparing(false);
+    }
+  }
+
+  async function uploadDocument(problemId: string, file: File) {
+    setUploadingProblemId(problemId);
+    setError("");
+    try {
+      await reportFeedbackApi.uploadResolutionDocument(
+        organizationId,
+        employerId,
+        problem.reportId,
+        problemId,
+        file,
+      );
+      onChanged?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "העלאת המסמך נכשלה.");
+    } finally {
+      setUploadingProblemId("");
     }
   }
 
@@ -221,6 +248,34 @@ export function FeedbackInternalCorrectionResolver({
     </div>
 
     {error ? <div className="notice notice-error">{error}</div> : null}
+
+    {group.resolverType === "payment" ? <button
+      type="button"
+      className="btn btn-primary feedback-resolution-open-workspace"
+      disabled={!group.canExecute || !onEditDeposit}
+      onClick={() => onEditDeposit?.(group.problems.map(item => item.problemId))}
+    >
+      עריכת פרטי ההפקדה
+      <ArrowLeft size={16} aria-hidden="true" />
+    </button> : null}
+
+    {group.resolverType === "documents" ? <div className="feedback-resolution-document-list">
+      {group.problems.map(item => <div className="feedback-resolution-document-item" key={item.problemId}>
+        <div>
+          <strong>קוד {item.code}</strong>
+          <small>{item.description}</small>
+        </div>
+        <UiFileUpload
+          label="העלאת מסמך PDF"
+          accept=".pdf,application/pdf"
+          maxBytes={10_000_000}
+          busy={uploadingProblemId === item.problemId}
+          disabled={!group.canExecute || Boolean(uploadingProblemId)}
+          onFileSelected={(file) => void uploadDocument(item.problemId, file)}
+          onInvalid={(message) => setError(message)}
+        />
+      </div>)}
+    </div> : null}
 
     {canPrepareWorkspace ? <button
       type="button"

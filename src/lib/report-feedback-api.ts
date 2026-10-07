@@ -416,6 +416,55 @@ export const reportFeedbackApi = {
     },
   ),
 
+  resolveProblems: (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    problemIds: string[],
+    source: "employee-save" | "deposit-save" | "workspace-validation",
+    validatedReportId?: string | null,
+  ) => request<{ resolvedProblemIds: string[] }>(
+    `${base(organizationId, employerId)}/${reportId}/resolution-actions/problems/resolve`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        problemIds,
+        source,
+        validatedReportId: validatedReportId || null,
+      }),
+    },
+  ),
+
+  uploadResolutionDocument: async (
+    organizationId: string,
+    employerId: string,
+    reportId: string,
+    problemId: string,
+    file: File,
+  ) => {
+    const body = new FormData();
+    body.set("file", file);
+    const response = await backendFetch(
+      `${base(organizationId, employerId)}/${reportId}/resolution-actions/documents/${encodeURIComponent(problemId)}`,
+      { method: "POST", body, cache: "no-store" },
+    );
+    if (!response.ok) {
+      let message = `שמירת המסמך נכשלה (${response.status}).`;
+      try {
+        const problem = await response.json();
+        message = problem?.error ?? problem?.detail ?? problem?.title ?? message;
+      } catch { /* empty */ }
+      throw new Error(message);
+    }
+    return response.json() as Promise<{
+      id: string;
+      originalFileName: string;
+      sizeBytes: number;
+      sha256: string;
+      resolvedProblemId: string;
+    }>;
+  },
+
   validateEmployeeResolutionAction: (
     organizationId: string,
     employerId: string,

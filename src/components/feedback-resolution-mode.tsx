@@ -96,6 +96,7 @@ export function FeedbackResolutionMode({
   selector,
   onBack,
   onClose,
+  onEditDeposit,
 }: {
   contextType: FeedbackResolutionContextType;
   organizationId: string;
@@ -105,6 +106,7 @@ export function FeedbackResolutionMode({
   selector?: FeedbackResolutionProblemSelector | null;
   onBack: () => void;
   onClose: () => void;
+  onEditDeposit?: (problemIds: string[]) => void;
 }) {
   const [context, setContext] = useState<FeedbackResolutionContext | null>(null);
   const [loading, setLoading] = useState(true);
@@ -253,6 +255,8 @@ export function FeedbackResolutionMode({
               organizationId={organizationId}
               employerId={employerId}
               group={activeGroup}
+              onEditDeposit={onEditDeposit}
+              onChanged={() => setRefreshToken(value => value + 1)}
             />
           : <section className="feedback-resolution-placeholder">
             <AlertTriangle size={20} aria-hidden="true" />

@@ -109,7 +109,7 @@ export function ReportFeedbackModal({
   reportProductId?: string;
   hasFeedback?: boolean;
   onClose: () => void;
-  onEditDeposit?: () => void;
+  onEditDeposit?: (problemIds?: string[]) => void;
   depositView?: "details" | "errors";
   resolveOnOpen?: boolean;
 }) {
@@ -156,6 +156,7 @@ export function ReportFeedbackModal({
       selector={resolutionSelector}
       onBack={() => setResolutionSelector(undefined)}
       onClose={onClose}
+      onEditDeposit={(problemIds) => onEditDeposit?.(problemIds)}
     />;
   }
 
@@ -168,7 +169,7 @@ export function ReportFeedbackModal({
       reportProductId={reportProductId}
       hasFeedback={hasFeedback}
       onClose={onClose}
-      onEdit={depositView === "details" ? onEditDeposit : undefined}
+      onEdit={depositView === "details" && onEditDeposit ? () => onEditDeposit([]) : undefined}
       onResolveOne={(selector) => setResolutionSelector(selector)}
       onResolveAll={() => setResolutionSelector(null)}
       viewMode={depositView}
