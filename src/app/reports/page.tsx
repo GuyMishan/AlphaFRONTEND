@@ -159,7 +159,7 @@ function DepositFeedbackPanel({
 }: {
   report: ReportFeedbackRow;
   content: ExpandedReportContent;
-  onOpen: (deposit: ReportFeedbackDepositRow) => void;
+  onOpen: (deposit: ReportFeedbackDepositRow, view: "details" | "errors") => void;
   onLoadMore: () => void;
   loading: boolean;
   loadingMore: boolean;
@@ -239,23 +239,17 @@ function DepositFeedbackPanel({
             {deposit.feedbackStatus === "attention" ? <FeedbackErrorsButton
               compact
               count={deposit.feedbackErrors?.length || undefined}
-              onClick={() => onOpen(deposit)}
+              onClick={() => onOpen(deposit, "errors")}
             /> : null}
             <UiActionMenu
               ariaLabel={`פעולות עבור ${deposit.employeeName}`}
               items={[
-                ...(deposit.feedbackStatus !== "attention" ? [{
+                {
                   key: "view",
-                  label: "צפייה",
+                  label: "צפייה בהפקדה",
                   icon: <Eye size={16} />,
-                  onSelect: () => onOpen(deposit),
-                }] : []),
-                ...(report.canEdit || report.canStartCorrectionWorkspace ? [{
-                  key: "edit",
-                  label: deposit.hasPendingCorrection ? "המשך תיקון הפקדה" : "תיקון הפקדה",
-                  icon: <Pencil size={16} />,
-                  onSelect: () => onOpen(deposit),
-                }] : []),
+                  onSelect: () => onOpen(deposit, "details"),
+                },
               ]}
             />
           </div>
@@ -288,7 +282,7 @@ export default function ReportsPage() {
   const [expandedManufacturerInput, setExpandedManufacturerInput] = useState<Record<string, string>>({});
   const [expandedManufacturerFilter, setExpandedManufacturerFilter] = useState<Record<string, string>>({});
   const expandedRequests = useRef(new Set<string>());
-  const [feedbackModal, setFeedbackModal] = useState<{ mode: ReportFeedbackModalMode; report?: ReportFeedbackRow; deposit?: ReportFeedbackDepositRow } | null>(null);
+  const [feedbackModal, setFeedbackModal] = useState<{ mode: ReportFeedbackModalMode; report?: ReportFeedbackRow; deposit?: ReportFeedbackDepositRow; depositView?: "details" | "errors" } | null>(null);
   const [employerIssueCount, setEmployerIssueCount] = useState(0);
   const [editingDeposit, setEditingDeposit] = useState<{ report: ReportFeedbackRow; editReportId: string; deposit: ManualDepositRow; contributionLimits: ManualDepositContributionLimit[] } | null>(null);
   const [retransmitReport, setRetransmitReport] = useState<ReportFeedbackRow | null>(null);
@@ -731,6 +725,7 @@ export default function ReportsPage() {
         >
           <AlertTriangle size={18} aria-hidden="true" />
           <span><b>שגיאות מעסיק</b><small>{employerIssueCount} {employerIssueCount === 1 ? "שגיאה דורשת טיפול" : "שגיאות דורשות טיפול"}</small></span>
+          <span className="employer-error-section-cta">פתור בעיות</span>
         </button> : null}
         <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={!scope || loading}>
           <RefreshCw size={16} />רענון
@@ -856,7 +851,7 @@ export default function ReportsPage() {
           {expandedContent[report.id] ? <DepositFeedbackPanel
             report={report}
             content={expandedContent[report.id]}
-            onOpen={(deposit) => setFeedbackModal({ mode: "deposit", report, deposit })}
+            onOpen={(deposit, depositView) => setFeedbackModal({ mode: "deposit", report, deposit, depositView })}
             loading={Boolean(expandedLoading[report.id])}
             loadingMore={Boolean(expandedMoreLoading[report.id])}
             onLoadMore={() => void loadMoreDeposits(report)}
@@ -876,6 +871,7 @@ export default function ReportsPage() {
       reportId={feedbackModal.report?.id}
       reportProductId={feedbackModal.deposit?.id}
       hasFeedback={feedbackModal.deposit?.hasFeedback ?? false}
+      depositView={feedbackModal.depositView ?? "details"}
       onClose={() => setFeedbackModal(null)}
       onEditDeposit={feedbackModal.mode === "deposit"
         && feedbackModal.report
