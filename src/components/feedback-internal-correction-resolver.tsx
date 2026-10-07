@@ -150,6 +150,19 @@ export function FeedbackInternalCorrectionResolver({
 
   if (!problem || !config) return null;
 
+  const canPrepareWorkspace = group.problems.every(item =>
+    item.resolutionType === "edit"
+    && item.correctionBehavior === "correctionWorkspace"
+    && item.availableActions.includes("prepareCorrection"));
+
+  const nonWorkspaceMessage = group.problems.every(item => item.correctionBehavior === "externalFollowUp")
+    ? "הטיפול דורש השלמת מסמכים/מעקב חיצוני ואינו יוצר דיווח הפרשים. הפעולה המתאימה תישאר חסומה עד מסלול המסמכים הייעודי."
+    : group.problems.every(item => item.correctionBehavior === "revalidateOnly")
+      ? "הטיפול דורש תיקון או אימות מחדש של הנתונים ולא יצירת דיווח מתקן. אין לפתוח עבורו Correction Workspace."
+      : group.problems.some(item => item.correctionBehavior === "dynamic")
+        ? "מסלול הטיפול תלוי בהחלטה עסקית ולכן לא נפתח Correction Workspace אוטומטית."
+        : "";
+
   async function prepare() {
     setPreparing(true);
     setError("");
@@ -202,12 +215,14 @@ export function FeedbackInternalCorrectionResolver({
 
     <div className="feedback-resolution-internal-note">
       <FilePenLine size={18} aria-hidden="true" />
-      <span>הדיווח המקורי לא ישתנה. ALPHA יוצר או ממשיך סביבת תיקון ומרכז בה את כל השינויים לפני דיווח חוזר.</span>
+      <span>{canPrepareWorkspace
+        ? "הדיווח המקורי לא ישתנה. ALPHA יוצר או ממשיך סביבת תיקון ומרכז בה את כל השינויים לפני דיווח חוזר."
+        : nonWorkspaceMessage}</span>
     </div>
 
     {error ? <div className="notice notice-error">{error}</div> : null}
 
-    <button
+    {canPrepareWorkspace ? <button
       type="button"
       className="btn btn-primary feedback-resolution-open-workspace"
       disabled={preparing || !group.canExecute}
@@ -215,6 +230,6 @@ export function FeedbackInternalCorrectionResolver({
     >
       {preparing ? "פותח סביבת תיקון..." : config.button}
       {!preparing ? <ArrowLeft size={16} aria-hidden="true" /> : null}
-    </button>
+    </button> : null}
   </section>;
 }
