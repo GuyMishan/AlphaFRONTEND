@@ -203,7 +203,31 @@ export function FeedbackDecisionResolver({
               type="button"
               className="btn btn-secondary"
               disabled={busy || !group.canExecute}
-              onClick={() => void decide(problem, "reconcile")}
+              onClick={() => void (async () => {
+                const note = notes[problem.problemId]?.trim() ?? "";
+                if (!note) {
+                  setError("יש לכתוב הערה קצרה לפני פתיחת תיק התאמת כספים.");
+                  return;
+                }
+                setBusyProblemId(problem.problemId);
+                setError("");
+                try {
+                  await reportFeedbackApi.openExternalCase(
+                    organizationId,
+                    employerId,
+                    problem.reportId,
+                    group.groupKey,
+                    [problem.problemId],
+                    note,
+                    "reconcile",
+                  );
+                  onChanged();
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "פתיחת תיק התאמת הכספים נכשלה.");
+                } finally {
+                  setBusyProblemId("");
+                }
+              })()}
             >
               <Scale size={16} />העברה להתאמת כספים
             </button> : null}

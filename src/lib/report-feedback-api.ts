@@ -470,9 +470,10 @@ export const reportFeedbackApi = {
     groupKey: string,
     problemIds: string[],
     note = "",
+    action: "external" | "reconcile" = "external",
   ) => request<ExternalFeedbackCase>(
     `${base(organizationId, employerId)}/${reportId}/resolution-actions/external-case/open`,
-    { method: "POST", body: JSON.stringify({ groupKey, problemIds, note }) },
+    { method: "POST", body: JSON.stringify({ groupKey, problemIds, note, action }) },
   ),
 
   externalCase: (organizationId: string, employerId: string, caseId: string) =>

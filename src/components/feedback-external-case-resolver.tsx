@@ -38,6 +38,10 @@ export function FeedbackExternalCaseResolver({
       problem.resolutionType === "external" || problem.availableActions.includes("openExternalCase")),
     [group.problems],
   );
+  const reconciliationProblems = useMemo(
+    () => group.problems.filter((problem) => problem.availableActions.includes("reconcile")),
+    [group.problems],
+  );
 
   useEffect(() => {
     if (!initialCaseId) {
@@ -81,16 +85,18 @@ export function FeedbackExternalCaseResolver({
     }
   }
 
-  async function openCase() {
-    if (!externalProblems.length) return;
-    const first = externalProblems[0];
+  async function openCase(action: "external" | "reconcile") {
+    const targets = action === "reconcile" ? reconciliationProblems : externalProblems;
+    if (!targets.length) return;
+    const first = targets[0];
     await apply(reportFeedbackApi.openExternalCase(
       organizationId,
       employerId,
       first.reportId,
       group.groupKey,
-      externalProblems.map((problem) => problem.problemId),
+      targets.map((problem) => problem.problemId),
       note,
+      action,
     ));
     setNote("");
   }
@@ -127,10 +133,16 @@ export function FeedbackExternalCaseResolver({
         onChange={(event) => setNote(event.target.value)}
         placeholder="מה כבר נבדק ומה נדרש מהגוף החיצוני..." />
     </label>
-    <button type="button" className="btn btn-primary" disabled={busy || !group.canExecute}
-      onClick={() => void openCase()}>
-      <ExternalLink size={16} />{busy ? "פותח תיק..." : "פתיחת תיק טיפול חיצוני"}
-    </button>
+    <div className="feedback-external-case-actions">
+      {externalProblems.length ? <button type="button" className="btn btn-primary" disabled={busy || !group.canExecute}
+        onClick={() => void openCase("external")}>
+        <ExternalLink size={16} />{busy ? "פותח תיק..." : "פתיחת תיק טיפול חיצוני"}
+      </button> : null}
+      {reconciliationProblems.length ? <button type="button" className="btn btn-secondary" disabled={busy || !group.canExecute}
+        onClick={() => void openCase("reconcile")}>
+        <Clock3 size={16} />{busy ? "פותח תיק..." : "פתיחת תיק התאמת כספים"}
+      </button> : null}
+    </div>
   </section>;
 
   return <section className="feedback-external-case">
