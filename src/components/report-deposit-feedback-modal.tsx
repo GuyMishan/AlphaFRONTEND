@@ -87,9 +87,7 @@ export function ReportDepositFeedbackModal({
       try {
         const [detailsResult, evidenceResult] = await Promise.allSettled([
           reportFeedbackApi.depositDetails(organizationId, employerId, reportId, reportProductId),
-          errorsOnly
-            ? Promise.resolve([] as PaymentConfirmation[])
-            : paymentConfirmationsApi.list(organizationId, employerId, reportId, reportProductId),
+          paymentConfirmationsApi.list(organizationId, employerId, reportId, reportProductId),
         ]);
         if (cancelled) return;
         if (detailsResult.status === "rejected") throw detailsResult.reason;
@@ -145,7 +143,7 @@ export function ReportDepositFeedbackModal({
     {error ? <div className="notice notice-error">{error}</div> : null}
 
     {details ? <>
-      {!errorsOnly ? <>
+      <>
         <section className="feedback-modal-summary" aria-label="סיכום הפקדה">
           <div><span>עובד</span><b>{details.employee.name}</b><small>ת״ז {details.employee.nationalId}</small></div>
           <div><span>חודש שכר</span><b>{details.product.salaryMonth?.slice(0, 7).split("-").reverse().join("/")}</b></div>
@@ -158,9 +156,9 @@ export function ReportDepositFeedbackModal({
             ? <span className="feedback-state completed"><CheckCircle2 size={14} />התקבל משוב</span>
             : <span className="feedback-state pending">טרם התקבל משוב</span>}
         </div>
-      </> : null}
+      </>
 
-      {!errorsOnly ? <section className="feedback-modal-section">
+      <section className="feedback-modal-section">
         <div className="feedback-modal-section-head">
           <div><h3>פרטי ההפקדה</h3><p>פרטי התשלום והאסמכתאות כפי שנשמרו בדיווח.</p></div>
         </div>
@@ -196,9 +194,9 @@ export function ReportDepositFeedbackModal({
             </button>)}
           </div> : !evidenceError ? <div className="muted-inline">לא צורפו אישורי תשלום.</div> : null}
         </div>
-      </section> : null}
+      </section>
 
-      {!errorsOnly ? <section className="feedback-modal-section">
+      {!hasFeedback ? <section className="feedback-modal-section">
         <div className="feedback-modal-section-head">
           <div><h3>רכיבי ההפרשה שדווחו</h3><p>הנתונים שנשלחו עבור העובד והמוצר.</p></div>
         </div>
@@ -217,7 +215,7 @@ export function ReportDepositFeedbackModal({
         </div>
       </section> : null}
 
-      {hasFeedback && errorsOnly ? <>
+      {hasFeedback ? <>
         <section className="feedback-modal-section">
           <div className="feedback-modal-section-head">
             <div><h3>שגיאות בהפקדה</h3><p>תקלות עובד, הפקדה/מוצר ורכיבי הפרשה בלבד.</p></div>
@@ -271,7 +269,7 @@ export function ReportDepositFeedbackModal({
               .filter((group) => group.items.length > 0);
 
             return <>
-              {groupedErrors.length ? <div className="feedback-error-groups" role="alert">
+              {errorsOnly && groupedErrors.length ? <div className="feedback-error-groups" role="alert">
                 <div className="feedback-error-groups-title">
                   <AlertTriangle size={16} />
                   <strong>בעיות שנמצאו במשוב</strong>
@@ -312,16 +310,16 @@ export function ReportDepositFeedbackModal({
               const salaryMismatch = manufacturer?.calculatedSalary != null && !sameNumber(details.product.salary, manufacturer.calculatedSalary);
               const hasError = Boolean(localError);
               const hasNumericDifference = amountMismatch || rateMismatch || salaryMismatch;
-              const requiresAttention = hasNumericDifference || hasError;
+              const requiresAttention = errorsOnly && (hasNumericDifference || hasError);
               return <article className={`contribution-comparison-card${requiresAttention ? " has-difference" : ""}`} key={employer.id}>
                 <div className="contribution-comparison-title">
                   <strong>{employer.label}</strong>
                   {manufacturer
-                    ? hasNumericDifference
+                    ? errorsOnly && hasNumericDifference
                       ? <span className="feedback-state attention"><AlertTriangle size={14} />נמצא פער בנתונים</span>
-                      : hasError
+                      : errorsOnly && hasError
                         ? <span className="feedback-state attention"><AlertTriangle size={14} />שגיאת יצרן</span>
-                        : <span className="feedback-state completed"><CheckCircle2 size={14} />{groupedErrors.length ? "ללא פער ברכיב" : "נקלט ללא פער"}</span>
+                        : <span className="feedback-state completed"><CheckCircle2 size={14} />התקבל משוב</span>
                     : <span className="feedback-state pending">לא התקבל פירוט יצרן לרכיב</span>}
                 </div>
                 <div className="contribution-sides">
@@ -335,13 +333,13 @@ export function ReportDepositFeedbackModal({
                   <div className="contribution-side manufacturer">
                     <span className="contribution-side-label">יצרן</span>
                     {manufacturer ? <>
-                      <div className={amountMismatch ? "value-difference" : ""}><small>סכום</small><b>{money(manufacturer.contributionAmount)}</b></div>
-                      <div className={rateMismatch ? "value-difference" : ""}><small>שיעור</small><b>{percent(manufacturer.contributionRate)}</b></div>
-                      <div className={salaryMismatch ? "value-difference" : ""}><small>שכר מחושב</small><b>{money(manufacturer.calculatedSalary)}</b></div>
+                      <div className={errorsOnly && amountMismatch ? "value-difference" : ""}><small>סכום</small><b>{money(manufacturer.contributionAmount)}</b></div>
+                      <div className={errorsOnly && rateMismatch ? "value-difference" : ""}><small>שיעור</small><b>{percent(manufacturer.contributionRate)}</b></div>
+                      <div className={errorsOnly && salaryMismatch ? "value-difference" : ""}><small>שכר מחושב</small><b>{money(manufacturer.calculatedSalary)}</b></div>
                     </> : <div className="manufacturer-pending">לא התקבל פירוט יצרן לרכיב זה.</div>}
                   </div>
                 </div>
-                {localError
+                {errorsOnly && localError
                   ? <div className="contribution-feedback-message error feedback-contribution-error-action">
                       <AlertTriangle size={15} />
                       <span>{localError.errorDescription || `קוד שגיאה ${localError.errorCode}`}</span>
@@ -351,7 +349,7 @@ export function ReportDepositFeedbackModal({
                 {manufacturer?.sourceFileName
                   ? <small className="feedback-source">מקור: {manufacturer.sourceFileName} · {formatDateTimeDDMMYYYY(manufacturer.receivedAt, "—")}</small>
                   : null}
-                {additionalManufacturerRows.length ? <div className="manufacturer-extra-rows">
+                {errorsOnly && additionalManufacturerRows.length ? <div className="manufacturer-extra-rows">
                   <small>משובי יצרן נוספים לאותו רכיב</small>
                   {additionalManufacturerRows.map((item) => <div key={`${item.recordIdentifier}:${item.sequence}`}>
                     <span className="manufacturer-extra-error">
@@ -371,7 +369,7 @@ export function ReportDepositFeedbackModal({
         </section>
       </> : null}
 
-      {hasFeedback && !errorsOnly ? <>
+      {hasFeedback ? <>
         <section className="feedback-modal-section">
           <div className="feedback-modal-section-head">
             <div><h3>מצב כספים</h3><p>מצב הכספים שהוחזר במשוב הרשמי ברמת העברת הכספים.</p></div>
