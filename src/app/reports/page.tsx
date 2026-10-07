@@ -25,6 +25,7 @@ import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { DepositPaymentEditor } from "@/components/manual-deposit-data";
 import { ReportFeedbackModal, type ReportFeedbackModalMode } from "@/components/report-feedback-modal";
 import { FeedbackResolveButton } from "@/components/feedback-resolve-button";
+import { FeedbackErrorsButton } from "@/components/feedback-errors-button";
 import { Tooltip } from "@/components/tooltip";
 import { UiActionMenu, UiAutocomplete, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { manualDepositsApi, type ManualDepositContributionLimit, type ManualDepositRow } from "@/lib/manual-deposits-api";
@@ -238,10 +239,9 @@ function DepositFeedbackPanel({
           </div>
           <div role="cell" className="muted-inline">{formatDate(deposit.updatedAt)}</div>
           <div role="cell" className="report-deposit-row-actions">
-            {deposit.feedbackStatus === "attention" ? <FeedbackResolveButton
+            {deposit.feedbackStatus === "attention" ? <FeedbackErrorsButton
               compact
               count={deposit.feedbackErrors?.length || undefined}
-              label={deposit.feedbackErrors?.length ? `תקלות · ${deposit.feedbackErrors.length}` : "תקלות"}
               onClick={() => onOpen(deposit)}
             /> : null}
             <UiActionMenu
@@ -255,9 +255,9 @@ function DepositFeedbackPanel({
                 }] : []),
                 ...(report.canEdit || report.canStartCorrectionWorkspace ? [{
                   key: "edit",
-                  label: report.canEdit ? "עריכה" : deposit.hasPendingCorrection ? "המשך תיקון הפקדה" : "תיקון הפקדה",
+                  label: deposit.hasPendingCorrection ? "המשך תיקון הפקדה" : "תיקון הפקדה",
                   icon: <Pencil size={16} />,
-                  onSelect: () => onEdit(deposit),
+                  onSelect: () => onOpen(deposit),
                 }] : []),
               ]}
             />
@@ -650,9 +650,9 @@ export default function ReportsPage() {
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDate(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt)}</small></div>
       : "—" },
     actions: { column: { key: "actions", label: "פעולות", width: "170px" }, render: (row) => <div className="report-row-actions">
-      {!row.canEdit ? <FeedbackResolveButton
+      {!row.canEdit && row.requiresAttentionCount > 0 ? <FeedbackErrorsButton
         compact
-        label="משוב דיווח"
+        label={`שגיאות · ${row.requiresAttentionCount}`}
         onClick={() => setFeedbackModal({ mode: "report", report: row })}
       /> : null}
       <UiActionMenu
@@ -726,10 +726,15 @@ export default function ReportsPage() {
         <p>מעקב, משוב, מצב כספים וטיפול ידני — במקום אחד.</p>
       </div>
       <div className="report-page-actions">
-        {scope ? <FeedbackResolveButton
-          label={employerIssueCount > 0 ? `תקלות מעסיק · ${employerIssueCount}` : "משוב מעסיק"}
+        {scope && employerIssueCount > 0 ? <button
+          type="button"
+          className="employer-error-section"
           onClick={() => setFeedbackModal({ mode: "employer" })}
-        /> : null}
+          aria-label={`שגיאות מעסיק · ${employerIssueCount}`}
+        >
+          <AlertTriangle size={18} aria-hidden="true" />
+          <span><b>שגיאות מעסיק</b><small>{employerIssueCount} {employerIssueCount === 1 ? "שגיאה דורשת טיפול" : "שגיאות דורשות טיפול"}</small></span>
+        </button> : null}
         <button className="btn btn-secondary" type="button" onClick={() => void load()} disabled={!scope || loading}>
           <RefreshCw size={16} />רענון
         </button>
@@ -876,6 +881,14 @@ export default function ReportsPage() {
       reportProductId={feedbackModal.deposit?.id}
       hasFeedback={feedbackModal.deposit?.hasFeedback ?? false}
       onClose={() => setFeedbackModal(null)}
+      onEditDeposit={feedbackModal.mode === "deposit" && feedbackModal.report && feedbackModal.deposit
+        ? () => {
+            const report = feedbackModal.report!;
+            const deposit = feedbackModal.deposit!;
+            setFeedbackModal(null);
+            void editDepositFromFeedback(report, deposit.id);
+          }
+        : undefined}
     /> : null}
 
     {editingDeposit && scope ? <DepositPaymentEditor
