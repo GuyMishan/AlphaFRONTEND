@@ -128,16 +128,25 @@ export function FeedbackInternalCorrectionResolver({
   const config = resolverConfig[group.resolverType];
 
   const rows = useMemo(() => {
-    if (!problem || !config) return [];
-    return config.fields
-      .map(([key, label, source]) => {
-        const reported = problem.reportedValues[key] ?? null;
-        const current = problem.currentValues[key] ?? null;
-        const feedback = problem.feedbackValues[key] ?? null;
-        return { key, label, reported, current, feedback, source };
-      })
-      .filter(row => row.reported != null || row.current != null || row.feedback != null);
-  }, [problem, config]);
+    if (!config) return [];
+    return group.problems.flatMap(item =>
+      config.fields
+        .map(([key, label, source]) => {
+          const reported = item.reportedValues[key] ?? null;
+          const current = item.currentValues[key] ?? null;
+          const feedback = item.feedbackValues[key] ?? null;
+          return {
+            key: `${item.problemId}:${key}`,
+            label: group.problems.length > 1 ? `${label} · קוד ${item.code}` : label,
+            reported,
+            current,
+            feedback,
+            source,
+          };
+        })
+        .filter(row => row.reported != null || row.current != null || row.feedback != null),
+    );
+  }, [group.problems, config]);
 
   if (!problem || !config) return null;
 
@@ -157,7 +166,10 @@ export function FeedbackInternalCorrectionResolver({
         ? `&focusReportProductId=${encodeURIComponent(result.workspaceReportProductId)}`
         : "";
       const resolver = `&resolutionResolver=${encodeURIComponent(group.resolverType)}`;
-      router.push(`/reports/new?resumeReportId=${result.workspaceReportId}&correctionWorkspace=1${product}${resolver}`);
+      const employee = result.workspaceReportEmployeeId
+        ? `&focusReportEmployeeId=${encodeURIComponent(result.workspaceReportEmployeeId)}`
+        : "";
+      router.push(`/reports/new?resumeReportId=${result.workspaceReportId}&correctionWorkspace=1${product}${employee}${resolver}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "פתיחת סביבת התיקון נכשלה.");
     } finally {
