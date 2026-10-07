@@ -399,6 +399,7 @@ export const reportFeedbackApi = {
   ) => request<{
     workspaceReportId: string;
     workspaceReportProductId: string | null;
+    workspaceReportEmployeeId: string | null;
     created: boolean;
     pendingChanges: number;
     groupKey: string;
