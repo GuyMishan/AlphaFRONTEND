@@ -131,10 +131,11 @@ export function FeedbackResolutionMode({
     return () => { cancelled = true; };
   }, [contextType, organizationId, employerId, reportId, reportProductId, refreshToken]);
 
-  const groups = useMemo(
-    () => context?.canResolve ? filterGroups(context, selector) : [],
-    [context, selector],
-  );
+  const groups = useMemo(() => {
+    if (!context?.canResolve || context.unsupportedCodes.length) return [];
+    return filterGroups(context, selector).filter(group =>
+      group.resolverType === "employee" ? context.canEditEmployee : context.canCreateReport);
+  }, [context, selector]);
   const safeIndex = Math.min(activeIndex, Math.max(groups.length - 1, 0));
   const activeGroup = groups[safeIndex];
   const primaryProblem = activeGroup?.problems[0];

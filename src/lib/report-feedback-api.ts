@@ -283,6 +283,7 @@ export type FeedbackResolutionContext = {
   reportId: string | null;
   reportProductId: string | null;
   canResolve: boolean;
+  canCreateReport: boolean;
   canEditEmployee: boolean;
   unsupportedCodes: number[];
   problems: FeedbackResolutionProblem[];
