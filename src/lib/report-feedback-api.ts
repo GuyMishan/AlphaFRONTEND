@@ -26,6 +26,7 @@ export type ReportFeedbackRow = {
   hasFeedback: boolean;
   issueCount: number;
   requiresAttentionCount: number;
+  reportIssueCount: number;
   employeeCount: number;
   totalAmount: number;
   payoffRate: number | null;
