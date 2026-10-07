@@ -244,7 +244,7 @@ export function FeedbackResolutionMode({
             organizationId={organizationId}
             employerId={employerId}
             group={activeGroup}
-            canEdit={context.canEditEmployee}
+            canEdit={Boolean(context?.canEditEmployee)}
             onChanged={() => setRefreshToken(value => value + 1)}
           />
         : <section className="feedback-resolution-placeholder">
