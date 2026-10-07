@@ -62,10 +62,11 @@ function filterProblems(
   selector?: FeedbackResolutionProblemSelector | null,
 ) {
   if (!selector) return context.problems;
-  const exact = context.problems.filter(problem =>
-    problem.code === selector.code
-    && (!selector.contributionId || problem.contributionId === selector.contributionId));
-  if (exact.length) return exact;
+  if (selector.contributionId) {
+    return context.problems.filter(problem =>
+      problem.code === selector.code
+      && problem.contributionId === selector.contributionId);
+  }
   return context.problems.filter(problem => problem.code === selector.code);
 }
 
