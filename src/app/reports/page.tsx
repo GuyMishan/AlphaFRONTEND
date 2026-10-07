@@ -247,12 +247,12 @@ function DepositFeedbackPanel({
             <UiActionMenu
               ariaLabel={`פעולות עבור ${deposit.employeeName}`}
               items={[
-                {
+                ...(deposit.feedbackStatus !== "attention" ? [{
                   key: "view",
                   label: "צפייה",
                   icon: <Eye size={16} />,
                   onSelect: () => onOpen(deposit),
-                },
+                }] : []),
                 ...(report.canEdit || report.canStartCorrectionWorkspace ? [{
                   key: "edit",
                   label: report.canEdit ? "עריכה" : deposit.hasPendingCorrection ? "המשך תיקון הפקדה" : "תיקון הפקדה",
