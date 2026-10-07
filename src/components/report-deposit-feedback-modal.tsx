@@ -87,7 +87,9 @@ export function ReportDepositFeedbackModal({
       try {
         const [detailsResult, evidenceResult] = await Promise.allSettled([
           reportFeedbackApi.depositDetails(organizationId, employerId, reportId, reportProductId),
-          paymentConfirmationsApi.list(organizationId, employerId, reportId, reportProductId),
+          errorsOnly
+            ? Promise.resolve([] as PaymentConfirmation[])
+            : paymentConfirmationsApi.list(organizationId, employerId, reportId, reportProductId),
         ]);
         if (cancelled) return;
         if (detailsResult.status === "rejected") throw detailsResult.reason;
@@ -110,7 +112,7 @@ export function ReportDepositFeedbackModal({
     }
     void load();
     return () => { cancelled = true; };
-  }, [organizationId, employerId, reportId, reportProductId]);
+  }, [organizationId, employerId, reportId, reportProductId, errorsOnly]);
 
   async function downloadEvidence(item: PaymentConfirmation) {
     if (downloadingId) return;
@@ -143,18 +145,20 @@ export function ReportDepositFeedbackModal({
     {error ? <div className="notice notice-error">{error}</div> : null}
 
     {details ? <>
-      <section className="feedback-modal-summary" aria-label="סיכום הפקדה">
-        <div><span>עובד</span><b>{details.employee.name}</b><small>ת״ז {details.employee.nationalId}</small></div>
-        <div><span>חודש שכר</span><b>{details.product.salaryMonth?.slice(0, 7).split("-").reverse().join("/")}</b></div>
-        <div><span>שכר מבוטח</span><b>{money(details.product.salary)}</b></div>
-        <div><span>סה״כ הפקדה</span><b>{money(details.product.totalAmount)}</b></div>
-      </section>
+      {!errorsOnly ? <>
+        <section className="feedback-modal-summary" aria-label="סיכום הפקדה">
+          <div><span>עובד</span><b>{details.employee.name}</b><small>ת״ז {details.employee.nationalId}</small></div>
+          <div><span>חודש שכר</span><b>{details.product.salaryMonth?.slice(0, 7).split("-").reverse().join("/")}</b></div>
+          <div><span>שכר מבוטח</span><b>{money(details.product.salary)}</b></div>
+          <div><span>סה״כ הפקדה</span><b>{money(details.product.totalAmount)}</b></div>
+        </section>
 
-      <div className="feedback-view-status">
-        {hasFeedback
-          ? <span className="feedback-state completed"><CheckCircle2 size={14} />התקבל משוב</span>
-          : <span className="feedback-state pending">טרם התקבל משוב</span>}
-      </div>
+        <div className="feedback-view-status">
+          {hasFeedback
+            ? <span className="feedback-state completed"><CheckCircle2 size={14} />התקבל משוב</span>
+            : <span className="feedback-state pending">טרם התקבל משוב</span>}
+        </div>
+      </> : null}
 
       {!errorsOnly ? <section className="feedback-modal-section">
         <div className="feedback-modal-section-head">
