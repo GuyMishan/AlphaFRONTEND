@@ -658,7 +658,16 @@ export default function ReportsPage() {
     kind: { column: { key: "kind", label: "סוג דיווח", width: "110px" }, render: (row) => kindLabel(row.reportKind) },
     employees: { column: { key: "employees", label: "עובדים", width: "90px" }, render: (row) => row.employeeCount },
     total: { column: { key: "total", label: "סכום דיווח", width: "130px" }, render: (row) => <span className="report-money">{money(row.totalAmount)}</span> },
-    status: { column: { key: "status", label: "מצב דיווח", width: "165px" }, render: (row) => <StatusBadge status={row.feedbackStatus} /> },
+    status: { column: { key: "status", label: "מצב דיווח", width: "165px" }, render: (row) => <div>
+      <StatusBadge status={row.feedbackStatus} />
+      {row.correctionResolutionStatus === "transmitted-awaiting-feedback"
+        ? <small role="status">טופל ושודר — ממתין למשוב חוזר</small>
+        : row.correctionResolutionStatus === "feedback-returned-needs-review"
+          ? <small role="alert">משוב חוזר התקבל — נדרשת בדיקה</small>
+          : row.correctionResolutionStatus === "correction-in-progress"
+            ? <small>תיקון בתהליך</small>
+            : null}
+    </div> },
     attention: { column: { key: "attention", label: "דורש טיפול", width: "115px" }, render: (row) => row.requiresAttentionCount > 0 ? <span className="report-feedback-error-count">{row.requiresAttentionCount}</span> : "—" },
     payoff: { column: { key: "payoff", label: "שיעור פירעון", width: "120px" }, render: (row) => row.payoffRate == null ? "—" : <strong>{row.payoffRate.toLocaleString("he-IL", { maximumFractionDigits: 2 })}%</strong> },
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
