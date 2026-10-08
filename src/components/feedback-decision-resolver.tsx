@@ -121,6 +121,13 @@ export function FeedbackDecisionResolver({
             {latest ? <span className="feedback-decision-status">{latest}</span> : null}
           </div>
 
+          {problem.code === 50 ? <div className="notice notice-info" role="note">
+            קוד 50 מציין מזהה כפול של העברת כספים. יש להשוות את מזהה ההעברה
+            לדיווחים שכבר שודרו ולוודא האם ההעברה נקלטה. אין לשלוח שוב העברה
+            שכבר נקלטה. בחרו תיקון בדיווח רק כשנדרש תיקון אמיתי; אם מצב
+            ההעברה אינו ברור, פתחו טיפול חיצוני. שמירת תשלום כשלעצמה אינה סוגרת את התקלה.
+          </div> : null}
+
           {problem.latestDecisionNote ? <div className="feedback-decision-last-note">
             <small>הערה אחרונה</small>
             <span>{problem.latestDecisionNote}</span>
