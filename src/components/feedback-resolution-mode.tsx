@@ -242,6 +242,11 @@ export function FeedbackResolutionMode({
             <div>
               <b>קוד {problem.code}</b>
               <span>{problem.description}</span>
+              {problem.feedbackValues.resolutionWorkflowStatus === "transmitted-awaiting-feedback"
+                ? <small role="status">טופל ושודר — ממתין למשוב חוזר מהגוף המוסדי</small>
+                : problem.feedbackValues.resolutionWorkflowStatus === "correction-in-progress"
+                  ? <small role="status">התיקון נשמר — טרם התקבל אישור במשוב</small>
+                  : null}
             </div>
           </div>)}
         </div>
