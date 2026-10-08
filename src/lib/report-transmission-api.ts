@@ -4,6 +4,8 @@ import { employerInterfaceApi } from "./employer-interface-api";
 export type ReportTransmissionItem = {
   id: string;
   provider: string;
+  routingKey?: string;
+  routedProductIdsJson?: string;
   attemptNumber: number;
   status: number | string;
   externalId: string;
@@ -17,7 +19,29 @@ export type ReportTransmissionItem = {
 export type SendReportResult = {
   reportId: string;
   reportStatus: number | string;
-  transmission: ReportTransmissionItem;
+  transmission?: ReportTransmissionItem;
+  transmissions?: ReportTransmissionItem[];
+  requiresProducerFeedback?: boolean;
+};
+
+export type ManufacturerRoutingPreview = {
+  provider: string | null;
+  configured: boolean;
+  requiresSplit: boolean;
+  destinations: Array<{ fundCode: string; provider: string }>;
+};
+
+export type ManufacturerRoutingValidation = {
+  reportId: string;
+  canTransmit: boolean;
+  requiresSplit: boolean;
+  packages: Array<{
+    provider: string;
+    providerConfigured: boolean;
+    productCount: number;
+    valid: boolean;
+    errors: unknown[];
+  }>;
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -50,6 +74,16 @@ function path(organizationId: string, employerId: string, reportId: string) {
 }
 
 export const reportTransmissionApi = {
+  routing: (organizationId: string, employerId: string, reportId: string) =>
+    request<ManufacturerRoutingPreview>(
+      `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/transmission-routing`),
+  validateRouting: (organizationId: string, employerId: string, reportId: string) =>
+    request<ManufacturerRoutingValidation>(
+      `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/transmission-routing/validate`),
+  resumeHybrid: (organizationId: string, employerId: string, reportId: string) =>
+    request<SendReportResult>(`${path(organizationId, employerId, reportId)}/resume-hybrid`, {
+      method: "POST",
+    }),
   history: (organizationId: string, employerId: string, reportId: string) =>
     request<ReportTransmissionItem[]>(path(organizationId, employerId, reportId)),
   send: async (organizationId: string, employerId: string, reportId: string, provider?: string) => {
