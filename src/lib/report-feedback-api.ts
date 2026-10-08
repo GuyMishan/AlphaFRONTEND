@@ -37,6 +37,14 @@ export type ReportFeedbackRow = {
   canEdit: boolean;
   canDelete: boolean;
   canStartCorrectionWorkspace: boolean;
+  canResumeHybrid?: boolean;
+  hybridTransmission?: {
+    recipientCount: number;
+    acceptedCount: number;
+    rejectedCount: number;
+    pendingCount: number;
+    uncertainCount: number;
+  } | null;
   correctionWorkspaceId: string | null;
   pendingCorrectionCount: number;
   canCreateCorrection: boolean;
