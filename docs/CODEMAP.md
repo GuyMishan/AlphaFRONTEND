@@ -144,3 +144,5 @@
 
 
 - Stage 9 restores feedback correction state from backend-owned workspace links when a correction draft is reopened, rather than depending on the original URL handoff. Correction resolution is requested only after the user reaches the validated deposits stage; the backend independently revalidates and can reject false resolution. Refund Edit problems use the shared internal correction surface. Reconcile actions open the durable case UI, and original-movement decisions load server-filtered historic movements into an accessible select and submit the exact selected contribution for backend validation/linking. The resolution queue refreshes from backend context after every terminal action, preserving per-error semantics across refresh and mixed groups.
+
+- Reports & Feedback now displays the backend-owned `correctionResolutionStatus` in the report table as well as `feedbackValues.resolutionWorkflowStatus` in the resolution modal: editing, treated/transmitted awaiting producer feedback, returned-but-not-confirmed. A successful outbound transmission never displays an institutional confirmation by itself.
