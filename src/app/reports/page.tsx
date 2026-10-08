@@ -98,6 +98,22 @@ function pensionProductTypeLabel(value: string | number) {
 }
 
 
+function FeedbackWaitingTooltip({ row }: { row: ReportFeedbackRow }) {
+  const waiting = row.awaitingFeedback;
+  if (!waiting || waiting.totalDestinations < 1) return null;
+  return <Tooltip
+    label="פירוט הכספות שממתינים למשוב מהן"
+    content={<span className="report-feedback-waiting-info">
+      <span>ממתינים למשוב מ־{waiting.manufacturerCount} יצרנים</span>
+      {waiting.manufacturers.length > 0
+        ? <span>{waiting.manufacturers.join("، ")}</span> : null}
+      <span>{waiting.clearinghouse
+        ? "ממתינים גם למשוב מהמסלקה"
+        : "לא ממתינים למשוב מהמסלקה"}</span>
+    </span>}
+  />;
+}
+
 function feedbackLabel(status: ReportFeedbackRow["feedbackStatus"]) {
   switch (status) {
     case "completed": return "הושלם";
@@ -676,7 +692,8 @@ export default function ReportsPage() {
     kind: { column: { key: "kind", label: "סוג דיווח", width: "110px" }, render: (row) => kindLabel(row.reportKind) },
     employees: { column: { key: "employees", label: "עובדים", width: "90px" }, render: (row) => row.employeeCount },
     total: { column: { key: "total", label: "סכום דיווח", width: "130px" }, render: (row) => <span className="report-money">{money(row.totalAmount)}</span> },
-    status: { column: { key: "status", label: "מצב דיווח", width: "165px" }, render: (row) => row.hybridTransmission?.uncertainCount
+    status: { column: { key: "status", label: "מצב דיווח", width: "165px" }, render: (row) => <div className="report-status-with-waiting">
+      {row.hybridTransmission?.uncertainCount
       ? <span className="report-feedback-badge attention" role="alert"><AlertTriangle size={15} />שידור לא ודאי — נדרש בירור</span>
       : row.hybridTransmission && row.hybridTransmission.acceptedCount < row.hybridTransmission.recipientCount
         ? <span className="report-feedback-badge partial" role="status"><Clock3 size={15} />שידור ליצרנים: {row.hybridTransmission.acceptedCount}/{row.hybridTransmission.recipientCount}</span>
@@ -688,7 +705,9 @@ export default function ReportsPage() {
           <StatusBadge status={row.feedbackStatus} />
           {row.correctionResolutionStatus === "correction-in-progress"
             ? <small>תיקון בתהליך</small> : null}
-        </div> },
+        </div>}
+      <FeedbackWaitingTooltip row={row} />
+    </div> },
     attention: { column: { key: "attention", label: "דורש טיפול", width: "115px" }, render: (row) => row.requiresAttentionCount > 0 ? <span className="report-feedback-error-count">{row.requiresAttentionCount}</span> : "—" },
     payoff: { column: { key: "payoff", label: "שיעור פירעון", width: "120px" }, render: (row) => row.payoffRate == null ? "—" : <strong>{row.payoffRate.toLocaleString("he-IL", { maximumFractionDigits: 2 })}%</strong> },
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
