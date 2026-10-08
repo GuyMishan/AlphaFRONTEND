@@ -24,6 +24,12 @@ export type ReportFeedbackRow = {
   isRevisionSnapshot: boolean;
   feedbackStatus: Exclude<ReportFeedbackStatus, "all">;
   correctionResolutionStatus?: "needs-treatment" | "correction-in-progress" | "transmitted-awaiting-feedback" | "feedback-returned-needs-review";
+  awaitingFeedback?: {
+    manufacturerCount: number;
+    manufacturers: string[];
+    clearinghouse: boolean;
+    totalDestinations: number;
+  };
   hasFeedback: boolean;
   issueCount: number;
   requiresAttentionCount: number;
