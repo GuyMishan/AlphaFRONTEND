@@ -672,7 +672,8 @@ export default function NewReportPage() {
         return;
       }
       const result = await reportTransmissionApi.send(scope.organizationId, scope.employerId, manualReportId);
-      setSentExternalId(result.transmission.externalId || result.transmission.id);
+      setSentExternalId(result.transmission?.externalId || result.transmission?.id
+        || result.transmissions?.map(item => item.externalId || item.id).join(", ") || "");
       toast.success("הדיווח נשלח בהצלחה");
       if (followUpReportId) {
         router.replace(`/reports/new?resumeReportId=${followUpReportId}&correctionStage=current`);
