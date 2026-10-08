@@ -1132,3 +1132,19 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Report-level status and its shared, keyboard-accessible vault explanation. */
+.report-status-with-waiting {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+}
+.report-feedback-waiting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: start;
+  white-space: normal;
+}
