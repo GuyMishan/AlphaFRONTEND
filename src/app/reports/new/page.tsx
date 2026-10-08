@@ -402,7 +402,7 @@ export default function NewReportPage() {
         manualReportId,
       );
       setResolutionProblemIds([]);
-      toast.success("השגיאות שעברו ולידציה בבקאנד סומנו כמתוקנות.");
+      toast.success("התיקונים עברו ולידציה. השגיאות יישארו פתוחות עד להשלמת הדיווח החוזר.");
     }
   }
 
