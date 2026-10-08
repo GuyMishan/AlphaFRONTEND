@@ -54,7 +54,8 @@ export function FeedbackDecisionResolver({
 
   async function decide(problem: FeedbackResolutionProblem, outcome: DecisionOutcome) {
     const note = notes[problem.problemId]?.trim() ?? "";
-    if (["external", "reconcile", "link-original"].includes(outcome) && !note) {
+    if ((["external", "reconcile", "link-original"].includes(outcome)
+      || (problem.code === 50 && outcome === "correction")) && !note) {
       setError("יש לכתוב הערה קצרה שמסבירה את ההחלטה לפני העברת הטיפול.");
       return;
     }
@@ -108,7 +109,7 @@ export function FeedbackDecisionResolver({
     <div className="feedback-decision-list">
       {decisionProblems.map(problem => {
         const actions = new Set(problem.availableActions);
-        const requiresNote = actions.has("openExternalCase") || actions.has("reconcile");
+        const requiresNote = actions.has("openExternalCase") || actions.has("reconcile") || problem.code === 50;
         const latest = latestDecisionLabel(problem.latestDecision);
         const busy = busyProblemId === problem.problemId;
 
