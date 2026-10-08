@@ -23,6 +23,7 @@ export type ReportFeedbackRow = {
   revisionNumber: number;
   isRevisionSnapshot: boolean;
   feedbackStatus: Exclude<ReportFeedbackStatus, "all">;
+  correctionResolutionStatus?: "needs-treatment" | "correction-in-progress" | "transmitted-awaiting-feedback" | "feedback-returned-needs-review";
   hasFeedback: boolean;
   issueCount: number;
   requiresAttentionCount: number;
