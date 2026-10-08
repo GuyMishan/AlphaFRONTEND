@@ -29,6 +29,7 @@ import { Tooltip } from "@/components/tooltip";
 import { UiActionMenu, UiAutocomplete, UiCheckbox, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { manualDepositsApi, type ManualDepositContributionLimit, type ManualDepositRow } from "@/lib/manual-deposits-api";
 import { derivedReportsApi } from "@/lib/derived-reports-api";
+import { reportTransmissionApi } from "@/lib/report-transmission-api";
 import { alphaApi } from "@/lib/api";
 import { getEmployerSelection } from "@/lib/session";
 import {
@@ -585,6 +586,23 @@ export default function ReportsPage() {
     }
   }
 
+  async function resumeHybridTransmission(report: ReportFeedbackRow) {
+    if (!scope || correctionBusyId || !report.canResumeHybrid) return;
+    setCorrectionBusyId(report.id);
+    setError("");
+    try {
+      await reportTransmissionApi.resumeHybrid(
+        scope.organizationId, scope.employerId, report.id,
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "המשך השידור ליצרנים נכשל.");
+      await load();
+    } finally {
+      setCorrectionBusyId("");
+    }
+  }
+
   async function openCorrectionWorkspace(report: ReportFeedbackRow) {
     if (!scope || correctionBusyId) return;
     setError("");
@@ -658,7 +676,11 @@ export default function ReportsPage() {
     kind: { column: { key: "kind", label: "סוג דיווח", width: "110px" }, render: (row) => kindLabel(row.reportKind) },
     employees: { column: { key: "employees", label: "עובדים", width: "90px" }, render: (row) => row.employeeCount },
     total: { column: { key: "total", label: "סכום דיווח", width: "130px" }, render: (row) => <span className="report-money">{money(row.totalAmount)}</span> },
-    status: { column: { key: "status", label: "מצב דיווח", width: "165px" }, render: (row) => row.correctionResolutionStatus === "transmitted-awaiting-feedback"
+    status: { column: { key: "status", label: "מצב דיווח", width: "165px" }, render: (row) => row.hybridTransmission?.uncertainCount
+      ? <span className="report-feedback-badge attention" role="alert"><AlertTriangle size={15} />שידור לא ודאי — נדרש בירור</span>
+      : row.hybridTransmission && row.hybridTransmission.acceptedCount < row.hybridTransmission.recipientCount
+        ? <span className="report-feedback-badge partial" role="status"><Clock3 size={15} />שידור ליצרנים: {row.hybridTransmission.acceptedCount}/{row.hybridTransmission.recipientCount}</span>
+        : row.correctionResolutionStatus === "transmitted-awaiting-feedback"
       ? <span className="report-feedback-badge pending" role="status"><Clock3 size={15} />טופל ושודר — ממתין למשוב</span>
       : row.correctionResolutionStatus === "feedback-returned-needs-review"
         ? <span className="report-feedback-badge attention" role="alert"><AlertTriangle size={15} />משוב חוזר — נדרשת בדיקה</span>
@@ -686,6 +708,13 @@ export default function ReportsPage() {
             label: "עריכת הדיווח",
             icon: <Pencil size={16} />,
             onSelect: () => router.push(`/reports/new?resumeReportId=${row.id}`),
+          }] : []),
+          ...(row.canResumeHybrid ? [{
+            key: "resume-hybrid-transmission",
+            label: "המשך שידור ליצרנים שטרם נקלטו",
+            icon: <RefreshCw size={16} />,
+            disabled: correctionBusyId === row.id,
+            onSelect: () => void resumeHybridTransmission(row),
           }] : []),
           ...(row.canStartCorrectionWorkspace ? [{
             key: "correct-report",
