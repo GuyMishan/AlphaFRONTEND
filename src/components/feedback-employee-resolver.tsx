@@ -102,7 +102,7 @@ export function FeedbackEmployeeResolver({
     <div className="feedback-resolution-section-head">
       <div>
         <h3>בדיקת פרטי העובד</h3>
-        <p>הדיווח המקורי נשאר היסטורי ולא משתנה. כאן מעדכנים את נתוני העובד הנוכחיים בלבד.</p>
+        <p>הדיווח המקורי נשאר היסטורי ולא משתנה. עדכון העובד מועתק לגרסת תיקון נפרדת, והשגיאה נשארת פתוחה עד שהדיווח החוזר נשלח.</p>
       </div>
     </div>
 
@@ -125,7 +125,7 @@ export function FeedbackEmployeeResolver({
 
     {saved ? <div className="notice notice-info">
       <CheckCircle2 size={16} aria-hidden="true" />
-      פרטי העובד עודכנו. שגיאות Edit שעברו את ולידציית המסך סומנו כמתוקנות; שגיאות Decision נשארו לטיפול נפרד.
+      פרטי העובד עודכנו והוכנו בגרסת התיקון. השגיאה תישאר דורשת טיפול עד להשלמת הדיווח החוזר; שגיאות Decision נשארות לטיפול נפרד.
     </div> : null}
 
     {loading ? <div className="empty">טוען את פרטי העובד...</div> : null}
@@ -171,7 +171,7 @@ export function FeedbackEmployeeResolver({
             setFormVersion(value => value + 1);
             onChanged();
           } catch (err) {
-            setError(err instanceof Error ? err.message : "פרטי העובד נשמרו אך סימון התקלה כמתוקנת נכשל.");
+            setError(err instanceof Error ? err.message : "פרטי העובד נשמרו אך הכנת התיקון למשוב נכשלה.");
           }
         }}
       />
