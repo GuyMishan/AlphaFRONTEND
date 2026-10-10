@@ -46,11 +46,13 @@ function IssueGroups({
   order,
   onResolveOne,
   onResolveAll,
+  onOpenReport,
 }: {
   issues: ReportFeedbackContextIssue[];
   order: string[];
   onResolveOne: (selector: FeedbackResolutionProblemSelector) => void;
   onResolveAll: () => void;
+  onOpenReport?: (reportId: string) => void;
 }) {
   const groups = useMemo(() => order
     .map(scope => ({
@@ -79,8 +81,16 @@ function IssueGroups({
           <div className="feedback-error-copy">
             <b>{item.code > 0 ? `קוד ${item.code}` : "תקלה"}</b>
             <span>{item.description}</span>
-            {item.affectedReportIds && item.affectedReportIds.length > 1
-              ? <small>משפיעה על {item.affectedReportIds.length} דיווחים</small>
+            {item.affectedReportIds?.length
+              ? <div className="feedback-linked-reports">
+                  <small>דיווחים מושפעים ({item.affectedReportIds.length}):</small>
+                  {item.affectedReportIds.map(id =>
+                    <button key={id} type="button" className="btn btn-secondary"
+                      onClick={() => onOpenReport?.(id)} disabled={!onOpenReport}
+                      title={id} aria-label={`פתיחת דיווח ${id}`}>
+                      דיווח {id.slice(0, 8)}
+                    </button>)}
+                </div>
               : null}
           </div>
           {item.code > 0 ? <FeedbackResolveButton
@@ -118,6 +128,7 @@ export function ReportFeedbackModal({
 }) {
   const [employerContext, setEmployerContext] = useState<EmployerFeedbackContext | null>(null);
   const [reportContext, setReportContext] = useState<ReportFeedbackContext | null>(null);
+  const [linkedReportId, setLinkedReportId] = useState<string | null>(null);
   const [loading, setLoading] = useState(mode !== "deposit");
   const [error, setError] = useState("");
   const [resolutionSelector, setResolutionSelector] = useState<FeedbackResolutionProblemSelector | null | undefined>(
@@ -148,6 +159,12 @@ export function ReportFeedbackModal({
     void load();
     return () => { cancelled = true; };
   }, [mode, organizationId, employerId, reportId]);
+
+  if (linkedReportId) {
+    return <ReportFeedbackModal mode="report" organizationId={organizationId}
+      employerId={employerId} reportId={linkedReportId}
+      onClose={() => setLinkedReportId(null)} />;
+  }
 
   if (resolutionSelector !== undefined) {
     return <FeedbackResolutionMode
@@ -222,6 +239,7 @@ export function ReportFeedbackModal({
           order={["employer"]}
           onResolveOne={(selector) => setResolutionSelector(selector)}
           onResolveAll={() => setResolutionSelector(null)}
+          onOpenReport={mode === "employer" ? setLinkedReportId : undefined}
         />
       </section>
     </> : null}
