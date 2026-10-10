@@ -228,7 +228,8 @@ export function ReportDepositFeedbackModal({
           {(() => {
             const rowsByErrorCode = new Map<number, typeof details.manufacturerContributions>();
             for (const item of details.manufacturerContributions) {
-              if (!isActionableManufacturerError(item.errorCode, item.isResolved) || item.errorCode == null) continue;
+              if (!isActionableManufacturerError(item.errorCode, item.isResolved) || item.errorCode == null
+                  || (item.targetScope !== "deposit" && item.targetScope !== "employee")) continue;
               const current = rowsByErrorCode.get(item.errorCode) ?? [];
               current.push(item);
               rowsByErrorCode.set(item.errorCode, current);
@@ -236,31 +237,31 @@ export function ReportDepositFeedbackModal({
 
             const promotedErrorCodes = new Set<number>();
             for (const [code, rows] of rowsByErrorCode) {
-              const semanticGeneralError = rows.some((row) => row.errorScope !== "contribution");
+              const semanticGeneralError = rows.some((row) =>
+                row.targetScope === "employee" || row.errorScope !== "contribution");
               if (semanticGeneralError) promotedErrorCodes.add(code);
             }
 
-            const scopeLabel = (scope: (typeof details.manufacturerContributions)[number]["errorScope"]) => {
+            const scopeLabel = (scope: "employee" | "deposit") => {
               switch (scope) {
                 case "employee": return "עובד";
-                case "money": return "מעסיק";
-                case "report": return "דיווח";
-                case "deposit": return "הפקדה / מוצר";
-                case "contribution": return "רכיבי הפרשה";
+                case "deposit": return "הפקדה / מוצר והפרשות";
                 default: return "מידע";
               }
             };
 
-            const scopeOrder: Array<(typeof details.manufacturerContributions)[number]["errorScope"]> = [
+            const scopeOrder: Array<"employee" | "deposit"> = [
               "employee", "deposit",
             ];
             const groupedErrors = scopeOrder
               .map((scope) => {
                 const items = Array.from(rowsByErrorCode.entries())
                   .map(([code, rows]) => ({ code, rows }))
-                  .filter(({ rows }) => rows.some((row) => row.errorScope === scope))
+                  .filter(({ rows }) => rows.some((row) => row.targetScope === scope
+                    && (scope !== "deposit" || row.errorScope !== "contribution")))
                   .map(({ code, rows }) => {
-                    const first = rows.find((row) => row.errorScope === scope) ?? rows[0];
+                    const first = rows.find((row) => row.targetScope === scope
+                      && (scope !== "deposit" || row.errorScope !== "contribution")) ?? rows[0];
                     return {
                       code,
                       description: first?.errorDescription || `קוד שגיאה ${code}`,
@@ -309,6 +310,8 @@ export function ReportDepositFeedbackModal({
               const localErrorRows = manufacturerRows.filter((item) =>
                 isActionableManufacturerError(item.errorCode, item.isResolved)
                 && item.errorCode != null
+                && item.targetScope === "deposit"
+                && item.errorScope === "contribution"
                 && !promotedErrorCodes.has(item.errorCode));
               const additionalManufacturerRows = manufacturerRows.filter((item) =>
                 item !== manufacturer
