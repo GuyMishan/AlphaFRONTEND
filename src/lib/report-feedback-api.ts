@@ -261,6 +261,7 @@ export type FeedbackResolutionProblem = {
   code: number;
   description: string;
   scope: ReportFeedbackScope;
+  targetScope: "employer" | "report" | "employee" | "deposit" | "informational";
   resolutionType: FeedbackResolutionType;
   family: string;
   resolverType: string;
