@@ -79,6 +79,9 @@ function IssueGroups({
           <div className="feedback-error-copy">
             <b>{item.code > 0 ? `קוד ${item.code}` : "תקלה"}</b>
             <span>{item.description}</span>
+            {item.affectedReportIds && item.affectedReportIds.length > 1
+              ? <small>משפיעה על {item.affectedReportIds.length} דיווחים</small>
+              : null}
           </div>
           {item.code > 0 ? <FeedbackResolveButton
             compact
