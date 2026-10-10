@@ -33,7 +33,7 @@ function resolutionIcon(value: FeedbackResolutionProblem["resolutionType"]) {
 
 function scopeLabel(value: string) {
   switch (value) {
-    case "employer":
+    case "employer": return "מעסיק";
     case "money": return "כספים";
     case "report": return "דיווח";
     case "employee": return "עובד";
