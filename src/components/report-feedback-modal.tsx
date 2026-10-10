@@ -35,8 +35,8 @@ function reportKindLabel(value: number | string) {
 function scopeLabel(scope: string) {
   switch (scope) {
     case "report": return "דיווח";
-    case "money":
     case "employer": return "מעסיק";
+    case "money": return "כספים";
     default: return "אחר";
   }
 }
@@ -55,7 +55,7 @@ function IssueGroups({
   const groups = useMemo(() => order
     .map(scope => ({
       scope,
-      items: issues.filter(item => item.scope === scope || (scope === "employer" && item.scope === "money")),
+      items: issues.filter(item => item.scope === scope || false),
     }))
     .filter(group => group.items.length > 0), [issues, order]);
 
