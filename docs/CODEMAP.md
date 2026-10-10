@@ -149,3 +149,7 @@ Feedback viewing now uses one generic entry point, `report-feedback-modal.tsx`, 
 - Reports & Feedback now displays the backend-owned `correctionResolutionStatus` in the report table as well as `feedbackValues.resolutionWorkflowStatus` in the resolution modal: editing, treated/transmitted awaiting producer feedback, returned-but-not-confirmed. A successful outbound transmission never displays an institutional confirmation by itself.
 
 - Hybrid producer routing: `src/lib/report-transmission-api.ts` provides routing inspection, 006 package validation and authenticated resume of unfinished recipient transmissions; `src/app/reports/new/page.tsx` accepts a multi-recipient send response while preserving legacy single-transmission results; `src/app/reports/page.tsx` displays progress per producer and only offers "המשך שידור ליצרנים שטרם נקלטו" when Backend marks recovery safe. The entire feature is server-gated by `Reporting:ManufacturerRouting:EnableHybridDispatch`; product routing and feedback correlation remain exclusively server-owned.
+
+### Feedback resolution issue list
+
+`feedback-resolution-mode.tsx` labels its navigation as issues (not backend groups). The context endpoint enforces employer/report/deposit scope based on the entry point; individual issue actions filter the chosen code's problem rows before passing them to resolvers. Backend group keys remain internal for server-side validation, while users see each issue's code/description and select the appropriate one. `src/app/ui-fixes.css` keeps issue selection responsive and RTL-friendly.
