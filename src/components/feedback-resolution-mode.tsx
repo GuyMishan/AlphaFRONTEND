@@ -165,10 +165,8 @@ export function FeedbackResolutionMode({
   return <AppModal
     width="xl"
     className="report-deposit-feedback-modal feedback-resolution-modal"
-    title="מצב פתרון בעיות"
-    subtitle={activeGroup
-      ? `קבוצת טיפול ${safeIndex + 1} מתוך ${groups.length} · ${new Set(activeGroup.problems.map(problem => problem.code)).size} קודי תקלה, ${activeGroup.problems.length} שורות משוב`
-      : "טעינת תהליך הטיפול"}
+    title="פתרון בעיות"
+    subtitle={contextType === "employer" ? "תקלות במעסיק" : contextType === "report" ? "תקלות בדיווח" : "תקלות בהפקדה"}
     onClose={onClose}
     actions={<>
       <button type="button" className="btn btn-secondary" onClick={onBack}>
@@ -181,7 +179,7 @@ export function FeedbackResolutionMode({
           disabled={safeIndex === 0}
           onClick={() => setActiveIndex(index => Math.max(index - 1, 0))}
         >
-          <ArrowRight size={16} aria-hidden="true" />הקבוצה הקודמת
+          <ArrowRight size={16} aria-hidden="true" />התקלה הקודמת
         </button>
         <button
           type="button"
@@ -189,7 +187,7 @@ export function FeedbackResolutionMode({
           disabled={safeIndex >= groups.length - 1}
           onClick={() => setActiveIndex(index => Math.min(index + 1, groups.length - 1))}
         >
-          הקבוצה הבאה<ArrowLeft size={16} aria-hidden="true" />
+          התקלה הבאה<ArrowLeft size={16} aria-hidden="true" />
         </button>
       </> : null}
     </>}
@@ -216,10 +214,25 @@ export function FeedbackResolutionMode({
         </div>
       : null}
 
+    {!loading && !error && groups.length > 1 ? <section className="feedback-resolution-issue-picker" aria-label="בעיות לטיפול">
+      <strong>בעיות לטיפול ({new Set(groups.flatMap(group => group.problems.map(problem => problem.code))).size})</strong>
+      <div className="feedback-resolution-issue-picker-items">
+        {groups.map((group, index) => {
+          const first = group.problems[0];
+          return <button key={group.groupKey} type="button"
+            className={`btn ${index === safeIndex ? "btn-primary" : "btn-secondary"}`}
+            aria-current={index === safeIndex ? "step" : undefined}
+            onClick={() => setActiveIndex(index)}>
+            קוד {first.code} — {first.description}
+          </button>;
+        })}
+      </div>
+    </section> : null}
+
     {!loading && !error && activeGroup && primaryProblem ? <>
       <section className="feedback-resolution-progress" aria-label="התקדמות בתור הטיפול">
         <div>
-          <span>קבוצת טיפול נוכחית</span>
+          <span>בעיה לטיפול</span>
           <strong>{safeIndex + 1} / {groups.length}</strong>
         </div>
         <div className="feedback-resolution-progress-track" aria-hidden="true">
@@ -334,8 +347,8 @@ export function FeedbackResolutionMode({
               <strong>קבוצת הטיפול מוכנה ל־resolver.</strong>
               <p>
                 {activeGroup.problems.length === 1
-                  ? "התקלה תטופל כיחידה אחת."
-                  : `${activeGroup.problems.length} התקלות בקבוצה דורשות אותו יעד טיפול ולכן ירוכזו יחד.`}
+                  ? "מוצגת התקלה שנבחרה."
+                  : "התקלה מופיעה בכמה שורות משוב ונדרשת לטיפול אחד."}
                 {" "}Resolver מסוג <b dir="ltr">{activeGroup.resolverType}</b> ייכנס בשלבים הבאים.
               </p>
             </div>
