@@ -279,11 +279,12 @@ export function FeedbackResolutionMode({
         /> : null}
 
       {activeGroup.problems.some(problem =>
+        !(problem.code === 56 && problem.targetScope === "employer") && (
         problem.resolutionType === "external"
         || Boolean(problem.externalCaseId)
         || (problem.resolutionType === "edit"
           && (problem.availableActions.includes("openExternalCase")
-            || problem.availableActions.includes("reconcile"))))
+            || problem.availableActions.includes("reconcile")))))
         ? <FeedbackExternalCaseResolver
             organizationId={organizationId}
             employerId={employerId}
