@@ -287,7 +287,7 @@ export function FeedbackResolutionMode({
               {(problem.allowedTargetScopes?.length ?? 0) > 1 ? <div className="feedback-resolution-target-choice">
                 <small>איפה נמצאת התקלה? בחירת יעד טיפול תישמר במערכת.</small>
                 <div className="feedback-resolution-target-buttons" role="group" aria-label={`יעד טיפול לקוד ${problem.code}`}>
-                  {problem.allowedTargetScopes?.filter(scope => scope !== "informational").map(scope =>
+                  {problem.allowedTargetScopes?.map(scope =>
                     <button
                       key={scope}
                       type="button"
