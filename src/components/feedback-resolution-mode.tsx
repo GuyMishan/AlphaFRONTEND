@@ -228,8 +228,12 @@ export function FeedbackResolutionMode({
       <span> נמצאו קודי משוב שעדיין אינם נתמכים ב־ALPHA: {context.unsupportedCodes.join(", ")}.</span>
     </div> : null}
 
-    {!loading && !error && context && !context.canResolve && context.unsupportedCodes.length === 0
+    {!loading && !error && context && context.problems.length > 0 && !context.canResolve && context.unsupportedCodes.length === 0
       ? <div className="notice notice-error">אין לך הרשאה לבצע פעולות פתרון בהקשר הזה.</div>
+      : null}
+
+    {!loading && !error && context && context.problems.length === 0
+      ? <div className="notice notice-info"><CheckCircle2 size={16} aria-hidden="true" />לא נמצאו תקלות פעילות לטיפול בהקשר הזה.</div>
       : null}
 
     {!loading && !error && context?.canResolve && groups.length === 0
