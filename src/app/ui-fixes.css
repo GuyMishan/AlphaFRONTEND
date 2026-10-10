@@ -367,27 +367,3 @@ body:has(.report-modal-backdrop) {
   max-width: 66px;
 }
 
-/* Contextual feedback-target triage: compact, RTL-safe and touch accessible. */
-.feedback-resolution-target-choice {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  margin-top: 12px;
-}
-.feedback-resolution-target-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-width: 0;
-}
-.feedback-resolution-target-buttons .btn {
-  min-height: 40px;
-  white-space: normal;
-}
-@media (max-width: 560px) {
-  .feedback-resolution-target-buttons .btn {
-    flex: 1 1 45%;
-    min-width: 0;
-  }
-}
