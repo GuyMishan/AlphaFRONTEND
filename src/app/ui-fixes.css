@@ -367,3 +367,20 @@ body:has(.report-modal-backdrop) {
   max-width: 66px;
 }
 
+
+/* Linked source reports belonging to one employer-level feedback problem. */
+.feedback-linked-reports {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  min-width: 0;
+}
+.feedback-linked-reports small {
+  flex-basis: 100%;
+}
+.feedback-linked-reports .btn {
+  min-height: 36px;
+  max-width: 100%;
+}
