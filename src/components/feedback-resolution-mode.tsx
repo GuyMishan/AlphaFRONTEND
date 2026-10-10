@@ -241,10 +241,16 @@ export function FeedbackResolutionMode({
         </div>
 
         <div className="feedback-resolution-problem-copy">
-          {primaryProblem.employeeName ? <small>עובד: {primaryProblem.employeeName}</small> : null}
-          {primaryProblem.fundCompanyName || primaryProblem.productName
-            ? <small>מוצר: {primaryProblem.fundCompanyName || primaryProblem.productName}{primaryProblem.policyNumber ? ` · פוליסה ${primaryProblem.policyNumber}` : ""}</small>
-            : null}
+          {primaryProblem.targetScope === "report"
+            ? <small>תקלה ברמת הדיווח כולו · שורות המשוב המקוריות משויכות להפקדות לצורך מעקב בלבד.</small>
+            : primaryProblem.targetScope === "employer"
+              ? <small>תקלה כללית ברמת המעסיק · אינה מוגבלת לעובד או להפקדה מסוימים.</small>
+              : <>
+                  {primaryProblem.employeeName ? <small>עובד: {primaryProblem.employeeName}</small> : null}
+                  {primaryProblem.fundCompanyName || primaryProblem.productName
+                    ? <small>מוצר: {primaryProblem.fundCompanyName || primaryProblem.productName}{primaryProblem.policyNumber ? ` · פוליסה ${primaryProblem.policyNumber}` : ""}</small>
+                    : null}
+                </>}
         </div>
 
         <div className="feedback-resolution-group-problems" role="list" aria-label="תקלות בקבוצת הטיפול">
