@@ -262,6 +262,7 @@ export type FeedbackResolutionProblem = {
   description: string;
   scope: ReportFeedbackScope;
   targetScope: "employer" | "report" | "employee" | "deposit" | "informational";
+  allowedTargetScopes?: Array<"employer" | "report" | "employee" | "deposit">;
   resolutionType: FeedbackResolutionType;
   family: string;
   resolverType: string;
@@ -603,6 +604,14 @@ export const reportFeedbackApi = {
   }>(
     `${base(organizationId, employerId)}/${reportId}/resolution-actions/${encodeURIComponent(problemId)}/link-original`,
     { method: "POST", body: JSON.stringify({ contributionId }) },
+  ),
+
+  selectTreatmentTarget: (
+    organizationId: string, employerId: string, reportId: string,
+    problemIds: string[], targetScope: "employer" | "report" | "employee" | "deposit",
+  ) => request<{ problemIds: string[]; targetScope: string }>(
+    `${base(organizationId, employerId)}/${reportId}/resolution-actions/target`,
+    { method: "POST", body: JSON.stringify({ problemIds, targetScope }) },
   ),
 
   decideProblem: (
