@@ -235,7 +235,7 @@ export function FeedbackResolutionMode({
       : null}
 
     {!loading && !error && groups.length > 1 ? <section className="feedback-resolution-issue-picker" aria-label="בחירת בעיה לטיפול">
-      <label htmlFor="feedback-issue-autocomplete-label">בחרו בעיה לטיפול</label>
+      <strong>בחרו בעיה לטיפול</strong>
       <UiAutocomplete
         value={issueSearch}
         onValueChange={value => {
