@@ -384,3 +384,17 @@ body:has(.report-modal-backdrop) {
   min-height: 36px;
   max-width: 100%;
 }
+
+/* Level-specific problem chooser in feedback resolution. */
+.feedback-resolution-issue-picker { display: grid; gap: 10px; margin-block: 12px; }
+.feedback-resolution-issue-picker-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.feedback-resolution-issue-picker-items .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: start;
+  line-height: 1.5;
+}
+@media (max-width: 600px) {
+  .feedback-resolution-issue-picker-items { flex-direction: column; }
+  .feedback-resolution-issue-picker-items .btn { width: 100%; }
+}
