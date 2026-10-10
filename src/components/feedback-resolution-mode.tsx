@@ -197,7 +197,7 @@ export function FeedbackResolutionMode({
     {loading ? <div className="empty">טוען את נתוני הפתרון...</div> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
 
-    {!loading && !error && context?.unsupportedCodes.length ? <div className="notice notice-error">
+    {!loading && !error && context?.unsupportedCodes.length && !selector ? <div className="notice notice-error">
       <strong>לא ניתן להתחיל טיפול אוטומטי.</strong>
       <span> נמצאו קודי משוב שעדיין אינם נתמכים ב־ALPHA: {context.unsupportedCodes.join(", ")}.</span>
     </div> : null}
