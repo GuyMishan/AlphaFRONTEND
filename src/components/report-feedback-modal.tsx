@@ -55,7 +55,7 @@ function IssueGroups({
   const groups = useMemo(() => order
     .map(scope => ({
       scope,
-      items: issues.filter(item => item.scope === scope || false),
+      items: issues.filter(item => item.scope === scope),
     }))
     .filter(group => group.items.length > 0), [issues, order]);
 
