@@ -266,11 +266,11 @@ export function FeedbackInternalCorrectionResolver({
 
     {error ? <div className="notice notice-error">{error}</div> : null}
 
-    {group.resolverType === "payment" ? <button
+    {group.resolverType === "payment" && group.problems.some(item => item.targetScope === "deposit") ? <button
       type="button"
       className="btn btn-primary feedback-resolution-open-workspace"
       disabled={!group.canExecute || !onEditDeposit}
-      onClick={() => onEditDeposit?.(group.problems.map(item => item.problemId))}
+      onClick={() => onEditDeposit?.(group.problems.filter(item => item.targetScope === "deposit").map(item => item.problemId))}
     >
       עריכת פרטי ההפקדה
       <ArrowLeft size={16} aria-hidden="true" />
