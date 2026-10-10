@@ -94,7 +94,7 @@ export function FeedbackExternalCaseResolver({
       employerId,
       first.reportId,
       group.groupKey,
-      targets.map((problem) => problem.problemId),
+      targets.filter(problem => problem.reportId === first.reportId).map(problem => problem.problemId),
       note,
       action,
     ));
@@ -123,7 +123,7 @@ export function FeedbackExternalCaseResolver({
     <div className="feedback-resolution-section-head">
       <div>
         <h3>טיפול מול גוף חיצוני</h3>
-        <p>ייפתח תיק אחד לקבוצת הטיפול. משוב המשך לאותה תנועה יצטרף לאותו תיק.</p>
+        <p>תיק הטיפול ייפתח לשורות מהדיווח הנבחר בלבד. בדיווחים נוספים יש לטפל בנפרד.</p>
       </div>
     </div>
     {error ? <div className="notice notice-error">{error}</div> : null}
