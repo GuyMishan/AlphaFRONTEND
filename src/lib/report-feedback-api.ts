@@ -192,6 +192,7 @@ export type ReportFeedbackDepositDetails = {
     errorDescription: string;
     isResolved: boolean;
     errorScope: "contribution" | "deposit" | "employee" | "money" | "report" | "informational";
+    targetScope: "deposit" | "employee" | "employer" | "report" | "informational";
     errorAmount: number | null;
     errorDate: string | null;
     contributionTypeCode: number | null;
