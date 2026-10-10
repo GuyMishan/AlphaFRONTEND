@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, FilePenLine, ListChecks } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { FeedbackEmployeeResolver } from "@/components/feedback-employee-resolver";
@@ -191,7 +192,7 @@ export function FeedbackResolutionMode({
     className="report-deposit-feedback-modal feedback-resolution-modal"
     title="מצב פתרון בעיות"
     subtitle={activeGroup
-      ? `קבוצת טיפול ${safeIndex + 1} מתוך ${groups.length} · ${activeGroup.problems.length} ${activeGroup.problems.length === 1 ? "תקלה" : "תקלות"}`
+      ? `קבוצת טיפול ${safeIndex + 1} מתוך ${groups.length} · ${new Set(activeGroup.problems.map(problem => problem.code)).size} קודי תקלה, ${activeGroup.problems.length} שורות משוב`
       : "טעינת תהליך הטיפול"}
     onClose={onClose}
     actions={<>
@@ -304,6 +305,16 @@ export function FeedbackResolutionMode({
           </div>)}
         </div>
       </section>
+
+      {activeGroup.problems.some(problem => problem.code === 56 && problem.targetScope === "employer")
+        ? <section className="notice notice-info">
+            <strong>מקור התקלה: חשבון התשלום הכללי של המעסיק</strong>
+            <p>יש לתקן את חשבון התשלום הפנסיוני בהגדרות המעסיק. עדכון החשבון לא סוגר משוב על דיווח שכבר נשלח.</p>
+            <Link
+              className="btn btn-secondary"
+              href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=pension-payment`}
+            >פתיחת אמצעי התשלום הפנסיוני</Link>
+          </section> : null}
 
       {activeGroup.problems.some(problem => problem.resolutionType === "decision") ? <FeedbackDecisionResolver
           organizationId={organizationId}
