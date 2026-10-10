@@ -249,7 +249,7 @@ export function FeedbackResolutionMode({
       />
     </section> : null}
 
-    {!loading && !error && activeGroup && primaryProblem ? <>
+    {!loading && !error && context && totalIssues > 0 ? <>
       <section className="feedback-resolution-progress" aria-label="התקדמות בטיפול בתקלות">
         <div>
           <span>בעיות שטופלו</span>
@@ -260,6 +260,9 @@ export function FeedbackResolutionMode({
         </div>
       </section>
 
+    </> : null}
+
+    {!loading && !error && activeGroup && primaryProblem ? <>
       <section className="feedback-resolution-problem-card">
         <div className="feedback-resolution-problem-head">
           <span className="feedback-resolution-resolver">
