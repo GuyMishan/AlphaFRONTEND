@@ -116,16 +116,6 @@ export function FeedbackResolutionMode({
   const [error, setError] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [refreshToken, setRefreshToken] = useState(0);
-  const [targetBusy, setTargetBusy] = useState(false);
-  const [targetError, setTargetError] = useState("");
-  const [targetContext, setTargetContext] = useState<{
-    type: FeedbackResolutionContextType;
-    reportId: string;
-    reportProductId?: string;
-  } | null>(null);
-  const currentType = targetContext?.type ?? contextType;
-  const currentReportId = targetContext?.reportId ?? reportId;
-  const currentProductId = targetContext?.reportProductId ?? reportProductId;
 
   useEffect(() => {
     let cancelled = false;
@@ -134,7 +124,7 @@ export function FeedbackResolutionMode({
     setContext(null);
     setActiveIndex(0);
     Promise.resolve()
-      .then(() => loadContext(currentType, organizationId, employerId, currentReportId, currentProductId))
+      .then(() => loadContext(contextType, organizationId, employerId, reportId, reportProductId))
       .then(result => {
         if (!cancelled) setContext(result);
       })
@@ -145,7 +135,7 @@ export function FeedbackResolutionMode({
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [currentType, organizationId, employerId, currentReportId, currentProductId, refreshToken]);
+  }, [contextType, organizationId, employerId, reportId, reportProductId, refreshToken]);
 
   const groups = useMemo(() => {
     if (!context || context.unsupportedCodes.length) return [];
@@ -156,29 +146,6 @@ export function FeedbackResolutionMode({
   const primaryProblem = activeGroup?.problems[0];
   const editableProblems = activeGroup?.problems.filter(problem => problem.resolutionType === "edit") ?? [];
 
-  async function chooseTarget(problem: FeedbackResolutionProblem, targetScope: "employer" | "report" | "employee" | "deposit") {
-    if (!activeGroup || targetBusy) return;
-    const related = activeGroup.problems.filter(item => item.code === problem.code);
-    setTargetError("");
-    setTargetBusy(true);
-    try {
-      await reportFeedbackApi.selectTreatmentTarget(
-        organizationId, employerId, problem.reportId,
-        related.map(item => item.problemId), targetScope,
-      );
-      setTargetContext({
-        type: targetScope === "employee" ? "deposit" : targetScope,
-        reportId: problem.reportId,
-        reportProductId: problem.reportProductId ?? undefined,
-      });
-      setActiveIndex(0);
-      setRefreshToken(value => value + 1);
-    } catch (cause) {
-      setTargetError(cause instanceof Error ? cause.message : "שמירת יעד הטיפול נכשלה.");
-    } finally {
-      setTargetBusy(false);
-    }
-  }
   const editableGroup = activeGroup && editableProblems.length
     ? { ...activeGroup, problems: editableProblems }
     : null;
@@ -221,7 +188,6 @@ export function FeedbackResolutionMode({
   >
     {loading ? <div className="empty">טוען את נתוני הפתרון...</div> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
-    {targetError ? <div className="notice notice-error" role="alert">{targetError}</div> : null}
 
     {!loading && !error && context?.unsupportedCodes.length ? <div className="notice notice-error">
       <strong>לא ניתן להתחיל טיפול אוטומטי.</strong>
@@ -289,22 +255,6 @@ export function FeedbackResolutionMode({
                   : problem.feedbackValues.resolutionWorkflowStatus === "correction-in-progress"
                   ? <small role="status">התיקון נשמר — טרם התקבל אישור במשוב</small>
                   : null}
-              {(problem.allowedTargetScopes?.length ?? 0) > 1 ? <div className="feedback-resolution-target-choice">
-                <small>איפה נמצאת התקלה? בחירת יעד טיפול תישמר במערכת.</small>
-                <div className="feedback-resolution-target-buttons" role="group" aria-label={`יעד טיפול לקוד ${problem.code}`}>
-                  {problem.allowedTargetScopes?.map(scope =>
-                    <button
-                      key={scope}
-                      type="button"
-                      className={scope === problem.targetScope ? "btn btn-primary" : "btn btn-secondary"}
-                      aria-pressed={scope === problem.targetScope}
-                      disabled={targetBusy || scope === problem.targetScope}
-                      onClick={() => void chooseTarget(problem, scope)}
-                    >
-                      {scopeLabel(scope)}
-                    </button>)}
-                </div>
-              </div> : null}
             </div>
           </div>)}
         </div>
