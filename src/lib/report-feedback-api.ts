@@ -116,6 +116,7 @@ export type ReportFeedbackContextIssue = {
   reportProductId: string | null;
   contributionId: string | null;
   receivedAt: string;
+  affectedReportIds?: string[];
 };
 
 export type EmployerFeedbackContext = {
