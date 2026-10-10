@@ -153,3 +153,5 @@ Feedback viewing now uses one generic entry point, `report-feedback-modal.tsx`, 
 ### Feedback resolution issue list
 
 `feedback-resolution-mode.tsx` labels its navigation as issues (not backend groups). The context endpoint enforces employer/report/deposit scope based on the entry point; individual issue actions filter the chosen code's problem rows before passing them to resolvers. Backend group keys remain internal for server-side validation, while users see each issue's code/description and select the appropriate one. `src/app/ui-fixes.css` keeps issue selection responsive and RTL-friendly.
+
+Feedback resolution issue navigation uses the shared `UiAutocomplete` to choose a code/description rather than rendering a row of buttons. Progress measures how many originally open error codes have disappeared from the refreshed active feedback context; moving between issues or merely preparing a correction never increments progress. The baseline is captured per mounted resolution modal.
