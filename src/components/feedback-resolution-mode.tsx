@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, FilePenLine, ListChecks } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
+import { UiAutocomplete } from "@/components/ui-controls";
 import { FeedbackEmployeeResolver } from "@/components/feedback-employee-resolver";
 import { FeedbackDecisionResolver } from "@/components/feedback-decision-resolver";
 import { FeedbackExternalCaseResolver } from "@/components/feedback-external-case-resolver";
@@ -121,6 +122,8 @@ export function FeedbackResolutionMode({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [issueSearch, setIssueSearch] = useState("");
+  const initialIssueCodes = useRef<Set<number> | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
@@ -132,7 +135,13 @@ export function FeedbackResolutionMode({
     Promise.resolve()
       .then(() => loadContext(contextType, organizationId, employerId, reportId, reportProductId))
       .then(result => {
-        if (!cancelled) setContext(result);
+        if (!cancelled) {
+          if (initialIssueCodes.current === null) {
+            initialIssueCodes.current = new Set(filterGroups(result, selector)
+              .flatMap(group => group.problems.map(problem => problem.code)));
+          }
+          setContext(result);
+        }
       })
       .catch(err => {
         if (!cancelled) setError(err instanceof Error ? err.message : "טעינת תהליך הפתרון נכשלה.");
@@ -149,8 +158,19 @@ export function FeedbackResolutionMode({
     if (context.unsupportedCodes.length && !selector) return [];
     return filterGroups(context, selector);
   }, [context, selector]);
+  const issueOptions = useMemo(() => groups.map(group => {
+    const first = group.problems[0];
+    return { value: group.groupKey, label: `קוד ${first.code} — ${first.description}` };
+  }), [groups]);
+  const activeCodes = new Set(groups.flatMap(group => group.problems.map(problem => problem.code)));
+  const totalIssues = initialIssueCodes.current?.size ?? activeCodes.size;
+  const resolvedIssues = [...(initialIssueCodes.current ?? activeCodes)]
+    .filter(code => !activeCodes.has(code)).length;
   const safeIndex = Math.min(activeIndex, Math.max(groups.length - 1, 0));
   const activeGroup = groups[safeIndex];
+  useEffect(() => {
+    setIssueSearch(issueOptions[safeIndex]?.label ?? "");
+  }, [safeIndex, issueOptions]);
   const primaryProblem = activeGroup?.problems[0];
   const editableProblems = activeGroup?.problems.filter(problem => problem.resolutionType === "edit") ?? [];
 
@@ -214,29 +234,29 @@ export function FeedbackResolutionMode({
         </div>
       : null}
 
-    {!loading && !error && groups.length > 1 ? <section className="feedback-resolution-issue-picker" aria-label="בעיות לטיפול">
-      <strong>בעיות לטיפול ({new Set(groups.flatMap(group => group.problems.map(problem => problem.code))).size})</strong>
-      <div className="feedback-resolution-issue-picker-items">
-        {groups.map((group, index) => {
-          const first = group.problems[0];
-          return <button key={group.groupKey} type="button"
-            className={`btn ${index === safeIndex ? "btn-primary" : "btn-secondary"}`}
-            aria-current={index === safeIndex ? "step" : undefined}
-            onClick={() => setActiveIndex(index)}>
-            קוד {first.code} — {first.description}
-          </button>;
-        })}
-      </div>
+    {!loading && !error && groups.length > 1 ? <section className="feedback-resolution-issue-picker" aria-label="בחירת בעיה לטיפול">
+      <label htmlFor="feedback-issue-autocomplete-label">בחרו בעיה לטיפול</label>
+      <UiAutocomplete
+        value={issueSearch}
+        onValueChange={value => {
+          setIssueSearch(value);
+          const selected = issueOptions.findIndex(option => option.label === value);
+          if (selected >= 0) setActiveIndex(selected);
+        }}
+        options={issueOptions}
+        placeholder="חפשו לפי קוד או תיאור התקלה"
+        ariaLabel="בחירת בעיה לטיפול"
+      />
     </section> : null}
 
     {!loading && !error && activeGroup && primaryProblem ? <>
-      <section className="feedback-resolution-progress" aria-label="התקדמות בתור הטיפול">
+      <section className="feedback-resolution-progress" aria-label="התקדמות בטיפול בתקלות">
         <div>
-          <span>בעיה לטיפול</span>
-          <strong>{safeIndex + 1} / {groups.length}</strong>
+          <span>בעיות שטופלו</span>
+          <strong>{resolvedIssues} / {totalIssues}</strong>
         </div>
         <div className="feedback-resolution-progress-track" aria-hidden="true">
-          <span style={{ width: `${((safeIndex + 1) / groups.length) * 100}%` }} />
+          <span style={{ width: `${totalIssues > 0 ? (resolvedIssues / totalIssues) * 100 : 0}%` }} />
         </div>
       </section>
 
