@@ -33,7 +33,7 @@ function resolutionIcon(value: FeedbackResolutionProblem["resolutionType"]) {
 function scopeLabel(value: string) {
   switch (value) {
     case "employer":
-    case "money": return "מעסיק";
+    case "money": return "כספים";
     case "report": return "דיווח";
     case "employee": return "עובד";
     case "deposit": return "הפקדה";
@@ -220,8 +220,8 @@ export function FeedbackResolutionMode({
             {resolverLabel(activeGroup.resolverType)}
           </span>
           <span className="feedback-resolution-scope">
-            {new Set(activeGroup.problems.map(problem => problem.scope)).size === 1
-              ? scopeLabel(primaryProblem.scope)
+            {new Set(activeGroup.problems.map(problem => problem.targetScope)).size === 1
+              ? scopeLabel(primaryProblem.targetScope)
               : "מספר תחומים"}
           </span>
         </div>
@@ -234,7 +234,7 @@ export function FeedbackResolutionMode({
         </div>
 
         <div className="feedback-resolution-group-problems" role="list" aria-label="תקלות בקבוצת הטיפול">
-          {activeGroup.problems.map(problem => <div key={problem.problemId} className="feedback-resolution-group-problem" role="listitem">
+          {activeGroup.problems.filter((problem, index, all) => all.findIndex(item => item.code === problem.code && item.description === problem.description && item.resolutionType === problem.resolutionType) === index).map(problem => <div key={problem.problemId} className="feedback-resolution-group-problem" role="listitem">
             <span className={`feedback-resolution-type ${problem.resolutionType}`}>
               {resolutionIcon(problem.resolutionType)}
               {resolutionTypeLabel(problem.resolutionType)}
