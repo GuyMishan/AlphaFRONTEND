@@ -6,7 +6,7 @@ import { backendFetch } from "@/lib/backend-fetch";
 import { UiSelect } from "@/components/ui-controls";
 import { UiFileUpload } from "@/components/ui-file-upload";
 
-type Document = { id: string; documentTypeCode: number; employmentId: string | null; originalFileName: string; sizeBytes: number; createdAt: string };
+type Document = { id: string; documentTypeCode: number; employmentId: string | null; employeePensionProductId: string | null; originalFileName: string; sizeBytes: number; createdAt: string };
 const types = [
   { code: 3, label: "תצהיר מעסיק" },
   { code: 4, label: "אישור עובד להשבת כספים" },
@@ -17,14 +17,17 @@ async function apiError(response: Response) {
   try { const data = await response.json() as { error?: string }; return data.error || "הפעולה נכשלה"; }
   catch { return "הפעולה נכשלה"; }
 }
-export function EmployerDocumentsTab({ organizationId, employerId, canEdit, employmentId }: { organizationId: string; employerId: string; canEdit: boolean; employmentId?: string }) {
+export function EmployerDocumentsTab({ organizationId, employerId, canEdit, employmentId, employeePensionProductId, embedded = false }: { organizationId: string; employerId: string; canEdit: boolean; employmentId?: string; employeePensionProductId?: string; embedded?: boolean }) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [type, setType] = useState(employmentId ? 4 : 3);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const base = `/api/organizations/${organizationId}/employers/${employerId}/documents`;
-  const listUrl = `${base}${employmentId ? `?employmentId=${encodeURIComponent(employmentId)}` : ""}`;
+  const listParams = new URLSearchParams();
+  if (employmentId) listParams.set("employmentId", employmentId);
+  if (employeePensionProductId) listParams.set("employeePensionProductId", employeePensionProductId);
+  const listUrl = `${base}${listParams.size ? `?${listParams}` : ""}`;
   useEffect(() => {
     let active = true;
     backendFetch(listUrl, { cache: "no-store" }).then(async response => {
@@ -45,6 +48,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
       data.set("file", file);
       data.set("documentTypeCode", String(type));
       if (employmentId) data.set("employmentId", employmentId);
+      if (employeePensionProductId) data.set("employeePensionProductId", employeePensionProductId);
       const response = await backendFetch(base, { method: "POST", body: data });
       if (!response.ok) throw new Error(await apiError(response));
       const created = await response.json() as Document;
@@ -65,8 +69,8 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
     } catch (e) { toast.error(e instanceof Error ? e.message : "המחיקה נכשלה"); }
     finally { setBusy(false); }
   }
-  return <section className="card profile-card" aria-label={employmentId ? "מסמכי עובד" : "מסמכי מעסיק"}>
-    <div className="card-head"><div><h2>מסמכים</h2><span style={{ color: "var(--muted)" }}>{employmentId ? "טפסים רשמיים המשויכים לעובד זה." : "טפסים רשמיים של המעסיק."} צירוף לדיווח נעשה בנפרד.</span></div></div>
+  return <section className={embedded ? "profile-form-section" : "card profile-card"} aria-label={employmentId ? "מסמכי עובד" : "מסמכי מעסיק"}>
+    <div className="card-head"><div><h2>מסמכים</h2><span style={{ color: "var(--muted)" }}>{employmentId ? "טפסים רשמיים המשויכים למוצר הפנסיוני הזה." : "טפסים רשמיים של המעסיק."} צירוף לדיווח נעשה בנפרד.</span></div></div>
     {canEdit ? <form className="form" onSubmit={upload}>
       <div className="grid two-cols">
         <div className="field"><label htmlFor="employer-document-type">סוג מסמך</label><UiSelect id="employer-document-type" value={type} onChange={e => setType(Number(e.target.value))}>{types.filter(item => employmentId ? item.code !== 3 : item.code === 3).map(item => <option key={item.code} value={item.code}>{item.label}</option>)}</UiSelect></div>
