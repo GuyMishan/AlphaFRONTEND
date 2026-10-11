@@ -278,40 +278,33 @@ export function FeedbackInternalCorrectionResolver({
       <ArrowLeft size={16} aria-hidden="true" />
     </button> : null}
 
-    {group.resolverType === "documents" && group.problems.some(item => item.code === 102) ? <div className="notice notice-info" role="status">
-      <strong>קוד 102 — תצהיר מעסיק לא תקין</strong>
-      <p>התצהיר שהוגש בהקשר של הסכם קיבוצי אינו תקין. זו בעיה במסמך ברמת המעסיק, לא מסמך לכל עובד או הפקדה.</p>
-      <p>בדקו את התצהיר ואת סיבת הדחייה במשוב, עדכנו אותו במסמכי המעסיק, ואז צרפו את הגרסה המתוקנת לדיווח המתאים לפי תהליך הדיווח החוזר.</p>
-      <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=documents`}>מסמכי המעסיק <ArrowLeft size={16} aria-hidden="true" /></a>
-      <small>עדכון מסמך בפרופיל אינו משנה אוטומטית דיווח שכבר נשלח.</small>
-    </div> : null}
-    {group.resolverType === "documents" && !group.problems.some(item => item.code === 102) ? <div className="notice notice-info">
-      תצהירי מעסיק (סוג 3) נשמרים בפרופיל המעסיק; מסמכים אישיים (סוגים 4–6) מנוהלים בתוך הקרן בתמהיל העובד.
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${organizationId}&tab=documents`}>מסמכי המעסיק</a>
-        {Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
-          .map(id => <a key={id} className="btn btn-secondary"
-            href={`/employees/${id}?organizationId=${organizationId}&employerId=${employerId}&tab=mix`}>מסמכי המוצר בתמהיל העובד</a>)}
-      </div>
-      <small>לאחר בחירת מסמך מתוקן יש לצרף אותו לגרסת הדיווח הנכונה; העלאת מסמך לפרופיל אינה משנה את הדיווח המקורי.</small>
+    {reportDeclarations ? <div className="notice notice-info" role="status">
+      <strong>תצהיר מעסיק חסר או לא תקין</strong>
+      <p>קודים {Array.from(new Set(group.problems.map(item => item.code))).join(", ")} — {group.problems.some(item => [102, 103].includes(item.code)) ? "תצהיר מעסיק בקשר להסכם קיבוצי" : "תצהיר מעסיק"}.</p>
+      <p>יש לבדוק אם התצהיר המתאים קיים ותקין, לתקן אותו ברמת המעסיק ולצרף את המסמך התקין לגרסת הדיווח הרלוונטית. אין צורך במסמך נפרד לכל הפקדה.</p>
+      <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=documents`}>פתיחת מסמכי המעסיק <ArrowLeft size={16} aria-hidden="true" /></a>
+      <small>עדכון המסמך בפרופיל אינו משנה קבצים שכבר נשלחו. יש לבדוק את משוב הקופה לפני דיווח חוזר.</small>
     </div> : null}
 
-    {group.resolverType === "documents" && !group.problems.some(item => item.code === 102) ? <div className="feedback-resolution-document-list">
-      {group.problems.map(item => <div className="feedback-resolution-document-item" key={item.problemId}>
-        <div>
-          <strong>קוד {item.code}</strong>
-          <small>{item.description}</small>
-        </div>
-        <UiFileUpload
-          label="העלאת מסמך PDF"
-          accept=".pdf,application/pdf"
-          maxBytes={10_000_000}
-          busy={uploadingProblemId === item.problemId}
-          disabled={!group.canExecute || Boolean(uploadingProblemId)}
-          onFileSelected={(file) => void uploadDocument(item.problemId, file)}
-          onInvalid={(message) => setError(message)}
-        />
-      </div>)}
+    {employeeDeclarations ? <div className="notice notice-info" role="status">
+      <strong>תצהיר עובד חסר או לא תקין</strong>
+      <p>יש לבדוק את תצהיר העובד המשויך למוצר הפנסיוני, לתקן אותו בפרטי המוצר ולצרף את הגרסה התקינה לדיווח המתאים. אין צורך לצרף את אותו מסמך לכל רכיב הפרשה.</p>
+      {Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
+        .map(id => <a key={id} className="btn btn-secondary"
+          href={`/employees/${id}?organizationId=${encodeURIComponent(organizationId)}&employerId=${encodeURIComponent(employerId)}&tab=mix`}>
+          פתיחת מסמכי המוצר של העובד <ArrowLeft size={16} aria-hidden="true" />
+        </a>)}
+    </div> : null}
+
+    {otherDocumentIssues ? <div className="notice notice-info" role="status">
+      <strong>השלמת מסמך בהתאם לסיבת הדחייה</strong>
+      <p>בדקו איזה מסמך נדרש לאותה פעולה במוצר הפנסיוני או בהחזר הכספי. יש לתקן את המקור המתאים ולצרף אותו לדיווח או לבקשת ההחזר הרלוונטיים.</p>
+      <small>העלאת PDF לתיק משוב בלבד אינה מהווה שליחת המסמך ליצרן ואינה מסיימת את הטיפול.</small>
+      {Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
+        .map(id => <a key={id} className="btn btn-secondary"
+          href={`/employees/${id}?organizationId=${encodeURIComponent(organizationId)}&employerId=${encodeURIComponent(employerId)}&tab=mix`}>
+          פתיחת מוצרי העובד <ArrowLeft size={16} aria-hidden="true" />
+        </a>)}
     </div> : null}
 
     {canPrepareWorkspace && !reportPairIssues ? <button
