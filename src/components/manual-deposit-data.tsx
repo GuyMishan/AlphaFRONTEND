@@ -28,7 +28,7 @@ const productNames: Record<number, string> = { 1: "קרן פנסיה", 2: "קר�
 const emptyPreviousReference = (): EmployerInterfacePreviousReference => ({ previousIdentifier: "", previousClearingIdentifier: "", previousReferenceExceptionCode: null });
 const shortError = (message: string) => message.trim().replace(/\s+/g, " ").slice(0, 220) + (message.trim().replace(/\s+/g, " ").length > 220 ? "…" : "");
 
-export function ManualDepositData({ organizationId, employerId, reportId, focusReportProductId = "" }: { organizationId: string; employerId: string; reportId: string; focusReportProductId?: string }) {
+export function ManualDepositData({ organizationId, employerId, reportId, focusReportProductId = "", embeddedEditor = false }: { organizationId: string; employerId: string; reportId: string; focusReportProductId?: string; embeddedEditor?: boolean }) {
   const [rows, setRows] = useState<ManualDepositRow[]>([]);
   const [contributionLimits, setContributionLimits] = useState<ManualDepositContributionLimit[]>([]);
   const [query, setQuery] = useState("");
@@ -143,7 +143,7 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
         <button className="icon-button deposit-edit-icon" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}
-    {editing ? <DepositPaymentEditor employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} contributionLimits={contributionLimits}
+    {editing ? <DepositPaymentEditor embedded={embeddedEditor} employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} contributionLimits={contributionLimits}
       onEvidenceChanged={(items) => setProofs((current) => ({ ...current, [editing.id]: items }))}
       onClose={() => setEditing(null)} onSaved={(updated) => {
       setRows((current) => current.map((item) => item.id === updated.id ? updated : item));
@@ -343,11 +343,12 @@ function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInte
   return errors;
 }
 
-export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, contributionLimits, onClose, onSaved, onEvidenceChanged, readOnly = false }: {
+export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, contributionLimits, onClose, onSaved, onEvidenceChanged, readOnly = false, embedded = false }: {
   employer: Employer | null; organizationId: string; employerId: string; reportId: string; row: ManualDepositRow;
   contributionLimits: ManualDepositContributionLimit[];
   onClose: () => void; onSaved: (row: ManualDepositRow) => void; onEvidenceChanged: (items: PaymentConfirmation[]) => void;
   readOnly?: boolean;
+  embedded?: boolean;
 }) {
   const [form, setForm] = useState<ManualPaymentInput>({
     providerName: row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "", providerAccount: row.providerAccount || "", paymentMethod: row.paymentMethod || "",
@@ -657,13 +658,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     </div>
   </section> : null;
 
-  return <AppModal open title="פרטי תשלום"
-    subtitle={readOnly ? "נתוני ההפקדה כפי שנשמרו בדיווח. דיווח שנשלח מחייב דיווח מתקן לשינויים." : "השלמת הנתונים הנדרשים לדיווח בלבד"}
-    onClose={onClose} width="xl" className="payment-modal" bodyClassName="payment-modal-body"
-    actions={readOnly ? <button className="btn btn-secondary" onClick={onClose}>סגירה</button> : <>
-      <button className="btn btn-primary" disabled={saving || loadingMetadata || uploadingProof} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button>
-      <button className="btn btn-secondary" onClick={onClose}>ביטול</button>
-    </>}>
+  const editorContent = <>{""}
       <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
       {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
       {differences && !correctionWorkspace ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
@@ -797,5 +792,26 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       </div>
       </fieldset>
       {readOnly ? paymentEvidencePanel : null}
+  </>;
+
+  if (embedded) return <section className="feedback-code18-payment-editor" aria-label="עריכת פרטי תשלום והפקדה">
+    <div className="feedback-code18-payment-actions">
+      <strong>פרטי תשלום</strong>
+      {!readOnly ? <button type="button" className="btn btn-primary"
+        disabled={saving || loadingMetadata || uploadingProof}
+        onClick={() => void save()}>{saving ? "שומר..." : "שמירת התיקון"}</button> : null}
+      <button type="button" className="btn btn-secondary" onClick={onClose}>חזרה לרשימה</button>
+    </div>
+    {editorContent}
+  </section>;
+
+  return <AppModal open title="פרטי תשלום"
+    subtitle={readOnly ? "נתוני ההפקדה כפי שנשמרו בדיווח. דיווח שנשלח מחייב דיווח מתקן לשינויים." : "השלמת הנתונים הנדרשים לדיווח בלבד"}
+    onClose={onClose} width="xl" className="payment-modal" bodyClassName="payment-modal-body"
+    actions={readOnly ? <button className="btn btn-secondary" onClick={onClose}>סגירה</button> : <>
+      <button className="btn btn-primary" disabled={saving || loadingMetadata || uploadingProof} onClick={() => void save()}>{saving ? "שומר..." : "אישור"}</button>
+      <button className="btn btn-secondary" onClick={onClose}>ביטול</button>
+    </>}>
+    {editorContent}
   </AppModal>;
 }
