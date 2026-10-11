@@ -1,6 +1,6 @@
 "use client";
 
-import { UiAutocomplete, UiDateInput, UiInput } from "@/components/ui-controls";
+import { UiAutocomplete, UiDateInput, UiInput, UiSelect } from "@/components/ui-controls";
 import { UiFileUpload } from "@/components/ui-file-upload";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
@@ -15,7 +15,7 @@ import { bankReferenceApi, type BankBranchReference, type BankReference } from "
 import { employerInterfaceApi, type EmployerInterfaceOption, type EmployerInterfacePreviousReference, type EmployerInterfaceProductMetadata, type EmployerInterfaceProductMetadataInput } from "@/lib/employer-interface-api";
 import { manualDepositsApi, type ManualDepositContributionLimit, type ManualDepositRow, type ManualPaymentInput } from "@/lib/manual-deposits-api";
 import { calculateContributionAmount, roundMoney } from "@/lib/pension-contribution-math";
-import { reportAttachmentsApi, type ReportAttachment } from "@/lib/report-attachments-api";
+import { reportAttachmentsApi, type ReportAttachment, type LibraryDocumentCandidate } from "@/lib/report-attachments-api";
 import { paymentConfirmationsApi, type PaymentConfirmation } from "@/lib/payment-confirmations-api";
 import type { Employer, PensionFundOption, PensionProductType } from "@/lib/types";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
@@ -388,6 +388,8 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   const [branchSelection, setBranchSelection] = useState(row.employerBranch || "");
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [attachments, setAttachments] = useState<ReportAttachment[]>([]);
+  const [libraryCandidates, setLibraryCandidates] = useState<LibraryDocumentCandidate[]>([]);
+  const [selectedLibraryDocuments, setSelectedLibraryDocuments] = useState<Record<number, string>>({});
   const [paymentProofs, setPaymentProofs] = useState<PaymentConfirmation[]>([]);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [annualEmployerAffidavitSatisfied, setAnnualEmployerAffidavitSatisfied] = useState(false);
@@ -413,7 +415,8 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       paymentConfirmationsApi.list(organizationId, employerId, reportId, row.id),
       alphaApi.employerPaymentResolution(organizationId, employerId),
       employerInterfaceApi.optionsBundle(["operation-code", "old-pension-type", "refund-reason", "previous-reference-exception"]),
-    ]).then(([item, previous, attachmentList, proofList, paymentResolution, bundledOptions]) => {
+      reportAttachmentsApi.libraryCandidates(organizationId, employerId, reportId, row.id).catch(() => [] as LibraryDocumentCandidate[]),
+    ]).then(([item, previous, attachmentList, proofList, paymentResolution, bundledOptions, availableLibraryDocuments]) => {
       if (!active) return;
       setMetadata(item);
       const automaticDebit = !readOnly && !isNegativeKind(item.reportKind) && !isDifferencesKind(item.reportKind)
@@ -425,6 +428,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
         receiverAccountType: automaticDebit ? 1 : item.receiverAccountType, oldPensionTypeCode: item.oldPensionTypeCode });
       setPreviousReference(previous);
       setAttachments(attachmentList.items);
+      setLibraryCandidates(availableLibraryDocuments);
       setPaymentProofs(proofList); onEvidenceChanged(proofList);
       setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
       setEditorOptions(bundledOptions);
@@ -589,6 +593,42 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     } finally {
       setUploadingAttachment(null);
     }
+  }
+
+  async function attachStoredDocument(documentTypeCode: 3 | 4 | 5 | 6) {
+    if (readOnly) return;
+    const candidates = libraryCandidates.filter(item => item.documentTypeCode === documentTypeCode);
+    const selectedId = selectedLibraryDocuments[documentTypeCode] || candidates[0]?.id;
+    if (!selectedId) return;
+    setUploadingAttachment(documentTypeCode);
+    setError("");
+    try {
+      await reportAttachmentsApi.attachFromLibrary(organizationId, employerId, reportId, selectedId,
+        documentTypeCode === 3 ? null : row.id);
+      await refreshAttachments();
+      notify.success("המסמך מהפרופיל צורף לעותק הדיווח.");
+    } catch (err) {
+      const message = shortError(err instanceof Error ? err.message : "צירוף המסמך מהפרופיל נכשל");
+      setError(message); notify.error(message);
+    } finally {
+      setUploadingAttachment(null);
+    }
+  }
+
+  function storedDocumentPicker(code: 3 | 4 | 5 | 6) {
+    const candidates = libraryCandidates.filter(item => item.documentTypeCode === code);
+    if (readOnly || candidates.length === 0) return null;
+    return <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+      <UiSelect aria-label="בחירת מסמך שמור בפרופיל"
+        value={selectedLibraryDocuments[code] || candidates[0].id}
+        disabled={uploadingAttachment != null}
+        onChange={event => setSelectedLibraryDocuments(current => ({ ...current, [code]: event.target.value }))}>
+        {candidates.map(doc => <option key={doc.id} value={doc.id}>{doc.originalFileName}</option>)}
+      </UiSelect>
+      <button type="button" className="btn btn-secondary"
+        disabled={uploadingAttachment != null}
+        onClick={() => void attachStoredDocument(code)}>צרף מהפרופיל</button>
+    </div>;
   }
 
   async function removeAttachment(attachmentId: string) {
@@ -792,8 +832,9 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
               ]).map(({ code, label, item, scope }) => <div key={code} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
                 <div><b>{label}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div></div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  {item ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(item.id)}><Trash2 size={14} />הסר</button> : null}
-                  {!item ? <UiFileUpload className="btn btn-secondary" label="צרף PDF עד 3MB"
+                  {item && !readOnly ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(item.id)}><Trash2 size={14} />הסר</button> : null}
+                  {!item ? storedDocumentPicker(code) : null}
+                  {!item && !readOnly ? <UiFileUpload className="btn btn-secondary" label="צרף PDF עד 3MB"
                     accept="application/pdf,.pdf" maxBytes={3_000_000}
                     busy={uploadingAttachment != null} onFileSelected={(file) => uploadAttachment(code, file)}
                     onInvalid={(message) => { setError(message); notify.error(message); }} /> : null}
@@ -801,6 +842,26 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
               </div>)}
             </div>
           </section> : null}
+
+          {!negative && !differences && row.productType === 1 && metadataForm.employeeStatus !== 14 ?
+            <section className="payment-panel">
+              <h3>מסמך הצטרפות לקרן ברירת מחדל</h3>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <div><b>קוד 5 — בקשת עובד להצטרפות לקרן ברירת מחדל</b>
+                  <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                    {defaultFundJoinRequest ? defaultFundJoinRequest.originalFileName : "מסמך לעובד ולקרן הפנסיה בדיווח זה"}
+                  </div>
+                </div>
+                {defaultFundJoinRequest && !readOnly ?
+                  <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(defaultFundJoinRequest.id)}>
+                    <Trash2 size={14} />הסר</button> : null}
+                {!defaultFundJoinRequest ? storedDocumentPicker(5) : null}
+                {!defaultFundJoinRequest && !readOnly ? <UiFileUpload className="btn btn-secondary"
+                    label="צרף PDF עד 3MB" accept="application/pdf,.pdf" maxBytes={3_000_000}
+                    busy={uploadingAttachment != null} onFileSelected={file => uploadAttachment(5, file)}
+                    onInvalid={message => { setError(message); notify.error(message); }} /> : null}
+              </div>
+            </section> : null}
 
           {needsPrevious ? <section className="payment-panel"><h3>קישור לדיווח המקורי</h3><div className="notice notice-info" style={{ marginBottom: 12 }}>בפעולת תיקון או ביטול יש לקשר לדיווח המקורי. ניתן להזין אחד מהמזהים או לבחור חריג מתאים.</div><div className="payment-method-grid">
             <div className="field"><label>מספר זיהוי קודם (GUID)</label><UiInput maxLength={36} value={previousReference.previousIdentifier} onChange={(e) => patchPrevious("previousIdentifier", e.target.value)} placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" /></div>
