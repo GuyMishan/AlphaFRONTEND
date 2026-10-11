@@ -10,6 +10,8 @@ import { FeedbackEmployeeResolver } from "@/components/feedback-employee-resolve
 import { FeedbackDecisionResolver } from "@/components/feedback-decision-resolver";
 import { FeedbackExternalCaseResolver } from "@/components/feedback-external-case-resolver";
 import { FeedbackInternalCorrectionResolver } from "@/components/feedback-internal-correction-resolver";
+import { FeedbackCode18DepositEditor } from "@/components/feedback-code18-deposit-editor";
+import { FeedbackCode18EmployerEditor } from "@/components/feedback-code18-employer-editor";
 import {
   reportFeedbackApi,
   type FeedbackResolutionContext,
@@ -292,6 +294,22 @@ export function FeedbackResolutionMode({
         {activeGroup.problems.some(problem => problem.code === 18 && problem.targetScope === "employer")
           ? <small>השדה שייך לפרטי המעסיק או לאיש הקשר שלו. יש לתקן את נתוני המעסיק ולא את שורת ההפקדה.</small> : null}
       </section> : null}
+
+      {primaryProblem.code === 18 && primaryProblem.targetScope === "employer"
+        ? <FeedbackCode18EmployerEditor
+            key={primaryProblem.problemId}
+            organizationId={organizationId}
+            employerId={employerId}
+            problem={primaryProblem}
+            onSaved={() => setRefreshToken(value => value + 1)}
+          /> : null}
+      {primaryProblem.code === 18 && primaryProblem.targetScope === "deposit"
+        ? <FeedbackCode18DepositEditor
+            key={activeGroup.groupKey}
+            organizationId={organizationId}
+            employerId={employerId}
+            group={activeGroup}
+          /> : null}
 
       {activeGroup.problems.some(problem => problem.resolutionType === "decision" && problem.code !== 18) ? <FeedbackDecisionResolver
           organizationId={organizationId}
