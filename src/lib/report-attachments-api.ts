@@ -12,6 +12,8 @@ export type ReportAttachment = {
   createdAt: string;
 };
 
+export type LibraryDocumentCandidate = { id: string; documentTypeCode: 3 | 4 | 5 | 6; originalFileName: string; sizeBytes: number; createdAt: string };
+
 export type ReportAttachmentList = {
   items: ReportAttachment[];
   annualEmployerAffidavitSatisfied: boolean;
@@ -41,6 +43,22 @@ export const reportAttachmentsApi = {
     form.set("documentTypeCode", String(documentTypeCode));
     if (reportProductId) form.set("reportProductId", reportProductId);
     const response = await backendFetch(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/attachments`, { method: "POST", body: form });
+    if (!response.ok) throw new Error(await parseError(response));
+    return response.json() as Promise<ReportAttachment>;
+  },
+
+  async libraryCandidates(organizationId: string, employerId: string, reportId: string, reportProductId: string) {
+    const url = `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/attachments/library-candidates?reportProductId=${encodeURIComponent(reportProductId)}`;
+    const response = await backendFetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error(await parseError(response));
+    return response.json() as Promise<LibraryDocumentCandidate[]>;
+  },
+
+  async attachFromLibrary(organizationId: string, employerId: string, reportId: string,
+    employerDocumentId: string, reportProductId: string | null) {
+    const response = await backendFetch(
+      `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/attachments/from-library`,
+      { method: "POST", body: JSON.stringify({ employerDocumentId, reportProductId }) });
     if (!response.ok) throw new Error(await parseError(response));
     return response.json() as Promise<ReportAttachment>;
   },
