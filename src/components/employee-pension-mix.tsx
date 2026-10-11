@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Save } from "lucide-react";
+import { EmployerDocumentsTab } from "@/components/employer-documents-tab";
 import { PensionProductsEditor, normalizePensionEditorProducts, sanitizePensionProductContributions, validatePensionEditorProducts, type PensionEditorProduct } from "@/components/pension-products-editor";
 import { alphaApi } from "@/lib/api";
 import type { Employee, EmployeePensionProductInput, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
@@ -9,8 +10,9 @@ import type { PensionEditorContributionLimit } from "@/lib/pension-editor-refere
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-function toEditorProduct(item: EmployeePensionProductInput): PensionEditorProduct {
+function toEditorProduct(item: EmployeePensionProductInput & { id?: string }): PensionEditorProduct {
   return {
+    employeePensionProductId: item.id,
     productType: Number(item.productType) as PensionProductType,
     policyNumber: item.policyNumber,
     fundExternalKey: item.fundExternalKey ?? "",
@@ -133,7 +135,8 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
       });
       await alphaApi.saveEmployeePensionMix(organizationId, employerId, employeeId, normalized.products.map(toEmployeeProduct));
       setEmployee({ ...employee, monthlySalary });
-      setProducts(normalized.products);
+      const refreshed = await alphaApi.employeePensionMix(organizationId, employerId, employeeId);
+      setProducts(refreshed.map(toEditorProduct).map(sanitizePensionProductContributions));
       setSaved(true);
       if (onSaved) await onSaved();
     } catch (err) {
@@ -163,6 +166,12 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
     {!editable ? <div className="notice notice-info" style={{ marginBottom: 14 }}>יש לך הרשאת צפייה בלבד בתמהיל העובד.</div> : null}
     <PensionProductsEditor
       context="employee"
+      renderProductExtra={(product) => <section className="profile-form-section" aria-label="מסמכי המוצר">
+        {product.employeePensionProductId
+          ? <EmployerDocumentsTab organizationId={organizationId} employerId={employerId} employmentId={employeeId}
+              employeePensionProductId={product.employeePensionProductId} canEdit={editable} embedded />
+          : <div className="notice notice-info">ניתן לצרף מסמכים לאחר שמירת המוצר בתמהיל העובד.</div>}
+      </section>}
       monthlySalary={monthlySalary}
       products={products}
       editable={editable}
