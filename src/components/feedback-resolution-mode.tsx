@@ -315,7 +315,13 @@ export function FeedbackResolutionMode({
       {primaryProblem.code === 18 && ["57", "58"].includes(primaryProblem.feedbackValues.missingFieldNumber ?? "") ?
         <div className="notice notice-info">
           שדות 57–58 מתארים את קובץ המסמך הרשמי וסוגו. המסמך מנוהל במאגר מסמכי המעסיק.
-          <div><a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${organizationId}&tab=documents`}>פתיחת מסמכי המעסיק</a></div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${organizationId}&tab=documents`}>מסמכי המעסיק</a>
+            {primaryProblem.employmentId ? <a className="btn btn-secondary"
+              href={`/employees/${primaryProblem.employmentId}?organizationId=${organizationId}&employerId=${employerId}&tab=mix`}>
+              מסמכי המוצר בתמהיל העובד
+            </a> : null}
+          </div>
           <small>לתיקון דיווח שכבר נשלח יש לצרף את הגרסה הנכונה בסביבת התיקון; שינוי המאגר אינו משנה דיווח היסטורי.</small>
         </div> : null}
 
