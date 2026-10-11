@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { backendFetch } from "@/lib/backend-fetch";
-import { UiSelect } from "@/components/ui-controls";
+import { UiInput, UiSelect } from "@/components/ui-controls";
 import { UiFileUpload } from "@/components/ui-file-upload";
 import { alphaApi } from "@/lib/api";
 import type { Employee } from "@/lib/types";
@@ -24,6 +24,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit }: { 
   const [type, setType] = useState(3);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeeError, setEmployeeError] = useState("");
+  const [employeeSearch, setEmployeeSearch] = useState("");
   const [employmentId, setEmploymentId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,11 +44,13 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit }: { 
   useEffect(() => {
     if (!canEdit) return;
     let active = true;
-    alphaApi.employeeSearch(organizationId, employerId, "", 0, 500)
-      .then(result => { if (active) setEmployees(result.items); })
-      .catch(() => { if (active) setEmployeeError("טעינת רשימת העובדים נכשלה."); });
-    return () => { active = false; };
-  }, [organizationId, employerId, canEdit]);
+    const timer = window.setTimeout(() => {
+      alphaApi.employeeSearch(organizationId, employerId, employeeSearch.trim(), 0, 100)
+        .then(result => { if (active) { setEmployees(result.items); setEmployeeError(""); } })
+        .catch(() => { if (active) setEmployeeError("טעינת רשימת העובדים נכשלה."); });
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [organizationId, employerId, canEdit, employeeSearch]);
 
   async function upload(event: React.FormEvent) {
     event.preventDefault();
@@ -83,7 +86,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit }: { 
     {canEdit ? <form className="form" onSubmit={upload}>
       <div className="grid two-cols">
         <div className="field"><label htmlFor="employer-document-type">סוג מסמך</label><UiSelect id="employer-document-type" value={type} onChange={e => setType(Number(e.target.value))}>{types.map(item => <option key={item.code} value={item.code}>{item.label}</option>)}</UiSelect></div>
-        {type !== 3 ? <div className="field"><label htmlFor="employer-document-employee">עובד משויך</label><UiSelect id="employer-document-employee" value={employmentId} onChange={e => setEmploymentId(e.target.value)} required><option value="">בחירת עובד</option>{employees.map(employee => <option key={employee.id} value={employee.id}>{employee.firstName} {employee.lastName} · {employee.employeeNumber}</option>)}</UiSelect>{employeeError ? <small role="alert">{employeeError}</small> : null}</div> : null}
+        {type !== 3 ? <div className="field"><label htmlFor="employer-document-employee-search">חיפוש עובד משויך</label><UiInput id="employer-document-employee-search" value={employeeSearch} placeholder="שם עובד או מספר עובד" onChange={e => setEmployeeSearch(e.target.value)} /><label htmlFor="employer-document-employee">בחירת עובד</label><UiSelect id="employer-document-employee" value={employmentId} onChange={e => setEmploymentId(e.target.value)} required><option value="">בחירת עובד</option>{employees.map(employee => <option key={employee.id} value={employee.id}>{employee.firstName} {employee.lastName} · {employee.employeeNumber}</option>)}</UiSelect>{employeeError ? <small role="alert">{employeeError}</small> : null}</div> : null}
       </div>
       <div className="field"><UiFileUpload id="employer-document-file" label="בחירת קובץ PDF" fileName={file?.name} accept=".pdf,application/pdf" maxBytes={10 * 1024 * 1024} disabled={busy} onFileSelected={setFile} onInvalid={toast.error} /></div>
       <div className="form-actions"><button type="submit" className="btn btn-primary" disabled={busy || !file || (type !== 3 && !employmentId)}>{busy ? "מעלה..." : "העלאת מסמך"}</button></div>
