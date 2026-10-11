@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, FileText } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { FeedbackResolveButton } from "@/components/feedback-resolve-button";
+import { FeedbackIssueGroups } from "@/components/feedback-issue-groups";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
 import {
   reportFeedbackApi,
@@ -242,65 +243,23 @@ export function ReportDepositFeedbackModal({
               if (semanticGeneralError) promotedErrorCodes.add(code);
             }
 
-            const scopeLabel = (scope: "employee" | "deposit") => {
-              switch (scope) {
-                case "employee": return "עובד";
-                case "deposit": return "הפקדה / מוצר והפרשות";
-                default: return "מידע";
-              }
-            };
-
-            const scopeOrder: Array<"employee" | "deposit"> = [
-              "employee", "deposit",
-            ];
-            const groupedErrors = scopeOrder
-              .map((scope) => {
-                const items = Array.from(rowsByErrorCode.entries())
-                  .map(([code, rows]) => ({ code, rows }))
-                  .filter(({ rows }) => rows.some((row) => row.targetScope === scope
-                    && (scope !== "deposit" || row.errorScope !== "contribution")))
-                  .map(({ code, rows }) => {
-                    const first = rows.find((row) => row.targetScope === scope
-                      && (scope !== "deposit" || row.errorScope !== "contribution")) ?? rows[0];
-                    return {
-                      code,
-                      description: first?.errorDescription || `קוד שגיאה ${code}`,
-                    };
-                  });
-                return { scope, items };
-              })
-              .filter((group) => group.items.length > 0);
+            const scopeOrder = ["employee", "deposit"];
+            const groupedIssues = scopeOrder.flatMap(scope => Array.from(rowsByErrorCode.entries())
+              .filter(([, rows]) => rows.some(row => row.targetScope === scope
+                && (scope !== "deposit" || row.errorScope !== "contribution")))
+              .map(([code, rows]) => {
+                const first = rows.find(row => row.targetScope === scope
+                  && (scope !== "deposit" || row.errorScope !== "contribution")) ?? rows[0];
+                return { code, scope, description: first?.errorDescription || `קוד שגיאה ${code}` };
+              }));
 
             return <>
-              {errorsOnly && groupedErrors.length ? <div className="feedback-error-groups" role="alert">
-                <div className="feedback-error-groups-title">
-                  <div className="feedback-error-groups-title-copy">
-                    <AlertTriangle size={16} />
-                    <strong>בעיות שנמצאו במשוב</strong>
-                  </div>
-                  {onResolveAll ? <FeedbackResolveButton label="פתור בעיות" onClick={onResolveAll} /> : null}
-                </div>
-                {groupedErrors.map(({ scope, items }) =>
-                  <section className="feedback-error-group" key={scope}>
-                    <div className="feedback-error-group-head">
-                      <strong>{scopeLabel(scope)}</strong>
-                      <span>{items.length} {items.length === 1 ? "שגיאה" : "שגיאות"}</span>
-                    </div>
-                    <div className="feedback-error-group-list">
-                      {items.map(({ code }) =>
-                        <div className="feedback-error-action-row" key={code}>
-                          <div className="feedback-error-copy">
-                            <b>קוד {code}</b>
-                          </div>
-                          <FeedbackResolveButton
-                            compact
-                            onClick={() => onResolveOne?.({ code })}
-                            disabled={!onResolveOne}
-                          />
-                        </div>)}
-                    </div>
-                  </section>)}
-              </div> : null}
+              {errorsOnly && groupedIssues.length ? <FeedbackIssueGroups
+                issues={groupedIssues}
+                order={scopeOrder}
+                onResolveAll={onResolveAll}
+                onResolveOne={onResolveOne}
+              /> : null}
               <div className="contribution-comparison-list">
             {details.employerContributions.map((employer) => {
               const manufacturerRows = details.manufacturerContributions.filter((item) => item.contributionId === employer.id);

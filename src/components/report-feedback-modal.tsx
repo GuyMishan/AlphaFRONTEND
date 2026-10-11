@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Building2, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Building2, FileText } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
-import { FeedbackResolveButton } from "@/components/feedback-resolve-button";
+import { FeedbackIssueGroups } from "@/components/feedback-issue-groups";
 import { FeedbackResolutionMode } from "@/components/feedback-resolution-mode";
 import { ReportDepositFeedbackModal } from "@/components/report-deposit-feedback-modal";
 import {
@@ -30,77 +30,6 @@ function reportKindLabel(value: number | string) {
   if (value === 2 || value === "2" || value === "Differences") return "הפרשים";
   if (value === 3 || value === "3" || value === "Negative") return "שלילי";
   return "שוטף";
-}
-
-function scopeLabel(scope: string) {
-  switch (scope) {
-    case "report": return "דיווח";
-    case "employer": return "מעסיק";
-    case "money": return "כספים";
-    default: return "אחר";
-  }
-}
-
-function IssueGroups({
-  issues,
-  order,
-  onResolveOne,
-  onResolveAll,
-  onOpenReport,
-}: {
-  issues: ReportFeedbackContextIssue[];
-  order: string[];
-  onResolveOne: (selector: FeedbackResolutionProblemSelector) => void;
-  onResolveAll: () => void;
-  onOpenReport?: (reportId: string) => void;
-}) {
-  const groups = useMemo(() => order
-    .map(scope => ({
-      scope,
-      items: issues.filter(item => item.scope === scope),
-    }))
-    .filter(group => group.items.length > 0), [issues, order]);
-
-  if (!groups.length) return <div className="notice notice-info">לא נמצאו תקלות פתוחות בהקשר הזה.</div>;
-
-  return <div className="feedback-error-groups" role="list">
-    <div className="feedback-error-groups-title">
-      <div className="feedback-error-groups-title-copy">
-        <AlertTriangle size={16} />
-        <strong>תקלות שדורשות טיפול</strong>
-      </div>
-      <FeedbackResolveButton count={issues.length} label="פתור בעיות" onClick={onResolveAll} />
-    </div>
-    {groups.map(group => <section className="feedback-error-group" key={group.scope} role="listitem">
-      <div className="feedback-error-group-head">
-        <strong>{scopeLabel(group.scope)}</strong>
-        <span>{group.items.length} {group.items.length === 1 ? "תקלה" : "תקלות"}</span>
-      </div>
-      <div className="feedback-error-group-list">
-        {group.items.map((item, index) => <div className="feedback-error-action-row" key={`${item.code}:${item.reportId}:${index}`}>
-          <div className="feedback-error-copy">
-            <b>{item.code > 0 ? `קוד ${item.code}` : "תקלה"}</b>
-            <span>{item.description}</span>
-            {item.affectedReportIds?.length
-              ? <div className="feedback-linked-reports">
-                  <small>דיווחים מושפעים ({item.affectedReportIds.length}):</small>
-                  {item.affectedReportIds.map(id =>
-                    <button key={id} type="button" className="btn btn-secondary"
-                      onClick={() => onOpenReport?.(id)} disabled={!onOpenReport}
-                      title={id} aria-label={`פתיחת דיווח ${id}`}>
-                      דיווח {id.slice(0, 8)}
-                    </button>)}
-                </div>
-              : null}
-          </div>
-          {item.code > 0 ? <FeedbackResolveButton
-            compact
-            onClick={() => onResolveOne({ code: item.code })}
-          /> : null}
-        </div>)}
-      </div>
-    </section>)}
-  </div>;
 }
 
 export function ReportFeedbackModal({
@@ -234,7 +163,7 @@ export function ReportFeedbackModal({
         <div className="feedback-modal-section-head">
           <div><h3>תקלות מעסיק</h3><p>תקלות רוחב ברמת המעסיק והעברת הכספים.</p></div>
         </div>
-        <IssueGroups
+        <FeedbackIssueGroups
           issues={issues}
           order={["employer"]}
           onResolveOne={(selector) => setResolutionSelector(selector)}
@@ -259,7 +188,7 @@ export function ReportFeedbackModal({
         <div className="feedback-modal-section-head">
           <div><h3><FileText size={17} aria-hidden="true" /> תקלות בדיווח</h3><p>תקלות ששייכות לדיווח עצמו בלבד.</p></div>
         </div>
-        <IssueGroups
+        <FeedbackIssueGroups
           issues={issues}
           order={["report"]}
           onResolveOne={(selector) => setResolutionSelector(selector)}
