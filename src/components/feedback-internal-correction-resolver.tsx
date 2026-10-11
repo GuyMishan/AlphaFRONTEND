@@ -250,8 +250,10 @@ export function FeedbackInternalCorrectionResolver({
     </div> : null}
 
     {otherDocumentIssues ? <div className="notice notice-info" role="status">
-      <strong>השלמת מסמך בהתאם לסיבת הדחייה</strong>
-      <p>בדקו איזה מסמך נדרש לאותה פעולה במוצר הפנסיוני או בהחזר הכספי. יש לתקן את המקור המתאים ולצרף אותו לדיווח או לבקשת ההחזר הרלוונטיים.</p>
+      <strong>{group.problems.some(item => [69, 70].includes(item.code)) ? "תצהיר חסר או לא תקין לצורך החזר כספים" : "חסרים מסמכים לקליטת הפקדה או שינוי פוליסה"}</strong>
+      <p>{group.problems.some(item => [69, 70].includes(item.code))
+        ? "בדקו את התצהיר שנדרש לבקשת החזר הכספים ואת סיבת הדחייה. יש לתקן את התצהיר ולצרף אותו לבקשת ההחזר המתאימה, ולא לשלוח מסמך עבור כל רכיב הפקדה."
+        : "בדקו במשוב אילו מסמכים נדרשים לקליטת ההפקדה או לשינוי בפוליסה. השלימו אותם עבור המוצר והעובד הרלוונטיים."}</p>
       <small>העלאת PDF לתיק משוב בלבד אינה מהווה שליחת המסמך ליצרן ואינה מסיימת את הטיפול.</small>
       {Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
         .map(id => <a key={id} className="btn btn-secondary"
