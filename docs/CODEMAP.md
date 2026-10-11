@@ -174,10 +174,10 @@ Code 18 scoped field-resolution UI (October 2026): `FeedbackResolutionMode` excl
 
 This is a **partial set of true edit capabilities**, not a claim that every numbered V006 XML element is an editable input: generated file headers/trailers, recipient configuration, event/technical identifiers and unsupported negative-correction paths remain read-only/escalation candidates. The known backend JSON contract now includes `missingFieldEditSurface`. Only a full report-level correction send may create subsequent interface documents, never per field.
 
-## Employer document library (October 2026)
-- `src/app/employers/[id]/page.tsx` adds a documents tab only on an existing employer profile.
-- `src/components/employer-documents-tab.tsx` lists and uploads PDF documents, scopes types 4/5/6 to a selected employee, and offers authorized download/removal.
-- The backend `EmployerDocumentEndpoints` stores encrypted PDFs in employer-scoped records independently from immutable `ManualReportAttachment` snapshots. The same official document *types* can later be attached to an editable 006 report; uploading to the employer library itself does **not** alter or transmit any report.
-- Feedback field 57/58 and document-resolution UI can navigate to the employer documents tab. Corrected documents must be attached to the relevant report correction workspace before retransmission.
+## V006 document management (October 2026)
 
-- Employer and employee document tabs reuse `src/components/employer-documents-tab.tsx`, scoped with optional `employmentId`. Employer tab lists only employer-wide type-3 documents, while employee profile `src/app/employees/[id]/page.tsx?tab=documents` lists that employee's type-4/5/6 documents. The backend library remains encrypted and employer-isolated; a profile document is not automatically a transmitted 006 attachment.
+- The existing employer profile `src/app/employers/[id]/page.tsx?tab=documents` uses `EmployerDocumentsTab` to manage employer-wide type-3 affidavits only.
+- The employee profile has **no separate documents tab**. `EmployeePensionMix` passes the optional `renderProductExtra` slot to the shared `PensionProductsEditor`, showing `EmployerDocumentsTab` inside each saved employee pension product for document types 4–6. Type 5 is offered only for pension funds. New products must be saved first to obtain a stable product ID.
+- `EmployeePensionMix` fetches all employee documents once (not once per product), filters locally per `employeePensionProductId`, and provides an explicit one-time assignment UI for older employee documents without any product ID. The backend preserves matching product IDs across subsequent saves.
+- `src/lib/report-attachments-api.ts` exposes eligible library candidates and explicit attach-to-report operations. `DepositPaymentEditor` allows choosing saved employer/product PDFs or a fresh PDF for the relevant 006 operation and creates an independent report evidence copy. Library upload alone does not transmit a document.
+- Feedback document resolvers and fields 57/58 link to employer-level affidavits or the affected employee's pension mix as appropriate. Historical report attachments remain immutable and separate from library documents.
