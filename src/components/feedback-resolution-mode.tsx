@@ -1,7 +1,7 @@
 "use client";
 import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
@@ -83,7 +83,7 @@ export function FeedbackResolutionMode({
   const [error, setError] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [issueSearch, setIssueSearch] = useState("");
-  const initialIssueCodes = useRef<Set<number> | null>(null);
+  const [initialIssueCodes, setInitialIssueCodes] = useState<Set<number> | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
@@ -96,10 +96,8 @@ export function FeedbackResolutionMode({
       .then(() => loadContext(contextType, organizationId, employerId, reportId, reportProductId))
       .then(result => {
         if (!cancelled) {
-          if (initialIssueCodes.current === null) {
-            initialIssueCodes.current = new Set(filterGroups(result, selector, contextType)
-              .flatMap(group => group.problems.map(problem => problem.code)));
-          }
+          setInitialIssueCodes(previous => previous ?? new Set(filterGroups(result, selector, contextType)
+            .flatMap(group => group.problems.map(problem => problem.code))));
           setContext(result);
         }
       })
@@ -123,8 +121,8 @@ export function FeedbackResolutionMode({
     return { value: group.groupKey, label: `קוד ${first.code} — ${first.description}` };
   }), [groups]);
   const activeCodes = new Set(groups.flatMap(group => group.problems.map(problem => problem.code)));
-  const totalIssues = initialIssueCodes.current?.size ?? activeCodes.size;
-  const resolvedIssues = [...(initialIssueCodes.current ?? activeCodes)]
+  const totalIssues = initialIssueCodes?.size ?? activeCodes.size;
+  const resolvedIssues = [...(initialIssueCodes ?? activeCodes)]
     .filter(code => !activeCodes.has(code)).length;
   const safeIndex = Math.min(activeIndex, Math.max(groups.length - 1, 0));
   const activeGroup = groups[safeIndex];
