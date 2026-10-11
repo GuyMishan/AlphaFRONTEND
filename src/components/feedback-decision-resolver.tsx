@@ -97,13 +97,6 @@ export function FeedbackDecisionResolver({
   }
 
   return <section className="feedback-decision-resolver" aria-label="בדיקה והחלטה">
-    <div className="feedback-resolution-section-head">
-      <div>
-        <h3>בדיקה והחלטה</h3>
-        <p>כל שגיאה נבחנת ונשמרת בנפרד. מוצגות רק החלטות שה־Backend מאשר לקוד הספציפי.</p>
-      </div>
-    </div>
-
     {error ? <div className="notice notice-error">{error}</div> : null}
 
     <div className="feedback-decision-list">
@@ -116,8 +109,9 @@ export function FeedbackDecisionResolver({
         return <article className="feedback-decision-card" key={problem.problemId}>
           <div className="feedback-decision-card-head">
             <div>
-              <strong>קוד {problem.code}</strong>
-              <span>{problem.description}</span>
+              {decisionProblems.length > 1
+                ? <strong>רשומה {decisionProblems.indexOf(problem) + 1} מתוך {decisionProblems.length}</strong>
+                : null}
             </div>
             {latest ? <span className="feedback-decision-status">{latest}</span> : null}
           </div>
