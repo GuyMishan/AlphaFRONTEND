@@ -96,6 +96,24 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
     finally { setDownloadingEvidence(null); }
   }
 
+  // Resolution mode edits one concrete product, not the entire deposit list.
+  // Reuse the same DepositPaymentEditor as the normal deposit edit modal.
+  if (embeddedEditor && focusReportProductId) return <>
+    {error ? <div className="notice notice-error" role="alert">{error}</div> : null}
+    {loading || !editing ? <div className="empty" role="status">
+      {loading ? "טוען את ההפקדה לעריכה..." : "לא נמצאה ההפקדה שנבחרה בסביבת התיקון."}
+    </div> : <DepositPaymentEditor embedded footerTargetId={footerTargetId}
+      employer={employer} organizationId={organizationId} employerId={employerId}
+      reportId={reportId} row={editing} contributionLimits={contributionLimits}
+      onEvidenceChanged={(items) => setProofs(current => ({ ...current, [editing.id]: items }))}
+      onClose={() => setEditing(null)}
+      onSaved={(updated) => {
+        setRows(current => current.map(item => item.id === updated.id ? updated : item));
+        setEditing(updated);
+        notify.success("פרטי התשלום נשמרו בהצלחה");
+      }} />}
+  </>;
+
   return <>
     <div className="card-head deposit-head">
       <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>פרטי התשלום ברמת המוצר.</span></div>
