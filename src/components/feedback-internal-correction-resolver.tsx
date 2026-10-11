@@ -276,6 +276,12 @@ export function FeedbackInternalCorrectionResolver({
       <ArrowLeft size={16} aria-hidden="true" />
     </button> : null}
 
+    {group.resolverType === "documents" ? <div className="notice notice-info">
+      את המסמכים הרשמיים לממשק 006 מנהלים בפרופיל המעסיק.
+      <div><a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${organizationId}&tab=documents`}>ניהול מסמכי המעסיק</a></div>
+      <small>העלאת ראיות לטיפול במשוב אינה מהווה צירוף אוטומטי לקובץ דיווח שנשלח.</small>
+    </div> : null}
+
     {group.resolverType === "documents" ? <div className="feedback-resolution-document-list">
       {group.problems.map(item => <div className="feedback-resolution-document-item" key={item.problemId}>
         <div>
