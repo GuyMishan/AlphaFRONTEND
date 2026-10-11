@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, FilePenLine, ListChecks } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { UiAutocomplete } from "@/components/ui-controls";
 import { FeedbackEmployeeResolver } from "@/components/feedback-employee-resolver";
@@ -16,50 +16,6 @@ import {
   type FeedbackResolutionProblem,
   type FeedbackResolutionProblemSelector,
 } from "@/lib/report-feedback-api";
-
-function resolutionTypeLabel(value: FeedbackResolutionProblem["resolutionType"]) {
-  switch (value) {
-    case "edit": return "תיקון נתונים";
-    case "decision": return "בדיקה והחלטה";
-    case "external": return "טיפול חיצוני";
-    default: return "מידע";
-  }
-}
-
-function resolutionIcon(value: FeedbackResolutionProblem["resolutionType"]) {
-  if (value === "external") return <ExternalLink size={16} aria-hidden="true" />;
-  if (value === "decision") return <ListChecks size={16} aria-hidden="true" />;
-  return <FilePenLine size={16} aria-hidden="true" />;
-}
-
-function scopeLabel(value: string) {
-  switch (value) {
-    case "employer": return "מעסיק";
-    case "money": return "כספים";
-    case "report": return "דיווח";
-    case "employee": return "עובד";
-    case "deposit": return "הפקדה";
-    case "contribution": return "רכיב הפרשה";
-    default: return value;
-  }
-}
-
-function resolverLabel(value: string) {
-  switch (value) {
-    case "employee": return "פרטי עובד";
-    case "employmentStatus": return "סטטוס העסקה";
-    case "productPolicy": return "מוצר ופוליסה";
-    case "contribution": return "הפרשות";
-    case "reportCorrection": return "תיקון דיווח";
-    case "payment": return "פרטי תשלום";
-    case "refund": return "החזר כספים";
-    case "documents": return "מסמכים";
-    case "split": return "פיצול ושיוך";
-    case "conditionalField": return "שדות דיווח";
-    case "externalCase": return "טיפול מול גוף חיצוני";
-    default: return value;
-  }
-}
 
 function loadContext(
   contextType: FeedbackResolutionContextType,
@@ -249,11 +205,11 @@ export function FeedbackResolutionMode({
       />
     </section> : null}
 
-    {!loading && !error && context && totalIssues > 0 ? <>
+    {!loading && !error && context && totalIssues > 1 ? <>
       <section className="feedback-resolution-progress" aria-label="התקדמות בטיפול בתקלות">
         <div>
           <span>בעיות שטופלו</span>
-          <strong>{resolvedIssues} / {totalIssues}</strong>
+          <strong dir="ltr">{resolvedIssues}/{totalIssues}</strong>
         </div>
         <div className="feedback-resolution-progress-track" aria-hidden="true">
           <span style={{ width: `${totalIssues > 0 ? (resolvedIssues / totalIssues) * 100 : 0}%` }} />
@@ -263,51 +219,30 @@ export function FeedbackResolutionMode({
     </> : null}
 
     {!loading && !error && activeGroup && primaryProblem ? <>
-      <section className="feedback-resolution-problem-card">
+      <section className="feedback-resolution-problem-card" aria-label="הבעיה שנבחרה">
         <div className="feedback-resolution-problem-head">
-          <span className="feedback-resolution-resolver">
-            <ListChecks size={16} aria-hidden="true" />
-            {resolverLabel(activeGroup.resolverType)}
-          </span>
-          <span className="feedback-resolution-scope">
-            {new Set(activeGroup.problems.map(problem => problem.targetScope)).size === 1
-              ? scopeLabel(primaryProblem.targetScope)
-              : "מספר תחומים"}
-          </span>
+          <strong>קוד {primaryProblem.code} — {primaryProblem.description}</strong>
         </div>
-
-        <div className="feedback-resolution-problem-copy">
-          {primaryProblem.targetScope === "report"
-            ? <small>תקלה ברמת הדיווח כולו · שורות המשוב המקוריות משויכות להפקדות לצורך מעקב בלבד.</small>
-            : primaryProblem.targetScope === "employer"
-              ? <small>תקלה כללית ברמת המעסיק · אינה מוגבלת לעובד או להפקדה מסוימים.</small>
-              : <>
-                  {primaryProblem.employeeName ? <small>עובד: {primaryProblem.employeeName}</small> : null}
-                  {primaryProblem.fundCompanyName || primaryProblem.productName
-                    ? <small>מוצר: {primaryProblem.fundCompanyName || primaryProblem.productName}{primaryProblem.policyNumber ? ` · פוליסה ${primaryProblem.policyNumber}` : ""}</small>
-                    : null}
-                </>}
-        </div>
-
-        <div className="feedback-resolution-group-problems" role="list" aria-label="תקלות בקבוצת הטיפול">
-          {activeGroup.problems.filter((problem, index, all) => all.findIndex(item => item.code === problem.code && item.description === problem.description && item.resolutionType === problem.resolutionType) === index).map(problem => <div key={problem.problemId} className="feedback-resolution-group-problem" role="listitem">
-            <span className={`feedback-resolution-type ${problem.resolutionType}`}>
-              {resolutionIcon(problem.resolutionType)}
-              {resolutionTypeLabel(problem.resolutionType)}
-            </span>
-            <div>
-              <b>קוד {problem.code}</b>
-              <span>{problem.description}</span>
-              {problem.feedbackValues.resolutionWorkflowStatus === "feedback-returned-needs-review"
-                ? <small role="alert">התקבל משוב חוזר — התיקון טרם אושר, נדרשת בדיקה נוספת</small>
-                : problem.feedbackValues.resolutionWorkflowStatus === "transmitted-awaiting-feedback"
-                  ? <small role="status">טופל ושודר — ממתין למשוב חוזר מהגוף המוסדי</small>
-                  : problem.feedbackValues.resolutionWorkflowStatus === "correction-in-progress"
-                  ? <small role="status">התיקון נשמר — טרם התקבל אישור במשוב</small>
-                  : null}
-            </div>
-          </div>)}
-        </div>
+        {primaryProblem.targetScope === "deposit" || primaryProblem.targetScope === "employee"
+          ? <div className="feedback-resolution-problem-copy">
+              {primaryProblem.employeeName ? <small>עובד: {primaryProblem.employeeName}</small> : null}
+              {primaryProblem.fundCompanyName || primaryProblem.productName
+                ? <small>מוצר: {primaryProblem.fundCompanyName || primaryProblem.productName}</small>
+                : null}
+            </div> : null}
+        {primaryProblem.code === 18 && activeGroup.problems.every(problem =>
+          !problem.feedbackValues?.fieldNumber && !problem.feedbackValues?.fieldPath)
+          ? <div className="notice notice-info" role="status">
+              המשוב שהתקבל אינו מציין איזה שדה חובה חסר. לא ניתן לזהות את השדה לתיקון מתוך קוד 18 בלבד.
+              יש לבדוק פירוט נוסף בקובץ המשוב המקורי או מול הגורם שהחזיר את השגיאה.
+            </div> : null}
+        {activeGroup.problems.some(problem => problem.feedbackValues.resolutionWorkflowStatus === "feedback-returned-needs-review")
+          ? <small role="alert">התקבל משוב חוזר — התיקון טרם אושר ונדרשת בדיקה נוספת.</small>
+          : activeGroup.problems.some(problem => problem.feedbackValues.resolutionWorkflowStatus === "transmitted-awaiting-feedback")
+            ? <small role="status">הטיפול שודר וממתין למשוב חוזר.</small>
+            : activeGroup.problems.some(problem => problem.feedbackValues.resolutionWorkflowStatus === "correction-in-progress")
+              ? <small role="status">תיקון נשמר אך טרם אושר במשוב.</small>
+              : null}
       </section>
 
       {activeGroup.problems.some(problem => problem.code === 56 && problem.targetScope === "employer")
