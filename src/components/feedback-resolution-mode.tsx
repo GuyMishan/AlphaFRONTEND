@@ -303,6 +303,7 @@ export function FeedbackResolutionMode({
       {primaryProblem.code === 18
         && primaryProblem.targetScope === "deposit"
         && primaryProblem.feedbackValues.missingFieldEditSurface === "depositEmployeeStatus"
+        && ["71", "74", "75", "76", "77"].includes(primaryProblem.feedbackValues.missingFieldNumber ?? "")
         ? <FeedbackCode18DepositEditor
             key={activeGroup.groupKey}
             organizationId={organizationId}
