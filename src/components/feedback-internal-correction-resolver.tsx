@@ -172,7 +172,7 @@ export function FeedbackInternalCorrectionResolver({
   if (!problem || !config) return null;
 
   const code100Only = group.problems.every(item => item.code === 100);
-  const visibleRows = code100Only ? [] : rows;
+
 
   const canPrepareWorkspace = group.problems.every(item =>
     item.resolutionType === "edit"
@@ -257,21 +257,6 @@ export function FeedbackInternalCorrectionResolver({
       <small>אין ליצור ביטול כפול בלי לוודא מה כבר נקלט. לאחר הטיפול יש להמתין למשוב מעודכן.</small>
       <a className="btn btn-primary" href="/reports">פתיחת היסטוריית הדיווחים <ArrowLeft size={16} aria-hidden="true" /></a>
     </div> : null}
-    {visibleRows.length ? <div className="feedback-resolution-compare" role="table" aria-label="השוואת נתונים לתיקון">
-      <div className="feedback-resolution-compare-head" role="row">
-        <b role="columnheader">שדה</b>
-        <b role="columnheader">בדיווח</b>
-        <b role="columnheader">כיום / במשוב</b>
-      </div>
-      {visibleRows.map(row => <div className="feedback-resolution-compare-row" role="row" key={row.key}>
-        <span role="cell">{row.label}</span>
-        <span role="cell" dir="auto">{displayValue(row.reported)}</span>
-        <span role="cell" dir="auto">
-          {displayValue(row.source === "feedback" ? row.feedback : row.current ?? row.feedback)}
-        </span>
-      </div>)}
-    </div> : null}
-
     {!canPrepareWorkspace && nonWorkspaceMessage ? <div className="feedback-resolution-internal-note">
       <FilePenLine size={18} aria-hidden="true" />
       <span>{nonWorkspaceMessage}</span>
@@ -289,7 +274,14 @@ export function FeedbackInternalCorrectionResolver({
       <ArrowLeft size={16} aria-hidden="true" />
     </button> : null}
 
-    {group.resolverType === "documents" ? <div className="notice notice-info">
+    {group.resolverType === "documents" && group.problems.some(item => item.code === 102) ? <div className="notice notice-info" role="status">
+      <strong>קוד 102 — תצהיר מעסיק לא תקין</strong>
+      <p>התצהיר שהוגש בהקשר של הסכם קיבוצי אינו תקין. זו בעיה במסמך ברמת המעסיק, לא מסמך לכל עובד או הפקדה.</p>
+      <p>בדקו את התצהיר ואת סיבת הדחייה במשוב, עדכנו אותו במסמכי המעסיק, ואז צרפו את הגרסה המתוקנת לדיווח המתאים לפי תהליך הדיווח החוזר.</p>
+      <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=documents`}>מסמכי המעסיק <ArrowLeft size={16} aria-hidden="true" /></a>
+      <small>עדכון מסמך בפרופיל אינו משנה אוטומטית דיווח שכבר נשלח.</small>
+    </div> : null}
+    {group.resolverType === "documents" && !group.problems.some(item => item.code === 102) ? <div className="notice notice-info">
       תצהירי מעסיק (סוג 3) נשמרים בפרופיל המעסיק; מסמכים אישיים (סוגים 4–6) מנוהלים בתוך הקרן בתמהיל העובד.
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${organizationId}&tab=documents`}>מסמכי המעסיק</a>
@@ -300,7 +292,7 @@ export function FeedbackInternalCorrectionResolver({
       <small>לאחר בחירת מסמך מתוקן יש לצרף אותו לגרסת הדיווח הנכונה; העלאת מסמך לפרופיל אינה משנה את הדיווח המקורי.</small>
     </div> : null}
 
-    {group.resolverType === "documents" ? <div className="feedback-resolution-document-list">
+    {group.resolverType === "documents" && !group.problems.some(item => item.code === 102) ? <div className="feedback-resolution-document-list">
       {group.problems.map(item => <div className="feedback-resolution-document-item" key={item.problemId}>
         <div>
           <strong>קוד {item.code}</strong>
