@@ -65,18 +65,18 @@ export function EmployerForm({
     if (input.legalName.trim().length < 2) next.legalName = "שם משפטי מלא הוא שדה חובה ולפחות 2 תווים.";
     if (!/^\d{5,15}$/.test(input.registrationNumber.trim())) next.registrationNumber = "מספר חברה / עוסק חייב להכיל 5-15 ספרות.";
     if (!/^\d{5,9}$/.test(input.withholdingFileNumber.trim())) next.withholdingFileNumber = "מספר תיק ניכויים חייב להכיל 5-9 ספרות. במידה ואין, יש להזין 900000000.";
-    if (!(input.contactFirstName ?? "").trim()) next.contactFirstName = "שם פרטי של איש הקשר הוא שדה חובה.";
-    if (!(input.contactLastName ?? "").trim()) next.contactLastName = "שם משפחה של איש הקשר הוא שדה חובה.";
+    if ((input.contactFirstName ?? "").trim().length < 2 || (input.contactFirstName ?? "").trim().length > 20) next.contactFirstName = "שם פרטי של איש הקשר חייב להכיל 2–20 תווים.";
+    if ((input.contactLastName ?? "").trim().length < 2 || (input.contactLastName ?? "").trim().length > 20) next.contactLastName = "שם משפחה של איש הקשר חייב להכיל 2–20 תווים.";
     const phone = input.contactPhone ?? "";
     const mobile = input.contactMobile ?? "";
     if (!phone && !mobile) {
       next.contactPhone = "יש להזין לפחות טלפון או נייד אחד.";
       next.contactMobile = "יש להזין לפחות טלפון או נייד אחד.";
     } else {
-      if (phone && !/^\d{1,11}$/.test(phone)) next.contactPhone = "טלפון איש הקשר חייב להכיל 1-11 ספרות.";
-      if (mobile && !/^\d{1,15}$/.test(mobile)) next.contactMobile = "מספר הנייד חייב להכיל 1-15 ספרות.";
+      if (phone && !/^\d{9,11}$/.test(phone)) next.contactPhone = "טלפון איש הקשר חייב להכיל 9–11 ספרות.";
+      if (mobile && !/^05\d{8}$/.test(mobile)) next.contactMobile = "מספר הנייד חייב להכיל 10 ספרות ולהתחיל ב־05.";
     }
-    if (!isValidEmail(input.contactEmail ?? "")) next.contactEmail = "כתובת האימייל של איש הקשר אינה תקינה.";
+    if ((input.contactEmail ?? "").trim().length > 50 || !isValidEmail(input.contactEmail ?? "")) next.contactEmail = "כתובת האימייל של איש הקשר אינה תקינה.";
     return next;
   }
 
@@ -120,14 +120,14 @@ export function EmployerForm({
     <form id={formId} className="form" onSubmit={submit} noValidate>
       <Field label="שם משפטי מלא *" error={errors.legalName}><UiInput aria-invalid={Boolean(errors.legalName)} required minLength={2} maxLength={200} disabled={!editable} value={form.legalName} onChange={(event) => update("legalName", event.target.value)} /></Field>
       <div className="grid two-cols">
-        <Field label="מספר חברה / עוסק *" error={errors.registrationNumber}><UiInput aria-invalid={Boolean(errors.registrationNumber)} required disabled={!editable} inputMode="numeric" maxLength={15} value={form.registrationNumber} onChange={(event) => update("registrationNumber", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
+        <Field label="מספר חברה / עוסק *" error={errors.registrationNumber}><UiInput aria-invalid={Boolean(errors.registrationNumber)} required disabled={!editable} inputMode="numeric" maxLength={15} value={form.registrationNumber} onChange={(event) => update("registrationNumber", event.target.value.replace(/\D/g, "").slice(0, 10))} /></Field>
         <Field label="מספר תיק ניכויים * (במידה ואין, יש להזין 900000000)" error={errors.withholdingFileNumber}><UiInput aria-invalid={Boolean(errors.withholdingFileNumber)} required disabled={!editable} inputMode="numeric" maxLength={9} value={form.withholdingFileNumber} onChange={(event) => update("withholdingFileNumber", event.target.value.replace(/\D/g, "").slice(0, 9))} /></Field>
       </div>
       <div className="grid two-cols">
         <Field label="שם פרטי איש קשר *" error={errors.contactFirstName}><UiInput autoFocus={focusField === "contactFirstName"} className={focusField === "contactFirstName" ? "feedback-code18-target-field" : undefined} disabled={!editable} maxLength={20} value={form.contactFirstName ?? ""} onChange={(event) => update("contactFirstName", event.target.value)} /></Field>
         <Field label="שם משפחה איש קשר *" error={errors.contactLastName}><UiInput autoFocus={focusField === "contactLastName"} className={focusField === "contactLastName" ? "feedback-code18-target-field" : undefined} disabled={!editable} maxLength={20} value={form.contactLastName ?? ""} onChange={(event) => update("contactLastName", event.target.value)} /></Field>
         <Field label="טלפון איש קשר" error={errors.contactPhone}><UiInput autoFocus={focusField === "contactPhone"} className={focusField === "contactPhone" ? "feedback-code18-target-field" : undefined} disabled={!editable} inputMode="numeric" maxLength={11} value={form.contactPhone ?? ""} onChange={(event) => update("contactPhone", event.target.value.replace(/\D/g, "").slice(0, 11))} /></Field>
-        <Field label="נייד איש קשר" error={errors.contactMobile}><UiInput autoFocus={focusField === "contactMobile"} className={focusField === "contactMobile" ? "feedback-code18-target-field" : undefined} disabled={!editable} inputMode="numeric" maxLength={15} value={form.contactMobile ?? ""} onChange={(event) => update("contactMobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
+        <Field label="נייד איש קשר" error={errors.contactMobile}><UiInput autoFocus={focusField === "contactMobile"} className={focusField === "contactMobile" ? "feedback-code18-target-field" : undefined} disabled={!editable} inputMode="numeric" maxLength={10} value={form.contactMobile ?? ""} onChange={(event) => update("contactMobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
       </div>
       <small style={{ color: "var(--muted)", marginTop: -8 }}>יש להזין לפחות אחד מהשדות: טלפון או נייד.</small>
       <Field label="אימייל איש קשר *" error={errors.contactEmail}><UiInput autoFocus={focusField === "contactEmail"} className={focusField === "contactEmail" ? "feedback-code18-target-field" : undefined} disabled={!editable} type="email" maxLength={50} value={form.contactEmail ?? ""} onChange={(event) => update("contactEmail", event.target.value)} /></Field>
