@@ -171,6 +171,9 @@ export function FeedbackInternalCorrectionResolver({
 
   if (!problem || !config) return null;
 
+  const code100Only = group.problems.every(item => item.code === 100);
+  const visibleRows = code100Only ? [] : rows;
+
   const canPrepareWorkspace = group.problems.every(item =>
     item.resolutionType === "edit"
     && item.correctionBehavior === "correctionWorkspace"
@@ -242,13 +245,19 @@ export function FeedbackInternalCorrectionResolver({
       </div>
     </div>
 
-    {rows.length ? <div className="feedback-resolution-compare" role="table" aria-label="השוואת נתונים לתיקון">
+    {code100Only ? <div className="notice notice-info" role="status">
+      <strong>חסרה פעולת ביטול בדיווח השלילי</strong>
+      <p>בדיווח השוטף דווחה פעולת תיקון מסוג 2 או 3, אבל לא נמצאה פעולת 6 תואמת בדיווח השלילי.</p>
+      <p>יש לבדוק קודם אם נשלח דיווח שלילי והוא נקלט. אם לא, יש להשלים את רצף התיקון, בלי לשנות ידנית נתונים שאינם קשורים לשגיאה.</p>
+      <small>פתיחת סביבת התיקון אינה שולחת אוטומטית דיווח שלילי. יש לבדוק את הקבצים שייווצרו לפני שידור חוזר.</small>
+    </div> : null}
+    {visibleRows.length ? <div className="feedback-resolution-compare" role="table" aria-label="השוואת נתונים לתיקון">
       <div className="feedback-resolution-compare-head" role="row">
         <b role="columnheader">שדה</b>
         <b role="columnheader">בדיווח</b>
         <b role="columnheader">כיום / במשוב</b>
       </div>
-      {rows.map(row => <div className="feedback-resolution-compare-row" role="row" key={row.key}>
+      {visibleRows.map(row => <div className="feedback-resolution-compare-row" role="row" key={row.key}>
         <span role="cell">{row.label}</span>
         <span role="cell" dir="auto">{displayValue(row.reported)}</span>
         <span role="cell" dir="auto">
