@@ -1,7 +1,7 @@
 "use client";
 
 import { UiDateInput, UiInput  } from "@/components/ui-controls";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DataTable } from "@/components/data-table";
 import { CircleAlert, CircleCheck, Plus, Trash2 } from "lucide-react";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
@@ -20,6 +20,7 @@ export type PensionEditorContribution = {
 };
 
 export type PensionEditorProduct = {
+  employeePensionProductId?: string;
   workspaceReportProductId?: string | null;
   sourceReportProductId?: string | null;
   productType: PensionProductType;
@@ -283,7 +284,7 @@ function maxPercentage(productType: PensionProductType, party: "employer" | "emp
   return match?.maxPercentage ?? null;
 }
 
-export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, allowAdd = true, allowRemove = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction, onReferenceDataLoaded }: {
+export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, allowAdd = true, allowRemove = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction, onReferenceDataLoaded, renderProductExtra }: {
   context: "employee" | "report";
   month?: string;
   monthlySalary: number;
@@ -296,6 +297,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
   onProductsChange: (products: PensionEditorProduct[]) => void;
   onFieldInteraction?: () => void;
   onReferenceDataLoaded?: (data: PensionEditorReferenceData) => void;
+  renderProductExtra?: (product: PensionEditorProduct, index: number) => ReactNode;
 }) {
   const [referenceData, setReferenceData] = useState<PensionEditorReferenceData | null>(null);
   const onReferenceDataLoadedRef = useRef(onReferenceDataLoaded);
@@ -373,6 +375,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
           <div className="field"><label>סעיף 14 *</label><EmployerInterfaceOptionSelect category="section14-code" value={section14Code} disabled={!editable} required suppliedOptions={interfaceOptions("section14-code")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => { const code = Number(value ?? 3) as Section14Code; updateProduct(index, { section14Code: code, section14: code === 1 || code === 2, section14StartDate: code === 2 || code === 4 ? product.section14StartDate : null }); }} /></div>
           <div className="field"><label>תאריך תחולה/ביטול סעיף 14{section14DateRequired ? " *" : ""}</label><UiDateInput disabled={!editable || !section14DateRequired} required={section14DateRequired} value={section14DateRequired ? product.section14StartDate ?? "" : ""} onValueChange={(value) => updateProduct(index, { section14StartDate: value || null })} /></div>
         </div>
+        {renderProductExtra?.(product, index)}
         <div className="contribution-grid"><ContributionEditor context={context} title="הפקדות מעסיק" party="employer" product={product} items={product.employerContributions} contributionLimits={referenceData?.contributionLimits ?? []} editable={editable} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} /><ContributionEditor context={context} title="הפקדות עובד" party="employee" product={product} items={product.employeeContributions} contributionLimits={referenceData?.contributionLimits ?? []} editable={editable} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} /></div>
       </section>;
     })}</div>
