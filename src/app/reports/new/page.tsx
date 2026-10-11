@@ -79,6 +79,8 @@ export default function NewReportPage() {
   const [followUpReportId, setFollowUpReportId] = useState("");
   const [correctionWorkspaceEntry, setCorrectionWorkspaceEntry] = useState(false);
   const [focusedReportProductId, setFocusedReportProductId] = useState("");
+  const [focusedReportEmployeeId, setFocusedReportEmployeeId] = useState("");
+  const [focusMissingFieldNumber, setFocusMissingFieldNumber] = useState("");
   const [resolutionResolver, setResolutionResolver] = useState("");
   const [resolutionSourceReportId, setResolutionSourceReportId] = useState("");
   const [resolutionProblemIds, setResolutionProblemIds] = useState<string[]>([]);
@@ -296,6 +298,8 @@ export default function NewReportPage() {
     setFollowUpReportId(params.get("followUpReportId") ?? "");
     setCorrectionWorkspaceEntry(params.get("correctionWorkspace") === "1");
     setFocusedReportProductId(params.get("focusReportProductId") ?? "");
+    setFocusedReportEmployeeId(params.get("focusReportEmployeeId") ?? "");
+    setFocusMissingFieldNumber(params.get("focusMissingFieldNumber") ?? "");
     setResolutionResolver(params.get("resolutionResolver") ?? "");
     setResolutionSourceReportId(params.get("resolutionSourceReportId") ?? "");
     setResolutionProblemIds(
@@ -730,7 +734,7 @@ export default function NewReportPage() {
     </div> : null}
     {step === 1 && !showOpenReports && isXml && scope ? <EmployerInterfaceXmlIntake organizationId={scope.organizationId} employerId={scope.employerId} paymentAccountId={selectedPaymentAccountId} salaryPaymentDate={salaryPaymentDate} disabled={!canCreateReport || !selectedPaymentAccountId} onBeforeImport={ensureBillingAccess} onReportImported={handleXmlImported} /> : null}
     {step === 2 && isExcel && scope ? <ExcelEmployeeIntake organizationId={scope.organizationId} employerId={scope.employerId} reportingMonth={month} onChange={(result) => { setExcelIntake(result); setFileName(result?.fileName ?? ""); setError(""); }} /> : null}
-    {((!isExcel && step === 2) || (isExcel && step === 3)) && manualReportId && scope ? <ManualReportData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} month={month} employees={employees} selectedIds={selectedIds} setSelectedIds={setSelectedIds} correctionWorkspace={correctionWorkspaceEntry} /> : null}
+    {((!isExcel && step === 2) || (isExcel && step === 3)) && manualReportId && scope ? <ManualReportData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} month={month} employees={employees} selectedIds={selectedIds} setSelectedIds={setSelectedIds} correctionWorkspace={correctionWorkspaceEntry} focusReportEmployeeId={focusedReportEmployeeId} focusReportProductId={focusedReportProductId} focusMissingFieldNumber={focusMissingFieldNumber} /> : null}
     {((!isExcel && step === 3) || (isExcel && step === 4)) && manualReportId && scope ? <ManualDepositData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} focusReportProductId={focusedReportProductId} /> : null}
     {step === summaryStep ? <>
       <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} correctionOperationCode={isCorrection ? correctionOperationCode : null} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} paymentAccount={paymentAccounts.find((x) => x.id === selectedPaymentAccountId) ?? null} sentExternalId={sentExternalId} />
