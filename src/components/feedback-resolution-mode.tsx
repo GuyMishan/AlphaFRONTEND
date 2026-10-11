@@ -331,8 +331,8 @@ export function FeedbackResolutionMode({
         && primaryProblem.feedbackValues.missingFieldMapped === "true"
         ? <FeedbackCode18ProductEditor organizationId={organizationId} employerId={employerId} group={activeGroup} /> : null}
       {primaryProblem.code === 18
-        && !["depositEmployeeStatus", "employeeProfile", "employerContact", "depositProduct", "depositContributions", "reportTransfer"].includes(
-          primaryProblem.feedbackValues.missingFieldEditSurface ?? "")
+        && !["25","26","27","28","29","35","37","38","40","41","42","44","45","46","49","50","51","52","53","57","58","59","60","63","64","65","66","67","68","70","71","72","73","74","75","76","77","78","79","80","81","82"].includes(
+          primaryProblem.feedbackValues.missingFieldNumber ?? "")
         ? <div className="notice notice-info" role="status">
             השדה זוהה במפרט, אך עדיין לא קיים עבורו עורך ייעודי ומאומת במסך פתרון בעיות.
             אין לבצע עריכה של שדה אחר כתחליף. יש לטפל בו דרך תהליך תיקון הדיווח המתאים.
