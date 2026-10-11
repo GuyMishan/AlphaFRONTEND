@@ -11,7 +11,6 @@ import {
   type EmployerFeedbackContext,
   type FeedbackResolutionProblemSelector,
   type ReportFeedbackContext,
-  type ReportFeedbackContextIssue,
 } from "@/lib/report-feedback-api";
 import { formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
