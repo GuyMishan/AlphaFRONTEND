@@ -20,8 +20,6 @@ export function FeedbackCode18DepositEditor({
   } | null>(null);
   const problem = group.problems[0];
 
-  if (!problem) return null;
-
   async function openEditor() {
     if (!problem || !problem.reportProductId) {
       setError("לא ניתן לזהות את ההפקדה שאליה שייך השדה.");
@@ -59,6 +57,8 @@ export function FeedbackCode18DepositEditor({
     // The editor is prepared once for this selected group.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group.groupKey]);
+
+  if (!problem) return null;
 
   return <section aria-label="תיקון שדה הפקדה" className="feedback-code18-embedded-editor">
     <div className="notice notice-info">
