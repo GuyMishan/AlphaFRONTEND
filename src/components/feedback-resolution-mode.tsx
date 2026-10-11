@@ -222,7 +222,7 @@ export function FeedbackResolutionMode({
       <section className="feedback-resolution-problem-card" aria-label="הבעיה שנבחרה">
         <div className="feedback-resolution-problem-head">
           <strong>קוד {primaryProblem.code} — {primaryProblem.description}</strong>
-          <FeedbackErrorDetails details={{ errorAmount: primaryProblem.feedbackValues.errorAmount, errorDate: primaryProblem.feedbackValues.errorDate }} />
+          <FeedbackErrorDetails allDetails={activeGroup.problems.map(problem => ({ errorAmount: problem.feedbackValues.errorAmount, errorDate: problem.feedbackValues.errorDate }))} />
         </div>
         {primaryProblem.targetScope === "deposit" || primaryProblem.targetScope === "employee"
           ? <div className="feedback-resolution-problem-copy">
