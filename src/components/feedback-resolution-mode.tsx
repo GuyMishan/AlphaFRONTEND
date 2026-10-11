@@ -279,7 +279,21 @@ export function FeedbackResolutionMode({
             >פתיחת אמצעי התשלום הפנסיוני</Link>
           </section> : null}
 
-      {activeGroup.problems.some(problem => problem.resolutionType === "decision") ? <FeedbackDecisionResolver
+      {activeGroup.problems.some(problem => problem.code === 18) ? <section className="notice notice-info" aria-label="טיפול בשדה חסר">
+        <strong>תיקון השדה החסר</strong>
+        <p>יש לתקן את השדות המופיעים למעלה ולשמור את השינויים. דיווח מתקן ייווצר רק אחרי השלמת הטיפול בכל שגיאות הדיווח, ולא אחרי כל שדה.</p>
+        {activeGroup.problems.some(problem => problem.code === 18 && problem.targetScope === "deposit")
+          && onEditDeposit ? <button type="button" className="btn btn-primary"
+              onClick={() => onEditDeposit(activeGroup.problems.filter(problem => problem.code === 18 && problem.targetScope === "deposit").map(problem => problem.problemId))}>
+            עריכת ההפקדה הרלוונטית
+          </button> : null}
+        {activeGroup.problems.some(problem => problem.code === 18 && problem.targetScope === "report")
+          ? <small>השדה שייך לדיווח. יש לתקן אותו בסביבת התיקון של הדיווח כולו.</small> : null}
+        {activeGroup.problems.some(problem => problem.code === 18 && problem.targetScope === "employer")
+          ? <small>השדה שייך לפרטי המעסיק או לאיש הקשר שלו. יש לתקן את נתוני המעסיק ולא את שורת ההפקדה.</small> : null}
+      </section> : null}
+
+      {activeGroup.problems.some(problem => problem.resolutionType === "decision" && problem.code !== 18) ? <FeedbackDecisionResolver
           organizationId={organizationId}
           employerId={employerId}
           group={activeGroup}
