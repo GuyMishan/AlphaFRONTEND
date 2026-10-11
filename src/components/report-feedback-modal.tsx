@@ -1,5 +1,4 @@
 "use client";
-import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Building2, FileText } from "lucide-react";
@@ -81,8 +80,6 @@ function IssueGroups({
         {group.items.map((item, index) => <div className="feedback-error-action-row" key={`${item.code}:${item.reportId}:${index}`}>
           <div className="feedback-error-copy">
             <b>{item.code > 0 ? `קוד ${item.code}` : "תקלה"}</b>
-            <span>{item.description}</span>
-            <FeedbackErrorDetails details={item} />
             {item.affectedReportIds?.length
               ? <div className="feedback-linked-reports">
                   <small>דיווחים מושפעים ({item.affectedReportIds.length}):</small>
