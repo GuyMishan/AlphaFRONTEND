@@ -402,3 +402,7 @@ body:has(.report-modal-backdrop) {
 /* Optional official feedback detail fields, without empty placeholders. */
 .feedback-error-detail-fields { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-block-start: 4px; }
 .feedback-error-detail-fields small { color: var(--text-muted, inherit); }
+
+/* Deduplicated error detail values are only shown in resolution mode. */
+.feedback-error-detail-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.feedback-error-detail-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; border: 1px solid var(--border, currentColor); border-radius: 8px; padding: 6px 10px; }
