@@ -667,15 +667,16 @@
 }
 
 @media (max-width: 760px) {
-  .report-feedback-table th:last-child,
-  .report-feedback-table td:last-child {
-    min-width: 240px;
-    width: 240px;
+  /* Keep actions inside the declared 210px column, including rows with no
+     expand toggle. The former 220px content minimum overflowed this cell. */
+  .report-feedback-table .data-table-row > td:last-child .report-cell-content,
+  .report-feedback-table .report-row-actions {
+    min-width: 0;
+    max-width: 100%;
   }
 
-  .report-feedback-table .data-table-row > td:last-child .report-cell-content,
-  .report-row-actions {
-    min-width: 220px;
+  .report-feedback-table .report-row-actions {
+    gap: 4px;
   }
 
   .report-deposits-grid {
