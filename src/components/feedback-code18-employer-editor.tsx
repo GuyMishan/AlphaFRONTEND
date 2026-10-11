@@ -62,6 +62,7 @@ export function FeedbackCode18EmployerEditor({
       key={employer.id}
       organizationId={organizationId}
       employer={employer}
+      focusField={fieldKey as keyof import("@/lib/types").EmployerInput}
       editable={canEdit}
       embedded
       showBackLink={false}
