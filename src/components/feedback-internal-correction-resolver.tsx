@@ -246,10 +246,9 @@ export function FeedbackInternalCorrectionResolver({
     </div>
 
     {code100Only ? <div className="notice notice-info" role="status">
-      <strong>חסרה פעולת ביטול בדיווח השלילי</strong>
-      <p>בדיווח השוטף דווחה פעולת תיקון מסוג 2 או 3, אבל לא נמצאה פעולת 6 תואמת בדיווח השלילי.</p>
-      <p>יש לבדוק קודם אם נשלח דיווח שלילי והוא נקלט. אם לא, יש להשלים את רצף התיקון, בלי לשנות ידנית נתונים שאינם קשורים לשגיאה.</p>
-      <small>פתיחת סביבת התיקון אינה שולחת אוטומטית דיווח שלילי. יש לבדוק את הקבצים שייווצרו לפני שידור חוזר.</small>
+      <strong>חסר דיווח שלילי לתיקון</strong>
+      <p>נשלח דיווח מתקן (פעולה 2 או 3), אבל חסר דיווח שלילי תואם (פעולה 6) שמבטל את הנתונים הישנים.</p>
+      <p>יש לבדוק אם הדיווח השלילי נשלח ונקלט. אם לא, צריך להשלים אותו.</p>
     </div> : null}
     {visibleRows.length ? <div className="feedback-resolution-compare" role="table" aria-label="השוואת נתונים לתיקון">
       <div className="feedback-resolution-compare-head" role="row">
@@ -269,7 +268,7 @@ export function FeedbackInternalCorrectionResolver({
     <div className="feedback-resolution-internal-note">
       <FilePenLine size={18} aria-hidden="true" />
       <span>{canPrepareWorkspace
-        ? "הדיווח המקורי לא ישתנה. ALPHA יוצר או ממשיך סביבת תיקון ומרכז בה את כל השינויים לפני דיווח חוזר."
+        ? ""
         : nonWorkspaceMessage}</span>
     </div>
 
