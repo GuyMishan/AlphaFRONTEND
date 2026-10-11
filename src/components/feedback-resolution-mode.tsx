@@ -1,3 +1,4 @@
+import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -221,6 +222,7 @@ export function FeedbackResolutionMode({
       <section className="feedback-resolution-problem-card" aria-label="הבעיה שנבחרה">
         <div className="feedback-resolution-problem-head">
           <strong>קוד {primaryProblem.code} — {primaryProblem.description}</strong>
+          <FeedbackErrorDetails details={{ errorAmount: primaryProblem.feedbackValues.errorAmount, errorDate: primaryProblem.feedbackValues.errorDate }} />
         </div>
         {primaryProblem.targetScope === "deposit" || primaryProblem.targetScope === "employee"
           ? <div className="feedback-resolution-problem-copy">
@@ -228,12 +230,6 @@ export function FeedbackResolutionMode({
               {primaryProblem.fundCompanyName || primaryProblem.productName
                 ? <small>מוצר: {primaryProblem.fundCompanyName || primaryProblem.productName}</small>
                 : null}
-            </div> : null}
-        {primaryProblem.code === 18 && activeGroup.problems.every(problem =>
-          !problem.feedbackValues?.fieldNumber && !problem.feedbackValues?.fieldPath)
-          ? <div className="notice notice-info" role="status">
-              המשוב שהתקבל אינו מציין איזה שדה חובה חסר. לא ניתן לזהות את השדה לתיקון מתוך קוד 18 בלבד.
-              יש לבדוק פירוט נוסף בקובץ המשוב המקורי או מול הגורם שהחזיר את השגיאה.
             </div> : null}
         {activeGroup.problems.some(problem => problem.feedbackValues.resolutionWorkflowStatus === "feedback-returned-needs-review")
           ? <small role="alert">התקבל משוב חוזר — התיקון טרם אושר ונדרשת בדיקה נוספת.</small>
