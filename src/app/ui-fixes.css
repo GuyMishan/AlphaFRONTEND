@@ -406,3 +406,11 @@ body:has(.report-modal-backdrop) {
 /* Deduplicated error detail values are only shown in resolution mode. */
 .feedback-error-detail-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .feedback-error-detail-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; border: 1px solid var(--border, currentColor); border-radius: 8px; padding: 6px 10px; }
+
+/* Code 18 numbered missing-field details; shared for single and multi issue entry. */
+.feedback-missing-fields { display: grid; gap: 10px; margin-top: 8px; }
+.feedback-missing-fields > p { margin: 0; }
+.feedback-missing-fields-list { display: grid; gap: 8px; }
+.feedback-missing-field-row { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; border: 1px solid var(--border, currentColor); border-radius: 8px; padding: 10px 12px; }
+.feedback-missing-field-row > div { display: grid; gap: 4px; min-width: 0; }
+.feedback-missing-field-row code { overflow-wrap: anywhere; }
