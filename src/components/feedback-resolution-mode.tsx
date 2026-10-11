@@ -1,5 +1,5 @@
-import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 "use client";
+import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
