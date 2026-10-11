@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, FilePenLine } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -122,10 +122,6 @@ const resolverConfig: Record<string, {
   },
 };
 
-function displayValue(value: string | null | undefined) {
-  return value == null || value === "" ? "—" : value;
-}
-
 export function FeedbackInternalCorrectionResolver({
   organizationId,
   employerId,
@@ -144,27 +140,6 @@ export function FeedbackInternalCorrectionResolver({
   const [error, setError] = useState("");
   const problem = group.problems[0];
   const config = resolverConfig[group.resolverType];
-
-  const rows = useMemo(() => {
-    if (!config) return [];
-    return group.problems.flatMap(item =>
-      config.fields
-        .map(([key, label, source]) => {
-          const reported = item.reportedValues[key] ?? null;
-          const current = item.currentValues[key] ?? null;
-          const feedback = item.feedbackValues[key] ?? null;
-          return {
-            key: `${item.problemId}:${key}`,
-            label: group.problems.length > 1 ? `${label} · קוד ${item.code}` : label,
-            reported,
-            current,
-            feedback,
-            source,
-          };
-        })
-        .filter(row => row.reported != null || row.current != null || row.feedback != null),
-    );
-  }, [group.problems, config]);
 
   if (!problem || !config) return null;
 
