@@ -300,7 +300,8 @@ export function FeedbackResolutionMode({
             canEdit={activeGroup.canExecute}
             onSaved={() => setRefreshToken(value => value + 1)}
           /> : null}
-      {primaryProblem.code === 18 && primaryProblem.targetScope === "deposit"
+      {primaryProblem.code === 18 && (primaryProblem.targetScope === "deposit"
+            || primaryProblem.feedbackValues.missingFieldEditSurface === "reportTransfer")
         && primaryProblem.feedbackValues.missingFieldEditSurface !== "employeeProfile"
         ? <FeedbackCode18DepositEditor
             key={activeGroup.groupKey}
