@@ -302,9 +302,9 @@ export function FeedbackResolutionMode({
             canEdit={activeGroup.canExecute}
             onSaved={() => setRefreshToken(value => value + 1)}
           /> : null}
-      {primaryProblem.code === 18 && (primaryProblem.targetScope === "deposit"
-            || primaryProblem.feedbackValues.missingFieldEditSurface === "reportTransfer")
-        && primaryProblem.feedbackValues.missingFieldEditSurface !== "employeeProfile"
+      {primaryProblem.code === 18
+        && primaryProblem.targetScope === "deposit"
+        && primaryProblem.feedbackValues.missingFieldEditSurface === "depositEmployeeStatus"
         ? <FeedbackCode18DepositEditor
             key={activeGroup.groupKey}
             organizationId={organizationId}
@@ -312,6 +312,14 @@ export function FeedbackResolutionMode({
             group={activeGroup}
             footerTargetId={footerTargetId}
           /> : null}
+
+      {primaryProblem.code === 18
+        && !["depositEmployeeStatus", "employeeProfile", "employerContact"].includes(
+          primaryProblem.feedbackValues.missingFieldEditSurface ?? "")
+        ? <div className="notice notice-info" role="status">
+            השדה זוהה במפרט, אך עדיין לא קיים עבורו עורך ייעודי ומאומת במסך פתרון בעיות.
+            אין לבצע עריכה של שדה אחר כתחליף. יש לטפל בו דרך תהליך תיקון הדיווח המתאים.
+          </div> : null}
 
       {activeGroup.problems.some(problem => problem.resolutionType === "decision" && problem.code !== 18) ? <FeedbackDecisionResolver
           organizationId={organizationId}
