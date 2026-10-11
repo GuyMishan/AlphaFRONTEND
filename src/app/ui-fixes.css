@@ -414,3 +414,12 @@ body:has(.report-modal-backdrop) {
 .feedback-missing-field-row { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; border: 1px solid var(--border, currentColor); border-radius: 8px; padding: 10px 12px; }
 .feedback-missing-field-row > div { display: grid; gap: 4px; min-width: 0; }
 .feedback-missing-field-row code { overflow-wrap: anywhere; }
+
+/* Conditional field (code 18) embedded correction surfaces. */
+.feedback-code18-embedded-editor { display: grid; gap: 12px; min-width: 0; }
+.feedback-code18-embedded-editor .notice { margin: 0; }
+.feedback-code18-target-field { outline: 2px solid var(--accent, #b28539); outline-offset: 2px; }
+.feedback-code18-deposit-workspace { min-width: 0; max-width: 100%; overflow-x: auto; }
+@media (max-width: 700px) {
+  .feedback-code18-deposit-workspace { overflow-x: auto; }
+}
