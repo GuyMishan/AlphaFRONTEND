@@ -277,9 +277,14 @@ export function FeedbackInternalCorrectionResolver({
     </button> : null}
 
     {group.resolverType === "documents" ? <div className="notice notice-info">
-      את המסמכים הרשמיים לממשק 006 מנהלים בפרופיל המעסיק.
-      <div><a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${organizationId}&tab=documents`}>ניהול מסמכי המעסיק</a></div>
-      <small>העלאת ראיות לטיפול במשוב אינה מהווה צירוף אוטומטי לקובץ דיווח שנשלח.</small>
+      תצהירי מעסיק (סוג 3) נשמרים בפרופיל המעסיק; מסמכים אישיים (סוגים 4–6) מנוהלים בתוך הקרן בתמהיל העובד.
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${organizationId}&tab=documents`}>מסמכי המעסיק</a>
+        {Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
+          .map(id => <a key={id} className="btn btn-secondary"
+            href={`/employees/${id}?organizationId=${organizationId}&employerId=${employerId}&tab=mix`}>מסמכי המוצר בתמהיל העובד</a>)}
+      </div>
+      <small>לאחר בחירת מסמך מתוקן יש לצרף אותו לגרסת הדיווח הנכונה; העלאת מסמך לפרופיל אינה משנה את הדיווח המקורי.</small>
     </div> : null}
 
     {group.resolverType === "documents" ? <div className="feedback-resolution-document-list">
