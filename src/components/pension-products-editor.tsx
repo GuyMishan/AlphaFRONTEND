@@ -284,7 +284,7 @@ function maxPercentage(productType: PensionProductType, party: "employer" | "emp
   return match?.maxPercentage ?? null;
 }
 
-export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, allowAdd = true, allowRemove = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction, onReferenceDataLoaded, renderProductExtra }: {
+export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, allowAdd = true, allowRemove = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction, onReferenceDataLoaded, renderProductExtra, focusedReportProductId = "" }: {
   context: "employee" | "report";
   month?: string;
   monthlySalary: number;
@@ -298,6 +298,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
   onFieldInteraction?: () => void;
   onReferenceDataLoaded?: (data: PensionEditorReferenceData) => void;
   renderProductExtra?: (product: PensionEditorProduct, index: number) => ReactNode;
+  focusedReportProductId?: string;
 }) {
   const [referenceData, setReferenceData] = useState<PensionEditorReferenceData | null>(null);
   const onReferenceDataLoadedRef = useRef(onReferenceDataLoaded);
@@ -358,7 +359,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
       const section14Code = inferPensionSection14Code(product);
       const section14DateRequired = section14Code === 2 || section14Code === 4;
       const insuredSalary = allocation.resolved.get(index) ?? 0;
-      return <section className="report-product-card" key={index} style={{ opacity: product.isActive === false ? .72 : 1 }}>
+      return <section id={product.workspaceReportProductId ? `report-product-${product.workspaceReportProductId}` : undefined} className={`report-product-card${focusedReportProductId && product.workspaceReportProductId === focusedReportProductId ? " feedback-product-focus" : ""}`} key={index} style={{ opacity: product.isActive === false ? .72 : 1 }}>
         <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <div className="status-pill-active"><CircleCheck size={13} /><div>פעיל</div></div>}{editable && allowRemove ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
         <div className="grid report-product-fields">
           {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} suppliedOptions={referenceOptions("product-active-status")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
