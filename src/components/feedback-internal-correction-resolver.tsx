@@ -171,7 +171,11 @@ export function FeedbackInternalCorrectionResolver({
 
   if (!problem || !config) return null;
 
-  const code100Only = group.problems.every(item => item.code === 100);
+  const reportPairIssues = group.resolverType === "reportCorrection" && group.problems.every(item => item.code === 100 || item.code === 101);
+  const documentGroup = group.resolverType === "documents";
+  const reportDeclarations = documentGroup && group.problems.every(item => [102, 103, 111, 112].includes(item.code));
+  const employeeDeclarations = documentGroup && group.problems.every(item => [109, 110].includes(item.code));
+  const otherDocumentIssues = documentGroup && !reportDeclarations && !employeeDeclarations;
 
 
   const canPrepareWorkspace = group.problems.every(item =>
@@ -245,9 +249,9 @@ export function FeedbackInternalCorrectionResolver({
       </div>
     </div>
 
-    {code100Only ? <div className="notice notice-info" role="status">
-      <strong>חסר דיווח שלילי לתיקון</strong>
-      <p>נשלח דיווח מתקן (פעולה 2 או 3), אבל חסר דיווח שלילי תואם (פעולה 6) שמבטל את הנתונים הישנים.</p>
+    {reportPairIssues ? <div className="notice notice-info" role="status">
+      <strong>{group.problems.every(item => item.code === 100) ? "חסר דיווח שלילי לתיקון" : group.problems.every(item => item.code === 101) ? "חסר דיווח שוטף מתקן" : "רצף תיקון דיווחים לא הושלם"}</strong>
+      <p>{group.problems.every(item => item.code === 100) ? "נשלח דיווח מתקן (פעולה 2 או 3), אך חסרה פעולת ביטול תואמת (6) בדיווח השלילי." : group.problems.every(item => item.code === 101) ? "דווחה פעולת ביטול (6) בממשק השלילי, אך חסרה פעולת תיקון תואמת (2 או 3) בדיווח השוטף." : "יש להתאים בין פעולות הביטול והתיקון בשני הדיווחים."}</p>
       <p><strong>כך מטפלים:</strong> פותחים את היסטוריית הדיווחים של המעסיק ובודקים אם נשלח דיווח שלילי תואם (פעולה 6) לאותן רשומות.</p>
       <ul>
         <li><strong>לא נוצר דיווח שלילי:</strong> יש להשלים את רצף הדיווח המתקן דרך תהליך תיקון הדיווח. אין לשנות הפקדה רגילה במקום זאת.</li>
@@ -310,7 +314,7 @@ export function FeedbackInternalCorrectionResolver({
       </div>)}
     </div> : null}
 
-    {canPrepareWorkspace && !code100Only ? <button
+    {canPrepareWorkspace && !reportPairIssues ? <button
       type="button"
       className="btn btn-primary feedback-resolution-open-workspace"
       disabled={preparing || !group.canExecute}
