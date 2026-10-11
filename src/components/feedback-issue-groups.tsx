@@ -18,6 +18,9 @@ function scopeLabel(scope: string) {
     case "report": return "דיווח";
     case "employer": return "מעסיק";
     case "money": return "כספים";
+    case "employee": return "עובד";
+    case "deposit": return "הפקדה / מוצר והפרשות";
+    case "contribution": return "רכיבי הפקדה";
     default: return "אחר";
   }
 }
