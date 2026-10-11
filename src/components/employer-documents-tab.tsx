@@ -55,7 +55,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
     finally { setBusy(false); }
   }
   async function remove(id: string) {
-    if (!window.confirm("למחוק את המסמך ממאגר המעסיק?")) return;
+    if (!window.confirm("למחוק את המסמך?")) return;
     setBusy(true);
     try {
       const response = await backendFetch(`${base}/${id}`, { method: "DELETE" });
@@ -75,7 +75,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
       <div className="field"><UiFileUpload id="employer-document-file" label="בחירת קובץ PDF" fileName={file?.name} accept=".pdf,application/pdf" maxBytes={10 * 1024 * 1024} disabled={busy} onFileSelected={setFile} onInvalid={toast.error} /></div>
       <div className="form-actions"><button type="submit" className="btn btn-primary" disabled={busy || !file}>{busy ? "מעלה..." : "העלאת מסמך"}</button></div>
     </form> : null}
-    {loading ? <div className="empty">טוען מסמכים...</div> : documents.length === 0 ? <div className="empty">עדיין אין מסמכים במאגר המעסיק.</div> :
+    {loading ? <div className="empty">טוען מסמכים...</div> : documents.length === 0 ? <div className="empty">עדיין אין מסמכים.</div> :
       <div className="employer-documents-list">{documents.map(doc => <div key={doc.id} className="row" style={{ justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--border)" }}>
         <div><b>{types.find(item => item.code === doc.documentTypeCode)?.label ?? "מסמך"}</b><div>{doc.originalFileName}</div><small>{new Date(doc.createdAt).toLocaleDateString("he-IL")} · {Math.round(doc.sizeBytes / 1024)} KB</small></div>
         <div className="row" style={{ gap: 8 }}>
