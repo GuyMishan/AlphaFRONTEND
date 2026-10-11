@@ -20,6 +20,7 @@ export function EmployerForm({
   showBackLink = true,
   createLabel = "הקמת מעסיק",
   embedded = false,
+  focusField,
   formId,
   hideActions = false,
   onSavingChange,
@@ -32,6 +33,7 @@ export function EmployerForm({
   showBackLink?: boolean;
   createLabel?: string;
   embedded?: boolean;
+  focusField?: keyof EmployerInput;
   formId?: string;
   hideActions?: boolean;
   onSavingChange?: (saving: boolean) => void;
@@ -122,13 +124,13 @@ export function EmployerForm({
         <Field label="מספר תיק ניכויים * (במידה ואין, יש להזין 900000000)" error={errors.withholdingFileNumber}><UiInput aria-invalid={Boolean(errors.withholdingFileNumber)} required disabled={!editable} inputMode="numeric" maxLength={9} value={form.withholdingFileNumber} onChange={(event) => update("withholdingFileNumber", event.target.value.replace(/\D/g, "").slice(0, 9))} /></Field>
       </div>
       <div className="grid two-cols">
-        <Field label="שם פרטי איש קשר *" error={errors.contactFirstName}><UiInput disabled={!editable} maxLength={20} value={form.contactFirstName ?? ""} onChange={(event) => update("contactFirstName", event.target.value)} /></Field>
-        <Field label="שם משפחה איש קשר *" error={errors.contactLastName}><UiInput disabled={!editable} maxLength={20} value={form.contactLastName ?? ""} onChange={(event) => update("contactLastName", event.target.value)} /></Field>
-        <Field label="טלפון איש קשר" error={errors.contactPhone}><UiInput disabled={!editable} inputMode="numeric" maxLength={11} value={form.contactPhone ?? ""} onChange={(event) => update("contactPhone", event.target.value.replace(/\D/g, "").slice(0, 11))} /></Field>
-        <Field label="נייד איש קשר" error={errors.contactMobile}><UiInput disabled={!editable} inputMode="numeric" maxLength={15} value={form.contactMobile ?? ""} onChange={(event) => update("contactMobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
+        <Field label="שם פרטי איש קשר *" error={errors.contactFirstName}><UiInput autoFocus={focusField === "contactFirstName"} className={focusField === "contactFirstName" ? "feedback-code18-target-field" : undefined} disabled={!editable} maxLength={20} value={form.contactFirstName ?? ""} onChange={(event) => update("contactFirstName", event.target.value)} /></Field>
+        <Field label="שם משפחה איש קשר *" error={errors.contactLastName}><UiInput autoFocus={focusField === "contactLastName"} className={focusField === "contactLastName" ? "feedback-code18-target-field" : undefined} disabled={!editable} maxLength={20} value={form.contactLastName ?? ""} onChange={(event) => update("contactLastName", event.target.value)} /></Field>
+        <Field label="טלפון איש קשר" error={errors.contactPhone}><UiInput autoFocus={focusField === "contactPhone"} className={focusField === "contactPhone" ? "feedback-code18-target-field" : undefined} disabled={!editable} inputMode="numeric" maxLength={11} value={form.contactPhone ?? ""} onChange={(event) => update("contactPhone", event.target.value.replace(/\D/g, "").slice(0, 11))} /></Field>
+        <Field label="נייד איש קשר" error={errors.contactMobile}><UiInput autoFocus={focusField === "contactMobile"} className={focusField === "contactMobile" ? "feedback-code18-target-field" : undefined} disabled={!editable} inputMode="numeric" maxLength={15} value={form.contactMobile ?? ""} onChange={(event) => update("contactMobile", event.target.value.replace(/\D/g, "").slice(0, 15))} /></Field>
       </div>
       <small style={{ color: "var(--muted)", marginTop: -8 }}>יש להזין לפחות אחד מהשדות: טלפון או נייד.</small>
-      <Field label="אימייל איש קשר *" error={errors.contactEmail}><UiInput disabled={!editable} type="email" maxLength={50} value={form.contactEmail ?? ""} onChange={(event) => update("contactEmail", event.target.value)} /></Field>
+      <Field label="אימייל איש קשר *" error={errors.contactEmail}><UiInput autoFocus={focusField === "contactEmail"} className={focusField === "contactEmail" ? "feedback-code18-target-field" : undefined} disabled={!editable} type="email" maxLength={50} value={form.contactEmail ?? ""} onChange={(event) => update("contactEmail", event.target.value)} /></Field>
       {employer ? <div className="field"><label>סטטוס</label><UiInput disabled value={employer.status === 2 ? "פעיל" : "בתהליך הקמה"} /></div> : null}
       {!hideActions ? <div className="form-actions">{showBackLink ? <Link className="btn btn-secondary" href="/employers">חזרה</Link> : null}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employer ? "שמירת שינויים" : createLabel}</button> : null}</div> : null}
     </form>
