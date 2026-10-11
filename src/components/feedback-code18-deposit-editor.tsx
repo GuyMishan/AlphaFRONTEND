@@ -57,11 +57,13 @@ export function FeedbackCode18DepositEditor({
       <div>מספר {problem.feedbackValues.missingFieldNumber} · <code dir="ltr">{problem.feedbackValues.missingFieldXmlTag}</code></div>
       <p>העריכה מתבצעת בעותק התיקון של הדיווח. שמירה אינה שולחת דיווח חדש; לאחר תיקון כל השגיאות מפיקים דיווח חוזר אחד.</p>
     </div>
+    {problem.feedbackValues.missingFieldCorrectionSupported === "false"
+      ? <div role="status" className="notice notice-info">הממשק הנוכחי אינו מאפשר להכין סביבת תיקון אוטומטית לדיווח שלילי. אין לערוך את הדיווח שנשלח; יש להשתמש בתהליך התיקון הייעודי שלו.</div> : null}
     {error ? <div role="alert" className="notice notice-error">{error}</div> : null}
     {!workspace ? <button
       type="button"
       className="btn btn-primary"
-      disabled={preparing || !group.canExecute || problem.feedbackValues.missingFieldMapped !== "true"}
+      disabled={preparing || !group.canExecute || problem.feedbackValues.missingFieldMapped !== "true" || problem.feedbackValues.missingFieldCorrectionSupported === "false"}
       onClick={() => void openEditor()}>
       {preparing ? "מכין סביבת תיקון..." : "פתיחת עריכת ההפקדה בתוך פתרון בעיות"}
     </button> : <div className="feedback-code18-deposit-workspace">
