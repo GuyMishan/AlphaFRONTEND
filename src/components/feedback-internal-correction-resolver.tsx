@@ -265,12 +265,10 @@ export function FeedbackInternalCorrectionResolver({
       </div>)}
     </div> : null}
 
-    <div className="feedback-resolution-internal-note">
+    {!canPrepareWorkspace && nonWorkspaceMessage ? <div className="feedback-resolution-internal-note">
       <FilePenLine size={18} aria-hidden="true" />
-      <span>{canPrepareWorkspace
-        ? ""
-        : nonWorkspaceMessage}</span>
-    </div>
+      <span>{nonWorkspaceMessage}</span>
+    </div> : null}
 
     {error ? <div className="notice notice-error">{error}</div> : null}
 
