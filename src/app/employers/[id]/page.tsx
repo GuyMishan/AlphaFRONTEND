@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Building2, CreditCard, FileSliders, Save, Users, WalletCards } from "lucide-react";
+import { Building2, CreditCard, FileSliders, Files, Save, Users, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { EmployerDocumentsTab } from "@/components/employer-documents-tab";
 import { EmployerTransferModal } from "@/components/employer-transfer-modal";
 import { getSession, setEmployerSelection } from "@/lib/session";
 import { AppTabs } from "@/components/app-tabs";
@@ -34,11 +35,12 @@ import { useQueryContext } from "@/lib/use-query-context";
 import { UiAutocomplete, UiChoiceCard, UiInput, UiSelect, UiTextarea } from "@/components/ui-controls";
 import { Tooltip } from "@/components/tooltip";
 
-type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting";
+type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting" | "documents";
 
 const baseTabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
   { key: "general", label: "פרטים כלליים", icon: Building2 },
   { key: "employees", label: "עובדים", icon: Users },
+  { key: "documents", label: "מסמכים", icon: Files },
   { key: "pension-payment", label: "תשלום פנסיוני", icon: WalletCards },
   { key: "billing", label: "מנוי וחיוב ALPHA", icon: CreditCard },
   { key: "reporting", label: "הגדרות דיווח", icon: FileSliders },
@@ -183,6 +185,8 @@ export default function EmployerProfilePage() {
       onEmployerSaved={setEmployer}
       onAddressSaved={(address) => setSettings((current) => ({ ...current, address }))}
     /> : null}
+
+    {tab === "documents" ? <EmployerDocumentsTab organizationId={organizationId} employerId={employer.id} canEdit={capabilities.canCreateReport} /> : null}
 
     {tab === "employees" ? <EmployeesTab
       organizationId={organizationId}
