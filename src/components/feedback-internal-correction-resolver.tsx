@@ -1,13 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, FilePenLine, Upload } from "lucide-react";
+import { ArrowLeft, FilePenLine } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { UiFileUpload } from "@/components/ui-file-upload";
 import {
   reportFeedbackApi,
   type FeedbackResolutionGroup,
-  type FeedbackResolutionProblem,
 } from "@/lib/report-feedback-api";
 
 type FieldSpec = readonly [key: string, label: string, source?: "reported" | "current" | "feedback"];
@@ -143,7 +141,6 @@ export function FeedbackInternalCorrectionResolver({
 }) {
   const router = useRouter();
   const [preparing, setPreparing] = useState(false);
-  const [uploadingProblemId, setUploadingProblemId] = useState("");
   const [error, setError] = useState("");
   const problem = group.problems[0];
   const config = resolverConfig[group.resolverType];
@@ -219,25 +216,6 @@ export function FeedbackInternalCorrectionResolver({
       setError(err instanceof Error ? err.message : "פתיחת סביבת התיקון נכשלה.");
     } finally {
       setPreparing(false);
-    }
-  }
-
-  async function uploadDocument(problemId: string, file: File) {
-    setUploadingProblemId(problemId);
-    setError("");
-    try {
-      await reportFeedbackApi.uploadResolutionDocument(
-        organizationId,
-        employerId,
-        problem.reportId,
-        problemId,
-        file,
-      );
-      onChanged?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "העלאת המסמך נכשלה.");
-    } finally {
-      setUploadingProblemId("");
     }
   }
 
