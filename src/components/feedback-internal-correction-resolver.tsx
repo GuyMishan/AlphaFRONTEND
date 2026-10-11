@@ -248,7 +248,8 @@ export function FeedbackInternalCorrectionResolver({
     {code100Only ? <div className="notice notice-info" role="status">
       <strong>חסר דיווח שלילי לתיקון</strong>
       <p>נשלח דיווח מתקן (פעולה 2 או 3), אבל חסר דיווח שלילי תואם (פעולה 6) שמבטל את הנתונים הישנים.</p>
-      <p>יש לבדוק אם הדיווח השלילי נשלח ונקלט. אם לא, צריך להשלים אותו.</p>
+      <p>יש לבדוק אם קיים דיווח שלילי תואם שנשלח ונקלט. אם חסר, משלימים את רצף התיקון ברמת הדיווח.</p>
+      <a className="btn btn-primary" href="/reports">בדיקת הדיווחים והתיקונים <ArrowLeft size={16} aria-hidden="true" /></a>
     </div> : null}
     {visibleRows.length ? <div className="feedback-resolution-compare" role="table" aria-label="השוואת נתונים לתיקון">
       <div className="feedback-resolution-compare-head" role="row">
@@ -311,7 +312,7 @@ export function FeedbackInternalCorrectionResolver({
       </div>)}
     </div> : null}
 
-    {canPrepareWorkspace ? <button
+    {canPrepareWorkspace && !code100Only ? <button
       type="button"
       className="btn btn-primary feedback-resolution-open-workspace"
       disabled={preparing || !group.canExecute}
