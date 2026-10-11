@@ -334,7 +334,8 @@ export function FeedbackResolutionMode({
               onChanged={() => setRefreshToken(value => value + 1)}
             />
           : activeGroup.problems.some(problem =>
-              problem.resolutionType === "decision"
+              problem.code === 18
+              || problem.resolutionType === "decision"
               || problem.resolutionType === "external")
             ? null
             : <section className="feedback-resolution-placeholder">
