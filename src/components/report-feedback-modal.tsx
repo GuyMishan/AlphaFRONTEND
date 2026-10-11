@@ -80,6 +80,7 @@ function IssueGroups({
         {group.items.map((item, index) => <div className="feedback-error-action-row" key={`${item.code}:${item.reportId}:${index}`}>
           <div className="feedback-error-copy">
             <b>{item.code > 0 ? `קוד ${item.code}` : "תקלה"}</b>
+            <span>{item.description}</span>
             {item.affectedReportIds?.length
               ? <div className="feedback-linked-reports">
                   <small>דיווחים מושפעים ({item.affectedReportIds.length}):</small>
@@ -94,7 +95,7 @@ function IssueGroups({
           </div>
           {item.code > 0 ? <FeedbackResolveButton
             compact
-            onClick={() => onResolveOne({ code: item.code, contributionId: item.contributionId })}
+            onClick={() => onResolveOne({ code: item.code })}
           /> : null}
         </div>)}
       </div>
