@@ -18,11 +18,12 @@ const contactFieldKeys: Record<string, string> = {
 };
 
 export function FeedbackCode18EmployerEditor({
-  organizationId, employerId, problem, onSaved,
+  organizationId, employerId, problem, canEdit, onSaved,
 }: {
   organizationId: string;
   employerId: string;
   problem: FeedbackResolutionProblem;
+  canEdit: boolean;
   onSaved: () => void;
 }) {
   const xmlTag = problem.feedbackValues.missingFieldXmlTag ?? "";
@@ -61,7 +62,7 @@ export function FeedbackCode18EmployerEditor({
       key={employer.id}
       organizationId={organizationId}
       employer={employer}
-      editable
+      editable={canEdit}
       embedded
       showBackLink={false}
       onCreated={saved => {
