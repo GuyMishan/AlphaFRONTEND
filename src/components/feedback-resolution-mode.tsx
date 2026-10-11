@@ -1,7 +1,7 @@
 "use client";
 import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
@@ -77,6 +77,7 @@ export function FeedbackResolutionMode({
   onClose: () => void;
   onEditDeposit?: (problemIds: string[]) => void;
 }) {
+  const footerTargetId = useId();
   const [context, setContext] = useState<FeedbackResolutionContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -148,6 +149,7 @@ export function FeedbackResolutionMode({
     subtitle={contextType === "employer" ? "תקלות במעסיק" : contextType === "report" ? "תקלות בדיווח" : "תקלות בהפקדה"}
     onClose={onClose}
     actions={<>
+      <div id={footerTargetId} data-modal-side="positive" />
       <button type="button" className="btn btn-secondary" onClick={onBack}>
         <ArrowRight size={16} aria-hidden="true" />חזרה לצפייה
       </button>
@@ -308,6 +310,7 @@ export function FeedbackResolutionMode({
             organizationId={organizationId}
             employerId={employerId}
             group={activeGroup}
+            footerTargetId={footerTargetId}
           /> : null}
 
       {activeGroup.problems.some(problem => problem.resolutionType === "decision" && problem.code !== 18) ? <FeedbackDecisionResolver

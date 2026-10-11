@@ -4,6 +4,7 @@ import { UiAutocomplete, UiDateInput, UiInput } from "@/components/ui-controls";
 import { UiFileUpload } from "@/components/ui-file-upload";
 import { Tooltip } from "@/components/tooltip";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { BriefcaseBusiness, CreditCard, Download, FileText, Pencil, Search, Trash2 } from "lucide-react";
 import { AppModal } from "@/components/app-modal";
 import { EmployerInterfaceOptionSelect } from "@/components/employer-interface-option-select";
@@ -28,7 +29,7 @@ const productNames: Record<number, string> = { 1: "קרן פנסיה", 2: "קר�
 const emptyPreviousReference = (): EmployerInterfacePreviousReference => ({ previousIdentifier: "", previousClearingIdentifier: "", previousReferenceExceptionCode: null });
 const shortError = (message: string) => message.trim().replace(/\s+/g, " ").slice(0, 220) + (message.trim().replace(/\s+/g, " ").length > 220 ? "…" : "");
 
-export function ManualDepositData({ organizationId, employerId, reportId, focusReportProductId = "", embeddedEditor = false }: { organizationId: string; employerId: string; reportId: string; focusReportProductId?: string; embeddedEditor?: boolean }) {
+export function ManualDepositData({ organizationId, employerId, reportId, focusReportProductId = "", embeddedEditor = false, footerTargetId }: { organizationId: string; employerId: string; reportId: string; focusReportProductId?: string; embeddedEditor?: boolean; footerTargetId?: string }) {
   const [rows, setRows] = useState<ManualDepositRow[]>([]);
   const [contributionLimits, setContributionLimits] = useState<ManualDepositContributionLimit[]>([]);
   const [query, setQuery] = useState("");
@@ -143,7 +144,7 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
         <button className="icon-button deposit-edit-icon" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}
-    {editing ? <DepositPaymentEditor embedded={embeddedEditor} employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} contributionLimits={contributionLimits}
+    {editing ? <DepositPaymentEditor embedded={embeddedEditor} footerTargetId={footerTargetId} employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} contributionLimits={contributionLimits}
       onEvidenceChanged={(items) => setProofs((current) => ({ ...current, [editing.id]: items }))}
       onClose={() => setEditing(null)} onSaved={(updated) => {
       setRows((current) => current.map((item) => item.id === updated.id ? updated : item));
@@ -343,10 +344,10 @@ function validatePaymentDetails(form: ManualPaymentInput, metadata: EmployerInte
   return errors;
 }
 
-export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, contributionLimits, onClose, onSaved, onEvidenceChanged, readOnly = false, embedded = false }: {
+export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, contributionLimits, onClose, onSaved, onEvidenceChanged, readOnly = false, embedded = false, footerTargetId }: {
   employer: Employer | null; organizationId: string; employerId: string; reportId: string; row: ManualDepositRow;
   contributionLimits: ManualDepositContributionLimit[];
-  onClose: () => void; onSaved: (row: ManualDepositRow) => void; onEvidenceChanged: (items: PaymentConfirmation[]) => void;
+  onClose: () => void; onSaved: (row: ManualDepositRow) => void; onEvidenceChanged: (items: PaymentConfirmation[]) => void; footerTargetId?: string;
   readOnly?: boolean;
   embedded?: boolean;
 }) {
@@ -795,14 +796,14 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   </>;
 
   if (embedded) return <section className="feedback-code18-payment-editor" aria-label="עריכת פרטי תשלום והפקדה">
-    <div className="feedback-code18-payment-actions">
-      <strong>פרטי תשלום</strong>
-      {!readOnly ? <button type="button" className="btn btn-primary"
-        disabled={saving || loadingMetadata || uploadingProof}
-        onClick={() => void save()}>{saving ? "שומר..." : "שמירת התיקון"}</button> : null}
-      <button type="button" className="btn btn-secondary" onClick={onClose}>חזרה לרשימה</button>
-    </div>
+    <div className="feedback-code18-payment-actions"><strong>פרטי תשלום</strong></div>
     {editorContent}
+    {footerTargetId && typeof document !== "undefined" && document.getElementById(footerTargetId)
+      ? createPortal(<button type="button" className="btn btn-primary"
+          disabled={saving || loadingMetadata || uploadingProof}
+          onClick={() => void save()}>{saving ? "שומר..." : "שמירת התיקון"}</button>,
+          document.getElementById(footerTargetId)!)
+      : null}
   </section>;
 
   return <AppModal open title="פרטי תשלום"

@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ManualDepositData } from "@/components/manual-deposit-data";
 import { reportFeedbackApi, type FeedbackResolutionGroup } from "@/lib/report-feedback-api";
 
 export function FeedbackCode18DepositEditor({
-  organizationId, employerId, group,
+  organizationId, employerId, group, footerTargetId,
 }: {
   organizationId: string;
   employerId: string;
   group: FeedbackResolutionGroup;
+  footerTargetId: string;
 }) {
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState("");
@@ -51,6 +52,14 @@ export function FeedbackCode18DepositEditor({
     }
   }
 
+  useEffect(() => {
+    if (group.canExecute && problem?.reportProductId
+      && problem.feedbackValues.missingFieldMapped === "true"
+      && problem.feedbackValues.missingFieldCorrectionSupported !== "false") void openEditor();
+    // The editor is prepared once for this selected group.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group.groupKey]);
+
   return <section aria-label="תיקון שדה הפקדה" className="feedback-code18-embedded-editor">
     <div className="notice notice-info">
       <strong>השדה לתיקון: {problem.feedbackValues.missingFieldName}</strong>
@@ -60,19 +69,14 @@ export function FeedbackCode18DepositEditor({
     {problem.feedbackValues.missingFieldCorrectionSupported === "false"
       ? <div role="status" className="notice notice-info">הממשק הנוכחי אינו מאפשר להכין סביבת תיקון אוטומטית לדיווח שלילי. אין לערוך את הדיווח שנשלח; יש להשתמש בתהליך התיקון הייעודי שלו.</div> : null}
     {error ? <div role="alert" className="notice notice-error">{error}</div> : null}
-    {!workspace ? <button
-      type="button"
-      className="btn btn-primary"
-      disabled={preparing || !group.canExecute || problem.feedbackValues.missingFieldMapped !== "true" || problem.feedbackValues.missingFieldCorrectionSupported === "false"}
-      onClick={() => void openEditor()}>
-      {preparing ? "מכין סביבת תיקון..." : "פתיחת עריכת ההפקדה בתוך פתרון בעיות"}
-    </button> : <div className="feedback-code18-deposit-workspace">
+    {!workspace ? <div className="empty" role="status">{preparing ? "מכין סביבת תיקון..." : "לא ניתן לפתוח את סביבת התיקון באופן אוטומטי."}</div> : <div className="feedback-code18-deposit-workspace">
       <ManualDepositData
         key={workspace.reportId + workspace.productId}
         organizationId={organizationId}
         employerId={employerId}
         reportId={workspace.reportId}
         embeddedEditor
+        footerTargetId={footerTargetId}
         focusReportProductId={workspace.productId}
       />
     </div>}
