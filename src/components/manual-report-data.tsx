@@ -20,6 +20,9 @@ type Props = {
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
   correctionWorkspace?: boolean;
+  focusReportEmployeeId?: string;
+  focusReportProductId?: string;
+  focusMissingFieldNumber?: string;
 };
 
 function snapshotEmployee(row: ManualReportEmployeeSummary): Employee {
@@ -145,7 +148,7 @@ function toManualProduct(product: PensionEditorProduct, month: string): ManualPr
   };
 }
 
-export function ManualReportData({ organizationId, employerId, reportId, month, employees, selectedIds, setSelectedIds, correctionWorkspace = false }: Props) {
+export function ManualReportData({ organizationId, employerId, reportId, month, employees, selectedIds, setSelectedIds, correctionWorkspace = false, focusReportEmployeeId = "", focusReportProductId = "", focusMissingFieldNumber = "" }: Props) {
   const [rows, setRows] = useState<ManualReportEmployeeSummary[]>([]);
   const [visibleEmployees, setVisibleEmployees] = useState<Employee[]>(employees);
   const [query, setQuery] = useState("");
@@ -160,6 +163,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   const selectionQueue = useRef<string[] | null>(null);
   const selectionSyncRunning = useRef(false);
   const selectedIdsRef = useRef(selectedIds);
+  const automaticEditorTarget = useRef("");
 
   useEffect(() => { selectedIdsRef.current = selectedIds; }, [selectedIds]);
 
@@ -216,6 +220,22 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
     }, 300);
     return () => window.clearTimeout(timer);
   }, [query, organizationId, employerId, reportId]);
+
+  useEffect(() => {
+    if (!focusReportEmployeeId || !correctionWorkspace) return;
+    const target = reportId + ":" + focusReportEmployeeId;
+    if (automaticEditorTarget.current === target) return;
+    automaticEditorTarget.current = target;
+    let active = true;
+    alphaApi.manualReportEmployee(organizationId, employerId, reportId, focusReportEmployeeId)
+      .then(detail => { if (active) setEditing(detail); })
+      .catch(error => {
+        if (!active) return;
+        automaticEditorTarget.current = "";
+        setError(error instanceof Error ? error.message : "לא ניתן לפתוח את העובד בסביבת התיקון");
+      });
+    return () => { active = false; };
+  }, [organizationId, employerId, reportId, correctionWorkspace, focusReportEmployeeId]);
 
   const rowByEmployment = useMemo(() => new Map(rows.map((row) => [row.employmentId, row])), [rows]);
 
@@ -314,7 +334,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       })}
     </div>
     {showCreate ? <InlineEmployeeCreateModal organizationId={organizationId} employerId={employerId} onClose={() => setShowCreate(false)} onCreated={employeeCreated} /> : null}
-    {editing ? <EmployeeProductsModal employee={editing} month={month}
+    {editing ? <EmployeeProductsModal employee={editing} month={month} focusReportProductId={focusReportProductId} focusMissingFieldNumber={focusMissingFieldNumber}
       organizationId={organizationId} employerId={employerId} correctionWorkspace={correctionWorkspace} onClose={() => setEditing(null)}
       onSave={async (monthlySalary, products) => {
       const currentEditing = editing;
@@ -378,10 +398,11 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   </>;
 }
 
-function EmployeeProductsModal({ employee, month, onClose, onSave, organizationId, employerId, correctionWorkspace }: {
+function EmployeeProductsModal({ employee, month, onClose, onSave, organizationId, employerId, correctionWorkspace, focusReportProductId = "", focusMissingFieldNumber = "" }: {
   employee: ManualReportEmployeeDetail; month: string; onClose: () => void;
   onSave: (monthlySalary: number, products: ManualProductInput[]) => Promise<void>;
   organizationId: string; employerId: string; correctionWorkspace: boolean;
+  focusReportProductId?: string; focusMissingFieldNumber?: string;
 }) {
   const [monthlySalary, setMonthlySalary] = useState(Number(employee.monthlySalary || 0));
   const [products, setProducts] = useState<PensionEditorProduct[]>(() => employee.products.map(toEditorProduct));
@@ -389,6 +410,14 @@ function EmployeeProductsModal({ employee, month, onClose, onSave, organizationI
   const [error, setError] = useState("");
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [contributionLimits, setContributionLimits] = useState<PensionEditorContributionLimit[]>([]);
+  useEffect(() => {
+    if (!focusReportProductId) return;
+    const frame = requestAnimationFrame(() => {
+      const node = document.getElementById(`report-product-${focusReportProductId}`);
+      node?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusReportProductId]);
   async function save() {
     setValidationAttempted(true);
     const normalized = normalizePensionEditorProducts(monthlySalary, products);
@@ -429,7 +458,9 @@ function EmployeeProductsModal({ employee, month, onClose, onSave, organizationI
           <a href={`/employees/${employee.employmentId}?organizationId=${organizationId}&employerId=${employerId}`} target="_blank" rel="noopener noreferrer">פתיחת כרטיס העובד בלשונית חדשה</a>
           לאחר השמירה, הטיוטה הפתוחה תתעדכן אוטומטית. מומלץ לסגור ולפתוח את העריכה מחדש.
         </p>
+        {focusMissingFieldNumber && focusReportProductId ? <div className="notice notice-info" role="status">שדה {focusMissingFieldNumber}: יש לערוך את הנתון במוצר המודגש מטה ולשמור. שמירה אינה שולחת דיווח חוזר.</div> : null}
         <PensionProductsEditor
+          focusedReportProductId={focusReportProductId}
           context="report"
           month={month}
           monthlySalary={monthlySalary}
