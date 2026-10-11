@@ -1,3 +1,4 @@
+import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -81,6 +82,7 @@ function IssueGroups({
           <div className="feedback-error-copy">
             <b>{item.code > 0 ? `קוד ${item.code}` : "תקלה"}</b>
             <span>{item.description}</span>
+            <FeedbackErrorDetails details={item} />
             {item.affectedReportIds?.length
               ? <div className="feedback-linked-reports">
                   <small>דיווחים מושפעים ({item.affectedReportIds.length}):</small>
