@@ -1,5 +1,5 @@
-import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 "use client";
+import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Building2, FileText } from "lucide-react";
