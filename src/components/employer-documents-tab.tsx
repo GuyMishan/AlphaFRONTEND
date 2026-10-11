@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { backendFetch } from "@/lib/backend-fetch";
 import { UiSelect } from "@/components/ui-controls";
+import { UiFileUpload } from "@/components/ui-file-upload";
+import { alphaApi } from "@/lib/api";
+import type { Employee } from "@/lib/types";
 
 type Document = { id: string; documentTypeCode: number; employmentId: string | null; originalFileName: string; sizeBytes: number; createdAt: string };
 const types = [
@@ -19,6 +22,8 @@ async function apiError(response: Response) {
 export function EmployerDocumentsTab({ organizationId, employerId, canEdit }: { organizationId: string; employerId: string; canEdit: boolean }) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [type, setType] = useState(3);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeeError, setEmployeeError] = useState("");
   const [employmentId, setEmploymentId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +39,15 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit }: { 
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [base]);
+
+  useEffect(() => {
+    if (!canEdit) return;
+    let active = true;
+    alphaApi.employeeSearch(organizationId, employerId, "", 0, 500)
+      .then(result => { if (active) setEmployees(result.items); })
+      .catch(() => { if (active) setEmployeeError("טעינת רשימת העובדים נכשלה."); });
+    return () => { active = false; };
+  }, [organizationId, employerId, canEdit]);
 
   async function upload(event: React.FormEvent) {
     event.preventDefault();
@@ -69,9 +83,9 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit }: { 
     {canEdit ? <form className="form" onSubmit={upload}>
       <div className="grid two-cols">
         <div className="field"><label htmlFor="employer-document-type">סוג מסמך</label><UiSelect id="employer-document-type" value={type} onChange={e => setType(Number(e.target.value))}>{types.map(item => <option key={item.code} value={item.code}>{item.label}</option>)}</UiSelect></div>
-        {type !== 3 ? <div className="field"><label htmlFor="employer-document-employee">מזהה עובד משויך</label><input id="employer-document-employee" className="input" value={employmentId} placeholder="מזהה עובד" onChange={e => setEmploymentId(e.target.value)} required /></div> : null}
+        {type !== 3 ? <div className="field"><label htmlFor="employer-document-employee">עובד משויך</label><UiSelect id="employer-document-employee" value={employmentId} onChange={e => setEmploymentId(e.target.value)} required><option value="">בחירת עובד</option>{employees.map(employee => <option key={employee.id} value={employee.id}>{employee.firstName} {employee.lastName} · {employee.employeeNumber}</option>)}</UiSelect>{employeeError ? <small role="alert">{employeeError}</small> : null}</div> : null}
       </div>
-      <div className="field"><label htmlFor="employer-document-file">קובץ PDF</label><input id="employer-document-file" type="file" accept="application/pdf,.pdf" onChange={e => setFile(e.target.files?.[0] ?? null)} required /></div>
+      <div className="field"><UiFileUpload id="employer-document-file" label="בחירת קובץ PDF" fileName={file?.name} accept=".pdf,application/pdf" maxBytes={10 * 1024 * 1024} disabled={busy} onFileSelected={setFile} onInvalid={toast.error} /></div>
       <div className="form-actions"><button type="submit" className="btn btn-primary" disabled={busy || !file || (type !== 3 && !employmentId)}>{busy ? "מעלה..." : "העלאת מסמך"}</button></div>
     </form> : null}
     {loading ? <div className="empty">טוען מסמכים...</div> : documents.length === 0 ? <div className="empty">עדיין אין מסמכים במאגר המעסיק.</div> :
