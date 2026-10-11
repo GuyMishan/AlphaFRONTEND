@@ -2,22 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Files, UserRound, WalletCards } from "lucide-react";
+import { UserRound, WalletCards } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
-import { EmployerDocumentsTab } from "@/components/employer-documents-tab";
 import { EmployeeForm } from "@/components/employee-form";
 import { EmployeePensionMix } from "@/components/employee-pension-mix";
 import { alphaApi } from "@/lib/api";
 import type { Employee, Employer } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
 
-type ProfileTab = "details" | "mix" | "documents";
+type ProfileTab = "details" | "mix";
 
 const tabs = [
   { key: "details", label: "פרטי העובד", icon: UserRound },
   { key: "mix", label: "תמהיל העובד", icon: WalletCards },
-  { key: "documents", label: "מסמכים", icon: Files },
 ] satisfies Array<{ key: ProfileTab; label: string; icon: typeof UserRound }>;
 
 export default function EmployeeProfilePage() {
@@ -30,7 +28,7 @@ export default function EmployeeProfilePage() {
   const [error, setError] = useState("");
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("tab");
-    if (requested === "documents" || requested === "mix") setTab(requested);
+    if (requested === "documents" || requested === "mix") setTab("mix");
   }, []);
   function changeTab(next: string) {
     setTab(next as ProfileTab);
@@ -57,7 +55,6 @@ export default function EmployeeProfilePage() {
     {employee ? <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל עובד" /> : null}
     {error ? <div className="notice notice-error">{error}</div> : employee ? tab === "details"
       ? <div className="employee-profile-layout"><EmployeeForm organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /></div>
-      : tab === "documents" ? <EmployerDocumentsTab organizationId={organizationId} employerId={employerId} employmentId={employee.id} canEdit={canEditEmployee} />
       : <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={employee.id} employee={employee} editable={canEditEmployee} />
       : <div className="empty">טוען פרופיל...</div>}
   </AppShell>;
