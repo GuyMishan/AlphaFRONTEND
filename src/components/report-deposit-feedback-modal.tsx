@@ -1,5 +1,4 @@
 "use client";
-import { FeedbackErrorDetails } from "@/components/feedback-error-details";
 
 import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, FileText } from "lucide-react";
@@ -266,8 +265,6 @@ export function ReportDepositFeedbackModal({
                     return {
                       code,
                       description: first?.errorDescription || `קוד שגיאה ${code}`,
-                      errorAmount: first?.errorAmount,
-                      errorDate: first?.errorDate,
                     };
                   });
                 return { scope, items };
@@ -290,12 +287,10 @@ export function ReportDepositFeedbackModal({
                       <span>{items.length} {items.length === 1 ? "שגיאה" : "שגיאות"}</span>
                     </div>
                     <div className="feedback-error-group-list">
-                      {items.map(({ code, description, errorAmount, errorDate }) =>
+                      {items.map(({ code }) =>
                         <div className="feedback-error-action-row" key={code}>
                           <div className="feedback-error-copy">
                             <b>קוד {code}</b>
-                            <span>{description}</span>
-                            <FeedbackErrorDetails details={{ errorAmount, errorDate }} />
                           </div>
                           <FeedbackResolveButton
                             compact
