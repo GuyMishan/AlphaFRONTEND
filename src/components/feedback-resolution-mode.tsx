@@ -223,7 +223,35 @@ export function FeedbackResolutionMode({
       <section className="feedback-resolution-problem-card" aria-label="הבעיה שנבחרה">
         <div className="feedback-resolution-problem-head">
           <strong>קוד {primaryProblem.code} — {primaryProblem.description}</strong>
-          <FeedbackErrorDetails allDetails={activeGroup.problems.map(problem => ({ errorAmount: problem.feedbackValues.errorAmount, errorDate: problem.feedbackValues.errorDate }))} />
+          {primaryProblem.code === 18
+            ? <section className="feedback-missing-fields" aria-label="השדות החסרים במשוב">
+                <strong>שדות חסרים שדורשים בדיקה</strong>
+                <p>לפי קוד 18, פירוט הסכום במשוב מכיל את מספר השדה החסר. המיפוי מוצג לפי סוג הדיווח המקורי.</p>
+                <div className="feedback-missing-fields-list">
+                  {[...new Map(activeGroup.problems.map(problem => {
+                    const number = problem.feedbackValues.missingFieldNumber;
+                    const tag = problem.feedbackValues.missingFieldXmlTag;
+                    const key = [number ?? "unknown", problem.targetScope, problem.targetScope === "employer" || problem.targetScope === "report" ? "" : problem.employmentId ?? problem.reportEmployeeId ?? "", problem.targetScope === "deposit" ? problem.reportProductId ?? "" : ""].join(":");
+                    return [key, problem] as const;
+                  })).values()].map(problem => <div key={problem.problemId} className="feedback-missing-field-row">
+                    <div>
+                      <b>{problem.feedbackValues.missingFieldMapped === "true" && problem.feedbackValues.missingFieldName
+                        ? problem.feedbackValues.missingFieldName : "שדה שלא זוהה"}</b>
+                      <small>מספר שדה: <span dir="ltr">{problem.feedbackValues.missingFieldNumber ?? "לא תקין או חסר"}</span></small>
+                      {problem.feedbackValues.missingFieldXmlTag ? <small>XML: <code dir="ltr">{problem.feedbackValues.missingFieldXmlTag}</code></small> : null}
+                    </div>
+                    {problem.targetScope === "employee" || problem.targetScope === "deposit"
+                      ? <div>
+                          {problem.employeeName ? <small>עובד: {problem.employeeName}</small> : null}
+                          {problem.targetScope === "deposit" && (problem.fundCompanyName || problem.productName)
+                            ? <small>מוצר: {problem.fundCompanyName || problem.productName}</small> : null}
+                        </div> : null}
+                    {problem.feedbackValues.missingFieldMapped !== "true"
+                      ? <small>לא ניתן לשייך אוטומטית לשדה. נדרשת בדיקה ידנית.</small> : null}
+                  </div>)}
+                </div>
+              </section>
+            : <FeedbackErrorDetails allDetails={activeGroup.problems.map(problem => ({ errorAmount: problem.feedbackValues.errorAmount, errorDate: problem.feedbackValues.errorDate }))} />}
         </div>
         {primaryProblem.targetScope === "deposit" || primaryProblem.targetScope === "employee"
           ? <div className="feedback-resolution-problem-copy">
