@@ -70,6 +70,7 @@ export function FeedbackCode18DepositEditor({
         organizationId={organizationId}
         employerId={employerId}
         reportId={workspace.reportId}
+        embeddedEditor
         focusReportProductId={workspace.productId}
       />
     </div>}
