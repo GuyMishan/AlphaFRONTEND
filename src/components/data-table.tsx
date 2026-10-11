@@ -176,7 +176,7 @@ export function DataTable<T>({
                       <ChevronDown size={16} className={expanded ? "data-table-chevron-expanded" : ""} />
                     </button> : null;
                     return <td key={columns[cellIndex]?.key ?? cellIndex}>
-                      {expandToggleColumnKey && toggle
+                      {expandToggleColumnKey && columns[cellIndex]?.key === expandToggleColumnKey
                         ? <div className="data-table-inline-actions">{cell}{toggle}</div>
                         : <>{toggle}{cell}</>}
                     </td>;
