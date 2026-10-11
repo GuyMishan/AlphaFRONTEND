@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Save } from "lucide-react";
-import { EmployerDocumentsTab } from "@/components/employer-documents-tab";
+import { EmployerDocumentsTab, type EmployerDocument } from "@/components/employer-documents-tab";
+import { backendFetch } from "@/lib/backend-fetch";
+import { UiSelect } from "@/components/ui-controls";
+import { toast } from "sonner";
 import { PensionProductsEditor, normalizePensionEditorProducts, sanitizePensionProductContributions, validatePensionEditorProducts, type PensionEditorProduct } from "@/components/pension-products-editor";
 import { alphaApi } from "@/lib/api";
 import type { Employee, EmployeePensionProductInput, PensionProductType, SalaryAllocationType, Section14Code } from "@/lib/types";
@@ -87,6 +90,34 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
   const [saved, setSaved] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [contributionLimits, setContributionLimits] = useState<PensionEditorContributionLimit[]>([]);
+  const [libraryDocuments, setLibraryDocuments] = useState<EmployerDocument[]>([]);
+  const [legacyAssignments, setLegacyAssignments] = useState<Record<string, string>>({});
+  const [assigningLegacy, setAssigningLegacy] = useState("");
+  const documentBase = `/api/organizations/${organizationId}/employers/${employerId}/documents`;
+
+  async function reloadDocuments() {
+    const response = await backendFetch(`${documentBase}?employmentId=${encodeURIComponent(employeeId)}`);
+    if (!response.ok) throw new Error("לא ניתן לטעון את מסמכי העובד.");
+    setLibraryDocuments(await response.json() as EmployerDocument[]);
+  }
+
+  async function assignLegacyDocument(documentId: string) {
+    const productId = legacyAssignments[documentId];
+    if (!productId) return;
+    setAssigningLegacy(documentId);
+    try {
+      const response = await backendFetch(`${documentBase}/${documentId}/product`, {
+        method: "PATCH", body: JSON.stringify({ employeePensionProductId: productId }),
+      });
+      if (!response.ok) throw new Error("שיוך המסמך לקרן נכשל.");
+      await reloadDocuments();
+      toast.success("המסמך שויך למוצר הפנסיוני.");
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "שיוך המסמך נכשל.");
+    } finally {
+      setAssigningLegacy("");
+    }
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -94,15 +125,21 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
     Promise.all([
       initialEmployee ? Promise.resolve(initialEmployee) : alphaApi.employee(organizationId, employerId, employeeId),
       alphaApi.employeePensionMix(organizationId, employerId, employeeId),
-    ]).then(([employeeResult, items]) => {
+      backendFetch(`${documentBase}?employmentId=${encodeURIComponent(employeeId)}`).then(async response => {
+        if (!response.ok) throw new Error("טעינת מסמכי העובד נכשלה.");
+        return response.json() as Promise<EmployerDocument[]>;
+      }),
+    ]).then(([employeeResult, items, documents]) => {
       setEmployee(employeeResult);
       setMonthlySalary(Number(employeeResult.monthlySalary ?? 0));
       setProducts(items.map(toEditorProduct).map(sanitizePensionProductContributions));
+      setLibraryDocuments(documents);
     }).catch((err) => setError(err instanceof Error ? err.message : "טעינת תמהיל העובד נכשלה"))
       .finally(() => setLoading(false));
   }, [organizationId, employerId, employeeId, initialEmployee]);
 
   const activeCount = useMemo(() => products.filter((product) => product.isActive !== false).length, [products]);
+  const legacyDocuments = libraryDocuments.filter(doc => !doc.employeePensionProductId);
 
   async function save() {
     if (!editable || !employee) return;
@@ -169,7 +206,8 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
       renderProductExtra={(product) => <section className="profile-form-section" aria-label="מסמכי המוצר">
         {product.employeePensionProductId
           ? <EmployerDocumentsTab organizationId={organizationId} employerId={employerId} employmentId={employeeId}
-              employeePensionProductId={product.employeePensionProductId} canEdit={editable} embedded />
+              employeePensionProductId={product.employeePensionProductId} canEdit={editable} embedded
+              productType={product.productType} loadedDocuments={libraryDocuments} onChanged={reloadDocuments} />
           : <div className="notice notice-info">ניתן לצרף מסמכים לאחר שמירת המוצר בתמהיל העובד.</div>}
       </section>}
       monthlySalary={monthlySalary}
@@ -181,5 +219,27 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
       onMonthlySalaryChange={(value) => { setMonthlySalary(value); setSaved(false); setError(""); setValidationAttempted(false); }}
       onProductsChange={(value) => { setProducts(value.map(sanitizePensionProductContributions)); setSaved(false); setError(""); setValidationAttempted(false); }}
     />
+    {legacyDocuments.length > 0 ? <section className="profile-form-section" aria-label="שיוך מסמכים ישנים למוצרים">
+      <h3>מסמכים שהועלו בעבר ללא שיוך לקרן</h3>
+      <p>יש לבחור את הקרן המתאימה לכל מסמך. קבצים אלה נשמרו ואינם נמחקים אוטומטית.</p>
+      {legacyDocuments.map(doc => <div key={doc.id} className="field" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <span>{doc.originalFileName}</span>
+        {editable ? <>
+          <UiSelect aria-label={`מוצר פנסיוני עבור ${doc.originalFileName}`}
+            value={legacyAssignments[doc.id] ?? ""}
+            onChange={event => setLegacyAssignments(current => ({ ...current, [doc.id]: event.target.value }))}>
+            <option value="">בחירת מוצר</option>
+            {products.filter(product => product.employeePensionProductId &&
+              (doc.documentTypeCode !== 5 || product.productType === 1)).map(product =>
+              <option key={product.employeePensionProductId} value={product.employeePensionProductId}>
+                {product.fundName || product.policyNumber || "מוצר פנסיוני"}
+              </option>)}
+          </UiSelect>
+          <button type="button" className="btn btn-secondary"
+            disabled={!legacyAssignments[doc.id] || assigningLegacy === doc.id}
+            onClick={() => void assignLegacyDocument(doc.id)}>שיוך מסמך</button>
+        </> : null}
+      </div>)}
+    </section> : null}
   </div>;
 }
