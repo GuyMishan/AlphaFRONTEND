@@ -398,3 +398,7 @@ body:has(.report-modal-backdrop) {
   .feedback-resolution-issue-picker-items { flex-direction: column; }
   .feedback-resolution-issue-picker-items .btn { width: 100%; }
 }
+
+/* Optional official feedback detail fields, without empty placeholders. */
+.feedback-error-detail-fields { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-block-start: 4px; }
+.feedback-error-detail-fields small { color: var(--text-muted, inherit); }
