@@ -186,7 +186,7 @@ export default function EmployerProfilePage() {
       onAddressSaved={(address) => setSettings((current) => ({ ...current, address }))}
     /> : null}
 
-    {tab === "documents" ? <EmployerDocumentsTab organizationId={organizationId} employerId={employer.id} canEdit={capabilities.canCreateReport} /> : null}
+    {tab === "documents" ? <EmployerDocumentsTab organizationId={organizationId} employerId={employer.id} canEdit={capabilities.canEditEmployer} /> : null}
 
     {tab === "employees" ? <EmployeesTab
       organizationId={organizationId}
