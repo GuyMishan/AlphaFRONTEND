@@ -284,11 +284,7 @@ export function FeedbackResolutionMode({
       {activeGroup.problems.some(problem => problem.code === 18) ? <section className="notice notice-info" aria-label="טיפול בשדה חסר">
         <strong>תיקון השדה החסר</strong>
         <p>יש לתקן את השדות המופיעים למעלה ולשמור את השינויים. דיווח מתקן ייווצר רק אחרי השלמת הטיפול בכל שגיאות הדיווח, ולא אחרי כל שדה.</p>
-        {activeGroup.problems.some(problem => problem.code === 18 && problem.targetScope === "deposit")
-          && onEditDeposit ? <button type="button" className="btn btn-primary"
-              onClick={() => onEditDeposit(activeGroup.problems.filter(problem => problem.code === 18 && problem.targetScope === "deposit").map(problem => problem.problemId))}>
-            עריכת ההפקדה הרלוונטית
-          </button> : null}
+
         {activeGroup.problems.some(problem => problem.code === 18 && problem.targetScope === "report")
           ? <small>השדה שייך לדיווח. יש לתקן אותו בסביבת התיקון של הדיווח כולו.</small> : null}
         {activeGroup.problems.some(problem => problem.code === 18 && problem.targetScope === "employer")
@@ -301,6 +297,7 @@ export function FeedbackResolutionMode({
             organizationId={organizationId}
             employerId={employerId}
             problem={primaryProblem}
+            canEdit={activeGroup.canExecute}
             onSaved={() => setRefreshToken(value => value + 1)}
           /> : null}
       {primaryProblem.code === 18 && primaryProblem.targetScope === "deposit"
