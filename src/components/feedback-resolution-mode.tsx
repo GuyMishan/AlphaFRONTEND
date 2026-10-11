@@ -10,6 +10,7 @@ import { FeedbackEmployeeResolver } from "@/components/feedback-employee-resolve
 import { FeedbackDecisionResolver } from "@/components/feedback-decision-resolver";
 import { FeedbackExternalCaseResolver } from "@/components/feedback-external-case-resolver";
 import { FeedbackInternalCorrectionResolver } from "@/components/feedback-internal-correction-resolver";
+import { FeedbackCode18ProductEditor } from "@/components/feedback-code18-product-editor";
 import { FeedbackCode18DepositEditor } from "@/components/feedback-code18-deposit-editor";
 import { FeedbackCode18EmployerEditor } from "@/components/feedback-code18-employer-editor";
 import {
@@ -302,8 +303,8 @@ export function FeedbackResolutionMode({
           /> : null}
       {primaryProblem.code === 18
         && primaryProblem.targetScope === "deposit"
-        && primaryProblem.feedbackValues.missingFieldEditSurface === "depositEmployeeStatus"
-        && ["71", "74", "75", "76", "77"].includes(primaryProblem.feedbackValues.missingFieldNumber ?? "")
+        && ["depositEmployeeStatus", "depositProduct", "reportTransfer"].includes(primaryProblem.feedbackValues.missingFieldEditSurface ?? "")
+        && ["60", "71", "74", "75", "76", "77", "35", "37", "38", "40", "41", "42", "44", "45", "46", "49", "50", "51", "52", "53"].includes(primaryProblem.feedbackValues.missingFieldNumber ?? "")
         ? <FeedbackCode18DepositEditor
             key={activeGroup.groupKey}
             organizationId={organizationId}
@@ -326,7 +327,11 @@ export function FeedbackResolutionMode({
         </div> : null}
 
       {primaryProblem.code === 18
-        && !["depositEmployeeStatus", "employeeProfile", "employerContact"].includes(
+        && ["59", "70", "72", "73", "78", "79", "80", "81", "82"].includes(primaryProblem.feedbackValues.missingFieldNumber ?? "")
+        && primaryProblem.feedbackValues.missingFieldMapped === "true"
+        ? <FeedbackCode18ProductEditor organizationId={organizationId} employerId={employerId} group={activeGroup} /> : null}
+      {primaryProblem.code === 18
+        && !["depositEmployeeStatus", "employeeProfile", "employerContact", "depositProduct", "depositContributions", "reportTransfer"].includes(
           primaryProblem.feedbackValues.missingFieldEditSurface ?? "")
         ? <div className="notice notice-info" role="status">
             השדה זוהה במפרט, אך עדיין לא קיים עבורו עורך ייעודי ומאומת במסך פתרון בעיות.
