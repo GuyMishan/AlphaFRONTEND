@@ -39,6 +39,7 @@ function loadContext(
 function filterGroups(
   context: FeedbackResolutionContext,
   selector?: FeedbackResolutionProblemSelector | null,
+  contextType?: FeedbackResolutionContextType,
 ) {
   // Context endpoints already restrict the level (employer/report/deposit).
   // A single-error action must also restrict the actual problems passed to
@@ -48,7 +49,7 @@ function filterGroups(
   return context.groups.flatMap(group => {
     const problems = group.problems.filter(problem =>
       problem.code === selector.code
-      && (!selector.contributionId || problem.contributionId === selector.contributionId));
+      && (contextType !== "deposit" || !selector.contributionId || problem.contributionId === selector.contributionId));
     return problems.length ? [{ ...group, problems }] : [];
   });
 }
@@ -93,7 +94,7 @@ export function FeedbackResolutionMode({
       .then(result => {
         if (!cancelled) {
           if (initialIssueCodes.current === null) {
-            initialIssueCodes.current = new Set(filterGroups(result, selector)
+            initialIssueCodes.current = new Set(filterGroups(result, selector, contextType)
               .flatMap(group => group.problems.map(problem => problem.code)));
           }
           setContext(result);
@@ -112,8 +113,8 @@ export function FeedbackResolutionMode({
     if (!context) return [];
     // Unsupported codes outside the selected error must not block its resolver.
     if (context.unsupportedCodes.length && !selector) return [];
-    return filterGroups(context, selector);
-  }, [context, selector]);
+    return filterGroups(context, selector, contextType);
+  }, [context, selector, contextType]);
   const issueOptions = useMemo(() => groups.map(group => {
     const first = group.problems[0];
     return { value: group.groupKey, label: `קוד ${first.code} — ${first.description}` };
