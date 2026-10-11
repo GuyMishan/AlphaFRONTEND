@@ -117,6 +117,8 @@ export type ReportFeedbackContextIssue = {
   contributionId: string | null;
   receivedAt: string;
   affectedReportIds?: string[];
+  errorAmount?: number | null;
+  errorDate?: string | null;
 };
 
 export type EmployerFeedbackContext = {
