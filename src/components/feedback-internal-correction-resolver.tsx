@@ -248,8 +248,14 @@ export function FeedbackInternalCorrectionResolver({
     {code100Only ? <div className="notice notice-info" role="status">
       <strong>חסר דיווח שלילי לתיקון</strong>
       <p>נשלח דיווח מתקן (פעולה 2 או 3), אבל חסר דיווח שלילי תואם (פעולה 6) שמבטל את הנתונים הישנים.</p>
-      <p>יש לבדוק אם קיים דיווח שלילי תואם שנשלח ונקלט. אם חסר, משלימים את רצף התיקון ברמת הדיווח.</p>
-      <a className="btn btn-primary" href="/reports">בדיקת הדיווחים והתיקונים <ArrowLeft size={16} aria-hidden="true" /></a>
+      <p><strong>כך מטפלים:</strong> פותחים את היסטוריית הדיווחים של המעסיק ובודקים אם נשלח דיווח שלילי תואם (פעולה 6) לאותן רשומות.</p>
+      <ul>
+        <li><strong>לא נוצר דיווח שלילי:</strong> יש להשלים את רצף הדיווח המתקן דרך תהליך תיקון הדיווח. אין לשנות הפקדה רגילה במקום זאת.</li>
+        <li><strong>נשלח אבל לא נקלט:</strong> בודקים את סטטוס השידור ואת משוב הגוף המוסדי ומטפלים בדחייה, לפני שליחה נוספת.</li>
+        <li><strong>נשלח ונקלט:</strong> בודקים שמזהי הרשומות והפעולות תואמים לדיווח השוטף. אם הם תואמים, יש לבקש בירור מהגוף המוסדי.</li>
+      </ul>
+      <small>אין ליצור ביטול כפול בלי לוודא מה כבר נקלט. לאחר הטיפול יש להמתין למשוב מעודכן.</small>
+      <a className="btn btn-primary" href="/reports">פתיחת היסטוריית הדיווחים <ArrowLeft size={16} aria-hidden="true" /></a>
     </div> : null}
     {visibleRows.length ? <div className="feedback-resolution-compare" role="table" aria-label="השוואת נתונים לתיקון">
       <div className="feedback-resolution-compare-head" role="row">
