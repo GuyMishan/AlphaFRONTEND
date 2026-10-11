@@ -191,3 +191,5 @@ This is a **partial set of true edit capabilities**, not a claim that every numb
 
 ### Report feedback code 100 focused treatment (October 2026)
 - `feedback-internal-correction-resolver.tsx` suppresses the generic eight-field report comparison for a pure code-100 group. It explains that a current correction operation 2/3 lacks its corresponding negative operation 6, and requires verifying previous negative transmission/acknowledgement before preparing a correction. Code 100 no longer offers the generic correction-workspace/deposit-editor button; instead it links to report history for checking whether the corresponding negative report was sent and accepted. No automatic negative transmission is initiated.
+
+- Feedback code 100 now displays a concise three-scenario report-level checklist: missing negative report (complete correction flow), rejected/not-received negative report (inspect transmission feedback), or accepted negative report (compare record linkage and escalate to provider). The button opens report history, not an unrelated deposit editor. The UI does not automatically transmit cancellation files.
