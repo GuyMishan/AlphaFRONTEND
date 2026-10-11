@@ -2,20 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { UserRound, WalletCards } from "lucide-react";
+import { Files, UserRound, WalletCards } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AppTabs } from "@/components/app-tabs";
+import { EmployerDocumentsTab } from "@/components/employer-documents-tab";
 import { EmployeeForm } from "@/components/employee-form";
 import { EmployeePensionMix } from "@/components/employee-pension-mix";
 import { alphaApi } from "@/lib/api";
 import type { Employee, Employer } from "@/lib/types";
 import { useQueryContext } from "@/lib/use-query-context";
 
-type ProfileTab = "details" | "mix";
+type ProfileTab = "details" | "mix" | "documents";
 
 const tabs = [
   { key: "details", label: "פרטי העובד", icon: UserRound },
   { key: "mix", label: "תמהיל העובד", icon: WalletCards },
+  { key: "documents", label: "מסמכים", icon: Files },
 ] satisfies Array<{ key: ProfileTab; label: string; icon: typeof UserRound }>;
 
 export default function EmployeeProfilePage() {
@@ -26,6 +28,16 @@ export default function EmployeeProfilePage() {
   const [canEditEmployee, setCanEditEmployee] = useState(false);
   const [tab, setTab] = useState<ProfileTab>("details");
   const [error, setError] = useState("");
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    if (requested === "documents" || requested === "mix") setTab(requested);
+  }, []);
+  function changeTab(next: string) {
+    setTab(next as ProfileTab);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", next);
+    window.history.replaceState(window.history.state, "", `${url.pathname}?${url.searchParams.toString()}`);
+  }
 
   useEffect(() => {
     if (!organizationId || !employerId || !id) return;
@@ -42,9 +54,10 @@ export default function EmployeeProfilePage() {
 
   return <AppShell title="פרופיל עובד" hideScopeController>
     <div className="page-head"><div><h1>פרופיל עובד</h1><p>{employer ? <>משויך אל <a className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}>{employer.legalName}</a></> : "פרטי העובד וההעסקה"}</p></div></div>
-    {employee ? <AppTabs items={tabs} activeKey={tab} onChange={setTab} ariaLabel="פרופיל עובד" /> : null}
+    {employee ? <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל עובד" /> : null}
     {error ? <div className="notice notice-error">{error}</div> : employee ? tab === "details"
       ? <div className="employee-profile-layout"><EmployeeForm organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /></div>
+      : tab === "documents" ? <EmployerDocumentsTab organizationId={organizationId} employerId={employerId} employmentId={employee.id} canEdit={canEditEmployee} />
       : <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={employee.id} employee={employee} editable={canEditEmployee} />
       : <div className="empty">טוען פרופיל...</div>}
   </AppShell>;
