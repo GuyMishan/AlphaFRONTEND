@@ -13,7 +13,6 @@ import {
   reportFeedbackApi,
   type FeedbackResolutionContext,
   type FeedbackResolutionContextType,
-  type FeedbackResolutionProblem,
   type FeedbackResolutionProblemSelector,
 } from "@/lib/report-feedback-api";
 
