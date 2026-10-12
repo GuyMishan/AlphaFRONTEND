@@ -824,11 +824,14 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
           {operation5 ? <section className="payment-panel">
             <div className="field" style={{ marginBottom: 12 }}>
               <label htmlFor="collective-agreement-refund">האם השבת הכספים מתבצעת מכוח הסכם קיבוצי? *</label>
-              <UiSelect id="collective-agreement-refund" value={metadataForm.collectiveAgreementRefund == null ? "" : metadataForm.collectiveAgreementRefund ? "yes" : "no"}
-                disabled={readOnly}
-                onChange={(event) => patchMetadata("collectiveAgreementRefund", event.target.value === "" ? null : event.target.value === "yes")}>
-                <option value="">יש לבחור</option><option value="yes">כן — נדרש מסמך מסוג 6</option><option value="no">לא</option>
-              </UiSelect>
+              <div id="collective-agreement-refund" role="group" aria-label="האם השבת הכספים מתבצעת מכוח הסכם קיבוצי?" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" className={metadataForm.collectiveAgreementRefund === true ? "btn btn-primary" : "btn btn-secondary"}
+                  aria-pressed={metadataForm.collectiveAgreementRefund === true} disabled={readOnly}
+                  onClick={() => patchMetadata("collectiveAgreementRefund", true)}>כן — נדרש מסמך מסוג 6</button>
+                <button type="button" className={metadataForm.collectiveAgreementRefund === false ? "btn btn-primary" : "btn btn-secondary"}
+                  aria-pressed={metadataForm.collectiveAgreementRefund === false} disabled={readOnly}
+                  onClick={() => patchMetadata("collectiveAgreementRefund", false)}>לא</button>
+              </div>
             </div>
             <h3>מסמכים מצורפים לדיווח השלילי</h3>
             <div className="notice notice-info" style={{ marginBottom: 12 }}>
