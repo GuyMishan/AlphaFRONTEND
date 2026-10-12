@@ -820,8 +820,10 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
           {operation5 ? <section className="payment-panel">
             <h3>מסמכים מצורפים לדיווח השלילי</h3>
             <div className="notice notice-info" style={{ marginBottom: 12 }}>
-              בקוד פעולה 5 נדרש תצהיר מעסיק מסוג 3 לפחות פעם אחת בשנה. אישור עובד (4) או הצהרת הסכם קיבוצי (6) מצורפים רק כאשר הם רלוונטיים למקרה.
-              המסמכים נשמרים כ-PDF ומצורפים לחבילת השידור לצד ה-XML.
+              בקוד פעולה 5 (בקשת השבת כספים), תצהיר מעסיק מסוג 3 נדרש לפחות פעם אחת בשנה.
+              אם ההשבה מתבצעת מכוח הסכם קיבוצי, יש לצרף כאן הצהרת מעסיק להסכם הקיבוצי (סוג 6) לעובד ולמוצר הרלוונטיים.
+              אם ההשבה אינה מכוח הסכם קיבוצי, אין צורך במסמך מסוג 6. אישור עובד (סוג 4) מצורף בהתאם לנסיבות ההשבה.
+              המסמכים נשמרים כ-PDF ונשלחים עם הדיווח השלילי; העלאתם לפרופיל בלבד אינה מצרפת אותם לדיווח.
             </div>
             {annualEmployerAffidavitSatisfied && !reportAffidavit ? <div className="notice notice-success" style={{ marginBottom: 12 }}>תצהיר המעסיק השנתי כבר הועבר בדיווח קודם השנה.</div> : null}
             <div style={{ display: "grid", gap: 10 }}>
@@ -830,7 +832,11 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
                 { code: 4 as const, label: "אישור עובד להשבת כספים", item: employeeApproval, scope: "לעובד/מוצר זה" },
                 { code: 6 as const, label: "הצהרת מעסיק - הסכם קיבוצי", item: collectiveAgreementDeclaration, scope: "לעובד/מוצר זה" },
               ]).map(({ code, label, item, scope }) => <div key={code} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-                <div><b>{label}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div></div>
+                <div><b>{label}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div>
+                  {code === 6 ? <small style={{ display: "block", color: "var(--muted)" }}>
+                    נדרש כאשר ההשבה מתבצעת מכוח הסכם קיבוצי. אם זו השבה כזו, צרפו את ה-PDF כאן לפני שליחת הדיווח כדי להימנע מדחיית המסמך (קודים 102–103).
+                  </small> : null}
+                </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   {item && !readOnly ? <button type="button" className="btn btn-secondary" onClick={() => void removeAttachment(item.id)}><Trash2 size={14} />הסר</button> : null}
                   {!item ? storedDocumentPicker(code) : null}
