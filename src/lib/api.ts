@@ -113,9 +113,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
     const code = problemCode(problem);
     const message = code === "PLAN_LIMIT_REACHED"
-      ? `הגעתם למגבלת ${limitNames[problem.limit ?? ""] ?? problem.limit ?? "המסלול"} במסלול הנוכחי (${problem.current ?? 0}/${problem.maximum ?? 0}).`
+      ? `הגעתם למגבלת ${limitNames[problem?.limit ?? ""] ?? problem?.limit ?? "המסלול"} במסלול הנוכחי (${problem?.current ?? 0}/${problem?.maximum ?? 0}).`
       : code === "FEATURE_NOT_AVAILABLE"
-        ? `האפשרות ${featureNames[problem.feature ?? ""] ?? problem.feature ?? ""} אינה זמינה במסלול הנוכחי.`
+        ? `האפשרות ${featureNames[problem?.feature ?? ""] ?? problem?.feature ?? ""} אינה זמינה במסלול הנוכחי.`
         : code === "PAYMENT_ACCOUNT_REQUIRED"
           ? "יש לבחור חשבון תשלום פעיל לדיווח."
           : code === "BANK_MANDATE_REQUIRED"
