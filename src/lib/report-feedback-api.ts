@@ -550,7 +550,7 @@ export const reportFeedbackApi = {
       `${base(organizationId, employerId)}/external-cases/${caseId}/attachments`,
       { method: "POST", body, cache: "no-store" },
     );
-    if (!response.ok) throw new Error(`העלאת הקובץ נכשלה (${response.status}).`);
+    if (!response.ok) throw new Error(await responseErrorMessage(response, "העלאת הקובץ נכשלה."));
     return response.json() as Promise<ExternalFeedbackCase>;
   },
 
@@ -564,7 +564,7 @@ export const reportFeedbackApi = {
       `${base(organizationId, employerId)}/external-cases/${caseId}/attachments/${attachmentId}`,
       { cache: "no-store" },
     );
-    if (!response.ok) throw new Error(`הורדת הקובץ נכשלה (${response.status}).`);
+    if (!response.ok) throw new Error(await responseErrorMessage(response, "הורדת הקובץ נכשלה."));
     return response.blob();
   },
 
@@ -764,7 +764,7 @@ export const reportFeedbackApi = {
     const response = await backendFetch(`${base(organizationId, employerId)}/${reportId}/exports/${exportType}`, {
       cache: "no-store",
     });
-    if (!response.ok) throw new Error(`אירעה שגיאה (${response.status})`);
+    if (!response.ok) throw new Error(await responseErrorMessage(response));
     return response.blob();
   },
 };
