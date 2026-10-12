@@ -60,9 +60,9 @@ export function FeedbackDecisionResolver({
     .filter((value): value is string => Boolean(value)))];
 
   async function decide(problem: FeedbackResolutionProblem, outcome: DecisionOutcome) {
-    const note = note.trim();
+    const treatmentNote = note.trim();
     if ((["external", "reconcile", "link-original"].includes(outcome)
-      || (problem.code === 50 && outcome === "correction")) && !note) {
+      || (problem.code === 50 && outcome === "correction")) && !treatmentNote) {
       setError("יש לכתוב הערה קצרה שמסבירה את ההחלטה לפני העברת הטיפול.");
       return;
     }
@@ -76,7 +76,7 @@ export function FeedbackDecisionResolver({
         problem.reportId,
         problem.problemId,
         outcome,
-        note,
+        treatmentNote,
       );
 
       if (outcome === "correction" && result.workspaceReportId) {
@@ -170,8 +170,8 @@ export function FeedbackDecisionResolver({
               className="btn btn-secondary"
               disabled={busy || !group.canExecute}
               onClick={() => void (async () => {
-                const note = note.trim();
-                if (!note) {
+                const treatmentNote = note.trim();
+                if (!treatmentNote) {
                   setError("יש לכתוב הערה קצרה לפני פתיחת תיק טיפול חיצוני.");
                   return;
                 }
@@ -184,7 +184,7 @@ export function FeedbackDecisionResolver({
                     problem.reportId,
                     group.groupKey,
                     [problem.problemId],
-                    note,
+                    treatmentNote,
                   );
                   onChanged();
                 } catch (err) {
@@ -202,8 +202,8 @@ export function FeedbackDecisionResolver({
               className="btn btn-secondary"
               disabled={busy || !group.canExecute}
               onClick={() => void (async () => {
-                const note = note.trim();
-                if (!note) {
+                const treatmentNote = note.trim();
+                if (!treatmentNote) {
                   setError("יש לכתוב הערה קצרה לפני פתיחת תיק התאמת כספים.");
                   return;
                 }
@@ -216,7 +216,7 @@ export function FeedbackDecisionResolver({
                     problem.reportId,
                     group.groupKey,
                     [problem.problemId],
-                    note,
+                    treatmentNote,
                     "reconcile",
                   );
                   onChanged();
