@@ -107,14 +107,7 @@ export function FeedbackDecisionResolver({
         const busy = busyProblemId === problem.problemId;
 
         return <article className="feedback-decision-card" key={problem.problemId}>
-          <div className="feedback-decision-card-head">
-            <div>
-              {decisionProblems.length > 1
-                ? <strong>רשומה {decisionProblems.indexOf(problem) + 1} מתוך {decisionProblems.length}</strong>
-                : null}
-            </div>
-            {latest ? <span className="feedback-decision-status">{latest}</span> : null}
-          </div>
+          {latest ? <div className="feedback-decision-card-head"><span className="feedback-decision-status">{latest}</span></div> : null}
 
           {problem.code === 50 ? <div className="notice notice-info" role="note">
             קוד 50 מציין מזהה כפול של העברת כספים. יש להשוות את מזהה ההעברה
