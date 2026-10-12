@@ -1,3 +1,4 @@
+import { apiErrorMessage } from "./api-error-message";
 import { backendFetch } from "./backend-fetch";
 import { employerInterfaceApi } from "./employer-interface-api";
 
@@ -62,7 +63,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
               ? "אמצעי התשלום של Alpha אינו פעיל ולכן לא ניתן לשדר דיווחים."
               : problem?.error === "billing_payment_method_reference_required"
                 ? "אמצעי התשלום מסומן כפעיל אך חסר token או mandate reference תקין."
-                : problem?.detail ?? problem?.error ?? problem?.title ?? problem?.transmission?.errorMessage ?? message;
+                : apiErrorMessage(response.status, problem);
     } catch { /* empty */ }
     throw new Error(message);
   }
