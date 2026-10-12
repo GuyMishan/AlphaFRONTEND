@@ -1,3 +1,4 @@
+import { responseErrorMessage } from "./api-error-message";
 import { backendFetch } from "@/lib/backend-fetch";
 
 export type PaymentConfirmation = {
@@ -8,7 +9,7 @@ const path = (organizationId: string, employerId: string, reportId: string, prod
   `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${reportId}/payment-confirmations/${productId}`;
 async function errorMessage(response: Response) {
   if (response.status === 503) return "שמירת מסמכים אינה זמינה כרגע. יש לבדוק הגדרת אחסון וסריקת אבטחה.";
-  return `שמירת המסמך נכשלה (${response.status}).`;
+  return responseErrorMessage(response, "שמירת המסמך נכשלה.");
 }
 export const paymentConfirmationsApi = {
   async listForReport(org: string, employer: string, report: string): Promise<(PaymentConfirmation & { reportProductId: string })[]> {
