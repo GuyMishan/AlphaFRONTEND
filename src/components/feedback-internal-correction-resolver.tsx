@@ -235,7 +235,7 @@ export function FeedbackInternalCorrectionResolver({
       <strong>תצהיר מעסיק חסר או לא תקין</strong>
       <p>קודים {Array.from(new Set(group.problems.map(item => item.code))).join(", ")} — {group.problems.some(item => [102, 103].includes(item.code)) ? "תצהיר מעסיק בקשר להסכם קיבוצי" : "תצהיר מעסיק"}.</p>
       <p>{group.problems.some(item => [102, 103].includes(item.code))
-        ? "לקוד הזה נדרש מסמך מסוג 6 (הצהרת מעסיק להסכם קיבוצי), המשויך למוצר הפנסיוני בדיווח. תצהיר מעסיק כללי מסוג 3 אינו מחליף אותו. בדקו את ההצהרה של העובד והמוצר הרלוונטיים, וצרפו אותה מחדש לגרסת הדיווח הנכונה."
+        ? "מסמך מסוג 6 (הצהרת מעסיק להסכם קיבוצי) נדרש רק כשהשבת הכספים נעשית מכוח הסכם קיבוצי, במסגרת דיווח שלילי בפעולה 5 — ולא לפי סוג הקופה. בדיווח השלילי בחרו האם ההשבה מכוח הסכם קיבוצי; אם כן, צרפו את מסמך 6 לעובד ולמוצר המתאימים תחת ״מסמכים מצורפים לדיווח השלילי״. קוד 102 מציין שהתצהיר אינו תקין, וקוד 103 מציין שהוא חסר. תצהיר מעסיק כללי מסוג 3 אינו תחליף. העלאה לפרופיל בלבד אינה מצרפת את המסמך לדיווח שכבר נשלח."
         : "נדרש תצהיר מעסיק כללי מסוג 3. בדקו אם הועלה מסמך תקין בפרופיל המעסיק וצרפו אותו לגרסת הדיווח הרלוונטית. אין צורך בהעלאה נפרדת לכל הפקדה."}</p>
       {group.problems.some(item => [102, 103].includes(item.code)
           && item.feedbackValues.negativeCorrectionSourceReportId
@@ -254,7 +254,7 @@ export function FeedbackInternalCorrectionResolver({
               פתיחת מסמכי המוצר של העובד <ArrowLeft size={16} aria-hidden="true" />
             </a>)
         : <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=documents`}>פתיחת מסמכי המעסיק <ArrowLeft size={16} aria-hidden="true" /></a>}
-      <small>עדכון המסמך בפרופיל אינו משנה קבצים שכבר נשלחו. יש לבדוק את משוב הקופה לפני דיווח חוזר.</small>
+      <small>לאחר הצירוף בדקו את הדיווח לפני שליחה כדי למנוע השבת כספים כפולה. השגיאה לא נסגרת בהעלאת קובץ בלבד; נדרש משוב מתאים מהגוף המוסדי.</small>
     </div> : null}
 
     {employeeDeclarations ? <div className="notice notice-info" role="status">
