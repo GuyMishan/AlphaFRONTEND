@@ -70,14 +70,18 @@ export function FeedbackDecisionResolver({
     setBusyProblemId(problem.problemId);
     setError("");
     try {
-      const result = await reportFeedbackApi.decideProblem(
-        organizationId,
-        employerId,
-        problem.reportId,
-        problem.problemId,
-        outcome,
-        treatmentNote,
-      );
+      // The UI represents one treatment group; each decision must also cover
+      // every underlying feedback problem, not just the first XML row.
+      const eligible = decisionProblems.filter(item => item.availableActions.includes(
+        outcome === "confirm" ? "confirm" : "prepareCorrection",
+      ));
+      let result: Awaited<ReturnType<typeof reportFeedbackApi.decideProblem>> | undefined;
+      for (const item of eligible) {
+        result = await reportFeedbackApi.decideProblem(
+          organizationId, employerId, item.reportId, item.problemId, outcome, treatmentNote,
+        );
+      }
+      if (!result) return;
 
       if (outcome === "correction" && result.workspaceReportId) {
         const product = result.workspaceReportProductId
@@ -88,7 +92,7 @@ export function FeedbackDecisionResolver({
           : "";
         const resolver = `&resolutionResolver=${encodeURIComponent(problem.resolverType)}`;
         const source = `&resolutionSourceReportId=${encodeURIComponent(problem.reportId)}`;
-        const ids = `&resolutionProblemIds=${encodeURIComponent(problem.problemId)}`;
+        const ids = `&resolutionProblemIds=${encodeURIComponent(eligible.map(item => item.problemId).join(","))}`;
         router.push(
           `/reports/new?resumeReportId=${result.workspaceReportId}&correctionWorkspace=1${product}${employee}${resolver}${source}${ids}`,
         );
@@ -122,10 +126,10 @@ export function FeedbackDecisionResolver({
       />
     </label> : null}
     <div className="feedback-decision-list">
-      {decisionProblems.map(problem => {
-        const actions = new Set(problem.availableActions);
+      {decisionProblems.slice(0, 1).map(problem => {
+        const actions = new Set(decisionProblems.flatMap(item => item.availableActions));
         const latest = latestDecisionLabel(problem.latestDecision);
-        const busy = busyProblemId === problem.problemId;
+        const busy = Boolean(busyProblemId);
 
         return <article className="feedback-decision-card" key={problem.problemId}>
           {latest ? <div className="feedback-decision-card-head"><span className="feedback-decision-status">{latest}</span></div> : null}
@@ -183,7 +187,7 @@ export function FeedbackDecisionResolver({
                     employerId,
                     problem.reportId,
                     group.groupKey,
-                    [problem.problemId],
+                    decisionProblems.filter(item => item.availableActions.includes("openExternalCase")).map(item => item.problemId),
                     treatmentNote,
                   );
                   onChanged();
@@ -215,7 +219,7 @@ export function FeedbackDecisionResolver({
                     employerId,
                     problem.reportId,
                     group.groupKey,
-                    [problem.problemId],
+                    decisionProblems.filter(item => item.availableActions.includes("reconcile")).map(item => item.problemId),
                     treatmentNote,
                     "reconcile",
                   );
