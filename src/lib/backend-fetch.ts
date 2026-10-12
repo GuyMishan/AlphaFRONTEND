@@ -39,6 +39,8 @@ export async function backendFetch(path: string, init?: RequestInit): Promise<Re
     if (session.platformAdmin) headers.set("X-Alpha-Platform-Admin", "true");
   }
 
+  const originatingControl = typeof document !== "undefined" && document.activeElement instanceof HTMLElement
+    ? document.activeElement : null;
   const response = await fetch(`/api/backend${path}`, {
     ...init,
     headers,
@@ -51,7 +53,7 @@ export async function backendFetch(path: string, init?: RequestInit): Promise<Re
     const problem = await response.clone().json().catch(() => null);
     const errors = validationErrors(problem);
     if (problem?.errorCode === "VALIDATION_FAILED" && Object.keys(errors).length) {
-      window.dispatchEvent(new CustomEvent("alpha:server-validation", { detail: { errors } }));
+      window.dispatchEvent(new CustomEvent("alpha:server-validation", { detail: { errors, origin: originatingControl } }));
     }
   }
 
