@@ -61,7 +61,7 @@ export function apiErrorMessage(status: number, value: unknown, fallback?: strin
 
   // Backend's generic English Problem Details text should not override a helpful Hebrew message.
   const detail = humanText(body?.detail);
-  if (detail && !/^(The request is invalid|An unexpected error occurred|Authentication is required|The requested resource was not found|You do not have permission|The service is temporarily unavailable|Too many requests|An external service)/i.test(detail))
+  if (detail && !/^(The request is invalid|The request conflicts|An unexpected error occurred|Authentication is required|The requested resource was not found|You do not have permission|The service is temporarily unavailable|Too many requests|An external service|The HTTP method is not allowed|The request body is too large|The request content type is not supported)/i.test(detail))
     return detail;
   if (fromValidation) return fromValidation;
   if (fromIssues) return fromIssues;
