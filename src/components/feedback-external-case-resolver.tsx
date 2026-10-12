@@ -122,25 +122,25 @@ export function FeedbackExternalCaseResolver({
   if (!externalCase) return <section className="feedback-external-case">
     <div className="feedback-resolution-section-head">
       <div>
-        <h3>טיפול מול גוף חיצוני</h3>
-        <p>תיק הטיפול ייפתח לשורות מהדיווח הנבחר בלבד. בדיווחים נוספים יש לטפל בנפרד.</p>
+        <h3>הוסף הערה לשגיאה</h3>
+        <p>ההערה תישמר עם השגיאה בדיווח הנבחר.</p>
       </div>
     </div>
     {error ? <div className="notice notice-error">{error}</div> : null}
     <label className="feedback-decision-note">
-      <span>הערה לפתיחת התיק</span>
+      <span>הערה לשגיאה</span>
       <UiTextarea rows={3} maxLength={4000} value={note} disabled={busy}
         onChange={(event) => setNote(event.target.value)}
-        placeholder="מה כבר נבדק ומה נדרש מהגוף החיצוני..." />
+        placeholder="רשמו הערה או את הפעולה שבוצעה..." />
     </label>
     <div className="feedback-external-case-actions">
-      {externalProblems.length ? <button type="button" className="btn btn-primary" disabled={busy || !group.canExecute}
+      {externalProblems.length ? <button type="button" className="btn btn-primary" disabled={busy || !group.canExecute || !note.trim()}
         onClick={() => void openCase("external")}>
-        <ExternalLink size={16} />{busy ? "פותח תיק..." : "פתיחת תיק טיפול חיצוני"}
+        <ExternalLink size={16} />{busy ? "שומר..." : "שמור"}
       </button> : null}
-      {reconciliationProblems.length ? <button type="button" className="btn btn-secondary" disabled={busy || !group.canExecute}
+      {reconciliationProblems.length ? <button type="button" className="btn btn-secondary" disabled={busy || !group.canExecute || !note.trim()}
         onClick={() => void openCase("reconcile")}>
-        <Clock3 size={16} />{busy ? "פותח תיק..." : "פתיחת תיק התאמת כספים"}
+        <Clock3 size={16} />{busy ? "שומר..." : "שמור"}
       </button> : null}
     </div>
   </section>;
@@ -148,7 +148,7 @@ export function FeedbackExternalCaseResolver({
   return <section className="feedback-external-case">
     <div className="feedback-resolution-section-head">
       <div>
-        <h3>תיק טיפול חיצוני</h3>
+        <h3>הערות וטיפול בשגיאה</h3>
         <p>סטטוס: <strong>{statusLabel(externalCase.status)}</strong>{externalCase.assigneeName ? ` · מטפל: ${externalCase.assigneeName}` : " · טרם שויך מטפל"}</p>
       </div>
     </div>
@@ -191,11 +191,11 @@ export function FeedbackExternalCaseResolver({
 
     <div className="feedback-external-case-note-row">
       <UiTextarea rows={3} maxLength={4000} value={note} disabled={busy}
-        onChange={(event) => setNote(event.target.value)} placeholder="הוספת הערת טיפול..." />
+        onChange={(event) => setNote(event.target.value)} placeholder="הוסף הערה לשגיאה..." />
       <button type="button" className="btn btn-secondary" disabled={busy || !note.trim()}
         onClick={() => void apply(reportFeedbackApi.addExternalCaseNote(
           organizationId, employerId, externalCase.id, note.trim(),
-        )).then(() => setNote(""))}>הוספת הערה</button>
+        )).then(() => setNote(""))}>שמור</button>
     </div>
 
     <UiFileUpload label="צירוף קובץ לתיק"
