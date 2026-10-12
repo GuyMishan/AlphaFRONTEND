@@ -300,6 +300,7 @@ function parseReportRow(raw: Record<string, unknown>, rowNumber: number, nationa
     workDaysInMonth: integer(pick(raw, reportAliases.workDaysInMonth)),
     lastDeposit,
     refundReason: integer(pick(raw, reportAliases.refundReason)),
+    collectiveAgreementRefund: null,
     paymentMethodCode,
     employerAccountType,
     receiverAccountType,
