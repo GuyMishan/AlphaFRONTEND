@@ -50,7 +50,7 @@ export async function backendFetch(path: string, init?: RequestInit): Promise<Re
   if (typeof window !== "undefined" && response.status === 400) {
     const problem = await response.clone().json().catch(() => null);
     const errors = validationErrors(problem);
-    if (Object.keys(errors).length) {
+    if (problem?.errorCode === "VALIDATION_FAILED" && Object.keys(errors).length) {
       window.dispatchEvent(new CustomEvent("alpha:server-validation", { detail: { errors } }));
     }
   }
