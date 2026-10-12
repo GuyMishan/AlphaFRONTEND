@@ -22,8 +22,6 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
   onChanged?: () => Promise<void>; productType?: number;
 }) {
   const [documents, setDocuments] = useState<EmployerDocument[]>([]);
-  const [uploadType, setUploadType] = useState<number | null>(null);
-  const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const availableTypes = types.filter(item => employmentId
@@ -49,14 +47,16 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
     return () => { active = false; };
   }, [listUrl, loadedDocuments]);
 
-  async function upload(event: React.FormEvent) {
-    event.preventDefault();
-    if (!file) { toast.error("יש לבחור קובץ PDF."); return; }
+  async function upload(file: File, documentTypeCode: number) {
+    if (file.size === 0 || file.size > 10 * 1024 * 1024 || !file.name.toLowerCase().endsWith(".pdf") || (file.type && file.type !== "application/pdf")) {
+      toast.error("יש לבחור קובץ PDF תקין בגודל של עד 10MB.");
+      return;
+    }
     setBusy(true);
     try {
       const data = new FormData();
       data.set("file", file);
-      data.set("documentTypeCode", String(uploadType ?? availableTypes[0]?.code ?? 3));
+      data.set("documentTypeCode", String(documentTypeCode));
       if (employmentId) data.set("employmentId", employmentId);
       if (employeePensionProductId) data.set("employeePensionProductId", employeePensionProductId);
       const response = await backendFetch(base, { method: "POST", body: data });
@@ -64,8 +64,6 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
       const created = await response.json() as EmployerDocument;
       if (loadedDocuments === undefined) setDocuments(current => [created, ...current]);
       else await onChanged?.();
-      setFile(null);
-      setUploadType(null);
       toast.success(employmentId ? "המסמך נשמר במוצר הפנסיוני" : "המסמך נשמר בפרופיל המעסיק");
     } catch (error) { toast.error(error instanceof Error ? error.message : "שמירת המסמך נכשלה"); }
     finally { setBusy(false); }
@@ -105,21 +103,14 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
               </td>
               <td style={{ padding: 12, verticalAlign: "top" }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {canEdit ? <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => { setUploadType(current => current === item.code ? null : item.code); setFile(null); }}>
-                    {uploadType === item.code ? "ביטול" : existing.length ? "העלאת גרסה נוספת" : "העלאה"}
-                  </button> : null}
+                  {canEdit ? <UiFileUpload id={`employer-document-file-${employeePensionProductId ?? "employer"}-${item.code}`}
+                    label={existing.length ? "העלאת גרסה נוספת" : "העלאה"} accept=".pdf,application/pdf"
+                    maxBytes={10 * 1024 * 1024} disabled={busy} busy={busy}
+                    onFileSelected={(selected) => upload(selected, item.code)} onInvalid={toast.error} /> : null}
                   {canEdit ? existing.map(doc => <button key={doc.id} type="button" className="btn btn-secondary" disabled={busy}
                     onClick={() => void remove(doc.id)} aria-label={`מחיקת ${doc.originalFileName}`}>מחיקה</button>) : null}
                 </div>
-                {canEdit && uploadType === item.code ? <form onSubmit={upload} style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                  <UiFileUpload id={`employer-document-file-${employeePensionProductId ?? "employer"}-${item.code}`}
-                    label="בחירת קובץ PDF" fileName={file?.name} accept=".pdf,application/pdf"
-                    maxBytes={10 * 1024 * 1024} disabled={busy}
-                    onFileSelected={setFile} onInvalid={toast.error} />
-                  <button type="submit" className="btn btn-primary" disabled={busy || !file}>
-                    {busy ? "מעלה..." : "שמירת מסמך"}
-                  </button>
-                </form> : null}
+
               </td>
             </tr>;
           })}
