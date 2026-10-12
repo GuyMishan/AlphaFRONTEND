@@ -1,4 +1,4 @@
-import { apiErrorMessage } from "./api-error-message";
+import { apiErrorMessage, problemCode } from "./api-error-message";
 import { getSession } from "./session";
 import { backendFetch } from "./backend-fetch";
 import { openUpgradeDialog, upgradeDetailFromProblem } from "./upgrade";
@@ -111,13 +111,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const upgradeDetail = upgradeDetailFromProblem(problem);
     if (upgradeDetail) openUpgradeDialog(upgradeDetail);
 
-    const message = problem?.error === "plan_limit_reached"
+    const code = problemCode(problem);
+    const message = code === "PLAN_LIMIT_REACHED"
       ? `הגעתם למגבלת ${limitNames[problem.limit ?? ""] ?? problem.limit ?? "המסלול"} במסלול הנוכחי (${problem.current ?? 0}/${problem.maximum ?? 0}).`
-      : problem?.error === "feature_not_available"
+      : code === "FEATURE_NOT_AVAILABLE"
         ? `האפשרות ${featureNames[problem.feature ?? ""] ?? problem.feature ?? ""} אינה זמינה במסלול הנוכחי.`
-        : problem?.error === "payment_account_required"
+        : code === "PAYMENT_ACCOUNT_REQUIRED"
           ? "יש לבחור חשבון תשלום פעיל לדיווח."
-          : problem?.error === "bank_mandate_required"
+          : code === "BANK_MANDATE_REQUIRED"
             ? "לא ניתן לשלוח את הדיווח ללא הרשאה פעילה לחיוב חשבון הבנק שנבחר."
             : apiErrorMessage(response.status, problem);
     throw new ApiError(response.status, message, problem);
