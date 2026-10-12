@@ -241,7 +241,7 @@ export function FeedbackInternalCorrectionResolver({
           && item.feedbackValues.negativeCorrectionSourceReportId
           && item.feedbackValues.negativeCorrectionSourceProductId)
         ? <a className="btn btn-primary"
-            href={`/reports/new?sourceReportId=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceReportId)?.feedbackValues.negativeCorrectionSourceReportId ?? "")}&sourceProductId=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceProductId)?.feedbackValues.negativeCorrectionSourceProductId ?? "")}&sourceKind=1&sourceMonth=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceMonth)?.feedbackValues.negativeCorrectionSourceMonth ?? "")}`}>
+            href={`/reports/new?sourceReportId=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceReportId)?.feedbackValues.negativeCorrectionSourceReportId ?? "")}&sourceProductId=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceProductId)?.feedbackValues.negativeCorrectionSourceProductId ?? "")}&sourceKind=1&sourceMonth=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceMonth)?.feedbackValues.negativeCorrectionSourceMonth ?? "")}&resolutionResolver=documents`}>
             פתיחת דיווח שלילי לתיקון המסמך <ArrowLeft size={16} aria-hidden="true" />
           </a> : null}
       {group.problems.some(item => [102, 103].includes(item.code)) ? <small>
