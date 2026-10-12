@@ -186,7 +186,7 @@ function formatDate(value: string) {
   return formatDateDDMMYYYY(value, value);
 }
 function emptyMetadata(): EmployerInterfaceProductMetadataInput {
-  return { operationCode: null, depositStatus: null, employeeStatus: null, statusStartDate: null, employmentPercentage: null, workDaysInMonth: null, lastDeposit: null, refundReason: null, paymentMethodCode: null, employerAccountType: null, receiverAccountType: null, oldPensionTypeCode: null };
+  return { operationCode: null, depositStatus: null, employeeStatus: null, statusStartDate: null, employmentPercentage: null, workDaysInMonth: null, lastDeposit: null, refundReason: null, collectiveAgreementRefund: null, paymentMethodCode: null, employerAccountType: null, receiverAccountType: null, oldPensionTypeCode: null };
 }
 function isNegativeKind(value: EmployerInterfaceProductMetadata["reportKind"] | null | undefined) { return value === 3 || value === "3" || value === "Negative"; }
 function isDifferencesKind(value: EmployerInterfaceProductMetadata["reportKind"] | null | undefined) { return value === 2 || value === "2" || value === "Differences"; }
@@ -423,7 +423,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
         && paymentResolution.account?.mandateIsActive === true
         && item.operationCode !== 2 && item.operationCode !== 7;
       setMetadataForm({ operationCode: item.operationCode, depositStatus: item.depositStatus, employeeStatus: item.employeeStatus, statusStartDate: item.statusStartDate,
-        employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason,
+        employmentPercentage: item.employmentPercentage, workDaysInMonth: item.workDaysInMonth, lastDeposit: item.lastDeposit, refundReason: item.refundReason, collectiveAgreementRefund: item.collectiveAgreementRefund,
         paymentMethodCode: automaticDebit ? 6 : item.paymentMethodCode, employerAccountType: automaticDebit ? 1 : item.employerAccountType,
         receiverAccountType: automaticDebit ? 1 : item.receiverAccountType, oldPensionTypeCode: item.oldPensionTypeCode });
       setPreviousReference(previous);
@@ -676,6 +676,10 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       errors.push("בקרן פנסיה ותיקה יש לבחור סוג פנסיה: מקיפה או יסוד.");
     if (!negative && !differences && isOldPensionFund && metadataForm.employmentPercentage == null && metadataForm.workDaysInMonth == null)
       errors.push("בקרן פנסיה ותיקה יש להזין חלקיות משרה או ימי עבודה בחודש.");
+    if (operation5 && metadataForm.collectiveAgreementRefund == null)
+      errors.push("יש לבחור האם השבת הכספים מתבצעת מכוח הסכם קיבוצי.");
+    if (operation5 && metadataForm.collectiveAgreementRefund === true && !collectiveAgreementDeclaration)
+      errors.push("בהשבה מכוח הסכם קיבוצי חובה לצרף הצהרת מעסיק מסוג 6 למוצר זה.");
     if (operation5 && !annualEmployerAffidavitSatisfied)
       errors.push("בקוד פעולה 5 נדרש תצהיר מעסיק שנתי (סוג מסמך 3) לפחות פעם אחת בשנה.");
     if (errors.length) { const message = shortError(errors.join(" ")); setError(message); notify.error(message); return; }
@@ -818,6 +822,14 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
 
 
           {operation5 ? <section className="payment-panel">
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label htmlFor="collective-agreement-refund">האם השבת הכספים מתבצעת מכוח הסכם קיבוצי? *</label>
+              <select id="collective-agreement-refund" className="input" value={metadataForm.collectiveAgreementRefund == null ? "" : metadataForm.collectiveAgreementRefund ? "yes" : "no"}
+                disabled={readOnly}
+                onChange={(event) => patchMetadata("collectiveAgreementRefund", event.target.value === "" ? null : event.target.value === "yes")}>
+                <option value="">יש לבחור</option><option value="yes">כן — נדרש מסמך מסוג 6</option><option value="no">לא</option>
+              </select>
+            </div>
             <h3>מסמכים מצורפים לדיווח השלילי</h3>
             <div className="notice notice-info" style={{ marginBottom: 12 }}>
               בקוד פעולה 5 (בקשת השבת כספים), תצהיר מעסיק מסוג 3 נדרש לפחות פעם אחת בשנה.
