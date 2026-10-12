@@ -108,10 +108,12 @@ function handleNotice(element: HTMLElement) {
 
 
 function handleServerValidation(event: Event) {
-  const detail = (event as CustomEvent<{ errors?: Record<string, string[]> }>).detail;
+  const detail = (event as CustomEvent<{ errors?: Record<string, string[]>; origin?: HTMLElement | null }>).detail;
   if (!detail?.errors) return;
-  const active = document.activeElement;
-  const scope = active instanceof Element ? findScope(active) : document.body;
+  const active = detail.origin?.isConnected ? detail.origin : document.activeElement;
+  const scope = active instanceof Element
+    ? active.closest('form, [role="dialog"], .app-modal') ?? findScope(active)
+    : document.body;
   const unmatched: string[] = [];
   const fields = Array.from(scope.querySelectorAll<HTMLElement>(".field"));
   for (const [key, messages] of Object.entries(detail.errors)) {
@@ -120,14 +122,22 @@ function handleServerValidation(event: Event) {
       if (typeof message !== "string" || !message.trim()) continue;
       if (key.toLowerCase() === "request") { unmatched.push(message); continue; }
       const normalizedKey = key.split(".").pop()?.replace(/\[\d+\]/g, "").toLowerCase() ?? "";
+      const normalizedCompact = normalizedKey.replace(/[^a-z0-9]/g, "");
       const field = fields.find((candidate) => {
         const control = candidate.querySelector<HTMLInputElement>("input, select, textarea, [role='combobox']");
         const identifiers = [control?.getAttribute("name"), control?.id, candidate.getAttribute("data-field")]
           .filter(Boolean).map((name) => name!.toLowerCase());
-        return identifiers.includes(normalizedKey) || identifiers.some((name) => name.endsWith("." + normalizedKey));
+        return identifiers.some((name) =>
+          name === normalizedKey || name.endsWith("." + normalizedKey) ||
+          name.replace(/[^a-z0-9]/g, "") === normalizedCompact);
       });
       if (field) markField(field, message);
-      else unmatched.push(message);
+      else {
+        const hint = labelHints.find(([pattern]) => pattern.test(message));
+        const hinted = hint ? fieldByLabel(scope, hint[1]) : undefined;
+        if (hinted) markField(hinted, message);
+        else unmatched.push(message);
+      }
     }
   }
   if (unmatched.length) toast.error([...new Set(unmatched)].join(" "));
