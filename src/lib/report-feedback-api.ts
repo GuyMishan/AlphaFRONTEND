@@ -668,12 +668,7 @@ export const reportFeedbackApi = {
       { method: "POST", body, cache: "no-store" },
     );
     if (!response.ok) {
-      let message = `שמירת המסמך נכשלה (${response.status}).`;
-      try {
-        const problem = await response.json();
-        message = problem?.error ?? problem?.detail ?? problem?.title ?? message;
-      } catch { /* empty */ }
-      throw new Error(message);
+      throw new Error(await responseErrorMessage(response, "שמירת המסמך נכשלה."));
     }
     return response.json() as Promise<{
       id: string;
