@@ -1,3 +1,4 @@
+import { responseErrorMessage } from "./api-error-message";
 import { backendFetch } from "./backend-fetch";
 
 export type ReportFeedbackStatus = "all" | "completed" | "attention" | "partial" | "pending" | "not-sent";
@@ -426,14 +427,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (init?.body) headers.set("Content-Type", "application/json");
   const response = await backendFetch(path, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
-    let message = `אירעה שגיאה (${response.status})`;
-    try {
-      const problem = await response.json();
-      message = problem?.error === "treatment_conflict"
-        ? "הטיפול עודכן במקביל על ידי משתמש אחר. רעננו את הפרטים ונסו שוב."
-        : problem?.error ?? problem?.detail ?? problem?.title ?? message;
-    } catch { /* empty */ }
-    throw new Error(message);
+    throw new Error(await responseErrorMessage(response));
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
