@@ -106,6 +106,33 @@ function handleNotice(element: HTMLElement) {
   if (unmatched.length) toast.error(unmatched.join(" "));
 }
 
+
+function handleServerValidation(event: Event) {
+  const detail = (event as CustomEvent<{ errors?: Record<string, string[]> }>).detail;
+  if (!detail?.errors) return;
+  const active = document.activeElement;
+  const scope = active instanceof Element ? findScope(active) : document.body;
+  const unmatched: string[] = [];
+  const fields = Array.from(scope.querySelectorAll<HTMLElement>(".field"));
+  for (const [key, messages] of Object.entries(detail.errors)) {
+    if (!Array.isArray(messages)) continue;
+    for (const message of messages) {
+      if (typeof message !== "string" || !message.trim()) continue;
+      if (key.toLowerCase() === "request") { unmatched.push(message); continue; }
+      const normalizedKey = key.split(".").pop()?.replace(/\[\d+\]/g, "").toLowerCase() ?? "";
+      const field = fields.find((candidate) => {
+        const control = candidate.querySelector<HTMLInputElement>("input, select, textarea, [role='combobox']");
+        const identifiers = [control?.getAttribute("name"), control?.id, candidate.getAttribute("data-field")]
+          .filter(Boolean).map((name) => name!.toLowerCase());
+        return identifiers.includes(normalizedKey) || identifiers.some((name) => name.endsWith("." + normalizedKey));
+      });
+      if (field) markField(field, message);
+      else unmatched.push(message);
+    }
+  }
+  if (unmatched.length) toast.error([...new Set(unmatched)].join(" "));
+}
+
 export function ValidationUxBridge() {
   useEffect(() => {
     const process = (root: ParentNode = document) => root.querySelectorAll<HTMLElement>(".notice.notice-error").forEach(handleNotice);
@@ -126,12 +153,14 @@ export function ValidationUxBridge() {
       const field = target.closest<HTMLElement>(".field-invalid");
       if (field) clearField(field);
     };
+    window.addEventListener("alpha:server-validation", handleServerValidation);
     document.addEventListener("input", clear, true);
     document.addEventListener("change", clear, true);
     document.addEventListener("alpha:field-valid", clear, true);
 
     return () => {
       observer.disconnect();
+      window.removeEventListener("alpha:server-validation", handleServerValidation);
       document.removeEventListener("input", clear, true);
       document.removeEventListener("change", clear, true);
       document.removeEventListener("alpha:field-valid", clear, true);
