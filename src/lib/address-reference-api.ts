@@ -1,3 +1,4 @@
+import { responseErrorMessage } from "./api-error-message";
 import { backendFetch } from "./backend-fetch";
 
 export type CityOption = {
@@ -16,7 +17,7 @@ export type StreetOption = {
 async function request<T>(path: string): Promise<T> {
   const headers = new Headers({ Accept: "application/json" });
   const response = await backendFetch(path, { headers, cache: "no-store" });
-  if (!response.ok) throw new Error(`אירעה שגיאה (${response.status})`);
+  if (!response.ok) throw new Error(await responseErrorMessage(response));
   return response.json() as Promise<T>;
 }
 
