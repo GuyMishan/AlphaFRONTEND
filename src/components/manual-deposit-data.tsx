@@ -824,11 +824,11 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
           {operation5 ? <section className="payment-panel">
             <div className="field" style={{ marginBottom: 12 }}>
               <label htmlFor="collective-agreement-refund">האם השבת הכספים מתבצעת מכוח הסכם קיבוצי? *</label>
-              <select id="collective-agreement-refund" className="input" value={metadataForm.collectiveAgreementRefund == null ? "" : metadataForm.collectiveAgreementRefund ? "yes" : "no"}
+              <UiSelect id="collective-agreement-refund" value={metadataForm.collectiveAgreementRefund == null ? "" : metadataForm.collectiveAgreementRefund ? "yes" : "no"}
                 disabled={readOnly}
                 onChange={(event) => patchMetadata("collectiveAgreementRefund", event.target.value === "" ? null : event.target.value === "yes")}>
                 <option value="">יש לבחור</option><option value="yes">כן — נדרש מסמך מסוג 6</option><option value="no">לא</option>
-              </select>
+              </UiSelect>
             </div>
             <h3>מסמכים מצורפים לדיווח השלילי</h3>
             <div className="notice notice-info" style={{ marginBottom: 12 }}>
