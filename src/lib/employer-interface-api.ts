@@ -66,6 +66,7 @@ export type EmployerInterfaceProductMetadata = {
   workDaysInMonth: number | null;
   lastDeposit: number | null;
   refundReason: number | null;
+  collectiveAgreementRefund: boolean | null;
   paymentMethodCode: number | null;
   employerAccountType: number | null;
   receiverAccountType: number | null;
