@@ -1,3 +1,4 @@
+import { validationErrors } from "./api-error-message";
 import { clearSession, getSession } from "./session";
 
 let sessionExpiryInProgress = false;
@@ -44,6 +45,15 @@ export async function backendFetch(path: string, init?: RequestInit): Promise<Re
     cache: init?.cache ?? "no-store",
     credentials: init?.credentials ?? "same-origin",
   });
+
+  // Notify the shared field-validation bridge without consuming the response body.
+  if (typeof window !== "undefined" && response.status === 400) {
+    const problem = await response.clone().json().catch(() => null);
+    const errors = validationErrors(problem);
+    if (Object.keys(errors).length) {
+      window.dispatchEvent(new CustomEvent("alpha:server-validation", { detail: { errors } }));
+    }
+  }
 
   if (response.status === 401) {
     await expireBrowserSession();
