@@ -148,7 +148,7 @@ export function FeedbackExternalCaseResolver({
   return <section className="feedback-external-case">
     <div className="feedback-resolution-section-head">
       <div>
-        <h3>הערות וטיפול בשגיאה</h3>
+        <h3>הוסף הערה לשגיאה</h3>
         <p>סטטוס: <strong>{statusLabel(externalCase.status)}</strong>{externalCase.assigneeName ? ` · מטפל: ${externalCase.assigneeName}` : " · טרם שויך מטפל"}</p>
       </div>
     </div>
