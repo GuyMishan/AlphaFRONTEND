@@ -1,3 +1,4 @@
+import { responseErrorMessage, apiErrorMessage } from "./api-error-message";
 import { backendFetch } from "./backend-fetch";
 import type { ManualReportKind } from "./types";
 
@@ -97,12 +98,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (init?.body) headers.set("Content-Type", "application/json");
   const response = await backendFetch(path, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
-    let message = `אירעה שגיאה (${response.status})`;
-    try {
-      const problem = await response.json();
-      message = problem?.detail ?? problem?.error ?? problem?.title ?? message;
-    } catch { /* empty response */ }
-    throw new Error(message);
+    throw new Error(await responseErrorMessage(response));
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
@@ -118,9 +114,7 @@ async function uploadEmployerInterface<T>(path: string, file: File, fields?: Rec
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
     const validationIssues = payload?.validation?.issues;
-    const message = payload?.detail ?? payload?.error ?? payload?.title
-      ?? (Array.isArray(validationIssues) && validationIssues.length ? validationIssues.join(" ") : null)
-      ?? `אירעה שגיאה (${response.status})`;
+    const message = apiErrorMessage(response.status, payload);
     throw new Error(message);
   }
   return payload as T;
