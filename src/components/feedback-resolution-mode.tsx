@@ -263,7 +263,9 @@ export function FeedbackResolutionMode({
                 ? <small>מוצר: {primaryProblem.fundCompanyName || primaryProblem.productName}</small>
                 : null}
             </div> : null}
-        {activeGroup.problems.some(problem => problem.feedbackValues.resolutionWorkflowStatus === "document-updated-awaiting-report")
+        {activeGroup.problems.some(problem => problem.feedbackValues.resolutionWorkflowStatus === "source-data-updated-awaiting-report")
+          ? <small role="status">הנתונים הקשורים לשגיאה עודכנו מאז המשוב. נדרשת בדיקה מחדש והשלמת דיווח מתקן/חוזר לפי הצורך; השגיאה עדיין פתוחה.</small>
+          : activeGroup.problems.some(problem => problem.feedbackValues.resolutionWorkflowStatus === "document-updated-awaiting-report")
           ? <small role="status">המסמך הנדרש עודכן מאז המשוב. נדרשת הכללתו בדיווח מתקן/חוזר וקבלת משוב חדש; השגיאה הרשמית עדיין פתוחה.</small>
           : activeGroup.problems.some(problem => problem.feedbackValues.resolutionWorkflowStatus === "feedback-returned-needs-review")
           ? <small role="alert">התקבל משוב חוזר — התיקון טרם אושר ונדרשת בדיקה נוספת.</small>
