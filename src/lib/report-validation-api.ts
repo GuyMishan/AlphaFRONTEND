@@ -1,3 +1,4 @@
+import { responseErrorMessage } from "./api-error-message";
 import { backendFetch } from "./backend-fetch";
 
 export type ReportValidationIssue = {
@@ -30,12 +31,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (init?.body) headers.set("Content-Type", "application/json");
   const response = await backendFetch(path, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
-    let message = `אירעה שגיאה (${response.status})`;
-    try {
-      const problem = await response.json();
-      message = problem?.detail ?? problem?.error ?? problem?.title ?? message;
-    } catch { /* empty */ }
-    throw new Error(message);
+    throw new Error(await responseErrorMessage(response));
   }
   return response.json() as Promise<T>;
 }
