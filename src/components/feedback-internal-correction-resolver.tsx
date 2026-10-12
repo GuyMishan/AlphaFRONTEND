@@ -237,6 +237,16 @@ export function FeedbackInternalCorrectionResolver({
       <p>{group.problems.some(item => [102, 103].includes(item.code))
         ? "לקוד הזה נדרש מסמך מסוג 6 (הצהרת מעסיק להסכם קיבוצי), המשויך למוצר הפנסיוני בדיווח. תצהיר מעסיק כללי מסוג 3 אינו מחליף אותו. בדקו את ההצהרה של העובד והמוצר הרלוונטיים, וצרפו אותה מחדש לגרסת הדיווח הנכונה."
         : "נדרש תצהיר מעסיק כללי מסוג 3. בדקו אם הועלה מסמך תקין בפרופיל המעסיק וצרפו אותו לגרסת הדיווח הרלוונטית. אין צורך בהעלאה נפרדת לכל הפקדה."}</p>
+      {group.problems.some(item => [102, 103].includes(item.code)
+          && item.feedbackValues.negativeCorrectionSourceReportId
+          && item.feedbackValues.negativeCorrectionSourceProductId)
+        ? <a className="btn btn-primary"
+            href={`/reports/new?sourceReportId=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceReportId)?.feedbackValues.negativeCorrectionSourceReportId ?? "")}&sourceProductId=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceProductId)?.feedbackValues.negativeCorrectionSourceProductId ?? "")}&sourceKind=1&sourceMonth=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceMonth)?.feedbackValues.negativeCorrectionSourceMonth ?? "")}`}>
+            פתיחת דיווח שלילי לתיקון המסמך <ArrowLeft size={16} aria-hidden="true" />
+          </a> : null}
+      {group.problems.some(item => [102, 103].includes(item.code)) ? <small>
+        הקישור פותח דיווח שלילי חדש על בסיס הדיווח השוטף המקורי והמוצר הרלוונטי. יש לבדוק את נתוני התנועה והאסמכתאות לפני שליחה כדי להימנע מביטול או החזר כפול.
+      </small> : null}
       {group.problems.some(item => [102, 103].includes(item.code))
         ? Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
             .map(id => <a key={id} className="btn btn-secondary"
