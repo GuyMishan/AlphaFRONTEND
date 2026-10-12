@@ -234,8 +234,16 @@ export function FeedbackInternalCorrectionResolver({
     {reportDeclarations ? <div className="notice notice-info" role="status">
       <strong>תצהיר מעסיק חסר או לא תקין</strong>
       <p>קודים {Array.from(new Set(group.problems.map(item => item.code))).join(", ")} — {group.problems.some(item => [102, 103].includes(item.code)) ? "תצהיר מעסיק בקשר להסכם קיבוצי" : "תצהיר מעסיק"}.</p>
-      <p>יש לבדוק אם התצהיר המתאים קיים ותקין, לתקן אותו ברמת המעסיק ולצרף את המסמך התקין לגרסת הדיווח הרלוונטית. אין צורך במסמך נפרד לכל הפקדה.</p>
-      <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=documents`}>פתיחת מסמכי המעסיק <ArrowLeft size={16} aria-hidden="true" /></a>
+      <p>{group.problems.some(item => [102, 103].includes(item.code))
+        ? "לקוד הזה נדרש מסמך מסוג 6 (הצהרת מעסיק להסכם קיבוצי), המשויך למוצר הפנסיוני בדיווח. תצהיר מעסיק כללי מסוג 3 אינו מחליף אותו. בדקו את ההצהרה של העובד והמוצר הרלוונטיים, וצרפו אותה מחדש לגרסת הדיווח הנכונה."
+        : "נדרש תצהיר מעסיק כללי מסוג 3. בדקו אם הועלה מסמך תקין בפרופיל המעסיק וצרפו אותו לגרסת הדיווח הרלוונטית. אין צורך בהעלאה נפרדת לכל הפקדה."}</p>
+      {group.problems.some(item => [102, 103].includes(item.code))
+        ? Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
+            .map(id => <a key={id} className="btn btn-secondary"
+              href={`/employees/${id}?organizationId=${encodeURIComponent(organizationId)}&employerId=${encodeURIComponent(employerId)}&tab=mix`}>
+              פתיחת מסמכי המוצר של העובד <ArrowLeft size={16} aria-hidden="true" />
+            </a>)
+        : <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=documents`}>פתיחת מסמכי המעסיק <ArrowLeft size={16} aria-hidden="true" /></a>}
       <small>עדכון המסמך בפרופיל אינו משנה קבצים שכבר נשלחו. יש לבדוק את משוב הקופה לפני דיווח חוזר.</small>
     </div> : null}
 
