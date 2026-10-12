@@ -6,7 +6,7 @@
 - `src/lib/app-store.ts` / `use-app-store.ts` — global Zustand state for browser session metadata, authorized scope, persisted organization/employer/employee selection and scope-derived permissions. `src/lib/app-data-cache.ts` de-duplicates `/api/scope` requests and stores the result in Zustand; `AppShell`, `ScopeController` and application screens consume the same global state.
 - `src/components/scope-controller.tsx` — organization/employer scope selection. Dashboard initialization does not emit a synthetic `alpha:scope-change`; only real selection changes trigger dashboard reloads.
 - `src/components/theme-provider.tsx` — theme state.
-- `src/components/validation-ux-bridge.tsx` — maps server/notice validation into field UI.
+- `src/components/validation-ux-bridge.tsx` — maps server/notice validation into field UI; receives normalized RFC 9457 `errors` dictionaries through the shared backend transport and marks matching controls, falling back to a toast.
 
 ## Shared UI and styles
 - `src/components/ui-controls.tsx` — shared input, `UiCheckbox`, date, select, autocomplete, card and portal-based `UiActionMenu` primitives. `UiActionMenu` renders its three-dot menu into `document.body`, sizes vertically to its complete action list without an internal scrollbar, and repositions above the trigger when the full menu fits better there; row actions are therefore not clipped by virtualized table overflow. All checkboxes use `UiCheckbox` rather than `UiInput type="checkbox"` so sizing, focus and accessibility remain consistent.
