@@ -108,39 +108,47 @@ function handleNotice(element: HTMLElement) {
 
 
 function handleServerValidation(event: Event) {
-  const detail = (event as CustomEvent<{ errors?: Record<string, string[]>; origin?: HTMLElement | null }>).detail;
-  if (!detail?.errors) return;
-  const active = detail.origin?.isConnected ? detail.origin : document.activeElement;
-  const scope = active instanceof Element
-    ? active.closest('form, [role="dialog"], .app-modal') ?? findScope(active)
-    : document.body;
-  const unmatched: string[] = [];
+  const detail = (event as CustomEvent<{
+    errors?: Record<string, string[]>;
+    scope?: HTMLElement | null;
+  }>).detail;
+  // The requesting screen owns user-facing error messages (notice/toast).
+  // This bridge only highlights fields, so the same server response is not toasted twice.
+  const scope = detail?.scope;
+  if (!scope?.isConnected || !detail?.errors) return;
   const fields = Array.from(scope.querySelectorAll<HTMLElement>(".field"));
+
+  const canonical = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
   for (const [key, messages] of Object.entries(detail.errors)) {
-    if (!Array.isArray(messages)) continue;
-    for (const message of messages) {
-      if (typeof message !== "string" || !message.trim()) continue;
-      if (key.toLowerCase() === "request") { unmatched.push(message); continue; }
-      const normalizedKey = key.split(".").pop()?.replace(/\[\d+\]/g, "").toLowerCase() ?? "";
-      const normalizedCompact = normalizedKey.replace(/[^a-z0-9]/g, "");
-      const field = fields.find((candidate) => {
-        const control = candidate.querySelector<HTMLInputElement>("input, select, textarea, [role='combobox']");
-        const identifiers = [control?.getAttribute("name"), control?.id, candidate.getAttribute("data-field")]
-          .filter(Boolean).map((name) => name!.toLowerCase());
-        return identifiers.some((name) =>
-          name === normalizedKey || name.endsWith("." + normalizedKey) ||
-          name.replace(/[^a-z0-9]/g, "") === normalizedCompact);
+    if (key.toLowerCase() === "request" || !Array.isArray(messages)) continue;
+    const message = messages.find(item => typeof item === "string" && item.trim());
+    if (!message) continue;
+
+    const parts = key.split(".").filter(Boolean);
+    const leaf = parts.at(-1)?.replace(/\\[\\d+\\]/g, "") ?? "";
+    if (!leaf) continue;
+    const target = canonical(leaf);
+    const candidates = fields.filter(field => {
+      const controls = field.querySelectorAll<HTMLElement>(
+        "input, select, textarea, [role='combobox']"
+      );
+      const identifiers = [
+        field.dataset.field,
+        ...Array.from(controls).flatMap(control => [
+          control.getAttribute("name"),
+          control.id
+        ])
+      ].filter((value): value is string => Boolean(value));
+      return identifiers.some(value => {
+        const lastSegment = value.split(".").at(-1) ?? "";
+        return canonical(lastSegment) === target;
       });
-      if (field) markField(field, message);
-      else {
-        const hint = labelHints.find(([pattern]) => pattern.test(message));
-        const hinted = hint ? fieldByLabel(scope, hint[1]) : undefined;
-        if (hinted) markField(hinted, message);
-        else unmatched.push(message);
-      }
-    }
+    });
+
+    // Ambiguous or missing mappings are handled by the screen's error message.
+    // Never paint an unrelated field red.
+    if (candidates.length === 1) markField(candidates[0], message);
   }
-  if (unmatched.length) toast.error([...new Set(unmatched)].join(" "));
 }
 
 export function ValidationUxBridge() {
