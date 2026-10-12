@@ -44,16 +44,23 @@ export function FeedbackDecisionResolver({
 }) {
   const router = useRouter();
   const [busyProblemId, setBusyProblemId] = useState("");
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [note, setNote] = useState("");
   const [movementCandidates, setMovementCandidates] = useState<Record<string, Awaited<ReturnType<typeof reportFeedbackApi.originalMovementCandidates>>["items"]>>({});
   const [selectedMovement, setSelectedMovement] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
 
   const decisionProblems = group.problems.filter(problem => problem.resolutionType === "decision");
   if (!decisionProblems.length) return null;
+  const requiresGroupNote = decisionProblems.some(problem => {
+    const actions = new Set(problem.availableActions);
+    return actions.has("openExternalCase") || actions.has("reconcile") || problem.code === 50;
+  });
+  const latestNotes = [...new Set(decisionProblems
+    .map(problem => problem.latestDecisionNote?.trim())
+    .filter((value): value is string => Boolean(value)))];
 
   async function decide(problem: FeedbackResolutionProblem, outcome: DecisionOutcome) {
-    const note = notes[problem.problemId]?.trim() ?? "";
+    const note = note.trim();
     if ((["external", "reconcile", "link-original"].includes(outcome)
       || (problem.code === 50 && outcome === "correction")) && !note) {
       setError("יש לכתוב הערה קצרה שמסבירה את ההחלטה לפני העברת הטיפול.");
@@ -99,10 +106,24 @@ export function FeedbackDecisionResolver({
   return <section className="feedback-decision-resolver" aria-label="בדיקה והחלטה">
     {error ? <div className="notice notice-error">{error}</div> : null}
 
+    {latestNotes.length > 0 ? <div className="feedback-decision-last-note">
+      <small>הערה אחרונה</small>
+      {latestNotes.map((value, index) => <span key={index}>{value}</span>)}
+    </div> : null}
+    {requiresGroupNote ? <label className="feedback-decision-note">
+      <span>הערת טיפול</span>
+      <UiTextarea
+        rows={3}
+        maxLength={4000}
+        value={note}
+        disabled={Boolean(busyProblemId)}
+        placeholder="לדוגמה: נבדקו נתוני המעסיק והמשוב, נדרש בירור מול הגוף המוסדי..."
+        onChange={(event) => setNote(event.target.value)}
+      />
+    </label> : null}
     <div className="feedback-decision-list">
       {decisionProblems.map(problem => {
         const actions = new Set(problem.availableActions);
-        const requiresNote = actions.has("openExternalCase") || actions.has("reconcile") || problem.code === 50;
         const latest = latestDecisionLabel(problem.latestDecision);
         const busy = busyProblemId === problem.problemId;
 
@@ -115,26 +136,6 @@ export function FeedbackDecisionResolver({
             שכבר נקלטה. בחרו תיקון בדיווח רק כשנדרש תיקון אמיתי; אם מצב
             ההעברה אינו ברור, פתחו טיפול חיצוני. שמירת תשלום כשלעצמה אינה סוגרת את התקלה.
           </div> : null}
-
-          {problem.latestDecisionNote ? <div className="feedback-decision-last-note">
-            <small>הערה אחרונה</small>
-            <span>{problem.latestDecisionNote}</span>
-          </div> : null}
-
-          {requiresNote ? <label className="feedback-decision-note">
-            <span>הערת טיפול</span>
-            <UiTextarea
-              rows={3}
-              maxLength={4000}
-              value={notes[problem.problemId] ?? ""}
-              disabled={busy}
-              placeholder="לדוגמה: נבדקו נתוני המעסיק והמשוב, נדרש בירור מול הגוף המוסדי..."
-              onChange={(event) => setNotes(current => ({
-                ...current,
-                [problem.problemId]: event.target.value,
-              }))}
-            />
-          </label> : null}
 
           <div className="feedback-decision-actions">
             {actions.has("confirm") ? <button
@@ -169,7 +170,7 @@ export function FeedbackDecisionResolver({
               className="btn btn-secondary"
               disabled={busy || !group.canExecute}
               onClick={() => void (async () => {
-                const note = notes[problem.problemId]?.trim() ?? "";
+                const note = note.trim();
                 if (!note) {
                   setError("יש לכתוב הערה קצרה לפני פתיחת תיק טיפול חיצוני.");
                   return;
@@ -201,7 +202,7 @@ export function FeedbackDecisionResolver({
               className="btn btn-secondary"
               disabled={busy || !group.canExecute}
               onClick={() => void (async () => {
-                const note = notes[problem.problemId]?.trim() ?? "";
+                const note = note.trim();
                 if (!note) {
                   setError("יש לכתוב הערה קצרה לפני פתיחת תיק התאמת כספים.");
                   return;
