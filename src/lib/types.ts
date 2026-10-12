@@ -265,6 +265,12 @@ export type ManualReportEmployeeDetail = Omit<ManualReportEmployeeSummary, "prod
 };
 
 export type ApiProblem = {
+  type?: string;
+  errorCode?: string;
+  traceId?: string;
+  instance?: string;
+  errors?: Record<string, string[]>;
+  resourceStatus?: number | string;
   title?: string;
   detail?: string;
   error?: string;
