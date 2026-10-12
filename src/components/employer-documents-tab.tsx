@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { backendFetch } from "@/lib/backend-fetch";
-import { UiSelect } from "@/components/ui-controls";
 import { UiFileUpload } from "@/components/ui-file-upload";
 
 export type EmployerDocument = { id: string; documentTypeCode: number; employmentId: string | null; employeePensionProductId: string | null; originalFileName: string; sizeBytes: number; createdAt: string };
@@ -23,7 +22,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
   onChanged?: () => Promise<void>; productType?: number;
 }) {
   const [documents, setDocuments] = useState<EmployerDocument[]>([]);
-  const [type, setType] = useState(employmentId ? 4 : 3);
+  const [uploadType, setUploadType] = useState<number | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -57,7 +56,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
     try {
       const data = new FormData();
       data.set("file", file);
-      data.set("documentTypeCode", String(availableTypes.some(item => item.code === type) ? type : availableTypes[0]?.code ?? type));
+      data.set("documentTypeCode", String(uploadType ?? availableTypes[0]?.code ?? 3));
       if (employmentId) data.set("employmentId", employmentId);
       if (employeePensionProductId) data.set("employeePensionProductId", employeePensionProductId);
       const response = await backendFetch(base, { method: "POST", body: data });
@@ -66,6 +65,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
       if (loadedDocuments === undefined) setDocuments(current => [created, ...current]);
       else await onChanged?.();
       setFile(null);
+      setUploadType(null);
       toast.success(employmentId ? "המסמך נשמר במוצר הפנסיוני" : "המסמך נשמר בפרופיל המעסיק");
     } catch (error) { toast.error(error instanceof Error ? error.message : "שמירת המסמך נכשלה"); }
     finally { setBusy(false); }
@@ -84,21 +84,47 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
   }
   return <section className={embedded ? "profile-form-section" : "card profile-card"} aria-label={employmentId ? "מסמכי עובד" : "מסמכי מעסיק"}>
     <div className="card-head"><div><h2>מסמכים</h2><span style={{ color: "var(--muted)" }}>{employmentId ? "טפסים רשמיים המשויכים למוצר הפנסיוני הזה." : "טפסים רשמיים של המעסיק."} צירוף לדיווח נעשה בנפרד.</span></div></div>
-    {canEdit ? <form className="form" onSubmit={upload}>
-      <div className="grid two-cols">
-        <div className="field"><label htmlFor={`employer-document-type-${employeePensionProductId ?? "employer"}`}>סוג מסמך</label><UiSelect id={`employer-document-type-${employeePensionProductId ?? "employer"}`} value={availableTypes.some(item => item.code === type) ? type : availableTypes[0]?.code ?? 3} onChange={e => setType(Number(e.target.value))}>{availableTypes.map(item => <option key={item.code} value={item.code}>{item.label}</option>)}</UiSelect></div>
-
-      </div>
-      <div className="field"><UiFileUpload id={`employer-document-file-${employeePensionProductId ?? "employer"}`} label="בחירת קובץ PDF" fileName={file?.name} accept=".pdf,application/pdf" maxBytes={10 * 1024 * 1024} disabled={busy} onFileSelected={setFile} onInvalid={toast.error} /></div>
-      <div className="form-actions"><button type="submit" className="btn btn-primary" disabled={busy || !file}>{busy ? "מעלה..." : "העלאת מסמך"}</button></div>
-    </form> : null}
-    {loading ? <div className="empty">טוען מסמכים...</div> : visibleDocuments.length === 0 ? <div className="empty">עדיין אין מסמכים.</div> :
-      <div className="employer-documents-list">{visibleDocuments.map(doc => <div key={doc.id} className="row" style={{ justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--border)" }}>
-        <div><b>{types.find(item => item.code === doc.documentTypeCode)?.label ?? "מסמך"}</b><div>{doc.originalFileName}</div><small>{new Date(doc.createdAt).toLocaleDateString("he-IL")} · {Math.round(doc.sizeBytes / 1024)} KB</small></div>
-        <div className="row" style={{ gap: 8 }}>
-          <a className="btn btn-secondary" href={`/api/backend${base}/${doc.id}/file`}>הורדה</a>
-          {canEdit ? <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void remove(doc.id)}>מחיקה</button> : null}
-        </div>
-      </div>)}</div>}
+    {loading ? <div className="empty">טוען מסמכים...</div> : <div style={{ width: "100%", overflowX: "auto" }}>
+      <table className="table" style={{ width: "100%", minWidth: 440, borderCollapse: "collapse" }}>
+        <thead><tr>
+          <th scope="col" style={{ textAlign: "right", padding: 12 }}>סוג מסמך</th>
+          <th scope="col" style={{ textAlign: "right", padding: 12 }}>מסמך שהועלה</th>
+          <th scope="col" style={{ textAlign: "right", padding: 12 }}>פעולות</th>
+        </tr></thead>
+        <tbody>
+          {availableTypes.map(item => {
+            const existing = visibleDocuments.filter(doc => doc.documentTypeCode === item.code)
+              .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+            return <tr key={item.code} style={{ borderTop: "1px solid var(--border)" }}>
+              <th scope="row" style={{ textAlign: "right", padding: 12, verticalAlign: "top" }}>{item.label}</th>
+              <td style={{ padding: 12, verticalAlign: "top" }}>
+                {existing.length ? existing.map(doc => <div key={doc.id} style={{ marginBottom: 8 }}>
+                  <a href={`/api/backend${base}/${doc.id}/file`}>{doc.originalFileName}</a>
+                  <small style={{ display: "block", color: "var(--muted)" }}>{new Date(doc.createdAt).toLocaleDateString("he-IL")} · {Math.round(doc.sizeBytes / 1024)} KB</small>
+                </div>) : <span style={{ color: "var(--muted)" }}>לא הועלה מסמך</span>}
+              </td>
+              <td style={{ padding: 12, verticalAlign: "top" }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {canEdit ? <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => { setUploadType(current => current === item.code ? null : item.code); setFile(null); }}>
+                    {uploadType === item.code ? "ביטול" : existing.length ? "העלאת גרסה נוספת" : "העלאה"}
+                  </button> : null}
+                  {canEdit ? existing.map(doc => <button key={doc.id} type="button" className="btn btn-secondary" disabled={busy}
+                    onClick={() => void remove(doc.id)} aria-label={`מחיקת ${doc.originalFileName}`}>מחיקה</button>) : null}
+                </div>
+                {canEdit && uploadType === item.code ? <form onSubmit={upload} style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                  <UiFileUpload id={`employer-document-file-${employeePensionProductId ?? "employer"}-${item.code}`}
+                    label="בחירת קובץ PDF" fileName={file?.name} accept=".pdf,application/pdf"
+                    maxBytes={10 * 1024 * 1024} disabled={busy}
+                    onFileSelected={setFile} onInvalid={toast.error} />
+                  <button type="submit" className="btn btn-primary" disabled={busy || !file}>
+                    {busy ? "מעלה..." : "שמירת מסמך"}
+                  </button>
+                </form> : null}
+              </td>
+            </tr>;
+          })}
+        </tbody>
+      </table>
+    </div>}
   </section>;
 }
