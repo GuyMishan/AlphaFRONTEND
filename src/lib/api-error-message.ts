@@ -92,6 +92,14 @@ export function apiErrorMessage(status: number, value: unknown, fallback?: strin
   return humanText(body?.error) ?? humanText(fallback) ?? "לא ניתן להשלים את הפעולה. בדקו את הפרטים ונסו שוב.";
 }
 
+export function problemCode(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  const body = value as { errorCode?: unknown; error?: unknown };
+  const code = typeof body.errorCode === "string" ? body.errorCode : body.error;
+  return typeof code === "string" && machineCode.test(code)
+    ? code.toUpperCase().replace(/-/g, "_") : "";
+}
+
 export async function responseErrorMessage(response: Response, fallback?: string): Promise<string> {
   const body: unknown = await response.json().catch(() => null);
   return apiErrorMessage(response.status, body, fallback);
