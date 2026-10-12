@@ -619,6 +619,22 @@ export default function NewReportPage() {
             reportProductIds: requestedSourceProductId && selectedSourceReportId === requestedSourceReportId ? [requestedSourceProductId] : undefined,
           });
           setManualReportId(report.id); setSelectedIds(await loadReportEmploymentIds(report.id));
+          if (reportKind === 3 && resolutionResolver === "documents" && requestedSourceProductId
+            && selectedSourceReportId === requestedSourceReportId) {
+            const page = await manualDepositsApi.list(scope.organizationId, scope.employerId, report.id, "", 0, 10);
+            const selected = page.items.find(item => item.sourceReportProductId === requestedSourceProductId)
+              ?? (page.items.length === 1 ? page.items[0] : null);
+            if (selected) {
+              const current = await employerInterfaceApi.getProductMetadata(
+                scope.organizationId, scope.employerId, report.id, selected.id);
+              await employerInterfaceApi.updateProductMetadata(
+                scope.organizationId, scope.employerId, report.id, selected.id,
+                { ...current, operationCode: 5 });
+              setFocusedReportProductId(selected.id);
+              setStep(3);
+              return;
+            }
+          }
         }
       }
       if (step === 1 && manualReportId) {
