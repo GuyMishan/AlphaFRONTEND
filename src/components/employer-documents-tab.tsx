@@ -98,17 +98,22 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
           <strong key="type">{item.label}</strong>,
           <div key="file">
             {existing.length ? existing.map(doc => <div key={doc.id} style={{ marginBottom: 6 }}>
-              <a href={`/api/backend${base}/${doc.id}/file`}>{doc.originalFileName}</a>
+              <span>{doc.originalFileName}</span>
               <small style={{ display: "block", color: "var(--muted)" }}>{new Date(doc.createdAt).toLocaleDateString("he-IL")} · {Math.round(doc.sizeBytes / 1024)} KB</small>
             </div>) : <span style={{ color: "var(--muted)" }}>לא הועלה מסמך</span>}
           </div>,
           <div key="actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {canEdit ? <UiFileUpload id={`employer-document-file-${employeePensionProductId ?? "employer"}-${item.code}`}
-              label={existing.length ? "העלאת גרסה נוספת" : "העלאה"} accept=".pdf,application/pdf"
+            {existing.map(doc => <div key={doc.id} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <a className="btn btn-secondary" href={`/api/backend${base}/${doc.id}/file`}
+                aria-label={`הורדת ${doc.originalFileName}`}>הורדה</a>
+              {canEdit ? <button type="button" className="btn btn-secondary" disabled={busy}
+                onClick={() => void remove(doc.id)} aria-label={`מחיקת ${doc.originalFileName}`}>מחיקה</button> : null}
+            </div>)}
+            {canEdit && existing.length === 0 ? <UiFileUpload
+              id={`employer-document-file-${employeePensionProductId ?? "employer"}-${item.code}`}
+              label="העלאה" className="btn btn-secondary" accept=".pdf,application/pdf"
               maxBytes={10 * 1024 * 1024} disabled={busy} busy={busy}
               onFileSelected={(selected) => upload(selected, item.code)} onInvalid={toast.error} /> : null}
-            {canEdit ? existing.map(doc => <button key={doc.id} type="button" className="btn btn-secondary" disabled={busy}
-              onClick={() => void remove(doc.id)} aria-label={`מחיקת ${doc.originalFileName}`}>מחיקה</button>) : null}
           </div>
         ];
       }}
