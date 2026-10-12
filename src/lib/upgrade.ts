@@ -1,4 +1,5 @@
 import type { ApiProblem } from "./types";
+import { problemCode } from "./api-error-message";
 
 export type UpgradeReason = "employers" | "active_employees" | "users" | "feature";
 
@@ -19,13 +20,13 @@ export function openUpgradeDialog(detail: UpgradeDialogDetail) {
 
 export function upgradeDetailFromProblem(problem?: ApiProblem): UpgradeDialogDetail | null {
   if (!problem) return null;
-  if (problem.error === "plan_limit_reached") {
+  if (problemCode(problem) === "PLAN_LIMIT_REACHED") {
     const reason = problem.limit === "employers" || problem.limit === "active_employees" || problem.limit === "users"
       ? problem.limit
       : null;
     return reason ? { reason, current: problem.current, maximum: problem.maximum } : null;
   }
-  if (problem.error === "feature_not_available") {
+  if (problemCode(problem) === "FEATURE_NOT_AVAILABLE") {
     return { reason: "feature", feature: problem.feature };
   }
   return null;
