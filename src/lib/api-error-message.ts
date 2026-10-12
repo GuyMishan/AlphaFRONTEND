@@ -42,6 +42,28 @@ const humanText = (value: unknown): string | null =>
     ? value.trim()
     : null;
 
+
+export type FieldValidationErrors = Record<string, string[]>;
+
+/** Normalize RFC 9457 ValidationProblemDetails and previous array-based errors. */
+export function validationErrors(value: unknown): FieldValidationErrors {
+  if (!value || typeof value !== "object") return {};
+  const problem = value as { errors?: unknown };
+  const errors = problem.errors;
+  const normalized: FieldValidationErrors = {};
+  if (Array.isArray(errors)) {
+    const messages = errors.filter((x): x is string => typeof x === "string" && Boolean(x.trim()));
+    if (messages.length) normalized.request = messages;
+  } else if (errors && typeof errors === "object") {
+    for (const [key, items] of Object.entries(errors)) {
+      const messages = (Array.isArray(items) ? items : typeof items === "string" ? [items] : [])
+        .filter((x): x is string => typeof x === "string" && Boolean(x.trim()));
+      if (messages.length) normalized[key] = messages;
+    }
+  }
+  return normalized;
+}
+
 export function apiErrorMessage(status: number, value: unknown, fallback?: string): string {
   const body = value && typeof value === "object" ? value as ApiProblemBody : null;
   const code = typeof body?.errorCode === "string"
@@ -50,11 +72,7 @@ export function apiErrorMessage(status: number, value: unknown, fallback?: strin
       ? body.error.toUpperCase().replace(/-/g, "_")
       : "";
 
-  const fromValidation = body?.errors && typeof body.errors === "object"
-    ? Object.values(body.errors as Record<string, unknown>)
-        .flatMap(value => Array.isArray(value) ? value : [])
-        .map(humanText).find(Boolean)
-    : null;
+  const fromValidation = Object.values(validationErrors(body)).flat().map(humanText).find(Boolean) ?? null;
   const fromIssues = Array.isArray(body?.validation?.issues)
     ? body.validation.issues.map(humanText).find(Boolean)
     : null;
