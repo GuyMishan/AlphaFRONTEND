@@ -1,3 +1,4 @@
+import { responseErrorMessage } from "./api-error-message";
 import { backendFetch } from "./backend-fetch";
 
 export type ManualDepositContribution = {
@@ -69,7 +70,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   headers.set("Accept", "application/json");
   if (init?.body) headers.set("Content-Type", "application/json");
   const response = await backendFetch(path, { ...init, headers, cache: "no-store" });
-  if (!response.ok) throw new Error(`אירעה שגיאה (${response.status})`);
+  if (!response.ok) throw new Error(await responseErrorMessage(response));
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
