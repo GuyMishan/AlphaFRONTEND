@@ -625,7 +625,7 @@ export default function NewReportPage() {
             const selected = page.items.find(item => item.sourceReportProductId === requestedSourceProductId)
               ?? (page.items.length === 1 ? page.items[0] : null);
             if (selected) {
-              const current = await employerInterfaceApi.getProductMetadata(
+              const current = await employerInterfaceApi.productMetadata(
                 scope.organizationId, scope.employerId, report.id, selected.id);
               await employerInterfaceApi.updateProductMetadata(
                 scope.organizationId, scope.employerId, report.id, selected.id,
