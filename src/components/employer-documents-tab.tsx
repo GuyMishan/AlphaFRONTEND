@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { backendFetch } from "@/lib/backend-fetch";
 import { UiFileUpload } from "@/components/ui-file-upload";
+import { DataTable } from "@/components/data-table";
 
 export type EmployerDocument = { id: string; documentTypeCode: number; employmentId: string | null; employeePensionProductId: string | null; originalFileName: string; sizeBytes: number; createdAt: string };
 const types = [
@@ -82,40 +83,35 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
   }
   return <section className={embedded ? "profile-form-section" : "card profile-card"} aria-label={employmentId ? "מסמכי עובד" : "מסמכי מעסיק"}>
     <div className="card-head"><div><h2>מסמכים</h2><span style={{ color: "var(--muted)" }}>{employmentId ? "טפסים רשמיים המשויכים למוצר הפנסיוני הזה." : "טפסים רשמיים של המעסיק."} צירוף לדיווח נעשה בנפרד.</span></div></div>
-    {loading ? <div className="empty">טוען מסמכים...</div> : <div style={{ width: "100%", overflowX: "auto" }}>
-      <table className="table" style={{ width: "100%", minWidth: 440, borderCollapse: "collapse" }}>
-        <thead><tr>
-          <th scope="col" style={{ textAlign: "right", padding: 12 }}>סוג מסמך</th>
-          <th scope="col" style={{ textAlign: "right", padding: 12 }}>מסמך שהועלה</th>
-          <th scope="col" style={{ textAlign: "right", padding: 12 }}>פעולות</th>
-        </tr></thead>
-        <tbody>
-          {availableTypes.map(item => {
-            const existing = visibleDocuments.filter(doc => doc.documentTypeCode === item.code)
-              .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
-            return <tr key={item.code} style={{ borderTop: "1px solid var(--border)" }}>
-              <th scope="row" style={{ textAlign: "right", padding: 12, verticalAlign: "top" }}>{item.label}</th>
-              <td style={{ padding: 12, verticalAlign: "top" }}>
-                {existing.length ? existing.map(doc => <div key={doc.id} style={{ marginBottom: 8 }}>
-                  <a href={`/api/backend${base}/${doc.id}/file`}>{doc.originalFileName}</a>
-                  <small style={{ display: "block", color: "var(--muted)" }}>{new Date(doc.createdAt).toLocaleDateString("he-IL")} · {Math.round(doc.sizeBytes / 1024)} KB</small>
-                </div>) : <span style={{ color: "var(--muted)" }}>לא הועלה מסמך</span>}
-              </td>
-              <td style={{ padding: 12, verticalAlign: "top" }}>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {canEdit ? <UiFileUpload id={`employer-document-file-${employeePensionProductId ?? "employer"}-${item.code}`}
-                    label={existing.length ? "העלאת גרסה נוספת" : "העלאה"} accept=".pdf,application/pdf"
-                    maxBytes={10 * 1024 * 1024} disabled={busy} busy={busy}
-                    onFileSelected={(selected) => upload(selected, item.code)} onInvalid={toast.error} /> : null}
-                  {canEdit ? existing.map(doc => <button key={doc.id} type="button" className="btn btn-secondary" disabled={busy}
-                    onClick={() => void remove(doc.id)} aria-label={`מחיקת ${doc.originalFileName}`}>מחיקה</button>) : null}
-                </div>
-
-              </td>
-            </tr>;
-          })}
-        </tbody>
-      </table>
-    </div>}
+    <DataTable
+      items={availableTypes}
+      columns={[{ key: "type", label: "סוג מסמך", width: "28%" }, { key: "file", label: "מסמך שהועלה", width: "42%" }, { key: "actions", label: "פעולות", width: "30%" }]}
+      rowKey={(item) => String(item.code)}
+      rowHeight={92}
+      minTableWidth={440}
+      loading={loading}
+      maxHeight={500}
+      renderCells={(item) => {
+        const existing = visibleDocuments.filter(doc => doc.documentTypeCode === item.code)
+          .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+        return [
+          <strong key="type">{item.label}</strong>,
+          <div key="file">
+            {existing.length ? existing.map(doc => <div key={doc.id} style={{ marginBottom: 6 }}>
+              <a href={`/api/backend${base}/${doc.id}/file`}>{doc.originalFileName}</a>
+              <small style={{ display: "block", color: "var(--muted)" }}>{new Date(doc.createdAt).toLocaleDateString("he-IL")} · {Math.round(doc.sizeBytes / 1024)} KB</small>
+            </div>) : <span style={{ color: "var(--muted)" }}>לא הועלה מסמך</span>}
+          </div>,
+          <div key="actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {canEdit ? <UiFileUpload id={`employer-document-file-${employeePensionProductId ?? "employer"}-${item.code}`}
+              label={existing.length ? "העלאת גרסה נוספת" : "העלאה"} accept=".pdf,application/pdf"
+              maxBytes={10 * 1024 * 1024} disabled={busy} busy={busy}
+              onFileSelected={(selected) => upload(selected, item.code)} onInvalid={toast.error} /> : null}
+            {canEdit ? existing.map(doc => <button key={doc.id} type="button" className="btn btn-secondary" disabled={busy}
+              onClick={() => void remove(doc.id)} aria-label={`מחיקת ${doc.originalFileName}`}>מחיקה</button>) : null}
+          </div>
+        ];
+      }}
+    />
   </section>;
 }
