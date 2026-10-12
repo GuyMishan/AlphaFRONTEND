@@ -7,6 +7,19 @@ import { alphaApi } from "@/lib/api";
 import { reportFeedbackApi, type FeedbackResolutionGroup } from "@/lib/report-feedback-api";
 import type { Employee } from "@/lib/types";
 
+// Match employee comparison fields to the official error being resolved.
+const errorFields: Record<number, readonly string[]> = {
+  4: ["identifier", "identifierType"],
+  11: ["identifier"],
+  19: ["employmentStartDate"],
+  33: ["employmentStartDate"],
+  34: ["employmentStartDate"],
+  44: ["employmentStartDate"],
+  62: ["identifier", "identifierType"],
+  78: ["identifier", "identifierType"],
+  86: ["identifier", "identifierType"],
+};
+
 const fields = [
   ["identifierType", "סוג מזהה"],
   ["identifier", "מספר מזהה"],
@@ -56,6 +69,7 @@ export function FeedbackEmployeeResolver({
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
+  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
 
   useEffect(() => {
     if (!employmentId) {
@@ -84,10 +98,17 @@ export function FeedbackEmployeeResolver({
 
   const comparison = useMemo(() => {
     if (!problem) return [];
-    const changed = fields.filter(([key]) =>
-      (problem.reportedValues[key] ?? "") !== (problem.currentValues[key] ?? ""));
-    const selected = changed.length ? changed : fields.filter(([key]) =>
+    const allowed = new Set(errorFields[problem.code] ?? []);
+    const candidates = allowed.size
+      ? fields.filter(([key]) => allowed.has(key))
+      : fields.filter(([key, label]) => {
+        const normalizedDescription = problem.description.replace(/["״׳'\-]/g, "").toLowerCase();
+        const normalizedLabel = label.replace(/["״׳'\-]/g, "").toLowerCase();
+        return normalizedDescription.includes(normalizedLabel);
+      });
+    const selected = candidates.filter(([key]) =>
       problem.reportedValues[key] != null || problem.currentValues[key] != null);
+    // Unknown fields must not expose an unrelated full employee profile.
     return selected.map(([key, label]) => ({
       key,
       label,
@@ -101,23 +122,23 @@ export function FeedbackEmployeeResolver({
   return <section className="feedback-employee-resolver" aria-label="פתרון פרטי עובד">
     <div className="feedback-resolution-section-head">
       <div>
-        <h3>בדיקת פרטי העובד</h3>
-        <p>הדיווח המקורי נשאר היסטורי ולא משתנה. עדכון העובד מועתק לגרסת תיקון נפרדת, והשגיאה נשארת פתוחה עד שהדיווח החוזר נשלח.</p>
+        <h3>השוואת הנתון שדורש תיקון</h3>
+        <p>הנתון בכרטיס העובד מול הערך שנשלח בדיווח. הדיווח המקורי נשמר ללא שינוי.</p>
       </div>
     </div>
 
-    <div className="feedback-resolution-compare" role="table" aria-label="השוואת פרטי עובד">
+    {comparison.length > 0 ? <div className="feedback-resolution-compare" role="table" aria-label="השוואת פרטי עובד">
       <div className="feedback-resolution-compare-head" role="row">
         <b role="columnheader">שדה</b>
-        <b role="columnheader">בדיווח</b>
-        <b role="columnheader">כיום</b>
+        <b role="columnheader">בדיווח שנשלח</b>
+        <b role="columnheader">בכרטיס העובד</b>
       </div>
       {comparison.map(row => <div className="feedback-resolution-compare-row" role="row" key={row.key}>
         <span role="cell">{row.label}</span>
         <span role="cell" dir="auto">{row.reported}</span>
         <span role="cell" dir="auto">{row.current}</span>
       </div>)}
-    </div>
+    </div> : <div className="notice notice-info">לא נמצאו שני ערכים זמינים להשוואה עבור השדה של השגיאה. אפשר לבדוק את הפרטים בכרטיס העובד.</div>}
 
     {!canEdit ? <div className="notice notice-error">
       <AlertTriangle size={16} aria-hidden="true" />אין לך הרשאת עריכת עובד. ניתן לצפות בהשוואה אך לא לשנות נתונים.
@@ -131,7 +152,14 @@ export function FeedbackEmployeeResolver({
     {loading ? <div className="empty">טוען את פרטי העובד...</div> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
 
-    {!loading && !error && employee ? <div className="feedback-resolution-employee-form">
+    {!loading && !error && employee && canEdit ? <button
+      type="button"
+      className="btn btn-secondary"
+      aria-expanded={showEmployeeForm}
+      onClick={() => setShowEmployeeForm(value => !value)}
+    >{showEmployeeForm ? "סגירת עריכת כרטיס העובד" : "תיקון בכרטיס העובד"}</button> : null}
+
+    {!loading && !error && employee && showEmployeeForm ? <div className="feedback-resolution-employee-form">
       <EmployeeForm
         key={`${employee.id}:${formVersion}`}
         organizationId={organizationId}
