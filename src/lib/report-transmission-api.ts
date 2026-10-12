@@ -1,4 +1,4 @@
-import { apiErrorMessage } from "./api-error-message";
+import { apiErrorMessage, problemCode } from "./api-error-message";
 import { backendFetch } from "./backend-fetch";
 import { employerInterfaceApi } from "./employer-interface-api";
 
@@ -53,15 +53,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     let message = `אירעה שגיאה (${response.status})`;
     try {
       const problem = await response.json();
-      message = problem?.error === "payment_account_required"
+      const code = problemCode(problem);
+      message = code === "PAYMENT_ACCOUNT_REQUIRED"
         ? "יש לבחור חשבון תשלום פעיל לדיווח."
-        : problem?.error === "bank_mandate_required"
+        : code === "BANK_MANDATE_REQUIRED"
           ? "לא ניתן לשלוח את הדיווח ללא הרשאה פעילה לחיוב חשבון הבנק שנבחר."
-          : problem?.error === "billing_account_required"
+          : code === "BILLING_ACCOUNT_REQUIRED"
             ? "לא הוגדר Billing Account עבור הגורם שמחויב בפועל."
-            : problem?.error === "billing_payment_method_not_active"
+            : code === "BILLING_PAYMENT_METHOD_NOT_ACTIVE"
               ? "אמצעי התשלום של Alpha אינו פעיל ולכן לא ניתן לשדר דיווחים."
-              : problem?.error === "billing_payment_method_reference_required"
+              : code === "BILLING_PAYMENT_METHOD_REFERENCE_REQUIRED"
                 ? "אמצעי התשלום מסומן כפעיל אך חסר token או mandate reference תקין."
                 : apiErrorMessage(response.status, problem);
     } catch { /* empty */ }
