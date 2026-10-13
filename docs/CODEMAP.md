@@ -57,6 +57,7 @@ Server routes: `src/app/api/backend/[...path]/route.ts` (proxy) and `src/app/api
 
 ### Pension products and reference data
 - `pension/components/pension-products-editor.tsx` — the shared product/contribution editor (employee pension mix and report drafts); `pension-fund-select.tsx`, `salary-layer-select.tsx`, `contribution-math.ts`.
+- `pension/components/pension-products-editor.tsx` validates local, status-independent 006 input rules (e.g. insurance exempt payments/code 74, monetary precision, policy length and product dates) in both employee and report editors; salaried Regulation-19 relationship rules remain employee-only until the report's deposit status is known.
 - `reference-data/` — banks, branches, cities, streets, option lists, salary layers and the pension-editor option bundle; `reference-option-select.tsx`, `address-autocomplete-fields.tsx`. Autocompletes load suggestions only when opened.
 
 ### Reporting (Employer Interface 006)

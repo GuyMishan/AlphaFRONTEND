@@ -160,7 +160,16 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
     if (!populated.length) return `מוצר ${productIndex + 1}: יש להזין לפחות רכיב הפקדה אחד ב${label}.`;
     for (const item of populated) {
       const pct = Number(item.percentage || 0), amount = Number(item.amount || 0), exempt = Number(item.exemptPayments || 0);
+      if (![pct, amount, exempt].every(Number.isFinite) || pct < 0 || amount < 0)
+        return `מוצר ${productIndex + 1}: אחוזים וסכומי הפקדה ב${label} חייבים להיות מספרים תקינים שאינם שליליים.`;
+      if (Math.abs(pct * 100 - Math.round(pct * 100)) > 0.000001
+          || Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001
+          || Math.abs(exempt * 100 - Math.round(exempt * 100)) > 0.000001)
+        return `מוצר ${productIndex + 1}: אחוזים, סכומים ופטורים ב${label} יכולים להכיל עד שתי ספרות אחרי הנקודה.`;
       if (exempt < 0 || exempt > amount) return `מוצר ${productIndex + 1}: תשלומים פטורים ב${label} חייבים להיות בין 0 לסכום ההפקדה.`;
+      // Code 74 is independent of the employee's eventual deposit status.
+      if (item.component === 3 && exempt > 0)
+        return `מוצר ${productIndex + 1}: קוד שגיאה 74 — לא ניתן לדווח תשלומים פטורים לרכיב ביטוח (אכ״ע).`;
 
       // In a report draft the official deposit status is selected later, in Deposits.
       // Do not guess salaried Regulation-19 rules here: self-employed/status-suppressed rows
@@ -211,6 +220,16 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
 
 export function validatePensionEditorProducts(products: PensionEditorProduct[], context: "employee" | "report", contributionLimits: PensionEditorContributionLimit[] = []) {
   const activeProducts = products.filter((product) => product.isActive !== false);
+  if (context === "employee") {
+    const policies = new Set<string>();
+    for (const product of activeProducts) {
+      const policy = (product.policyNumber ?? "").trim().toLowerCase();
+      if (!policy) continue;
+      const key = `${Number(product.productType)}|${policy}`;
+      if (policies.has(key)) return "אותו מספר פוליסה מופיע יותר מפעם אחת באותו סוג מוצר אצל העובד.";
+      policies.add(key);
+    }
+  }
   if (context === "report") {
     const seen = new Set<string>();
     for (const product of activeProducts) {
@@ -229,6 +248,11 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
     if (product.isActive === false) continue;
     if (context === "report" && product.productType === 99) return `מוצר ${index + 1}: סוג מוצר "אחר" אינו נתמך בממשק מעסיקים 006. יש לבחור סוג קופה רשמי.`;
     if (product.productType !== 99 && !(product.fundExternalKey ?? "").trim()) return `מוצר ${index + 1}: יש לבחור קופה.`;
+    if ((product.policyNumber ?? "").trim().length > 20) return `מוצר ${index + 1}: מספר פוליסה/חשבון מוגבל ל־20 תווים בממשק 006.`;
+    if (!Number.isFinite(product.salary) || product.salary < 0 || product.salary > 10_000_000)
+      return `מוצר ${index + 1}: השכר המדווח חייב להיות בין 0 ל־10,000,000 ₪.`;
+    if (Math.abs(product.salary * 100 - Math.round(product.salary * 100)) > 0.000001)
+      return `מוצר ${index + 1}: שכר מבוטח יכול להכיל עד שתי ספרות אחרי הנקודה.`;
     if (!/^\d+$/.test(product.reportingType || "")) return `מוצר ${index + 1}: יש לבחור סוג תקבול תקין.`;
     if (!/^\d+$/.test(product.salaryLayer || "")) return `מוצר ${index + 1}: יש לבחור רובד שכר תקין.`;
     if (context === "report" && product.salaryMonth) {
@@ -238,6 +262,8 @@ export function validatePensionEditorProducts(products: PensionEditorProduct[], 
     }
     const code = inferPensionSection14Code(product);
     if ((code === 2 || code === 4) && !product.section14StartDate) return `מוצר ${index + 1}: יש להזין תאריך תחולה/ביטול לסעיף 14.`;
+    if (product.section14StartDate && product.section14StartDate > today())
+      return `מוצר ${index + 1}: תאריך תחולה/ביטול סעיף 14 לא יכול להיות בעתיד.`;
     if (product.productType === 2) {
       const invalidEmployer = product.employerContributions.some((item) => item.component !== 2 && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
       const invalidEmployee = product.employeeContributions.some((item) => item.component !== 2 && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
