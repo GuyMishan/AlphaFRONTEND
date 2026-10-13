@@ -156,7 +156,7 @@ function validateContributionRows(product: PensionEditorProduct, productIndex: n
   const insuredSalary = Number(product.salary || 0);
   const usesEmployeeEmployerRegulation19 = context === "employee";
   const validateParty = (items: PensionEditorContribution[], party: "employer" | "employee", label: string) => {
-    const populated = items.filter((item) => Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0);
+    const populated = items.filter((item) => Number(item.percentage || 0) !== 0 || Number(item.amount || 0) !== 0 || Number(item.exemptPayments || 0) !== 0);
     if (!populated.length) return `מוצר ${productIndex + 1}: יש להזין לפחות רכיב הפקדה אחד ב${label}.`;
     for (const item of populated) {
       const pct = Number(item.percentage || 0), amount = Number(item.amount || 0), exempt = Number(item.exemptPayments || 0);

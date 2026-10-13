@@ -12,6 +12,7 @@ function product(patch: Partial<PensionEditorProduct> = {}): PensionEditorProduc
 describe("shared pension editor preventable validation", () => {
   it("rejects exempt insurance contributions in report editing (code 74)", () => {
     const value = product({
+      productType: 3,
       employerContributions: [{ component: 3, percentage: 1, amount: 100, exemptPayments: 10 }],
     });
     expect(validatePensionEditorProducts([value], "report")).toContain("74");
