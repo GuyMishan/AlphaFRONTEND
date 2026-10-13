@@ -1,10 +1,15 @@
 import fs from "node:fs";
 
 const read = (path) => fs.readFileSync(path, "utf8");
-const editor = read("src/components/pension-products-editor.tsx");
-const deposits = read("src/components/manual-deposit-data.tsx");
-const reports = read("src/app/reports/page.tsx");
-const api = read("src/lib/manual-deposits-api.ts");
+const editor = read("src/features/pension/components/pension-products-editor.tsx");
+// The Deposits stage: deposit grid, payment editor and its V006 validation module.
+const deposits = [
+  "src/features/reporting/components/manual-deposit-data.tsx",
+  "src/features/reporting/components/deposit-payment-editor.tsx",
+  "src/features/reporting/deposit-validation.ts",
+].map(read).join("\n");
+const reports = read("src/features/reporting/screens/reports-screen.tsx");
+const api = read("src/features/reporting/deposits-api.ts");
 
 const requireText = (source, text, label) => {
   if (!source.includes(text)) {

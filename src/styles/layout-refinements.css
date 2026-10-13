@@ -1,0 +1,84 @@
+.steps {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  column-gap: 2px;
+}
+
+.step {
+  min-width: 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 5px;
+}
+
+.report-product-title > div:first-child {
+  display: none;
+}
+
+.report-product-title:has(> button:last-child) {
+  justify-content: flex-end;
+}
+
+.employee-profile-layout .profile-card {
+  max-width: 1180px;
+  width: 100%;
+}
+
+.employee-form-embedded {
+  background: transparent;
+}
+
+.employee-form-embedded .profile-summary {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+}
+
+.employee-created-next-step {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  text-align: center;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 28px;
+}
+
+.employee-created-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.employee-created-next-step h3 {
+  margin: 0 0 6px;
+}
+
+.employee-created-next-step p {
+  margin: 0;
+  color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .steps {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(112px, 1fr);
+    gap: 0;
+  }
+
+  .employee-profile-layout .profile-card {
+    max-width: 100%;
+  }
+
+}

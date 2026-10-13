@@ -3,9 +3,9 @@ import path from "node:path";
 
 const root = path.resolve("src");
 const ignored = new Set([
-  path.normalize("src/components/reference-option-select.tsx"),
-  path.normalize("src/components/employer-interface-option-select.tsx"),
-  path.normalize("src/components/salary-layer-select.tsx"),
+  path.normalize("src/features/reference-data/components/reference-option-select.tsx"),
+  path.normalize("src/features/reporting/components/employer-interface-option-select.tsx"),
+  path.normalize("src/features/pension/components/salary-layer-select.tsx"),
 ]);
 const failures = [];
 

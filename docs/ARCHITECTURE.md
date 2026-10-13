@@ -1,0 +1,93 @@
+# Frontend architecture
+
+## Layout
+
+```text
+src/
+├── app/                 Next.js routes only: layouts, page.tsx re-exports, API route handlers
+│   └── api/             Server routes: backend proxy and session logout
+├── features/<feature>/  Business features (auth, scope, organizations, employers, employees,
+│   ├── api.ts           pension, payment-accounts, reporting, feedback, billing, access, admin,
+│   ├── types.ts         reference-data, dashboard, settings, shell)
+│   ├── queries.ts       TanStack Query keys, hooks and cache invalidation
+│   ├── schemas.ts       Zod schemas for the feature's forms
+│   ├── components/      Feature UI
+│   └── screens/         One component per route
+├── components/          Shared, feature-agnostic UI
+│   ├── ui/              Controls, modal, table, tabs, tooltip, file upload, notifications
+│   ├── forms/           Field and the server-validation bridge
+│   └── layout/          Brand, accessibility menu
+├── lib/                 Shared infrastructure (never imports from features)
+│   ├── api/             Client, transport, ApiError, Hebrew error messages, paging
+│   ├── query/           QueryClient defaults and provider
+│   ├── session/         Zustand store, session storage, logout/expiry lifecycle
+│   ├── forms/           useZodForm, Zod rules, input masks, server-error mapping, validators
+│   ├── server/          Server-only helpers for route handlers
+│   ├── format/          Date, month and money formatting
+│   └── hooks/, download.ts
+└── styles/              Global stylesheets and design tokens
+```
+
+Dependencies point one way: `app → features → components / lib`. Features may use another feature's `api`, `types`, `queries` or exported components; `lib` and `components` never import features. There are no barrel (`index.ts`) files and no circular imports.
+
+## Backend communication
+
+- Every backend call goes through `apiRequest` / `apiBlob` (`src/lib/api/client.ts`) from a feature `api.ts`. Paths are backend paths (`/api/...`); the transport sends them to the same-origin proxy with `credentials: "same-origin"` and `cache: "no-store"`.
+- Request bodies are JSON-serialized automatically (FormData and Blob pass through). An optional `signal` cancels a request, `timeoutMs` bounds it, `messages` sets Hebrew wording per `errorCode`, and `anonymous` marks login/registration endpoints.
+- API types are handwritten next to their feature in `types.ts`. When a backend contract changes, update the DTO there and let `tsc` show every consumer.
+- Files are downloaded with `apiBlob` + `saveBlob`, never by linking to the proxy, so an expired session follows the same 401 path as every other call.
+- Paged lists return `{ items, hasMore }` and page with `skip`/`take`. Paths never end with `/` (Next.js would answer with a redirect).
+- The proxy (`src/app/api/backend/[...path]/route.ts`) turns the HttpOnly `alpha_access` cookie into a bearer header, moves the token issued by OTP verification into that cookie, and rejects cross-site writes. Errors it raises itself use the same Problem Details shape, including `errorCode`.
+
+## Errors
+
+Every failure becomes one `ApiError` (`src/lib/api/errors.ts`):
+
+| Field | Meaning |
+| --- | --- |
+| `kind` | `http`, `network`, `timeout`, `aborted` or `parse` |
+| `status` | HTTP status (0 when the backend never answered) |
+| `code` | Backend `errorCode` (RFC 9457), e.g. `VALIDATION_FAILED`, `PLAN_LIMIT_REACHED` |
+| `fieldErrors` | Field → messages for `VALIDATION_FAILED` |
+| `traceId`, `problem` | Correlation id and the full Problem Details (incl. extensions such as `limit`) |
+
+`error.message` is already user-facing Hebrew (`src/lib/api/error-messages.ts`): backend `detail` wins unless it is one of the framework's generic English defaults, then validation messages, then per-code and per-status wording. The backend currently puts validation messages only under `errors.request` (it copies the generic `detail` there too); per-field keys are part of the contract, so `applyServerErrors` and the validation bridge map them when present. Components show `errorMessage(error, fallback)` and never parse responses. The client has no UI side effects; the app shell subscribes to API errors to open the plan-upgrade dialog. A 401 ends the session once, globally.
+
+## State
+
+| Kind of state | Where |
+| --- | --- |
+| Server data (lists, details, scope, stats) | TanStack Query (`features/*/queries.ts`) |
+| Signed-in user metadata, selected organization/employer/employee | Zustand (`src/lib/session/app-store.ts`) |
+| UI state of one component (open modal, step, tab) | `useState` |
+
+Query defaults (`src/lib/query/query-client.ts`): data revalidates when a screen mounts, no polling or focus refetch, one retry for network/timeout/5xx on queries, no automatic retry for mutations. Query keys start with the feature and include the organization (and employer) so tenants never share cache entries; mutations invalidate the keys they affect. The access scope (`/api/scope`) is cached until invalidated.
+
+ScopeController resolves the working organization/employer for each page and publishes it through `src/features/scope/scope-events.ts`; screens subscribe (or use `useEmployerScope`) and key their queries by the result.
+
+## Authentication and security
+
+- The token exists only in the HttpOnly, `SameSite=Strict`, `Secure` (production) cookie. JavaScript stores only display metadata (`sessionStorage`), never tokens.
+- Logout and expiry (`src/lib/session/lifecycle.ts`) clear session storage and the whole Query cache, call `/api/session/logout` (which revokes the backend session and clears the cookie), and perform a full navigation. Signing in as a different user also clears the cache.
+- Tabs share the cookie but not session metadata: sign-in/sign-out is broadcast (`BroadcastChannel("alpha-session")`), and other tabs of a signed-out or replaced user drop their local data and go to `/login`.
+- The proxy and logout route reject state-changing requests whose `Origin` does not match the host (CSRF defense on top of SameSite). The proxy only forwards `api/...` paths and rejects dot segments.
+- Navigation to a URL returned by the API (payment-provider setup) is limited to `https:` or this app's origin.
+- Server data with unmasked sensitive values (full bank account details for editing) stays in component state, not in the shared Query cache.
+- The backend authorizes every request. Capabilities and roles in the UI only decide what to show.
+- The proxy does not forward the browser's IP address (client-supplied forwarding headers are never trusted), so backend rate limits and audit IPs see the frontend server until the backend accepts an authenticated client-IP header. Until then every `/api/auth` call shares one per-IP budget: the session-timeout guard backs off after a failed check instead of retrying every second.
+- `ALPHA_API_URL` has no production default; a missing or invalid value makes the proxy answer 503 rather than reach another environment. `AlphaBACKEND/` (any letter case) is ignored by Git, `.vercelignore` and ESLint.
+- Server-only code (`src/lib/server`, route handlers) reads `ALPHA_API_URL`; nothing secret is bundled for the browser.
+
+## Forms
+
+Forms use `useZodForm(schema, { defaultValues })` (`src/lib/forms/use-zod-form.ts`): validation on submit, a field's error clears when it is edited, and focus moves to the first invalid field. Schemas live in the feature's `schemas.ts` and compose shared rules from `src/lib/forms/zod-rules.ts`; messages are Hebrew. `UiSelect` fields use `FormSelect` (`src/components/forms/form-select.tsx`) because the custom select renders its label from `value`; dates and autocompletes bind through `Controller`/`setValue`. After a failed save, `applyServerErrors` maps backend field errors onto the form; forms not yet on React Hook Form rely on `ValidationUxBridge` for the same purpose. The backend remains the validation authority.
+
+## Styling
+
+Global CSS is imported once, in cascade order, by `src/app/layout.tsx`. Theme values are tokens in `src/styles/tokens.css` (light on `:root`, dark under `html[data-theme="dark"]`); use `var(--token)` instead of new hex values. Screen-only styles sit next to their screen. Shared controls (`src/components/ui`) are mandatory, and `scripts/check-ui-primitives.mjs` rejects raw inputs, tables and dialogs. Layout is RTL; numbers and identifiers use `dir="ltr"` where needed.
+
+## Quality gates
+
+`npm run verify` (and CI) runs the guard scripts (UI primitives, hard-coded select data, V006 ownership, double-escaped regexes), ESLint, `tsc`, Vitest and the production build. CI installs with `npm ci` from the committed lockfile.
+
+Dependencies to know: `xlsx` is SheetJS 0.20.3 from the vendor CDN (the npm registry copy is unmaintained and vulnerable), pinned by integrity in `package-lock.json`.

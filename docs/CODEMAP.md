@@ -1,217 +1,94 @@
 # ALPHA Frontend code map
 
-## App shell and global behavior
-- `src/app/layout.tsx` — root layout and global providers/styles.
-- `src/components/app-shell.tsx` / `persistent-app-layout.tsx` — application shell.
-- `src/lib/app-store.ts` / `use-app-store.ts` — global Zustand state for browser session metadata, authorized scope, persisted organization/employer/employee selection and scope-derived permissions. `src/lib/app-data-cache.ts` de-duplicates `/api/scope` requests and stores the result in Zustand; `AppShell`, `ScopeController` and application screens consume the same global state.
-- `src/components/scope-controller.tsx` — organization/employer scope selection. Dashboard initialization does not emit a synthetic `alpha:scope-change`; only real selection changes trigger dashboard reloads.
-- `src/components/theme-provider.tsx` — theme state.
-- `src/components/validation-ux-bridge.tsx` — maps server/notice validation into field UI; receives normalized RFC 9457 `errors` dictionaries through the shared backend transport, captures the initiating form/dialog before requests, marks only uniquely mapped field identifiers, and leaves general error messaging to the requesting screen to avoid duplicate toasts.
-
-## Shared UI and styles
-- `src/components/ui-controls.tsx` — shared input, `UiCheckbox`, date, select, autocomplete, card and portal-based `UiActionMenu` primitives. `UiActionMenu` renders its three-dot menu into `document.body`, sizes vertically to its complete action list without an internal scrollbar, and repositions above the trigger when the full menu fits better there; row actions are therefore not clipped by virtualized table overflow. All checkboxes use `UiCheckbox` rather than `UiInput type="checkbox"` so sizing, focus and accessibility remain consistent.
-- `src/components/app-modal.tsx` — unified dialog shell with persistent header and close, scrollable body, nested scroll locking, and persistent footer. The footer automatically groups cancel/back on the RTL right and positive/submit actions on the left; secondary-styled affirmative actions can explicitly set `data-modal-side="positive"`.
-- `src/components/ui-controls.tsx` — shared `UiSelect` and `UiAutocomplete` both portal their option lists to the document body and recompute viewport position on modal scroll, resizing and opening above a field when needed. This prevents option lists from changing the modal's scroll size or being clipped by modal/table overflow.
-- `src/components/ui-selection-list.tsx` and `src/app/selection-and-scrollbars.css` — searchable multi-select assignment lists (referent cards stretch to the same height), theme-aware scrollbar and shared popup/footer styles.
-- `src/components/data-table.tsx` — shared table primitive for consistent headers, rows, loading/empty states and windowed rendering. Expandable tables may provide `canExpandRow(item)` to suppress the toggle and panel for rows whose detail view is not meaningful. When `expandToggleColumnKey` places the expander in an actions column, DataTable groups it inline with the cell's action control and gives the expander the same compact bordered treatment as the shared three-dot action trigger. Its fixed table layout, per-column colgroup and stable scrollbar gutter prevent column widths changing when virtualization swaps rows. It supports infinite loading via `hasMore`/`onLoadMore`: screens with paged APIs append newly fetched batches to the rows already cached in the frontend; there is no table pagination UI. Table navigation must use `DataTableLink`, which disables Next.js route prefetch so a rendered table does not fan out into one RSC request per row. Application screens should not render raw HTML tables directly.
-- `src/app/globals.css` — global design/layout rules.
-- `src/app/ui-fixes.css` — cross-screen UI corrections, including autocomplete/report modal behavior.
-- `src/app/dark-mode.css`, `mobile.css`, `form-feedback.css` — theme/responsive/validation layers.
-
-## Organizations, employers, employees and access
-- `src/components/referents-admin-tab.tsx` — platform-only referent lifecycle and cross-organization assignment UI within the admin tabs; `src/lib/api.ts` supplies typed endpoints. Organization profile differentiates general-edit access from organization user/billing administration.
-- `src/app/organizations/page.tsx` — platform-admin organization creation using a shared modal. `src/lib/organization-types.ts` provides the two selectable categories (small/one employer, regular) shared with organization profile editing and list labels; existing legacy/self-service values remain readable without being offered as new choices.
-- `src/components/employer-transfer-modal.tsx` — shared platform-admin transfer/receive UI for organization and employer profiles. Uses the admin transfer API, source-scope validation and global scope cache invalidation.
-- `src/app/organizations/*`, `src/app/employers/*`, `src/app/employees/*`. Employer lifecycle status is managed from Employer Profile → General Details. Employer status is intentionally binary in the UI and API: Active ("פעיל") or Closed ("מבוטל"). New employers start Active; legacy Onboarding/Suspended rows are normalized by the Backend.
-- `src/app/access/page.tsx` — users and permissions, including independent report creation/transmission permissions. Platform-admin "new user" lets the administrator choose a customer invitation or an internal referent; the referent path opens the shared admin referent creation flow with required cross-organization assignments.
-- `src/components/employer-form.tsx`, `employee-form.tsx`, `employer-employees-panel.tsx`. Employee create/edit uses the shared Employer Interface option control for identifier type and supports Israeli ID (1) and passport (2); the selected type is propagated into manual/Excel report snapshots.
-- `src/lib/access-scope.ts`.
-
-## Pension products and reference controls
-- `src/components/pension-products-editor.tsx` — shared pension editor uses the same canonical contribution mapping as the backend (employee Benefits -> official SUG-HAFRASHA 2; employee Severance -> official code 4). In report drafts it only applies V006 rules knowable before official deposit metadata exists, notably future salary month (27) and same-draft product/month duplicate detection (28/43); it intentionally defers deposit-status-dependent Regulation 19 rules instead of guessing salaried status. `src/components/manual-deposit-data.tsx` owns the immediate frontend checks for 16/17/23/53/71/72/75 once the real deposit/employee status is selected, using canonical yearly limits supplied by the backend. Historical/cross-report and correction-lineage checks (28/43/50/100/101) remain authoritative backend validation. `scripts/check-v006-preventable-validations.mjs` guards this ownership split in frontend CI.
-- `src/components/employee-pension-mix.tsx`.
-- `src/components/pension-fund-select.tsx`.
-- `src/components/reference-option-select.tsx`, `address-autocomplete-fields.tsx`, `salary-layer-select.tsx`.
-- Reference APIs: `src/lib/reference-options-api.ts`, `address-reference-api.ts`, `bank-reference-api.ts`.
-
-## Reporting / Employer Interface 006
-- `src/app/reports/new/page.tsx` — new-report orchestration, wider desktop workspace, and resumable editable drafts loaded from scope-authorized `GET /manual-reports`. Persisted Excel/XML imports resume in the shared manual editor without re-uploading the source.
-- `src/components/manual-report-data.tsx` — manual report flow.
-- `src/components/manual-deposit-data.tsx` — per-employee/product deposit data and separately secured payment confirmations, through `payment-confirmations-api.ts`. Payment evidence is not a clearinghouse attachment.
-- `src/components/excel-employee-intake.tsx` — Excel intake; shared `ui-file-upload.tsx` handles file inputs, drag/drop, type and size checks across Excel, XML, payment evidence and V006 attachment uploads.
-- `src/components/employer-interface-xml-intake.tsx` — XML/DAT/TST intake.
-- `src/lib/employer-interface-api.ts`, `manual-deposits-api.ts`, `report-validation-api.ts`, `report-transmission-api.ts`, `report-feedback-api.ts`.
-- `src/app/reports/page.tsx` is the unified Reports & Feedback operations screen. It keeps the report grid compact (including payoff rate), uses server-side dynamic filters and a persisted column chooser, expands reports into employee+product rows, and opens `report-deposit-feedback-modal.tsx` for employer-vs-manufacturer contribution comparison, financial feedback, manual treatment status/free-text notes and treatment history. Treatment saves send the `updatedAt` version observed by the modal so stale operators receive a conflict instead of overwriting a newer treatment. `report-feedback-api.ts` consumes normalized official Employer Interface 006 feedback; immutable submitted reports enter the formal focused correction flow instead of being edited in place.
-- Feedback treatment targeting uses backend `targetScope` (employer, report, employee, deposit, informational), separate from original `scope`. Target scope is automatic and never editable by users. Code 56 is classified using the effective employer payment account and the reported payment fields; missing or different evidence stays deposit-scoped. `feedback-resolution-mode.tsx` displays automatic target labels, without any manual target controls. `report-deposit-feedback-modal.tsx` uses `targetScope` to show only applicable deposit/employee errors, preserving official manufacturer feedback. `report-feedback-modal.tsx` shows one grouped employer problem with the affected report count. 
-Feedback viewing now uses one generic entry point, `report-feedback-modal.tsx`, with exactly three modes: `employer`, `report`, and `deposit`. The same entry point now also owns a two-state modal flow: `view` keeps the existing feedback/details presentation, while `resolve` loads the Backend resolution-context contract through `feedback-resolution-mode.tsx`. Group and per-error CTAs switch the existing modal into resolution mode rather than opening another dialog. Stage 3 deliberately renders a placeholder resolver without mutations. Stage 4 turns the backend `groups` contract into the resolution queue: each group carries backend-authoritative `canExecute`, and the frontend only renders executable queue entries instead of mapping resolver types to permissions locally. navigation is per resolver-qualified group rather than per raw feedback row, related codes for the same resolver/entity stay together, and selecting one contribution-scoped issue opens only the exact matching group. Stage 5 activates the first resolver-specific editor for `employee`: it compares immutable reported employee values with current master data, then reuses the shared `EmployeeForm` and existing authorized employee update API. Saving updates only live employee master data; it never rewrites the submitted report or closes clearing-house feedback. Before the shared `EmployeeForm` saves from resolution mode it calls the backend resolution-action validator, which rechecks the active group, target employment and `editEmployee` playbook action; stale groups fail closed. Other resolver types remain placeholders for later stages. Employer mode shows employer details plus employer-scope issues; report mode shows report summary plus report issues followed by employer issues affecting that report; deposit mode reuses the existing detailed employee+product modal and orders issues employee → deposit/product → contribution → report → employer. `feedback-resolve-button.tsx` provides the repeated branded issue action. Group and per-error resolution buttons are active once a playbook-backed resolution context exists; contribution-scoped selections fail closed to the exact contribution and never fall back to a different row that merely shares the same error code. Deposit rows expose two distinct states of the same deposit feedback modal: the red `שגיאות` entry opens the full deposit details layout with error UI enabled, while the three-dot `צפייה בהפקדה` opens the identical layout with error UI hidden. Employee/deposit errors are grouped at the top; contribution errors stay attached to the exact contribution row, including multiple errors per contribution. Employer/report entry points use red error language; the green branded action is reserved for `פתור בעיה` inside error modals. The employer error section includes an explicit `פתור בעיות` CTA. Report error counts and report modals include report-scope issues only.
-
-## Billing and payments
-- `src/app/admin/page.tsx` — billing and pricing administration table links directly to the relevant organization/employer `?tab=billing` or `?tab=pension-payment` card rather than opening a separate pricing edit modal. Employer links include `organizationId` to preserve the target scope.
-- `src/components/alpha-billing-account-form.tsx`.
-- `src/components/subscription-billing-panel.tsx`.
-- `src/components/billing-gate-modal.tsx`, `upgrade-modal.tsx`.
-- Organization pension payment: `organization-pension-payment-account.tsx`.
-- Related page styling: `src/app/payment-editor.css`.
-
-## API/session
-- Auth session metadata carries `isReferent` for staff-specific UI (hiding self-service subscription management for internal referents); the server continues to authorize every request from database assignments.
-- `src/lib/api.ts` — broad API client and shared types/calls. Collection URLs are canonicalized without trailing slashes to avoid proxy/Next 308 redirects. Dashboard statistics use `/api/dashboard/stats` rather than fetching employer/employee collections for counts.
-- `src/lib/api-error-message.ts` — shared Hebrew user-facing formatting of RFC 9457 and legacy backend errors. API clients must prefer `detail`/validation messages over machine-readable `error` codes and use `responseErrorMessage` for failed responses.
-- `src/lib/backend-fetch.ts` — shared authenticated Backend transport. It applies development auth headers, treats the first Backend `401` as authoritative session expiry, clears browser/HttpOnly session state, and redirects to `/session-timeout`.
-- `src/app/api/backend/[...path]/route.ts` — backend proxy.
-- `src/lib/session.ts`, `src/lib/app-store.ts`, `src/components/session-timeout-guard.tsx`. Session metadata is hydrated once into Zustand and persisted without bearer tokens. The server-side `UserSession.LastActivityAt` remains the authoritative idle-timeout source of truth and every Backend request is checked by session middleware. `/api/auth/session` is not polled on navigation/focus; the guard performs an explicit validation only after the local 30-minute idle boundary (including return from a tab after that boundary). `/session-timeout` is rendered outside the authenticated `AppShell` so it remains visible after session state is cleared.
-- Login/register/invite routes live under `src/app/login`, `register`, `invite`.
-
-## Verification guardrails
-- `scripts/check-ui-primitives.mjs` — shared UI primitive, checkbox and modal-shell enforcement (rejects raw/UiInput checkboxes and local checkbox roles). All modal dialogs must render through `AppModal`; the anchored accessibility popover is a non-modal exception.
-- `scripts/check-hardcoded-select-options.mjs` — guards against hard-coded select data.
-- `.github/workflows/ci.yml` — authoritative CI sequence.
-
-- Financial report attachments and payment evidence use the shared file picker with an initial 3 MB upload ceiling to match the Cloudmersive free-evaluation scanning integration. Server-side endpoint and scanner validate the limit independently; increase both only after a commercially suitable scanning plan is configured.
-
-- Deposit payment editor preserves explicitly saved payment-method overrides even when a pension-debit mandate exists. Method 6 is only an initial default; users can select an official manual method and provide bank/reference/date details. Payment-evidence documents remain visible and downloadable for any current-report payment mode, while optional date/documents under method 6 stay operational-only and are not exported into irrelevant V006 fields.
-
-- `המשך דיווח קיים` is a fourth reporting-type card. Open drafts show today/yesterday or date, plus Israel-local 24-hour time.
-- An active pension-debit mandate locks current-report payment method to code 6, while allowing operational-only bank, branch, account, reference, value date and evidence in the editor. Actual mandate account changes belong to the employer payment-account setup; official V006 code 6 emits zeroed employer account fields. Deposit receipt codes display the official Hebrew text, fetched from backend option data.
-
-- The existing-draft card uses the shared virtualized `DataTable` with a 340px scrolling viewport and built-in incremental loading; pension bank selection in the deposit editor uses the shared `UiAutocomplete` as the only bank field. For payment code 6, stored bank/reference/date entries do not override official V006's zeroed employer-bank export (users must choose a suitable payment method for real account details to appear in the XML).
-
-- The deposit grid fetches report-wide evidence in one scoped call and presents per-product downloadable proof links (all saved versions). The modal keeps the grid's evidence state in sync immediately after upload. Payment dates rely on the single global `UiDateInput` calendar icon; the mandate account prefills from the authorized encrypted DB resolution with a valid numeric check.
-
-
-- Postal code and post-office box are edited in the employee profile only. The report product modal links to the employee card in a new tab; editing the card synchronizes matching editable draft address snapshots via backend but never alters submitted reports.
-
-- Failed employee, deposit or final validation opens `ReportValidationErrorsModal` via the shared `AppModal` shell. It presents contextual Hebrew guidance with expandable original technical codes/messages, an XLSX export, and a button to close and resume editing. Backend validation responses remain the single source of truth; no front-end silent auto-correction.
-
-- Shared DataTable now supports optional `expandedRowComponent(item)`, `expandedRowComponentSize` (number or callback), default/controlled expanded-row keys, change events and optional click-to-expand. Prefix-sum offsets virtualize variable-height expanded rows using stable `rowKey`, retaining expansion across infinite-load batches and keeping all columns fixed. Existing tables do not change unless an expansion renderer is provided.
-
-- Reports & Feedback reuses `DataTable.expandedRowComponent` for lazy-loaded per-report deposit subrows. Parent report rows use one compact portal-based three-dot action menu: editable drafts offer “עריכת הדיווח”, eligible submitted reports offer “יצירת דיווח מתקן”, and all export variants live in the same menu. Editable/not-yet-sent reports deep-link with `resumeReportId` into the exact persisted draft in `/reports/new`; these not-sent rows intentionally do not expose expansion because their employee/deposit contents are still mutable and the report wizard is the source of truth until submission. Submitted/attempted reports retain the expansion arrow. Employee+product rows also use one compact three-dot menu containing read-only “צפייה” and, only while editable, “עריכה”. “יצירת דיווח מתקן” exists only at report level. Every employee+product row has one consistent read-only “צפייה” action that opens `report-deposit-feedback-modal.tsx`: the modal always shows the reported employee/product, payment/reference data, downloadable payment evidence and reported contribution components; when official feedback exists it additionally shows employer-vs-manufacturer reconciliation, money state and read-only treatment/history, while a no-feedback row shows only a compact “טרם התקבל משוב” badge rather than empty waiting sections. A separate “עריכה” action appears only while the report is actually editable and opens the shared `DepositPaymentEditor` from the wizard's deposit-data step. Immutable sent/submitted rows therefore have no duplicate read-only payment-editor action. Exact product loading uses the backend `reportProductId` filter rather than full-name search. Expanded contents remain cached across virtualization remounts, with explicit load-more for long reports.
-
-- The reports/feedback parent grid now paginates through the existing report-feedback endpoint via shared DataTable infinite loading, while lazy expansion independently pages each report's deposit rows. Each expanded report also receives the complete distinct manufacturer list for that report and exposes a shared `UiAutocomplete` manufacturer filter; filtering is executed server-side so it remains correct across deposit pagination. Historical payment modals explicitly guard every upload/remove/save action in read-only mode, not merely disabled form controls.
-
-- Shared DataTable supports optional `expandToggleColumnKey` for placement in an existing non-first column; Reports & Feedback places its expand control after its existing Details action. Deposit subrow values are vertically centered and no longer duplicate the report-level feedback action. The shared DepositPaymentEditor renders one evidence panel, keeping downloads outside the disabled form for immutable report viewing and hiding uploads for non-editable reports; summary values share right-aligned RTL styling.
-
-- Free-plan utilization cards on Dashboard, Employees and Organization → Employers are displayed only when the entitlement plan code is `FREE`. Paid customers retain ordinary employee/employer counts and the dedicated subscription/billing interfaces; paid pricing remains visible in authorized billing/admin surfaces.
-
-- Focused correction entry from Reports & Feedback passes the source report/product to `/reports/new`; derived-report creation can clone only that selected source product while preserving the normal 006 correction rules and immutable-source behavior.
-
-- Report-row three-dot actions expose formal correction entry plus the three authorized backend CSV exports (employee/contribution detail, deposit summary and manufacturer feedback); these menus are portaled above table overflow rather than rendered inside the virtualized viewport.
-
-
-## Correction drafts, retransmission and deletion
-- Reports & Feedback treats transmitted reports as immutable history. “תקן דיווח” creates or resumes one internal full-report correction workspace; per-deposit “תיקון הפקדה” edits the matching version inside that workspace instead of changing the transmitted source row.
-- Multiple deposit/report edits accumulate in the same correction workspace. “דיווח חוזר” materializes all pending changes into the official Employer Interface 006 sequence and routes the user through the generated negative cancellation before the follow-up current correction.
-- Product lineage is preserved through `sourceReportProductId` in the report editor. The shared pension-products editor carries this optional identifier through normalization so saving an employee does not break deposit history.
-- Editable drafts that have never had an external transmission may be deleted from Reports & Feedback or from “המשך דיווח קיים”. The frontend always uses the shared `AppModal` confirmation; the backend remains authoritative about whether deletion is still allowed.
-- A generated correction workspace is an internal Differences draft and is hidden from the normal resumable-drafts list. When opened explicitly from Reports & Feedback it can be edited fully, then saved and returned to Reports & Feedback for “דיווח חוזר”.
-
-
-- “דיווח חוזר” no longer asks for one global operation 2/3. The backend resolves the correction operation independently per changed deposit/product, so one retransmission may correctly contain both no-money corrections and additional-money corrections.
-
-
-- Correction editor products also carry `workspaceReportProductId`. This keeps newly-added products stable across repeated saves even though they have no immutable `SourceReportProductId` yet, preventing duplicate products inside the same correction workspace.
-
-
-- The correction-workspace deposit editor now has an explicit per-transfer choice between operation 2 (no additional deposit) and operation 3 (additional deposit), including the mandatory additional amount for operation 3. The backend reports correction-workspace context on deposit rows and applies the selected operation/payment details across the same V006 fund transfer.
-
-
-- In correction-workspace UI, structural add/remove controls are disabled: employee selection is locked and the shared pension-product editor receives `allowAdd=false` / `allowRemove=false`. Users can still edit the source-backed employee/product values and deposits that the backend can version safely.
-
-
-- Correction workspaces are full desired next-revision snapshots: employee and product add/remove controls remain available. Backend delta materialization compares the workspace with the last effective revision and emits only required V006 technical documents.
-- Existing source-backed products use correction operation 2/3 as needed; newly added products are ordinary current operation 1 records and expose the normal V006 payment/metadata editor.
-- “דיווח חוזר” remains report-level only and handles all delta shapes: negative-only, current-only, or negative followed by current.
-
-- Reports & Feedback deposit rows summarize crowded manufacturer feedback tooltips by business scope once there are more than three distinct errors. Deposit details show all actionable errors grouped for users by deposit/product, employee, employer, report and contribution scopes (the internal backend scope remains `money` for compatibility), while contribution cards still show local numeric/context detail.
-
-- `PensionProductsEditor` owns pension-editor reference data in component-local state. It loads the bundled `/api/reference-data/pension-editor-options` response once per mounted editor and supplies the resulting option arrays to all child selects. No module/global cache is used, so closing the editor releases the data and multiple product rows do not duplicate reference-data requests.
-
-- Reference-data request discipline: repeated select/autocomplete fields should not fetch independently on mount. `EmployeeForm` bundles identifier/gender options in local form state; `DepositPaymentEditor` bundles its static Employer Interface option families in local modal state; address and bank/branch autocompletes load remote suggestions only after the user opens/interacts with the field; `PensionFundSelect` searches only while its autocomplete is open. Dynamic dependent lookups (for example payment methods by operation code) remain request-driven because their option set changes with user state.
-
-
-- Stage 6 uses playbook-aware resolver handling for `contribution`, `productPolicy`, `employmentStatus`, `payment`, `documents` and `reportCorrection`. Each resolver shows only its relevant reported/current/feedback fields; only playbooks whose behavior is `correctionWorkspace` may ask the backend to create or reuse a formal correction workspace. Editing continues in the existing report/deposit/product/document components through `/reports/new`, so submitted source reports remain immutable and no parallel resolver-specific forms are introduced.
-
-- Feedback-resolution audit hardening keeps permission-blocked groups visible in the queue instead of dropping them from the denominator. Internal correction UI is now enabled only when every problem in the group is `edit`, has `correctionWorkspace` behavior and advertises `prepareCorrection`; payment revalidation/dynamic flows and document external-follow-up flows therefore remain fail-closed until their dedicated resolver actions are implemented. Grouped resolver comparisons render data for every problem in the group rather than only the first feedback row.
-
-
-- Feedback resolution progress is persisted per `problemId` rather than per group. Payment edits opened from Reports & Feedback carry only the active group's problem IDs into the existing deposit editor; after that editor's validation/save succeeds, the backend resolves those individual problems and the feedback modal reopens on the remaining queue. Document resolver rows upload one malware-checked PDF per problem and resolve only that problem. Correction-workspace routes carry source-report/problem IDs in the handoff and resolve them only after the relevant employees/deposits validation stage succeeds; decision problems are never auto-resolved by an edit save.
-
-
-- Stage 7 adds `feedback-decision-resolver.tsx` for per-problem Decision/Review handling inside the existing resolution modal. It renders only actions projected by the backend playbook contract, keeps decisions independent inside grouped UI, shows the latest persisted decision/note, routes correction decisions into the existing correction workspace with the exact `ProblemId`, and keeps external/reconcile/link-original handoffs visibly pending rather than falsely closing them. Employee-master editing still uses the shared `FeedbackEmployeeResolver` and its own `canEditEmployee` capability even when the surrounding Decision group is executable via report permissions.
-
- Mixed Edit+Decision groups render both resolver surfaces against filtered problem subsets; actions pass explicit ProblemIds to the backend so grouped navigation never changes per-error resolution semantics.
-
-
-- Stage 8 adds `feedback-external-case-resolver.tsx` inside the existing resolution modal. External problems and edit problems that permit escalation can open/reuse their backend-owned case; Decision → external uses the same case API instead of storing an orphan decision. The resolver shows case status, current assignee, linked errors, editable destination/subject/message template, notes, event history, uploads/downloads and open/waiting/resolved actions. Closing refreshes the resolution queue so only ProblemIds actually resolved by the backend disappear. No email is sent from the browser; the UI prepares the outbound message while delivery remains pending recipient/channel configuration.
-
-
-- Stage 9 restores feedback correction state from backend-owned workspace links when a correction draft is reopened, rather than depending on the original URL handoff. Correction resolution is requested only after the user reaches the validated deposits stage; the backend independently revalidates and can reject false resolution. Refund Edit problems use the shared internal correction surface. Reconcile actions open the durable case UI, and original-movement decisions load server-filtered historic movements into an accessible select and submit the exact selected contribution for backend validation/linking. The resolution queue refreshes from backend context after every terminal action, preserving per-error semantics across refresh and mixed groups.
-
-- Reports & Feedback now displays the backend-owned `correctionResolutionStatus` in the report table as well as `feedbackValues.resolutionWorkflowStatus` in the resolution modal: editing, treated/transmitted awaiting producer feedback, returned-but-not-confirmed. A successful outbound transmission never displays an institutional confirmation by itself.
-
-- Hybrid producer routing: `src/lib/report-transmission-api.ts` provides routing inspection, 006 package validation and authenticated resume of unfinished recipient transmissions; `src/app/reports/new/page.tsx` accepts a multi-recipient send response while preserving legacy single-transmission results; `src/app/reports/page.tsx` displays progress per producer and only offers "המשך שידור ליצרנים שטרם נקלטו" when Backend marks recovery safe. The entire feature is server-gated by `Reporting:ManufacturerRouting:EnableHybridDispatch`; product routing and feedback correlation remain exclusively server-owned.
-
-### Feedback resolution issue list
-
-`feedback-resolution-mode.tsx` labels its navigation as issues (not backend groups). The context endpoint enforces employer/report/deposit scope based on the entry point; individual issue actions filter the chosen code's problem rows before passing them to resolvers. Backend group keys remain internal for server-side validation, while users see each issue's code/description and select the appropriate one. `src/app/ui-fixes.css` keeps issue selection responsive and RTL-friendly.
-
-Feedback resolution issue navigation uses the shared `UiAutocomplete` to choose a code/description rather than rendering a row of buttons. Progress measures how many originally open error codes have disappeared from the refreshed active feedback context; moving between issues or merely preparing a correction never increments progress. The baseline is captured per mounted resolution modal.
-
-Feedback resolution UX (Oct 2026): single-issue flows hide the progress bar; multi-issue progress uses an explicit left-to-right completed/total counter, independent of RTL layout. The selected problem is presented once in the heading without a duplicate resolver-type chip or repeated message below it. Decision resolvers omit the redundant header. Code 18 is presented with an explicit missing-detail message when feedback lacks a specific field number/path, instead of implying it is available.
-
-Official Employer Interface 006 feedback detail: `feedback-error-details.tsx` displays `errorAmount` (`PERUT-SHGIHA-SHUM`) and `errorDate` (`PERUT-SHGIHA-TAARICH`) only when populated. `report-feedback-modal.tsx`, `report-deposit-feedback-modal.tsx`, and `feedback-resolution-mode.tsx` share the component. The numeric amount is not assumed to identify a missing field for code 18 without explicit source evidence.
-
-Feedback issue presentation (Oct 2026): employer/report/deposit issue summaries show only error codes, with resolution actions. Full original error details (`errorAmount`, `errorDate`) are displayed only in `FeedbackResolutionMode`. `FeedbackErrorDetails` deduplicates identical amount/date pairs and shows occurrence counts; no feedback rows are discarded from the resolver payload. Scope-specific API endpoints still determine which issues are selectable.
-
-Single-code resolution entry points in `ReportFeedbackModal` select the issue code only, not an arbitrary underlying contribution ID. `FeedbackResolutionMode.filterGroups` retains every row associated with that code for employer/report scopes; only a deposit-specific selection may filter by contribution ID. Thus choosing code 18 in the multi-issue autocomplete or via its individual "resolve issue" button presents identical deduplicated source details and resolver actions. Summary issue rows display code plus description, without amount/date detail.
-
-Feedback resolution code 18: the shared `feedback-resolution-mode.tsx` UI now reads the backend's code-18-only `missingFieldNumber`, `missingFieldName`, `missingFieldXmlTag` and `missingFieldMapped` from `feedbackValues`. It renders missing fields by distinct field number + treatment scope + employee/product identity, so a repeated report/employer field appears once while different employees retain separate problems. Invalid/unmapped numeric detail remains labeled for manual review, not silently treated as a money amount. Both single-code and multi-code entry points render this same component. The backend's existing resolver actions remain authoritative; this change does not add unaudited direct edit links or auto-close feedback.
-
-Code 18 scoped field-resolution UI (October 2026): `FeedbackResolutionMode` excludes code 18 from the generic decision resolver, because this conditional missing-field code needs field-specific correction rather than a generic confirm/reject decision. The shared modal shows the mapped XML field and treatment ownership; when the deposit-edit callback is available it can open the existing deposit editor for relevant problems. This does **not** yet embed all employer/report/deposit forms inside the same modal, and must not be represented as complete 95-field navigation. Saving an individual field does not trigger re-transmission; a report-level re-report/correction follows the full correction workflow.
-
-### Embedded code-18 field correction (October 2026)
-
-`FeedbackResolutionMode` renders dedicated field-edit surfaces from the backend `missingFieldEditSurface` contract inside the existing resolution modal, retaining a top-level missing-field number/name/XML notice and grouped employee/product identity. `feedback-code18-employer-editor.tsx` embeds the existing `EmployerForm` for actual employer contact fields 25-29, focuses and highlights the affected input, respects `group.canExecute`, and does not auto-navigate after save. Other sender/recipient integration identifiers cannot safely be edited through the employer profile form and must not be silently changed. `feedback-code18-deposit-editor.tsx` asks the backend to prepare the authorized, immutable-source correction workspace and embeds `ManualDepositData` targeting the returned workspace product; `ManualDepositData`/`DepositPaymentEditor` have an optional `embeddedEditor`/`embedded` mode that reuses the exact same input state, validation and save actions, without opening a nested payment `AppModal` or transmitting after save. The shared `FeedbackEmployeeResolver` handles field-number-based employee profile problems and synchronizes changes into the correction workspace through its existing validated employee-save flow. Report transfer field corrections can also use the workspace payment editor from report context.
-
-This is a **partial set of true edit capabilities**, not a claim that every numbered V006 XML element is an editable input: generated file headers/trailers, recipient configuration, event/technical identifiers and unsupported negative-correction paths remain read-only/escalation candidates. The known backend JSON contract now includes `missingFieldEditSurface`. Only a full report-level correction send may create subsequent interface documents, never per field.
-
-## V006 document management (October 2026)
-
-- The existing employer profile `src/app/employers/[id]/page.tsx?tab=documents` uses `EmployerDocumentsTab` to manage employer-wide type-3 affidavits only.
-- The employee profile has **no separate documents tab**. `EmployeePensionMix` passes the optional `renderProductExtra` slot to the shared `PensionProductsEditor`, showing `EmployerDocumentsTab` inside each saved employee pension product for document types 4–6. Type 5 is offered only for pension funds. New products must be saved first to obtain a stable product ID.
-- `EmployeePensionMix` fetches all employee documents once (not once per product), filters locally per `employeePensionProductId`, and provides an explicit one-time assignment UI for older employee documents without any product ID. The backend preserves matching product IDs across subsequent saves.
-- `src/lib/report-attachments-api.ts` exposes eligible library candidates and explicit attach-to-report operations. `DepositPaymentEditor` allows choosing saved employer/product PDFs or a fresh PDF for the relevant 006 operation and creates an independent report evidence copy. Library upload alone does not transmit a document.
-- Feedback document resolvers and fields 57/58 link to employer-level affidavits or the affected employee's pension mix as appropriate. Historical report attachments remain immutable and separate from library documents.
-
-
-### Current supported code-18 correction entry points (October 2026 update)
-- `feedback-resolution-mode.tsx` routes mapped product fields 59, 70, 72–73, 78 and contribution fields 79–82 into `feedback-code18-product-editor.tsx`, which prepares an authorized immutable correction workspace before navigating to the existing `ManualReportData` product/contribution editor.
-- The report wizard forwards `focusReportEmployeeId`, `focusReportProductId` and `focusMissingFieldNumber`; the employee modal opens the exact workspace employee and highlights the targeted product. Corrections are saved to the workspace only and require a separate full report resend. Shared `PensionProductsEditor` supports `focusedReportProductId` for this flow.
-- Payment/account fields 35, 37–38, 40–42, 44–46, 49–53, pension subtype 60 and deposit metadata 71, 74–77 reuse the scoped existing deposit payment/metadata editor; no product field is routed to this editor merely by range.
-- Unsupported system/derived fields (e.g. report IDs, previous correction lineage, generated totals, optional nil fields) retain an explicit diagnostic notice rather than offering an unrelated write surface. Negative-report missing-field corrections remain non-editable until the dedicated negative correction workflow is verified.
-
-### Report feedback code 100 focused treatment (October 2026)
-- `feedback-internal-correction-resolver.tsx` suppresses the generic eight-field report comparison for a pure code-100 group. It explains that a current correction operation 2/3 lacks its corresponding negative operation 6, and requires verifying previous negative transmission/acknowledgement before preparing a correction. Code 100 no longer offers the generic correction-workspace/deposit-editor button; instead it links to report history for checking whether the corresponding negative report was sent and accepted. No automatic negative transmission is initiated.
-
-- Feedback code 100 now displays a concise three-scenario report-level checklist: missing negative report (complete correction flow), rejected/not-received negative report (inspect transmission feedback), or accepted negative report (compare record linkage and escalate to provider). The button opens report history, not an unrelated deposit editor. The UI does not automatically transmit cancellation files.
-
-### Feedback resolution display and code 102 (2026-10-11)
-- `feedback-internal-correction-resolver.tsx` no longer renders the generic reported/current comparison table for correction and document codes; actionable guidance and controls remain visible.
-- Official feedback code 102 is an invalid collective-agreement employer declaration (employer document type 3), scoped to the report, not to each deposit. The resolver shows one employer-document correction explanation and link rather than per-contribution upload prompts. Feedback-resolution PDF uploads are problem-scoped evidence and must not be represented as replacement of the report's submitted declaration. Replacing an employer-library document alone does not retroactively alter a transmitted report.
-
-### Resolution behavior across comparable official feedback codes (Oct 2026)
-- Report correction pair: codes 100 (current correction without matching negative action 6) and 101 (negative action 6 without matching current correction 2/3) share a compact report-history validation guide, not a per-deposit editor. No cancellation or resend is triggered automatically.
-- Employer-level declaration errors 102/103 (collective agreement), 111/112 (ordinary employer declaration) route to one employer-document management surface per report. Employee declarations 109/110 route to the employee pension product; 55/67/69/70 are handled as document requirements for the affected product or refund operation. These branches do not render repeated problem-scoped PDF upload controls, because the feedback evidence upload API does not replace the document inside transmitted report data.
-- The shared internal correction resolver no longer renders the generic full field comparison. Specific edit forms and existing correction permissions remain unchanged.
-
-- `src/components/employer-documents-tab.tsx` presents one table row for each allowed document type in employer and employee pension-product profiles (including missing documents). Each row displays the uploaded filename(s) and download/delete controls, with a one-click PDF picker that validates client-side and uploads immediately on selection (server still validates/scans), for missing documents or additional versions. Type eligibility and authorization follow the existing API and per-product constraints; no new document types or backend contracts were introduced.
-
-- The external case note entry is labeled `הוסף הערה לשגיאה` with `שמור` and requires nonempty text; the existing backend audit/case record remains the storage mechanism. The feedback resolver displays `document-updated-awaiting-report` when a matching type-3 employer affidavit (codes 111/112) or type-6 product-linked collective declaration (codes 102/103) was uploaded after official feedback. This is pending report correction, not official acceptance. Collective declaration errors direct users to the affected employee pension product, not the general employer type-3 document tab.
-
-- Resolution mode renders `source-data-updated-awaiting-report` as a pending check for edits to live employer/employee/product records; it does not hide the official error or claim producer acceptance. External case entry and note section are both labeled `הוסף הערה לשגיאה` with `שמור` buttons, retaining existing audit-backed persistence.
-
-- In `manual-deposit-data.tsx`, negative refund operation 5 shows an explicit applicability prompt for document type 6: upload the employer collective-agreement declaration directly to the relevant employee/product in the negative report only when the refund is pursuant to a collective agreement. A general employer document library upload does not attach a document to the submitted XML bundle. No blanket type-6 requirement is imposed on all operation-5 refunds.
-
-- In the negative operation-5 deposit editor, an explicit accessible yes/no choice asks if the refund is under a collective agreement. The answer is persisted through report product metadata; a yes answer requires a type-6 attachment on the same report product before saving and the backend preflight enforces both choice and matching attachment before transmission. Codes 102–103 offer a preselected link to create a new negative draft using the source current report and source product, rather than altering immutable transmitted evidence. The operator must check for duplicate refunds and actual producer feedback.
-
-- When feedback codes 102/103 carry a negative report's source current-report/product lineage, the resolution deep-link preselects that source and product. After the operator confirms step 1 and a new negative draft is created, the wizard focuses the matching deposit editor, initializes operation code 5, and displays the persisted collective-agreement yes/no requirement and document type 6 uploader. The submitted negative report remains immutable; this creates a new draft and must be reviewed for duplicate refunds before sending.
+Where things live. Conventions and the reasons behind them: `docs/ARCHITECTURE.md`; recipes: `docs/DEVELOPMENT.md`. Business rules (Employer Interface 006, billing, feedback playbooks) are owned by the backend and its documentation; the frontend only presents them.
+
+Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<feature>/screens/`.
+
+## App shell and session
+
+| Path | Responsibility |
+| --- | --- |
+| `src/app/layout.tsx` | Root layout: global stylesheets in cascade order, `QueryProvider`, `ThemeProvider`, toaster, `ValidationUxBridge`, `SessionTimeoutGuard` |
+| `src/features/shell/components/persistent-app-layout.tsx` | Lists the public routes rendered without the shell (`/login`, `/register`, `/invite`, `/session-timeout`) |
+| `src/features/shell/components/app-shell.tsx` | Authenticated shell: navigation from the access scope, route guards, self-service onboarding, plan-upgrade dialog (`subscribeToApiErrors`) |
+| `src/lib/session/` | `app-store.ts` (Zustand: session display metadata, selected organization/employer/employee), `storage.ts` (persistence, never tokens), `lifecycle.ts` (logout, expiry, multi-tab broadcast) |
+| `src/features/auth/` | Login/OTP, registration, invitation and session-timeout screens; `session-timeout-guard.tsx` (local 30-minute idle check, then server validation); `api.ts` maps auth error codes to Hebrew |
+| `src/features/scope/` | `scope-context.ts` (`/api/scope` query), `components/scope-controller.tsx` (organization/employer/employee selection), `scope-events.ts` (page scope resolved/changed), `use-employer-scope.ts` |
+| `src/features/settings/` | Theme provider (light/dark/system saved to user preferences) and the settings screen |
+
+## Shared UI (`src/components`)
+
+| Path | Responsibility |
+| --- | --- |
+| `ui/ui-controls.tsx` | `UiInput`, `UiTextarea`, `UiCheckbox`, `UiDateInput` (DD/MM/YYYY), `UiSelect`, `UiAutocomplete`, `UiActionMenu`. Option lists and menus are portaled to `document.body` so modals and tables never clip them |
+| `ui/app-modal.tsx` | The only dialog shell: fixed header/footer, scrollable body, nested scroll locking; cancel/back on the RTL right, positive actions on the left (`data-modal-side="positive"`) |
+| `ui/data-table.tsx` | The only table: fixed layout, windowed rows, infinite loading (`hasMore`/`onLoadMore`), optional expandable rows (`expandedRowComponent`, `canExpandRow`, `expandToggleColumnKey`); links use `DataTableLink` (no prefetch) |
+| `ui/ui-file-upload.tsx` | File picker with drag/drop, type and size checks (each caller passes the backend's limit) |
+| `ui/ui-selection-list.tsx`, `ui/app-tabs.tsx`, `ui/tooltip.tsx`, `ui/notifications.tsx` | Searchable multi-select, tabs, tooltip, `notify` toasts |
+| `forms/form-feedback.tsx`, `forms/form-select.tsx` | `Field` (label + error), `FormSelect` (`UiSelect` bound to React Hook Form) |
+| `forms/validation-ux-bridge.tsx` | Highlights fields from error notices and server validation for forms not on React Hook Form |
+| `layout/` | Brand, accessibility menu |
+
+Styles: `src/styles` (`tokens.css` first, `dark-theme.css` and `responsive.css` for theme and breakpoints); screen-only styles sit next to the screen (`src/features/reporting/screens/reports-screen.css`).
+
+## Infrastructure (`src/lib`)
+
+| Path | Responsibility |
+| --- | --- |
+| `api/client.ts`, `api/transport.ts` | `apiRequest`, `apiBlob`, `queryString`, `subscribeToApiErrors`; same-origin transport, global 401 → session expiry |
+| `api/errors.ts`, `api/error-messages.ts` | `ApiError` (kind, status, `code`, `fieldErrors`, `traceId`, `problem`) and the Hebrew message policy |
+| `api/paging.ts` | `PagedResult` (`{ items, hasMore }`, offset paging with `skip`/`take`) |
+| `query/` | `QueryClient` defaults and provider |
+| `forms/` | `useZodForm`, shared Zod rules, input masks, `applyServerErrors`, validators |
+| `format/` | Dates (DD/MM/YYYY), reporting months, money |
+| `server/backend.ts` | Server-only: backend URL, session cookie, cross-site request check |
+| `download.ts`, `hooks/` | `saveBlob`; `useDebouncedValue`, `useUrlScope` |
+
+Server routes: `src/app/api/backend/[...path]/route.ts` (proxy) and `src/app/api/session/logout/route.ts`.
+
+## Features
+
+### Organizations, employers, employees, access
+- `organizations/` — list and creation (platform admin), profile screen, general details form, `organization-types.ts` (selectable categories).
+- `employers/` — list, creation, profile screen with tabs in `components/profile/` (general, employees, pension payment, billing, reporting); `employer-transfer-modal.tsx` (platform admin), `employer-documents-tab.tsx` + `documents-api.ts` (employer and pension-product PDF library), `employer-status.ts` (Active/Closed).
+- `employees/` — list, creation, profile; `employee-form.tsx`, `employee-pension-mix.tsx` (pension products + product documents), `excel-employee-intake.tsx`, `inline-employee-create-modal.tsx`.
+- `access/` — users, roles, permissions, employer assignments and invitations (`access-screen.tsx`).
+- `admin/` — platform administration: billing customers, reference-data integrations, platform users, referents (`referents-admin-tab.tsx`).
+
+### Pension products and reference data
+- `pension/components/pension-products-editor.tsx` — the shared product/contribution editor (employee pension mix and report drafts); `pension-fund-select.tsx`, `salary-layer-select.tsx`, `contribution-math.ts`.
+- `reference-data/` — banks, branches, cities, streets, option lists, salary layers and the pension-editor option bundle; `reference-option-select.tsx`, `address-autocomplete-fields.tsx`. Autocompletes load suggestions only when opened.
+
+### Reporting (Employer Interface 006)
+- `reporting/screens/new-report-screen.tsx` — the report wizard: report type, details, employees, deposits, summary/transmission; resumes drafts and correction workspaces (`resumeReportId`, focus parameters from feedback). Steps in `components/new-report/`.
+- `reporting/components/manual-report-data.tsx` (employees and products), `manual-deposit-data.tsx` + `deposit-payment-editor.tsx` (payment details, V006 metadata, payment evidence, report attachments), `employer-interface-xml-intake.tsx` (XML/DAT/TST import), `report-validation-errors-modal.tsx`, `salary-template-tools.tsx` (template in `public/templates/`).
+- API modules: `api.ts` (drafts), `deposits-api.ts`, `validation-api.ts`, `transmission-api.ts`, `derived-reports-api.ts` (corrections and differences), `attachments-api.ts`, `payment-confirmations-api.ts`, `employer-interface-api.ts` (006 profiles, metadata, preflight, options).
+- `reporting/screens/reports-screen.tsx` — Reports & Feedback: paged report grid with server-side filters, per-report deposit rows, exports and correction entry points.
+
+Invariants:
+- Submitted reports are immutable; corrections happen in a backend-created correction workspace and are sent again as a whole report.
+- V006 checks the frontend can know before transmission are split on purpose: the pension editor checks only draft-time rules, the Deposits stage (`deposit-validation.ts`) checks deposit-status rules, and historical/cross-report rules stay backend-only. `scripts/check-v006-preventable-validations.mjs` guards this split.
+- Backend validation and preflight responses are authoritative; the frontend never auto-corrects them.
+
+### Feedback (`src/features/feedback`)
+- `api.ts` — feedback grid, deposit details, treatments, resolution context and actions, external cases, exports. `queries.ts` caches the grid, employer context and treatment statuses.
+- `report-feedback-modal.tsx` — single entry point with `employer`, `report` and `deposit` modes, each with `view` and `resolve` states; `report-deposit-feedback-modal.tsx` — employee/product detail with reconciliation and treatment history.
+- `feedback-resolution-mode.tsx` — the resolution queue built from the backend `groups` contract; resolvers: `feedback-employee-resolver.tsx`, `feedback-internal-correction-resolver.tsx`, `feedback-decision-resolver.tsx`, `feedback-external-case-resolver.tsx`, `feedback-code18-*-editor.tsx` (missing-field corrections).
+
+Invariants: the backend decides which groups are executable (`canExecute`), the target scope and which problems a save resolves; the UI only offers what the context returns and refreshes it after every action.
+
+### Billing and payments
+- `billing/` — subscription plan and pricing (`subscription-billing-panel.tsx`), the account that pays Alpha (`alpha-billing-account-form.tsx`, provider redirects restricted to HTTPS or this origin), `billing-gate-modal.tsx`, `upgrade-modal.tsx` + `upgrade.ts` (plan-limit dialog store).
+- `payment-accounts/` — bank accounts that pay pension deposits (organization and employer); unmasked bank details stay in component state.
+- `dashboard/` — statistics from `/api/dashboard/stats` and plan usage.
+
+## Quality gates
+
+| Check | Purpose |
+| --- | --- |
+| `npm run test` | Vitest (`src/**/*.test.ts`): API client and errors, proxy/logout security, form schemas |
+| `scripts/check-ui-primitives.mjs` | Shared controls, checkboxes and `AppModal` only |
+| `scripts/check-hardcoded-select-options.mjs` | Select data comes from reference data, not literals |
+| `scripts/check-v006-preventable-validations.mjs` | V006 validation ownership split |
+| `scripts/check-regex-escaping.mjs` | No double-escaped regex literals |
+| `.github/workflows/ci.yml` | The authoritative CI sequence (same as `npm run verify`) |

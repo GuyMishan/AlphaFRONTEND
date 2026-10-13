@@ -8,19 +8,22 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "check:ui": "node scripts/check-ui-primitives.mjs",
-    "verify": "node scripts/check-hardcoded-select-options.mjs && npm run check:ui && npm run check:v006 && npm run lint && npm run typecheck && npm run build",
-    "check:v006": "node scripts/check-v006-preventable-validations.mjs"
+    "verify": "node scripts/check-hardcoded-select-options.mjs && npm run check:ui && npm run check:v006 && npm run check:regex && npm run lint && npm run typecheck && npm run test && npm run build",
+    "check:v006": "node scripts/check-v006-preventable-validations.mjs",
+    "check:regex": "node scripts/check-regex-escaping.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "5.104.0",
     "lucide-react": "^0.468.0",
-    "next": "16.3.5",
+    "next": "16.3.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.62.0",
     "sonner": "^2.0.8",
-    "xlsx": "^0.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.1.5",
     "zustand": "^5.0.8"
   },
@@ -29,8 +32,9 @@
     "@types/react": "^19.0.3",
     "@types/react-dom": "^19.0.2",
     "eslint": "^9.17.0",
-    "eslint-config-next": "16.3.5",
-    "typescript": "^5.7.2"
+    "eslint-config-next": "16.3.8",
+    "typescript": "^5.7.2",
+    "vitest": "3.2.7"
   },
   "engines": {
     "node": ">=20.9.0"

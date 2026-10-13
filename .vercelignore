@@ -1,0 +1,2 @@
+# Local read-only checkout of the backend repository (any letter case); keep it out of `vercel` CLI uploads.
+/[Aa][Ll][Pp][Hh][Aa][Bb][Aa][Cc][Kk][Ee][Nn][Dd]/

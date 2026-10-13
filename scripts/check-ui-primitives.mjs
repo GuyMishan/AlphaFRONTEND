@@ -3,8 +3,8 @@ import path from "node:path";
 
 const root = path.resolve("src");
 const allowed = new Set([
-  path.normalize("src/components/ui-controls.tsx"),
-  path.normalize("src/components/data-table.tsx"),
+  path.normalize("src/components/ui/ui-controls.tsx"),
+  path.normalize("src/components/ui/data-table.tsx"),
 ]);
 
 const rawControlPattern = /<(input|select|textarea)\b/g;
@@ -15,8 +15,8 @@ const checkboxControlPattern = /<(UiInput|input)\b[^>]*\btype\s*=\s*(?:["']check
 const customCheckboxRolePattern = /\brole\s*=\s*["']checkbox["']/g;
 const rawTablePattern = /<table\b/g;
 const rawDialogPattern = /role="dialog"|aria-modal=/g;
-const allowedNonModalDialog = path.normalize("src/components/accessibility-menu.tsx");
-const sharedDialogShell = path.normalize("src/components/app-modal.tsx");
+const allowedNonModalDialog = path.normalize("src/components/layout/accessibility-menu.tsx");
+const sharedDialogShell = path.normalize("src/components/ui/app-modal.tsx");
 const failures = [];
 
 function walk(dir) {
@@ -33,7 +33,7 @@ function walk(dir) {
 
     const content = fs.readFileSync(full, "utf8");
     const fileInputs = [...content.matchAll(fileViaInputPattern)];
-    if (rel !== path.normalize("src/components/ui-file-upload.tsx") && fileInputs.length) failures.push(`${rel}: use UiFileUpload instead of UiInput type="file" (${fileInputs.length} found)`);
+    if (rel !== path.normalize("src/components/ui/ui-file-upload.tsx") && fileInputs.length) failures.push(`${rel}: use UiFileUpload instead of UiInput type="file" (${fileInputs.length} found)`);
     const rawCheckboxes = [...content.matchAll(checkboxControlPattern)];
     if (rawCheckboxes.length) failures.push(`${rel}: use UiCheckbox instead of raw/UiInput checkboxes (${rawCheckboxes.length} found)`);
     if (customCheckboxRolePattern.test(content)) failures.push(`${rel}: custom checkbox roles require a reviewed shared component`);
