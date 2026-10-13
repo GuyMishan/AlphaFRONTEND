@@ -12,7 +12,7 @@ Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<fe
 | `src/features/shell/components/persistent-app-layout.tsx` | Lists the public routes rendered without the shell (`/login`, `/register`, `/invite`, `/session-timeout`) |
 | `src/features/shell/components/app-shell.tsx` | Authenticated shell: navigation from the access scope, route guards, self-service onboarding, plan-upgrade dialog (`subscribeToApiErrors`) |
 | `src/lib/session/` | `app-store.ts` (Zustand: session display metadata, selected organization/employer/employee), `storage.ts` (persistence, never tokens), `lifecycle.ts` (logout, expiry, multi-tab broadcast) |
-| `src/features/auth/` | Login/OTP, registration, invitation and session-timeout screens; `session-timeout-guard.tsx` (local 30-minute idle check, then server validation); `api.ts` maps auth error codes to Hebrew |
+| `src/features/auth/` | Login/OTP, registration, invitation and session-timeout screens; `session-timeout-guard.tsx` (local 30-minute idle check, then server validation); `restore-session.ts` (`resolveSession`: one backend check for a tab without session metadata); `api.ts` maps auth error codes to Hebrew |
 | `src/features/scope/` | `scope-context.ts` (`/api/scope` query), `components/scope-controller.tsx` (organization/employer/employee selection), `scope-events.ts` (page scope resolved/changed), `use-employer-scope.ts` |
 | `src/features/settings/` | Theme provider (light/dark/system saved to user preferences) and the settings screen |
 

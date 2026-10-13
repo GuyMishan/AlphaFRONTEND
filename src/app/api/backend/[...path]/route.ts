@@ -7,6 +7,7 @@ const ANONYMOUS_AUTH_PATHS = new Set([
   "api/auth/register/request",
   "api/auth/register/verify",
 ]);
+const SESSION_PATH = "api/auth/session";
 const TOKEN_ISSUING_PATHS = new Set(["api/auth/otp/verify", "api/auth/register/verify"]);
 // Allow-list: correlation id lets support match a request to backend logs and audit rows.
 const FORWARDED_RESPONSE_HEADERS = ["content-type", "content-disposition", "x-correlation-id"];
@@ -35,6 +36,11 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
 
   const headers = new Headers();
   const cookieToken = request.cookies.get(ACCESS_COOKIE)?.value;
+  // Without a cookie the session check can only fail: answer here so anonymous
+  // visitors do not use the backend's per-IP /api/auth rate limit.
+  if (!cookieToken && request.method === "GET" && backendPath === SESSION_PATH) {
+    return problem(401, "AUTHENTICATION_REQUIRED", "נדרשת התחברות", "יש להתחבר כדי להמשיך.");
+  }
   const contentType = request.headers.get("content-type");
   // Login/registration endpoints are anonymous by design. Never forward a stale
   // session cookie to them: the backend session middleware would reject an

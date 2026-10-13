@@ -12,8 +12,9 @@ import { EmployerForm } from "@/features/employers/components/employer-form";
 import { AccessibilityMenu } from "@/components/layout/accessibility-menu";
 import { scopeApi } from "@/features/scope/api";
 import { logout } from "@/lib/session/lifecycle";
+import { resolveSession } from "@/features/auth/restore-session";
 import { getScopeContext, refreshScopeContext } from "@/features/scope/scope-context";
-import { getSession, isPlatformAdminSession, setEmployerSelection, setOrganizationSelection } from "@/lib/session/storage";
+import { isPlatformAdminSession, setEmployerSelection, setOrganizationSelection } from "@/lib/session/storage";
 import { useAppStore } from "@/lib/session/use-app-store";
 import type { Employer, EmployerInput } from "@/features/employers/types";
 import type { GlobalScopeContext } from "@/features/scope/types";
@@ -90,11 +91,14 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     let active = true;
 
     async function initializeSession() {
-      const stored = getSession();
-      if (!stored) {
+      const resolved = await resolveSession();
+      if (!active) return;
+      // Unauthenticated, or the backend could not be reached: the login page checks again.
+      if (resolved.status !== "authenticated") {
         router.replace("/login");
         return;
       }
+      const stored = resolved.session;
 
       try {
         const [onboarding, scope] = await Promise.all([
