@@ -9,6 +9,7 @@ import { employeesApi } from "@/features/employees/api";
 import type { Employee } from "@/features/employees/types";
 import type { Employer } from "@/features/employers/types";
 import { formatDateDDMMYYYY } from "@/lib/format/date";
+import { TableSkeleton } from "@/components/loading/skeleton";
 
 const PAGE_SIZE = 100;
 
@@ -59,14 +60,14 @@ export function EmployerEmployeesPanel({
 
     <section className="card">
       {!showHeader ? <div className="card-head">
-        <div><h2>עובדים</h2><span style={{ color: "var(--muted)" }}>עובדי המעסיק וקישורים לפרופילים שלהם.</span></div>
+        <div><h2>עובדים</h2><span style={{ color: "var(--color-text-muted)" }}>עובדי המעסיק וקישורים לפרופילים שלהם.</span></div>
         {canCreate ? <Link className="btn btn-primary" href={`/employees/new?organizationId=${organizationId}&employerId=${employer.id}`}><UserRoundPlus size={18} />הוספת עובד</Link> : null}
       </div> : null}
       <div className="toolbar">
         <div className="search"><Search size={17} /><UiInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
         <span className="badge badge-blue">{employees.length} תוצאות</span>
       </div>
-      {loading ? <div className="empty">טוען עובדים...</div> : employees.length ? <DataTable
+      {loading ? <TableSkeleton columns={5} label="טוען עובדים..." /> : employees.length ? <DataTable
         items={employees}
         rowKey={(employee) => employee.id}
         columns={[

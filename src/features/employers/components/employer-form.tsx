@@ -91,7 +91,7 @@ export function EmployerForm({
   });
 
   return <div className={embedded ? "employer-form-embedded" : "card profile-card"}>
-    <div className="profile-summary"><div className="profile-avatar"><Building2 /></div><div><h2 style={{ margin: 0 }}>{title}</h2><span style={{ color: "var(--muted)" }}>{employer ? editable ? "עריכת פרופיל מעסיק" : "צפייה בפרופיל מעסיק" : onCreate ? "הגדרת העסק שלכם" : "הקמת מעסיק חדש בארגון"}</span></div></div>
+    <div className="profile-summary"><div className="profile-avatar"><Building2 /></div><div><h2 style={{ margin: 0 }}>{title}</h2><span style={{ color: "var(--color-text-muted)" }}>{employer ? editable ? "עריכת פרופיל מעסיק" : "צפייה בפרופיל מעסיק" : onCreate ? "הגדרת העסק שלכם" : "הקמת מעסיק חדש בארגון"}</span></div></div>
     {!editable && employer ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק הזה, ללא הרשאת עריכה.</div> : null}
     <form id={formId} className="form" onSubmit={submit} noValidate>
       <Field label="שם משפטי מלא *" error={errors.legalName?.message}><UiInput aria-invalid={Boolean(errors.legalName)} required minLength={2} maxLength={200} disabled={!editable} {...register("legalName")} /></Field>
@@ -105,7 +105,7 @@ export function EmployerForm({
         <Field label="טלפון איש קשר" error={errors.contactPhone?.message}><UiInput {...contactProps("contactPhone")} inputMode="numeric" maxLength={11} {...digitsOnly(register("contactPhone"), 11)} /></Field>
         <Field label="נייד איש קשר" error={errors.contactMobile?.message}><UiInput {...contactProps("contactMobile")} inputMode="numeric" maxLength={10} {...digitsOnly(register("contactMobile"), 15)} /></Field>
       </div>
-      <small style={{ color: "var(--muted)", marginTop: -8 }}>יש להזין לפחות אחד מהשדות: טלפון או נייד.</small>
+      <small style={{ color: "var(--color-text-muted)", marginTop: -8 }}>יש להזין לפחות אחד מהשדות: טלפון או נייד.</small>
       <Field label="אימייל איש קשר *" error={errors.contactEmail?.message}><UiInput {...contactProps("contactEmail")} type="email" maxLength={50} {...register("contactEmail")} /></Field>
       {employer ? <div className="field"><label>סטטוס</label><UiInput disabled value={employer.status === 2 ? "פעיל" : "בתהליך הקמה"} /></div> : null}
       {!hideActions ? <div className="form-actions">{showBackLink ? <Link className="btn btn-secondary" href="/employers">חזרה</Link> : null}{editable ? <button className="btn btn-primary" disabled={saving} type="submit"><Save size={18} />{saving ? "שומר..." : employer ? "שמירת שינויים" : createLabel}</button> : null}</div> : null}

@@ -13,6 +13,7 @@ import { UiAutocomplete, UiChoiceCard, UiInput, UiSelect } from "@/components/ui
 import { Tooltip } from "@/components/ui/tooltip";
 import { autocompleteLookupTerm } from "@/features/reference-data/lookup-term";
 import { isCompletePaymentAccount, PAYMENT_ACCOUNT_REQUIRED_MESSAGE } from "@/features/payment-accounts/schemas";
+import { CardSkeleton } from "@/components/loading/skeleton";
 
 export const EMPTY_ACCOUNT: EmployerPaymentAccountInput = {
   bankId: 0,
@@ -223,7 +224,7 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
     }
   }
 
-  if (loadingChoice) return <div className="empty">טוען חשבון תשלום פנסיוני...</div>;
+  if (loadingChoice) return <CardSkeleton lines={4} label="טוען חשבון תשלום פנסיוני..." />;
 
   const organizationAccount = resolution?.organizationAccount ?? null;
   const directAccount = resolution?.employerAccount ?? null;
@@ -231,7 +232,7 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
 
   return <section className="card profile-payment-card payment-horizontal-shell">
     <div className="card-head">
-      <div><h2>תשלום פנסיוני</h2><span style={{ color: "var(--muted)" }}>בחרו מאיזה חשבון יתבצעו הדיווחים וההפקדות הפנסיוניות של המעסיק.</span></div>
+      <div><h2>תשלום פנסיוני</h2><span style={{ color: "var(--color-text-muted)" }}>בחרו מאיזה חשבון יתבצעו הדיווחים וההפקדות הפנסיוניות של המעסיק.</span></div>
       {pensionPayment.modeOverridden && resolution?.account ? <span className={resolution.source === "Organization" ? "badge badge-blue" : "badge badge-green"}>{resolution.source === "Organization" ? "פעיל: חשבון ארגוני" : "פעיל: חשבון מעסיק"}</span> : null}
     </div>
 

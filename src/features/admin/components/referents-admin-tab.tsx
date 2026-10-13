@@ -164,7 +164,7 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
     <div className="card-head" style={{ alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
       <div>
         <h2>ניהול רפרנטים</h2>
-        <p style={{ color: "var(--muted)" }}>
+        <p style={{ color: "var(--color-text-muted)" }}>
           רפרנט יכול לנהל ארגונים שלמים ומעסיקים נבחרים מארגונים שונים, בהתאם לשיוכים שהגדרת.
         </p>
       </div>
@@ -187,7 +187,7 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
         { key: "actions", label: "פעולות" },
       ]}
       renderCells={(row) => [
-        <span key="user"><b>{row.displayName}</b><small style={{ display: "block", color: "var(--muted)" }}>{row.email}</small></span>,
+        <span key="user"><b>{row.displayName}</b><small style={{ display: "block", color: "var(--color-text-muted)" }}>{row.email}</small></span>,
         row.organizationIds.length,
         row.employerIds.length,
         row.isActive ? "פעיל" : "משתמש לא פעיל",

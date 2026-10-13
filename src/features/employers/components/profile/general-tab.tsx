@@ -103,7 +103,7 @@ export function GeneralTab({ organizationId, employer, canEdit, canManage, addre
 
   return <section className="card profile-card employer-general-card employer-general-card-compact">
     <div className="card-head">
-      <div><h2>פרטים כלליים</h2><span style={{ color: "var(--muted)" }}>פרטי המעסיק, איש הקשר והכתובת במקום אחד.</span></div>
+      <div><h2>פרטים כלליים</h2><span style={{ color: "var(--color-text-muted)" }}>פרטי המעסיק, איש הקשר והכתובת במקום אחד.</span></div>
       <span className={employerStatusBadgeClass(employer.status)}>{employerStatusLabel(employer.status)}</span>
     </div>
     {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הפרטים מוצגים לקריאה בלבד לפי ההרשאה שלך.</div> : null}

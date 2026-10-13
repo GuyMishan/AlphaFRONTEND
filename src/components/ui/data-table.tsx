@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { CSSProperties, ComponentProps, Fragment, ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { LoadingState } from "@/components/loading/loading-state";
+import { Skeleton, skeletonCellWidth } from "@/components/loading/skeleton";
 
 export type DataTableColumn = { key: string; label: ReactNode; width?: string };
 
@@ -140,7 +142,10 @@ export function DataTable<T>({
 
   useEffect(() => { requestMoreIfNeeded(); }, [requestMoreIfNeeded]);
 
-  return <div className="data-table">
+  const skeletonRows = Math.min(6, Math.max(3, Math.floor(maxHeight / rowHeight) - 1));
+
+  return <div className="data-table" aria-busy={loading || loadingMore || undefined}>
+    {loading && items.length === 0 ? <span className="sr-only" role="status">{loadingLabel}</span> : null}
     <div ref={viewportRef} className={`table-wrap data-table-viewport ${wrapperClassName}`.trim()} style={{ maxHeight, overflow: "auto", scrollbarGutter: "stable" }} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}>
       <table className={`data-table-grid ${tableClassName}`.trim()} style={{
         "--data-table-row-height": `${rowHeight}px`,
@@ -149,7 +154,11 @@ export function DataTable<T>({
         <colgroup>{columns.map((column) => <col key={column.key} style={column.width ? { width: column.width } : undefined} />)}</colgroup>
         <thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead>
         <tbody>
-          {loading && items.length === 0 ? <tr><td colSpan={columns.length}><div className="empty">{loadingLabel}</div></td></tr> : items.length === 0 ? <tr><td colSpan={columns.length}><div className="empty">{emptyState}</div></td></tr> : <>
+          {loading && items.length === 0 ? Array.from({ length: skeletonRows }, (_, row) => (
+            <tr key={row} className="data-table-skeleton-row" aria-hidden="true" style={{ height: rowHeight }}>
+              {columns.map((column, index) => <td key={column.key}><Skeleton width={skeletonCellWidth(row, index)} height={index === 0 ? 14 : 12} /></td>)}
+            </tr>
+          )) : items.length === 0 ? <tr><td colSpan={columns.length}><div className="empty">{emptyState}</div></td></tr> : <>
             {topSpacerHeight > 0 ? <tr aria-hidden="true" className="virtual-spacer"><td colSpan={columns.length} style={{ height: topSpacerHeight, padding: 0, border: 0 }} /></tr> : null}
             {visibleItems.map((item, offset) => {
               const key = rowKey(item);
@@ -192,7 +201,7 @@ export function DataTable<T>({
               </Fragment>;
             })}
             {bottomSpacerHeight > 0 ? <tr aria-hidden="true" className="virtual-spacer"><td colSpan={columns.length} style={{ height: bottomSpacerHeight, padding: 0, border: 0 }} /></tr> : null}
-            {loadingMore ? <tr className="data-table-loading-more"><td colSpan={columns.length}><div className="empty">{loadingMoreLabel}</div></td></tr> : null}
+            {loadingMore ? <tr className="data-table-loading-more"><td colSpan={columns.length}><LoadingState compact label={loadingMoreLabel} /></td></tr> : null}
           </>}
         </tbody>
       </table>

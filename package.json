@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check:ui": "node scripts/check-ui-primitives.mjs",
-    "verify": "node scripts/check-hardcoded-select-options.mjs && npm run check:ui && npm run check:v006 && npm run check:regex && npm run lint && npm run typecheck && npm run test && npm run build",
+    "check:tokens": "node scripts/check-design-tokens.mjs",
+    "verify": "node scripts/check-hardcoded-select-options.mjs && npm run check:ui && npm run check:tokens && npm run check:v006 && npm run check:regex && npm run lint && npm run typecheck && npm run test && npm run build",
     "check:v006": "node scripts/check-v006-preventable-validations.mjs",
     "check:regex": "node scripts/check-regex-escaping.mjs"
   },

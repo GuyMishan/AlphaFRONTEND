@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, Clock3, LockKeyhole } from "lucide-react";
-import { Brand } from "@/components/layout/brand";
+import { Brand } from "@/components/brand/brand";
 
 export default function SessionTimeoutPage() {
   return (

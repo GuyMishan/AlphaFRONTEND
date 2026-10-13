@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { AuthBrand } from "@/features/auth/components/auth-brand";
+import { AuthBrand, AuthMobileBrand } from "@/features/auth/components/auth-brand";
+import { LoadingState } from "@/components/loading/loading-state";
 import { OtpInput } from "@/features/auth/components/otp-input";
 import { authApi, authErrorMessage, sessionFromAuthenticatedUser, type OtpChallenge } from "@/features/auth/api";
 import { loginSchema, OTP_CODE_PATTERN, type LoginValues } from "@/features/auth/schemas";
@@ -92,8 +93,9 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <AuthBrand />
-      {checkingSession ? null : <section className="auth-form-wrap">
+      {checkingSession ? <section className="auth-form-wrap"><LoadingState label="בודקים את פרטי ההתחברות..." /></section> : <section className="auth-form-wrap">
         <div className="auth-card">
+          <AuthMobileBrand />
           <h2>כניסה למערכת</h2>
           <p>{challenge ? "הזינו את הקוד בן 6 הספרות שנשלח לדוא״ל הרשום" : "התחברו כדי להמשיך לסביבת העבודה שלכם"}</p>
 

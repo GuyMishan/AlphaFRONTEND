@@ -5,6 +5,7 @@ import { notify } from "@/components/ui/notifications";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { useAppearance } from "@/features/settings/components/theme-provider";
 import type { AppearancePreference } from "@/features/settings/api";
+import { PageHeader } from "@/components/layout/page-header";
 
 const options: Array<{ value: AppearancePreference; title: string; description: string; icon: typeof Sun }> = [
   { value: "light", title: "מצב בהיר", description: "תצוגה בהירה קבועה", icon: Sun },
@@ -26,11 +27,9 @@ export default function SettingsPage() {
   }
 
   return <AppShell title="הגדרות" hideScopeController>
-    <div className="page-head">
-      <div><h1>הגדרות</h1><p>העדפות אישיות של המשתמש</p></div>
-    </div>
+    <PageHeader title="הגדרות" description="העדפות אישיות של המשתמש" />
     <div className="card settings-card">
-      <div className="card-head"><div><h2>תצוגה</h2><span style={{ color: "var(--muted)" }}>ההגדרה נשמרת לחשבון שלך ותיטען בכל התחברות.</span></div></div>
+      <div className="card-head"><div><h2>תצוגה</h2><span style={{ color: "var(--color-text-muted)" }}>ההגדרה נשמרת לחשבון שלך ותיטען בכל התחברות.</span></div></div>
       <div className="appearance-options" aria-busy={loading || saving}>
         {options.map((option) => {
           const Icon = option.icon;

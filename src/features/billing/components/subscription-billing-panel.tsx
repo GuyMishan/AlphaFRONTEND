@@ -63,7 +63,7 @@ export function SubscriptionBillingPanel({ organizationId, employerId, entitleme
   return <div className="employer-profile-stack">
     <section className="card profile-card">
       <div className="card-head">
-        <div><h2>מנוי וחיוב ALPHA</h2><span style={{ color: "var(--muted)" }}>בחרו את שיטת החיוב. בתוכנית בתשלום אין מגבלת משתמשים, מעסיקים או עובדים.</span></div>
+        <div><h2>מנוי וחיוב ALPHA</h2><span style={{ color: "var(--color-text-muted)" }}>בחרו את שיטת החיוב. בתוכנית בתשלום אין מגבלת משתמשים, מעסיקים או עובדים.</span></div>
         <button className="btn btn-secondary" type="button" onClick={() => openUpgradeDialog({ reason: "feature", feature: "billing_support", planName: pricing?.billingType ?? selected })}>יצירת קשר</button>
       </div>
 
@@ -83,7 +83,7 @@ export function SubscriptionBillingPanel({ organizationId, employerId, entitleme
         {selected !== "Free" ? <label className="field">
           <span>{selected === "PerEmployee" ? "תעריף לעובד" : "תעריף לשורה"}</span>
           <UiInput disabled value={pricing ? String(selected === "PerEmployee" ? pricing.employeeUnitPrice : pricing.rowUnitPrice) : ""} />
-          <small style={{ color: "var(--muted)" }}>₪ {selected === "PerEmployee" ? "לעובד" : "לשורה"} · התעריף נקבע על ידי ALPHA. לשינוי יש ליצור קשר עם התמיכה.</small>
+          <small style={{ color: "var(--color-text-muted)" }}>₪ {selected === "PerEmployee" ? "לעובד" : "לשורה"} · התעריף נקבע על ידי ALPHA. לשינוי יש ליצור קשר עם התמיכה.</small>
         </label> : null}
       </div>
       <div className="notice notice-info" style={{ marginTop: 16 }}>התעריף נקבע לפי התמחור שהוגדר עבורכם במערכת. אם התעריף אינו תואם למה שסוכם, יש ליצור קשר עם התמיכה.</div>

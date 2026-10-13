@@ -8,6 +8,7 @@ import { UiChoiceCard, UiInput } from "@/components/ui/ui-controls";
 import type { AlphaBillingAccount, AlphaBillingAccountInput, BillingPaymentMethodStatus } from "@/features/billing/types";
 import { billingAccountSchema } from "@/features/billing/schemas";
 import { useZodForm } from "@/lib/forms/use-zod-form";
+import { LoadingState } from "@/components/loading/loading-state";
 
 /** The payment provider's HTTPS page, or this app itself (the development fake provider redirects back here). */
 function isAllowedPaymentRedirect(value: unknown): value is string {
@@ -202,14 +203,14 @@ export function AlphaBillingAccountForm({
   const cardConnected = account.paymentMethodType === 1 && account.hasProviderPaymentMethod;
   const bankConnected = account.paymentMethodType === 2 && account.hasBankDebitMandate;
 
-  if (loading) return <div className="empty">טוען פרטי חיוב...</div>;
+  if (loading) return <LoadingState label="טוען פרטי חיוב..." />;
 
   return <div className={embedded ? "billing-inline-form" : "employer-profile-stack organization-billing-shell"}>
     <section className={embedded ? "billing-inline-panel" : "card profile-card profile-payment-card payment-horizontal-shell"}>
       <div className="card-head">
         <div>
           <h2>חשבון לחיוב ALPHA</h2>
-          <span style={{ color: "var(--muted)" }}>פרטי החיוב עבור השימוש ב־ALPHA. חשבון זה נפרד מחשבון התשלומים הפנסיוניים.</span>
+          <span style={{ color: "var(--color-text-muted)" }}>פרטי החיוב עבור השימוש ב־ALPHA. חשבון זה נפרד מחשבון התשלומים הפנסיוניים.</span>
         </div>
         <span className={account.paymentMethodStatus === 3 ? "badge badge-green" : "badge badge-gray"}>
           {billingStatusLabel(account.paymentMethodStatus)}

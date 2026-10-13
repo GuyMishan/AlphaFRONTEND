@@ -1,0 +1,471 @@
+/*
+ * Reporting (src/features/reporting): report wizard, manual report and deposit editors,
+ * employee-product modal, salary templates, resumable reports and validation results.
+ */
+
+/* ── Report wizard ── */
+.wizard { max-width: 1120px; margin: auto; min-width: 0; }
+.wizard.wizard-wide { width: 100%; max-width: 1440px; }
+.wizard-footer { display: flex; justify-content: space-between; align-items: center; margin: 25px calc(-1 * var(--card-padding)) calc(-1 * var(--card-padding)); padding: 18px var(--card-padding); border-top: 1px solid var(--color-border); background: var(--color-surface-sunken); border-radius: 0 0 calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px); }
+
+.manual-report-head { gap: 16px; }
+.manual-report-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.manual-report-toolbar { align-items: stretch; }
+.manual-employee-list { display: grid; gap: 9px; }
+.manual-employee-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: center; border: 1px solid var(--color-border); border-radius: 11px; padding: 12px 14px; background: var(--color-surface); }
+.manual-employee-row.selected { border-color: var(--color-primary-border); background: color-mix(in srgb, var(--color-primary-soft) 45%, var(--color-surface)); }
+.manual-employee-check { display: inline-flex; align-items: center; cursor: pointer; }
+.manual-employee-main { min-width: 0; }
+.manual-employee-main b, .manual-employee-main span { display: block; }
+.manual-employee-main span { color: var(--color-text-muted); font-size: 13px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.manual-employee-products { white-space: nowrap; }
+.manual-edit-btn { min-width: 86px; }
+
+.report-modal { width: min(1080px, 95vw); height: min(760px, 90vh); max-height: 90vh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--color-surface); border-radius: var(--radius-modal); box-shadow: var(--shadow-xl); overflow: hidden; }
+
+.report-modal-body { overflow-y: auto; padding: 12px 14px 16px; background: var(--color-bg); }
+.report-modal-body > .notice { margin-bottom: 10px; }
+.report-modal .field { gap: 4px; }
+.report-modal .field label { font-size: 12px; }
+.report-modal .field input, .report-modal .field select, .report-modal .field textarea { min-height: var(--control-height-compact); padding: 7px 9px; border-radius: 8px; font-size: 13px; }
+.employee-report-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 8px; }
+.employee-report-summary > div { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 9px; padding: 7px 10px; }
+.employee-report-summary span, .employee-report-summary b { display: block; }
+.employee-report-summary span { color: var(--color-text-muted); font-size: 11px; }
+.employee-report-summary b { margin-top: 1px; font-size: 13px; }
+
+.product-editor-list { display: grid; gap: 10px; margin-bottom: 10px; }
+.report-product-card { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: var(--radius-lg); padding: 11px; box-shadow: var(--shadow-xs); }
+.report-product-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+.report-product-title span, .report-product-title b { display: block; }
+.report-product-title span { color: var(--color-text-muted); font-size: 11px; }
+.report-product-title b { margin-top: 1px; font-size: 15px; }
+.report-product-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.contribution-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
+.contribution-section { margin-top: 9px; min-width: 0; }
+.contribution-section h3 { margin: 0 0 5px; font-size: 12px; }
+
+.contribution-table { width: 100%; min-width: 0; table-layout: fixed; background: var(--color-surface); }
+.contribution-table th, .contribution-table td { padding: 3px 4px; font-size: 11px; }
+.contribution-table th:first-child { width: 19%; min-width: 0; }
+.contribution-table th:last-child { width: 23%; }
+.contribution-table input { width: 100%; min-width: 0; height: var(--control-height-dense); border: 1px solid var(--color-border); border-radius: 6px; padding: 3px 4px; text-align: right; background: var(--color-control-bg); color: var(--color-text); font-size: 11px; }
+
+.deposit-head { gap: 14px; }
+.deposit-summary { display: flex; gap: 8px; flex-wrap: wrap; }
+.deposit-toolbar { margin-bottom: 10px; }
+
+.salary-upload-tools-root { margin-top: 13px; }
+.salary-upload-tools { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr); gap: 12px; }
+.salary-upload-info, .salary-template-panel { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); padding: 13px 15px; min-width: 0; }
+.salary-upload-info { display: flex; gap: 10px; align-items: flex-start; }
+.salary-upload-info > svg { color: var(--color-primary); flex: 0 0 auto; margin-top: 2px; }
+.salary-upload-info b { display: block; margin-bottom: 3px; font-size: 13px; }
+.salary-upload-info span { display: block; color: var(--color-text-muted); font-size: 12px; line-height: 1.55; }
+.salary-template-title { display: flex; gap: 9px; align-items: flex-start; margin-bottom: 9px; }
+.salary-template-title > svg { color: var(--color-primary); flex: 0 0 auto; margin-top: 1px; }
+.salary-template-title h3 { margin: 0; font-size: 14px; }
+.salary-template-title span { display: block; color: var(--color-text-muted); font-size: 11px; margin-top: 1px; }
+.salary-template-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.salary-template-actions .btn { padding: 7px 10px; font-size: 12px; min-width: 78px; }
+.salary-template-panel p { margin: 8px 0 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.5; }
+
+@media (max-width: 900px) { .report-product-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (max-width: 760px) {
+  .manual-report-head { display: grid; }
+  .manual-report-badges { justify-content: flex-start; }
+  .manual-report-toolbar { display: grid; }
+  .manual-report-toolbar .btn { width: 100%; }
+  .manual-employee-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; padding: 11px; }
+  .manual-employee-products { grid-column: 2 / 4; justify-self: start; }
+  .manual-edit-btn { grid-column: 3; grid-row: 1; min-width: 0; padding: 8px 10px; }
+
+  .report-modal { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; }
+
+  .report-modal-body { padding: 10px 8px 14px; overflow-x: hidden; }
+
+  .employee-report-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .report-product-card { padding: 9px; min-width: 0; overflow: hidden; }
+  .report-product-fields { grid-template-columns: 1fr; }
+  .contribution-grid { grid-template-columns: 1fr; gap: 0; }
+  .contribution-section { margin-top: 9px; }
+  .contribution-section h3 { margin-bottom: 4px; font-size: 12px; }
+
+  .contribution-table { width: 100%; min-width: 0; table-layout: fixed; font-size: 11px; }
+  .contribution-table th, .contribution-table td { padding: 4px 3px !important; min-width: 0; }
+  .contribution-table th:first-child, .contribution-table td:first-child { width: 21%; min-width: 0; }
+  .contribution-table th:last-child, .contribution-table td:last-child { width: 29%; }
+  .contribution-table input { width: 100%; min-width: 0; box-sizing: border-box; padding: 4px 3px; height: var(--control-height-dense); border-radius: 5px; font-size: 11px; }
+  .salary-upload-tools { grid-template-columns: 1fr; }
+  .salary-template-actions .btn { flex: 1; min-width: 0; }
+
+  .deposit-head { display: grid; }
+  .deposit-toolbar { display: grid; }
+
+}
+
+
+/* Report editor uses theme tokens instead of hard-coded light surfaces. */
+.report-modal,.manual-employee-row,.employee-report-summary>div,.report-product-card {background:var(--color-surface);color:var(--color-text)}
+.report-modal-body{background:var(--color-bg)}
+.employee-report-summary>div{border-color:var(--color-border)}
+.employee-report-summary span{color:var(--color-text-muted)}
+
+/* Pension product editor controls use a consistent 40px field height. */
+.report-product-fields .ui-control,
+.report-product-fields input,
+.report-product-fields select{height:40px;min-height:40px}
+.contribution-table input{height:40px!important;min-height:40px!important;padding:6px 8px;font-size:12px}
+@media(max-width:760px){.contribution-table input{height:40px!important;min-height:40px!important}}
+
+/* All pension product text/number controls, including optional policy number, are 40px. */
+.report-product-card .ui-control:not(textarea){height:40px!important;min-height:40px!important;max-height:40px!important}
+.contribution-table .contribution-input{height:40px!important;min-height:40px!important;max-height:40px!important}
+
+/* Payment details now uses the shared AppModal and a compact inferred-data summary. */
+.payment-modal.app-modal{height:min(820px,92vh);max-height:92vh}
+.payment-modal-body{overflow-y:auto;background:var(--color-surface)}
+.payment-modal .payment-layout{display:block}
+.payment-modal .payment-main{width:100%}
+.payment-modal .payment-provider-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(140px,1fr) minmax(0,1.4fr) minmax(0,1.4fr);gap:12px;align-items:center}
+.payment-modal .payment-provider-grid>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.payment-modal .payment-provider-grid small,.payment-modal .payment-summary-label{font-size:12px;color:var(--color-text-muted)}
+.payment-modal .payment-provider-grid b{overflow-wrap:anywhere}
+@media(max-width:900px){.payment-modal .payment-provider-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.payment-modal.app-modal{height:100dvh;max-height:100dvh}.payment-modal .payment-provider-grid{grid-template-columns:1fr}}
+
+/* Payment modal: fixed footer and readable LTR account identifiers inside RTL UI. */
+.payment-modal .app-modal-actions{margin-top:auto;flex:0 0 auto;background:var(--color-surface);z-index:2}
+.payment-modal-body{min-height:0}
+.account-number{direction:ltr;unicode-bidi:isolate;display:inline-block;text-align:left}
+
+/* The reporting workspace can use the full app width on desktop; mobile keeps stacked cards. */
+.resume-report-section { margin-bottom: 20px; }
+
+.wizard .choice-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1050px) { .wizard .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .wizard .choice-grid { grid-template-columns: 1fr; } }
+.resume-report-section > .btn { display: inline-flex; gap: 8px; align-items: center; }
+.resume-report-list { margin-top: 14px; border: 1px solid var(--color-border); border-radius: 12px; padding: 16px; background: var(--color-surface); display: grid; gap: 9px; }
+.resume-report-list h3 { margin: 0 0 4px; font-size: 15px; }
+
+@media(max-width: 760px) {
+  .wizard.wizard-wide { max-width: 100%; }
+
+}
+
+.deposit-proof-empty { color: var(--color-text-muted); }
+.payment-evidence-list .btn { display: inline-flex; align-items: center; gap: 6px; }
+
+.report-profile-address-link { border: 1px solid var(--color-border); background: var(--color-surface); padding: 12px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+.report-profile-address-link a { display: inline-block; margin-inline: 8px; }
+
+/* Reporting validation results use the shared modal shell and theme tokens. */
+.report-validation-modal .app-modal-body { min-width: 0; }
+.report-validation-intro { margin: 0 0 16px; color: var(--color-text-muted); line-height: 1.6; }
+.report-validation-findings { display: grid; gap: 12px; }
+.report-validation-finding { min-width: 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 14px; }
+.report-validation-finding-heading { display: flex; gap: 10px; align-items: start; }
+.report-validation-finding-heading > svg { flex: 0 0 auto; color: var(--color-danger); margin-top: 3px; }
+.report-validation-finding h3 { margin: 3px 0 0; font-size: 15px; }
+.report-validation-category { color: var(--color-text-muted); font-size: 12px; }
+.report-validation-finding > p { margin: 10px 0 0; line-height: 1.65; overflow-wrap: anywhere; }
+.report-validation-finding details { margin-top: 12px; font-size: 12px; }
+.report-validation-finding summary { cursor: pointer; color: var(--color-text-muted); }
+.report-validation-technical { margin-top: 8px; padding: 8px; background: var(--color-bg); border-radius: 8px; overflow-wrap: anywhere; }
+.report-validation-technical p { margin: 6px 0 0; line-height: 1.6; }
+
+/* Keep expanded details as one full-width card in mobile deposit grids. */
+
+
+/* Product status matches the adjacent trash button height; the title keeps only its actions. */
+.report-product-title > div:first-child { display: none; }
+.report-product-title:has(> button:last-child) { justify-content: flex-end; }
+.report-product-title .status-pill-active { height: 36px; min-height: 36px; padding: 0 11px; display: flex !important; align-items: center; justify-content: center; }
+
+/* Validation in the employee-product modal is field-first while editing.
+   Save-time validation still uses the existing toast/error flow. */
+.report-modal-body > .notice-error {
+  display: none;
+}
+
+.report-modal input:not(:disabled):user-invalid,
+.report-modal select:not(:disabled):user-invalid,
+.report-modal textarea:not(:disabled):user-invalid {
+  border-color: var(--color-danger) !important;
+  outline: 2px solid color-mix(in srgb, var(--color-danger) 16%, transparent) !important;
+  outline-offset: 1px;
+  box-shadow: none !important;
+}
+
+.report-modal input:not(:disabled):user-invalid:focus,
+.report-modal select:not(:disabled):user-invalid:focus,
+.report-modal textarea:not(:disabled):user-invalid:focus {
+  border-color: var(--color-danger) !important;
+  outline-color: color-mix(in srgb, var(--color-danger) 25%, transparent) !important;
+}
+
+/* Employee-product modal: three compact field columns, then contribution tables. */
+.report-modal {
+  width: min(1440px, 98vw) !important;
+}
+
+.report-modal-body {
+  padding: 10px 12px 12px !important;
+}
+
+.report-modal .report-product-card {
+  display: grid;
+  grid-template-columns: minmax(500px, 560px) minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: start;
+  padding: 9px 10px !important;
+}
+
+.report-modal .report-product-title {
+  grid-column: 1 / -1;
+  margin-bottom: 0 !important;
+}
+
+.report-modal .report-product-fields {
+  grid-column: 1;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 5px 6px !important;
+  align-items: end;
+  min-width: 0;
+}
+
+.report-modal .report-product-fields .field,
+.report-modal .report-product-fields .pension-fund-autocomplete {
+  min-width: 0;
+}
+
+.report-modal .report-product-fields input:not([type="checkbox"]),
+.report-modal .report-product-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-height-dense) !important;
+  height: var(--control-height-dense);
+  padding: 4px 6px !important;
+  font-size: 11.5px !important;
+}
+
+.report-modal .report-product-fields .field label {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.report-modal .contribution-grid {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px !important;
+  align-items: start;
+  min-width: 0;
+}
+
+.report-modal .contribution-section {
+  margin-top: 0 !important;
+  min-width: 0;
+}
+
+.report-modal .contribution-table th,
+.report-modal .contribution-table td {
+  padding: 2px 4px !important;
+}
+
+.report-modal .contribution-table input {
+  height: var(--control-height-dense) !important;
+}
+
+@media (max-width: 1240px) {
+  .report-modal .report-product-card {
+    grid-template-columns: 1fr;
+  }
+  .report-modal .report-product-fields,
+  .report-modal .contribution-grid {
+    grid-column: 1;
+  }
+  .report-modal .report-product-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .report-editor-app-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .report-editor-app-modal .app-modal-body,
+  .report-editor-app-modal .product-editor-list,
+  .report-editor-app-modal .report-product-card,
+  .report-editor-app-modal .report-product-fields,
+  .report-editor-app-modal .contribution-grid,
+  .report-editor-app-modal .contribution-section {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .report-editor-app-modal .contribution-section .data-table,
+  .report-editor-app-modal .contribution-section .data-table-viewport {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .report-editor-app-modal .contribution-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+  .report-editor-app-modal .contribution-table col,
+  .report-editor-app-modal .contribution-table th,
+  .report-editor-app-modal .contribution-table td {
+    width: 25% !important;
+    min-width: 0 !important;
+    max-width: 25% !important;
+    box-sizing: border-box;
+  }
+  .report-editor-app-modal .contribution-section .data-table-viewport {
+    overflow-x: hidden !important;
+  }
+  .report-editor-app-modal .contribution-table th,
+  .report-editor-app-modal .contribution-table td {
+    padding: 2px !important;
+    font-size: 10.5px;
+  }
+  .report-editor-app-modal .contribution-table input {
+    width: 100%;
+    min-width: 0;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 3px 4px !important;
+    font-size: 11px !important;
+  }
+  .report-editor-app-modal .contribution-table .data-table-row > td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .report-modal .report-product-card {
+    display: block;
+  }
+  .report-modal .report-product-title {
+    margin-bottom: 7px !important;
+  }
+  .report-modal .report-product-fields {
+    grid-template-columns: 1fr !important;
+  }
+  .report-modal .contribution-grid {
+    grid-template-columns: 1fr !important;
+    margin-top: 8px;
+  }
+}
+
+/* Autocomplete action gutter must win over dense report-modal input padding. */
+.report-modal .report-product-fields .pension-fund-search > input.ui-control {
+  padding-inline-start: 14px !important;
+  padding-inline-end: 78px !important;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Keep resumable-report content contained inside the parent report card. */
+.resume-report-section,
+.resume-report-list {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.resume-report-list > h3 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.resume-report-list .data-table {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.resume-report-list .data-table-viewport {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Dense table icon actions always center their glyph inside the button box. */
+.deposit-edit-icon,
+.deposit-proof-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 !important;
+  display: inline-grid !important;
+  place-items: center;
+  line-height: 0;
+}
+.deposit-edit-icon > svg,
+.deposit-proof-icon > svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+}
+
+.resume-report-actions {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+.resume-report-actions .resume-report-continue {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-inline: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.resume-report-actions .resume-report-delete {
+  flex: 0 0 36px;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+}
+.resume-report-actions .resume-report-delete > svg {
+  display: block;
+  margin: 0;
+}
+
+.deposit-proof-empty {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .wizard { width: 100%; max-width: 100%; min-width: 0; }
+  .wizard > .card { width: 100%; min-width: 0; overflow: hidden; }
+  .wizard-footer { margin-top: 24px; padding-block: 16px; gap: 10px; }
+  .wizard-footer .btn { min-width: 0; }
+}
+/* Retain dense report-product field styling within the shared flex modal. */
+.app-modal.report-editor-app-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(1080px, 100%);
+  height: auto;
+  min-height: 0;
+  max-height: calc(100dvh - 40px);
+}
+.app-modal.report-editor-app-modal > .app-modal-body { min-height: 0; flex: 1 1 auto; }

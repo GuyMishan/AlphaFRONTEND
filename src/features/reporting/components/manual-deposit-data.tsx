@@ -14,6 +14,8 @@ import type { Employer } from "@/features/employers/types";
 import { formatDateDDMMYYYY } from "@/lib/format/date";
 import { productNames, shortError, formatEmployerAccount } from "@/features/reporting/deposit-helpers";
 import { DepositPaymentEditor } from "@/features/reporting/components/deposit-payment-editor";
+import { LoadingState } from "@/components/loading/loading-state";
+import { TableSkeleton } from "@/components/loading/skeleton";
 
 const receiptTypeFallback: Record<number, string> = {
   1: "שוטף", 2: "חד־פעמי", 4: "הפרשים",
@@ -91,8 +93,8 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
   // Reuse the same DepositPaymentEditor as the normal deposit edit modal.
   if (embeddedEditor && focusReportProductId) return <>
     {error ? <div className="notice notice-error" role="alert">{error}</div> : null}
-    {loading || !editing ? <div className="empty" role="status">
-      {loading ? "טוען את ההפקדה לעריכה..." : "לא נמצאה ההפקדה שנבחרה בסביבת התיקון."}
+    {loading ? <LoadingState label="טוען את ההפקדה לעריכה..." /> : !editing ? <div className="empty" role="status">
+      לא נמצאה ההפקדה שנבחרה בסביבת התיקון.
     </div> : <DepositPaymentEditor embedded footerTargetId={footerTargetId}
       employer={employer} organizationId={organizationId} employerId={employerId}
       reportId={reportId} row={editing} contributionLimits={contributionLimits}
@@ -107,12 +109,12 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
 
   return <>
     <div className="card-head deposit-head">
-      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--muted)" }}>פרטי התשלום ברמת המוצר.</span></div>
+      <div><h2>נתוני ההפקדות</h2><span style={{ color: "var(--color-text-muted)" }}>פרטי התשלום ברמת המוצר.</span></div>
       <div className="deposit-summary"><span className="badge badge-blue">{rows.length} תוצאות</span><span className="badge badge-green">סה״כ ₪{total.toLocaleString("he-IL")}</span></div>
     </div>
     <div className="toolbar deposit-toolbar"><div className="search"><Search size={17} /><UiInput maxLength={100} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="יצרן, מוצר, עובד או אסמכתא" /></div></div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 12 }}>{error}</div> : null}
-    {loading ? <div className="empty">טוען נתוני הפקדות...</div> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <DataTable
+    {loading ? <TableSkeleton columns={6} label="טוען נתוני הפקדות..." /> : rows.length === 0 ? <div className="empty"><b>אין עדיין נתוני הפקדות בדיווח</b><span>חזרו לרשימת העובדים והוסיפו לפחות מוצר אחד לדיווח הנוכחי.</span></div> : <DataTable
       items={rows}
       rowKey={(row) => row.id}
       rowHeight={56}
@@ -140,7 +142,7 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
         row.referenceNumber || "—",
         row.valueDate ? formatDate(row.valueDate) : "—",
         row.reportingType ? (receiptLabels[Number(row.reportingType)] ?? `סוג תקבול לא מוכר (${row.reportingType})`) : "—",
-        <span key="cell-143" className={`badge ${row.requiresCompletion ? "badge-yellow" : "badge-green"}`}>{row.requiresCompletion ? "דורש השלמה" : "מוכן"}</span>,
+        <span key="cell-143" className={`badge ${row.requiresCompletion ? "badge-orange" : "badge-green"}`}>{row.requiresCompletion ? "דורש השלמה" : "מוכן"}</span>,
         proofs[row.id]?.length
           ? <button type="button" className="icon-button deposit-proof-icon"
               title={`הורדת ${proofs[row.id][0].originalFileName}`}

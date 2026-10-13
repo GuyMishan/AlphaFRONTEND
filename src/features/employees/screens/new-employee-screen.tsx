@@ -10,6 +10,8 @@ import { errorMessage } from "@/lib/api/error-messages";
 import { getEmployerSelection } from "@/lib/session/storage";
 import { openUpgradeDialog } from "@/features/billing/upgrade";
 import { subscribeToScopeChanges } from "@/features/scope/scope-events";
+import { FormSkeleton } from "@/components/loading/skeleton";
+import { PageHeader } from "@/components/layout/page-header";
 
 function initialEmployerScope() {
   const params = new URLSearchParams(window.location.search);
@@ -43,8 +45,8 @@ export default function NewEmployeePage() {
   const entitlements = entitlementsQuery.data;
 
   return <AppShell title="הקמת עובד">
-    <div className="page-head"><div><h1>הקמת עובד</h1><p>{employer ? <>העובד יקושר אל {employer.legalName}.</> : "בחרו מעסיק בסרגל העליון כדי להקים עובד."}</p></div></div>
-    {!scopeResolved || loading ? <div className="empty">טוען הרשאות...</div>
+    <PageHeader title="הקמת עובד" description={employer ? <>העובד יקושר אל {employer.legalName}.</> : "בחרו מעסיק בסרגל העליון כדי להקים עובד."} />
+    {!scopeResolved || loading ? <FormSkeleton label="טוען הרשאות..." />
       : error ? <div className="notice notice-error">{error}</div>
       : !organizationId || !employerId ? <div className="empty">בחרו מעסיק כדי להתחיל בהקמת העובד.</div>
       : !canCreateEmployee ? <div className="notice notice-info">אין לך הרשאה להקים עובד אצל המעסיק הזה.</div>

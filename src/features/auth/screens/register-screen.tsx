@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { AuthBrand } from "@/features/auth/components/auth-brand";
+import { AuthBrand, AuthMobileBrand } from "@/features/auth/components/auth-brand";
 import { OtpInput } from "@/features/auth/components/otp-input";
 import { authApi, authErrorMessage, sessionFromAuthenticatedUser, type OtpChallenge } from "@/features/auth/api";
 import { OTP_CODE_PATTERN, registerSchema, type RegisterValues } from "@/features/auth/schemas";
@@ -98,6 +98,7 @@ export default function RegisterPage() {
   }
 
   return <main className="auth-page"><AuthBrand /><section className="auth-form-wrap"><div className="auth-card">
+    <AuthMobileBrand />
     <h2>{invitation ? `הצטרפות ל־${invitation.organizationName}` : "יצירת משתמש"}</h2>
     <p>{challenge ? "הזינו את קוד האימות בן 6 הספרות שנשלח לאימייל" : invitation ? "השלימו את הפרטים. האימייל מקובע להזמנה שקיבלתם." : "הזינו את פרטי המשתמש החדש"}</p>
     {invitationLoading ? <div className="notice notice-info" style={{ marginBottom: 16 }}>בודק את ההזמנה...</div> : null}

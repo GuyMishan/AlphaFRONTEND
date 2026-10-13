@@ -9,6 +9,8 @@ import { errorMessage } from "@/lib/api/error-messages";
 import { getOrganizationSelection } from "@/lib/session/storage";
 import { openUpgradeDialog } from "@/features/billing/upgrade";
 import { subscribeToScopeChanges } from "@/features/scope/scope-events";
+import { FormSkeleton } from "@/components/loading/skeleton";
+import { PageHeader } from "@/components/layout/page-header";
 
 function initialOrganizationId() {
   return new URLSearchParams(window.location.search).get("organizationId") || getOrganizationSelection() || "";
@@ -32,8 +34,8 @@ export default function NewEmployerPage() {
   const entitlements = entitlementsQuery.data;
 
   return <AppShell title="הקמת מעסיק">
-    <div className="page-head"><div><h1>הקמת מעסיק</h1><p>בחרו ארגון בסרגל העליון והזינו את פרטי המעסיק.</p></div></div>
-    {!scopeResolved || loading ? <div className="empty">טוען הרשאות...</div>
+    <PageHeader title="הקמת מעסיק" description="בחרו ארגון בסרגל העליון והזינו את פרטי המעסיק." />
+    {!scopeResolved || loading ? <FormSkeleton label="טוען הרשאות..." />
       : error ? <div className="notice notice-error">{error}</div>
       : !organizationId ? <div className="empty">בחרו ארגון כדי להתחיל בהקמת המעסיק.</div>
       : !canCreateEmployer ? <div className="notice notice-info">אין לך הרשאה להקים מעסיק חדש בארגון הזה.</div>

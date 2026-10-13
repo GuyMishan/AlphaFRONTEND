@@ -11,6 +11,8 @@ import { useEmployee } from "@/features/employees/queries";
 import { useEmployer, useEmployerCapabilities } from "@/features/employers/queries";
 import { errorMessage } from "@/lib/api/error-messages";
 import { useUrlScope } from "@/lib/hooks/use-url-scope";
+import { FormSkeleton } from "@/components/loading/skeleton";
+import { PageHeader } from "@/components/layout/page-header";
 
 type ProfileTab = "details" | "mix";
 
@@ -45,11 +47,11 @@ export default function EmployeeProfilePage() {
   }
 
   return <AppShell title="פרופיל עובד" hideScopeController>
-    <div className="page-head"><div><h1>פרופיל עובד</h1><p>{employer ? <>משויך אל <a className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}>{employer.legalName}</a></> : "פרטי העובד וההעסקה"}</p></div></div>
+    <PageHeader title="פרופיל עובד" description={employer ? <>משויך אל <a className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}>{employer.legalName}</a></> : "פרטי העובד וההעסקה"} />
     {employee ? <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל עובד" /> : null}
     {error ? <div className="notice notice-error">{error}</div> : employee ? tab === "details"
       ? <div className="employee-profile-layout"><EmployeeForm organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /></div>
       : <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={employee.id} employee={employee} editable={canEditEmployee} />
-      : <div className="empty">טוען פרופיל...</div>}
+      : <FormSkeleton label="טוען פרופיל..." />}
   </AppShell>;
 }

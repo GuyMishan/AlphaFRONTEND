@@ -14,6 +14,8 @@ import { employerStatusBadgeClass, employerStatusLabel } from "@/features/employ
 import { getOrganizationSelection } from "@/lib/session/storage";
 import { errorMessage } from "@/lib/api/error-messages";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { TableSkeleton } from "@/components/loading/skeleton";
+import { PageHeader } from "@/components/layout/page-header";
 
 const PAGE_SIZE = 100;
 
@@ -55,12 +57,13 @@ export default function EmployersPage() {
   const error = failure ? errorMessage(failure, "טעינת המעסיקים נכשלה") : "";
 
   return <AppShell title="מעסיקים">
-    <div className="page-head"><div><h1>מעסיקים</h1><p>צפייה וניהול המעסיקים הזמינים עבורך</p></div>{canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}><Plus size={18} />הקמת מעסיק</Link> : null}</div>
+    <PageHeader title="מעסיקים" description="צפייה וניהול המעסיקים הזמינים עבורך"
+      actions={canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}><Plus size={18} />הקמת מעסיק</Link> : null} />
     {!canCreate && !loading ? <div className="notice notice-info" style={{ marginBottom: 18 }}>אין לך הרשאה להקים מעסיק חדש. ניתן לצפות ולערוך רק מעסיקים שהוקצו לך.</div> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
     <section className="card">
       <div className="toolbar"><div className="search"><Search size={17} /><UiInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ח.פ. או תיק ניכויים" /></div><span className="badge badge-blue">{employers.length} תוצאות</span></div>
-      {loading ? <div className="empty">טוען מעסיקים...</div> : employers.length ? <DataTable
+      {loading ? <TableSkeleton columns={4} label="טוען מעסיקים..." /> : employers.length ? <DataTable
         items={employers}
         rowKey={(employer) => employer.id}
         columns={[{ key: "name", label: "שם המעסיק" }, { key: "registration", label: "ח.פ." }, { key: "withholding", label: "תיק ניכויים" }, { key: "status", label: "סטטוס" }]}

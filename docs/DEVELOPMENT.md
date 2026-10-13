@@ -4,7 +4,7 @@ Practical recipes. Read `docs/ARCHITECTURE.md` first for the why.
 
 ## Add a page
 
-1. Create the screen in the owning feature, e.g. `src/features/employers/screens/employer-audit-screen.tsx` (`"use client"`, default export, wrapped in `AppShell`).
+1. Create the screen in the owning feature, e.g. `src/features/employers/screens/employer-audit-screen.tsx` (`"use client"`, default export, wrapped in `AppShell`, title through `PageHeader`; see the example in `docs/DESIGN-SYSTEM.md`).
 2. Add the route file, which only re-exports it:
 
 ```ts
@@ -120,7 +120,9 @@ Only cross-screen client state goes into Zustand (`src/lib/session/app-store.ts`
 ## Components and styles
 
 - Use `src/components/ui` primitives (`UiInput`, `UiSelect`, `UiAutocomplete`, `UiDateInput`, `UiCheckbox`, `AppModal`, `DataTable`, `AppTabs`, `UiFileUpload`) and `Field`. A component used by one feature stays in that feature; promote it to `src/components` only when two features need it and it has no business logic.
-- Colors and sizes come from `src/styles/tokens.css`. Feature styles go to the matching stylesheet in `src/styles` (or next to a screen). Check `dark-theme.css` and `responsive.css` when adding a component.
+- Follow `docs/DESIGN-SYSTEM.md`: semantic tokens only (`npm run check:tokens` rejects raw colors), `PageHeader` for page titles, `StatCard` / `EmptyState` / the `.btn`, `.card`, `.badge`, `.notice` class APIs for common patterns.
+- Shared component styles live in `src/styles/components`, shell and auth layout in `src/styles/layout`, feature refinements in `src/styles/features`; styles for one screen sit next to it and are imported by the screen. Breakpoint rules stay in the same file as the component they adjust. Check a new component in light, dark and at phone width.
+- Loading: `PageSkeleton` while a screen resolves its first data, `DataTable`'s `loading` or `TableSkeleton` for lists, `CardSkeleton` / `FormSkeleton` for cards and forms, `LoadingState` in dialogs. Never add artificial delays. A new top-level route folder gets a `loading.tsx` that re-exports `@/features/shell/components/route-loading`.
 - Formatting helpers: `src/lib/format` (dates DD/MM/YYYY, months, money). Domain labels belong to the feature (e.g. `src/features/reporting/labels.ts`).
 
 ## Before you push

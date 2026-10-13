@@ -13,6 +13,7 @@ import type { Employee } from "@/features/employees/types";
 import type { EmployeePensionProduct, EmployeePensionProductInput, ManualProductInput, PensionProductType, SalaryAllocationType, Section14Code } from "@/features/pension/types";
 import type { ManualReportEmployeeDetail, ManualReportEmployeeSummary } from "@/features/reporting/types";
 import type { PensionEditorContributionLimit } from "@/features/reference-data/types";
+import { LoadingState } from "@/components/loading/loading-state";
 
 type Props = {
   organizationId: string;
@@ -312,7 +313,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
 
   return <>
     <div className="card-head manual-report-head">
-      <div><h2>עובדים בדיווח</h2><span style={{ color: "var(--muted)" }}>בחרו עובד וערכו את השכר החודשי, הקופה וחלוקת השכר בין המוצרים.</span></div>
+      <div><h2>עובדים בדיווח</h2><span style={{ color: "var(--color-text-muted)" }}>בחרו עובד וערכו את השכר החודשי, הקופה וחלוקת השכר בין המוצרים.</span></div>
       <div className="manual-report-badges"><span className="badge badge-blue">{selectedIds.length} עובדים</span><span className="badge badge-green">{ready} הושלמו</span></div>
     </div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}
@@ -325,7 +326,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       </>
     </div>
     <div className="manual-employee-list">
-      {loading || searching ? <div className="empty">{searching ? "מחפש עובדים..." : "טוען את עובדי המעסיק..."}</div> : visibleEmployees.length === 0 ? <div className="empty"><b>לא נמצאו עובדים</b></div> : visibleEmployees.map((employee) => {
+      {loading || searching ? <LoadingState label={searching ? "מחפש עובדים..." : "טוען את עובדי המעסיק..."} /> : visibleEmployees.length === 0 ? <div className="empty"><b>לא נמצאו עובדים</b></div> : visibleEmployees.map((employee) => {
         const selected = selectedIds.includes(employee.id);
         const row = rowByEmployment.get(employee.id);
         return <div className={`manual-employee-row${selected ? " selected" : ""}`} key={employee.id}>

@@ -1,0 +1,95 @@
+/*
+ * Alpha palette: raw color scales.
+ *
+ * Brand anchors come from /public/branding: navy #06254e (navy-900), electric blue #086bfa
+ * (blue-500) and turquoise #1bc4b4 (teal-400). Every other step is derived from them.
+ *
+ * Component and feature styles never reference --palette-* directly. They use the semantic
+ * tokens in tokens.css, which choose a palette step per theme.
+ */
+:root {
+  --palette-white: #ffffff;
+
+  /* Navy: brand surfaces, headings, the navigation rail */
+  --palette-navy-50: #eef3fa;
+  --palette-navy-100: #d7e2f1;
+  --palette-navy-200: #aec3e0;
+  --palette-navy-300: #7e9cc6;
+  --palette-navy-400: #4f74a8;
+  --palette-navy-500: #2c5288;
+  --palette-navy-600: #1a3f72;
+  --palette-navy-700: #0f3262;
+  --palette-navy-800: #0a2b58;
+  --palette-navy-900: #06254e;
+  --palette-navy-950: #041833;
+
+  /* Blue: primary actions, links, focus, selection */
+  --palette-blue-50: #eef5ff;
+  --palette-blue-100: #dbe9ff;
+  --palette-blue-200: #bcd6ff;
+  --palette-blue-300: #8dbaff;
+  --palette-blue-400: #5a9cff;
+  --palette-blue-500: #086bfa;
+  --palette-blue-600: #0a5ce0;
+  --palette-blue-700: #0b4bb5;
+  --palette-blue-800: #0e3f8e;
+  --palette-blue-900: #102f63;
+
+  /* Teal: secondary accent, success, positive progress */
+  --palette-teal-50: #ebfbf9;
+  --palette-teal-100: #cdf4ef;
+  --palette-teal-200: #9de8df;
+  --palette-teal-300: #5fd8cb;
+  --palette-teal-400: #1bc4b4;
+  --palette-teal-500: #12a093;
+  --palette-teal-600: #0d7d72;
+  --palette-teal-700: #0c6a62;
+  --palette-teal-800: #0b5650;
+  --palette-teal-900: #0a4742;
+
+  /* Slate: light-theme neutrals, tinted toward the brand navy */
+  --palette-slate-25: #fafbfd;
+  --palette-slate-50: #f4f6fa;
+  --palette-slate-100: #edf1f7;
+  --palette-slate-150: #e4e9f1;
+  --palette-slate-200: #d6dee9;
+  --palette-slate-300: #b9c4d4;
+  --palette-slate-400: #8a99ae;
+  --palette-slate-500: #5b6a80;
+  --palette-slate-600: #45536a;
+  --palette-slate-700: #2f3b50;
+  --palette-slate-800: #1b2639;
+  --palette-slate-900: #0e1a2e;
+
+  /* Ink: dark-theme canvas and surfaces */
+  --palette-ink-950: #050c19;
+  --palette-ink-900: #070f1e;
+  --palette-ink-850: #0a1426;
+  --palette-ink-800: #0d192d;
+  --palette-ink-750: #122039;
+  --palette-ink-700: #152645;
+  --palette-ink-600: #1d2c47;
+  --palette-ink-500: #283c5e;
+  --palette-ink-400: #34507a;
+  --palette-ink-300: #6c7d97;
+  --palette-ink-200: #93a3bb;
+  --palette-ink-100: #b6c3d6;
+  --palette-ink-50: #e7edf7;
+
+  /* Status */
+  --palette-red-50: #fff1f2;
+  --palette-red-100: #ffe0e4;
+  --palette-red-200: #fdc3ca;
+  --palette-red-300: #ff8d99;
+  --palette-red-500: #e5384b;
+  --palette-red-600: #c8283b;
+  --palette-red-700: #a51f31;
+
+  --palette-amber-50: #fff7e8;
+  --palette-amber-100: #ffecc6;
+  --palette-amber-200: #f9d48c;
+  --palette-amber-300: #f6c063;
+  --palette-amber-500: #e8940f;
+  --palette-amber-600: #a45f02;
+  --palette-amber-700: #8a4f03;
+}

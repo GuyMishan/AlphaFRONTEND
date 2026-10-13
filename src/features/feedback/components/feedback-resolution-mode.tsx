@@ -19,6 +19,7 @@ import {
   type FeedbackResolutionContextType,
   type FeedbackResolutionProblemSelector,
 } from "@/features/feedback/api";
+import { LoadingState } from "@/components/loading/loading-state";
 
 function loadContext(
   contextType: FeedbackResolutionContextType,
@@ -172,7 +173,7 @@ export function FeedbackResolutionMode({
       </> : null}
     </>}
   >
-    {loading ? <div className="empty">טוען את נתוני הפתרון...</div> : null}
+    {loading ? <LoadingState label="טוען את נתוני הפתרון..." /> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
 
     {!loading && !error && context?.unsupportedCodes.length && !selector ? <div className="notice notice-error">

@@ -19,6 +19,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: node scripts/check-hardcoded-select-options.mjs
       - run: npm run check:ui
+      - run: npm run check:tokens
       - run: npm run check:v006
       - run: npm run check:regex
       - run: npm run lint

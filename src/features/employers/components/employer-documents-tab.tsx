@@ -69,7 +69,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
     finally { setBusy(false); }
   }
   return <section className={embedded ? "profile-form-section" : "card profile-card"} aria-label={employmentId ? "מסמכי עובד" : "מסמכי מעסיק"}>
-    <div className="card-head"><div><h2>מסמכים</h2><span style={{ color: "var(--muted)" }}>{employmentId ? "טפסים רשמיים המשויכים למוצר הפנסיוני הזה." : "טפסים רשמיים של המעסיק."} צירוף לדיווח נעשה בנפרד.</span></div></div>
+    <div className="card-head"><div><h2>מסמכים</h2><span style={{ color: "var(--color-text-muted)" }}>{employmentId ? "טפסים רשמיים המשויכים למוצר הפנסיוני הזה." : "טפסים רשמיים של המעסיק."} צירוף לדיווח נעשה בנפרד.</span></div></div>
     <DataTable
       items={availableTypes}
       columns={[{ key: "type", label: "סוג מסמך", width: "28%" }, { key: "file", label: "מסמך שהועלה", width: "42%" }, { key: "actions", label: "פעולות", width: "30%" }]}
@@ -86,8 +86,8 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
           <div key="file">
             {existing.length ? existing.map(doc => <div key={doc.id} style={{ marginBottom: 6 }}>
               <span>{doc.originalFileName}</span>
-              <small style={{ display: "block", color: "var(--muted)" }}>{formatDateDDMMYYYY(doc.createdAt)} · {Math.round(doc.sizeBytes / 1024)} KB</small>
-            </div>) : <span style={{ color: "var(--muted)" }}>לא הועלה מסמך</span>}
+              <small style={{ display: "block", color: "var(--color-text-muted)" }}>{formatDateDDMMYYYY(doc.createdAt)} · {Math.round(doc.sizeBytes / 1024)} KB</small>
+            </div>) : <span style={{ color: "var(--color-text-muted)" }}>לא הועלה מסמך</span>}
           </div>,
           <div key="actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {existing.map(doc => <div key={doc.id} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

@@ -10,6 +10,7 @@ import { formatMoney } from "@/lib/format/number";
 import { pensionProductTypeLabel } from "@/features/reporting/labels";
 import { DepositStatusBadge } from "@/features/feedback/components/feedback-status";
 import { feedbackErrorScopeLabel, feedbackErrorSummaryRows, depositOwnedErrorCount } from "@/features/feedback/deposit-error-summary";
+import { LoadingState } from "@/components/loading/loading-state";
 
 export type ExpandedReportContent = {
   deposits: ReportFeedbackDepositRow[];
@@ -54,7 +55,7 @@ export function DepositFeedbackPanel({
       </label>
     </div>
     {loading
-      ? <div className="empty">טוען הפקדות ומשובים...</div>
+      ? <LoadingState compact label="טוען הפקדות ומשובים..." />
       : content.deposits.length === 0
         ? <div className="notice notice-info">לא נמצאו הפקדות משויכות לדיווח.</div>
         : <div className="report-deposits-grid" role="table" aria-label="הפקדות ומשובים לפי עובד ומוצר">

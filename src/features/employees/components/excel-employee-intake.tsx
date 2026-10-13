@@ -533,7 +533,7 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
   }
 
   return <>
-    <div className="card-head"><div><h2>העלאת קובץ דיווח מלא</h2><span style={{ color: "var(--muted)" }}>Excel / CSV · עובדים, מוצרים, הפרשות ונתוני ממשק מעסיקים 006</span></div></div>
+    <div className="card-head"><div><h2>העלאת קובץ דיווח מלא</h2><span style={{ color: "var(--color-text-muted)" }}>Excel / CSV · עובדים, מוצרים, הפרשות ונתוני ממשק מעסיקים 006</span></div></div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
     <UiFileUpload id="excel-file" variant="zone" label="גררו קובץ לכאן או בחרו מהמחשב" fileName={fileName}
       description="כל שורה מייצגת מוצר פנסיוני של עובד. המערכת קולטת את פרטי העובד, הקופה, שכר מבוטח, הפרשות, סעיף 14, סטטוסים, סוג פעולה ופרטי תשלום. לעובד עם כמה מוצרים יש כמה שורות."

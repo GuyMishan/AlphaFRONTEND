@@ -16,6 +16,7 @@ import {
   type PaymentConfirmation,
 } from "@/features/reporting/payment-confirmations-api";
 import { formatMoney } from "@/lib/format/number";
+import { LoadingState } from "@/components/loading/loading-state";
 
 function percent(value: number | null | undefined) {
   return value == null ? "—" : `${Number(value).toLocaleString("he-IL", { maximumFractionDigits: 2 })}%`;
@@ -142,7 +143,7 @@ export function ReportDepositFeedbackModal({
       {!errorsOnly && onEdit ? <button type="button" className="btn btn-primary" onClick={onEdit}>תיקון הפקדה</button> : null}
     </>}
   >
-    {loading ? <div className="empty">טוען פרטי הפקדה ומשוב...</div> : null}
+    {loading ? <LoadingState label="טוען פרטי הפקדה ומשוב..." /> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
 
     {details ? <>

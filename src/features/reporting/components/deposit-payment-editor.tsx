@@ -506,8 +506,8 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
                 { code: 4 as const, label: "אישור עובד להשבת כספים", item: employeeApproval, scope: "לעובד/מוצר זה" },
                 { code: 6 as const, label: "הצהרת מעסיק - הסכם קיבוצי", item: collectiveAgreementDeclaration, scope: "לעובד/מוצר זה" },
               ]).map(({ code, label, item, scope }) => <div key={code} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-                <div><b>{label}</b><div style={{ color: "var(--muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div>
-                  {code === 6 ? <small style={{ display: "block", color: "var(--muted)" }}>
+                <div><b>{label}</b><div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div>
+                  {code === 6 ? <small style={{ display: "block", color: "var(--color-text-muted)" }}>
                     נדרש כאשר ההשבה מתבצעת מכוח הסכם קיבוצי. אם זו השבה כזו, צרפו את ה-PDF כאן לפני שליחת הדיווח כדי להימנע מדחיית המסמך (קודים 102–103).
                   </small> : null}
                 </div>
@@ -528,7 +528,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
               <h3>מסמך הצטרפות לקרן ברירת מחדל</h3>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                 <div><b>קוד 5 — בקשת עובד להצטרפות לקרן ברירת מחדל</b>
-                  <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                  <div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>
                     {defaultFundJoinRequest ? defaultFundJoinRequest.originalFileName : "מסמך לעובד ולקרן הפנסיה בדיווח זה"}
                   </div>
                 </div>

@@ -11,6 +11,7 @@ import { employeesApi } from "@/features/employees/api";
 import type { Employee } from "@/features/employees/types";
 import type { EmployeePensionProductInput, PensionProductType, SalaryAllocationType, Section14Code } from "@/features/pension/types";
 import type { PensionEditorContributionLimit } from "@/features/reference-data/types";
+import { CardSkeleton } from "@/components/loading/skeleton";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -182,11 +183,11 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalSaveSignal]);
 
-  if (loading) return <div className="card empty">טוען את תמהיל העובד...</div>;
+  if (loading) return <CardSkeleton lines={5} label="טוען את תמהיל העובד..." />;
 
   return <div className="card">
     <div className="card-head">
-      <div><h2>תמהיל העובד</h2><span style={{ color: "var(--muted)" }}>המוצרים נשמרים כברירת המחדל של העובד ומשמשים ליצירת דיווחים חדשים.</span></div>
+      <div><h2>תמהיל העובד</h2><span style={{ color: "var(--color-text-muted)" }}>המוצרים נשמרים כברירת המחדל של העובד ומשמשים ליצירת דיווחים חדשים.</span></div>
       {editable && !hideHeaderSave ? <button className="btn btn-primary" disabled={saving} onClick={() => void save()}><Save size={17} />{saving ? "שומר..." : saveLabel ?? "שמירת תמהיל"}</button> : null}
     </div>
     <div className="manual-report-badges" style={{ marginBottom: 14 }}><span className="badge badge-blue">{products.length} מוצרים</span><span className="badge badge-green">{activeCount} פעילים</span></div>

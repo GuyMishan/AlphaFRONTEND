@@ -1,0 +1,87 @@
+/* In-page navigation: tabs (AppTabs) and the step indicator used by wizards. */
+
+/* Tabs */
+.app-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+  padding: var(--space-1);
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-sunken);
+}
+.app-tab {
+  appearance: none;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+}
+.app-tab svg { display: block; flex: 0 0 auto; }
+.app-tab:hover { color: var(--color-text); background: var(--color-surface-hover); }
+.app-tab.active,
+.app-tab[aria-selected="true"] {
+  color: var(--color-primary);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-xs);
+}
+.app-tab:focus-visible { outline: none; border-color: var(--color-primary-solid); box-shadow: var(--focus-ring); }
+
+/* Step indicator */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  column-gap: 2px;
+  margin-bottom: 25px;
+}
+.step { position: relative; min-width: 0; color: var(--color-text-muted); font-size: var(--text-xs); text-align: center; white-space: nowrap; }
+.step::before { content: ""; position: absolute; top: 16px; right: -50%; left: 50%; height: 2px; background: var(--color-border); }
+.step:first-child::before { display: none; }
+.step.done::before, .step.current::before { background: var(--gradient-brand); }
+.step-number {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 5px;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  font-weight: var(--weight-bold);
+}
+.step.current, .step.done { color: var(--color-primary); }
+.step.current .step-number { color: var(--color-on-primary); background: var(--color-primary-solid); border-color: var(--color-primary-solid); box-shadow: 0 0 0 4px var(--focus-ring-color); }
+.step.done .step-number { background: var(--color-accent-soft); border-color: var(--color-accent-solid); color: var(--color-accent); }
+
+@media (max-width: 760px) {
+  .app-tabs { width: 100%; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+  .app-tab { flex: 0 0 auto; white-space: nowrap; }
+  .steps {
+    max-width: 100%;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(112px, 1fr);
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+}

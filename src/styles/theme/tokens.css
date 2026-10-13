@@ -1,0 +1,324 @@
+/*
+ * Semantic design tokens: the only theme values components and features may use.
+ *
+ * - Light values live on :root. Dark values override the same names under
+ *   html[data-theme="dark"] (set by ThemeProvider), so a component written with tokens
+ *   needs no dark-mode rules of its own.
+ * - Colors resolve to the raw scales in theme/palette.css; never reference --palette-* or
+ *   hex values from component or feature styles.
+ * - Text/background pairs below meet WCAG AA (4.5:1) for body text in both themes.
+ */
+
+/* ── Light theme ─────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+
+  /* Brand */
+  --color-brand-navy: var(--palette-navy-900);
+  --color-brand-blue: var(--palette-blue-500);
+  --color-brand-teal: var(--palette-teal-400);
+  --color-brand-mark: var(--palette-navy-900);
+  --color-brand-mark-inverse: var(--palette-white);
+  --gradient-brand: linear-gradient(120deg, var(--palette-blue-500) 0%, var(--palette-teal-400) 100%);
+  --gradient-brand-on-dark: linear-gradient(120deg, var(--palette-blue-300) 0%, var(--palette-teal-400) 100%);
+  --gradient-brand-surface: linear-gradient(135deg, var(--palette-navy-900) 0%, var(--palette-navy-700) 58%, var(--palette-blue-700) 130%);
+
+  /* Canvas and surfaces */
+  --color-bg: var(--palette-slate-50);
+  --color-surface: var(--palette-white);
+  --color-surface-raised: var(--palette-white);
+  --color-surface-sunken: var(--palette-slate-25);
+  --color-surface-muted: var(--palette-slate-100);
+  --color-surface-hover: var(--palette-slate-50);
+  --color-surface-selected: var(--palette-blue-50);
+  --color-surface-disabled: var(--palette-slate-100);
+  --color-overlay: rgb(4 24 51 / 0.55);
+  --color-topbar: rgb(255 255 255 / 0.86);
+
+  /* Borders */
+  --color-border: var(--palette-slate-150);
+  --color-border-subtle: var(--palette-slate-100);
+  --color-border-strong: var(--palette-slate-200);
+  --color-border-hover: var(--palette-slate-300);
+
+  /* Form controls */
+  --color-control-bg: var(--palette-white);
+  --color-control-bg-disabled: var(--palette-slate-50);
+  --color-control-border: var(--palette-slate-200);
+  --color-control-border-hover: var(--palette-slate-300);
+
+  /* Text */
+  --color-heading: var(--palette-navy-900);
+  --color-text: var(--palette-slate-900);
+  --color-text-secondary: var(--palette-slate-600);
+  --color-text-muted: var(--palette-slate-500);
+  --color-text-placeholder: var(--palette-slate-400);
+  --color-text-disabled: var(--palette-slate-400);
+  --color-text-inverse: var(--palette-white);
+
+  /* Primary: --color-primary is the text/icon/border strength, -solid is the filled control */
+  --color-primary: var(--palette-blue-600);
+  --color-primary-solid: var(--palette-blue-500);
+  --color-primary-solid-hover: var(--palette-blue-600);
+  --color-primary-solid-active: var(--palette-blue-700);
+  --color-on-primary: var(--palette-white);
+  --color-primary-soft: var(--palette-blue-50);
+  --color-primary-soft-hover: var(--palette-blue-100);
+  --color-primary-border: var(--palette-blue-200);
+
+  /* Accent: turquoise */
+  --color-accent: var(--palette-teal-600);
+  --color-accent-solid: var(--palette-teal-400);
+  --color-accent-soft: var(--palette-teal-50);
+  --color-accent-border: var(--palette-teal-200);
+
+  /* Status: base = text/icon/border, -solid = fill, -soft = tinted background */
+  --color-success: var(--palette-teal-600);
+  --color-success-solid: var(--palette-teal-500);
+  --color-success-soft: var(--palette-teal-50);
+  --color-success-border: var(--palette-teal-200);
+
+  --color-warning: var(--palette-amber-600);
+  --color-warning-solid: var(--palette-amber-500);
+  --color-warning-soft: var(--palette-amber-50);
+  --color-warning-border: var(--palette-amber-200);
+
+  --color-danger: var(--palette-red-600);
+  --color-danger-solid: var(--palette-red-600);
+  --color-danger-solid-hover: var(--palette-red-700);
+  --color-danger-soft: var(--palette-red-50);
+  --color-danger-border: var(--palette-red-200);
+
+  --color-info: var(--palette-blue-600);
+  --color-info-soft: var(--palette-blue-50);
+  --color-info-border: var(--palette-blue-100);
+
+  --color-neutral: var(--palette-slate-600);
+  --color-neutral-soft: var(--palette-slate-100);
+  --color-neutral-border: var(--palette-slate-200);
+
+  /* Content placed on brand navy surfaces (hero, auth panel, navigation rail) */
+  --color-on-brand: var(--palette-white);
+  --color-on-brand-muted: rgb(255 255 255 / 0.74);
+  --color-on-brand-border: rgb(255 255 255 / 0.14);
+  --color-on-brand-fill: rgb(255 255 255 / 0.07);
+
+  /* Navigation rail: stays dark navy in both themes */
+  --nav-bg: linear-gradient(180deg, var(--palette-navy-900) 0%, var(--palette-navy-950) 100%);
+  --nav-bg-solid: var(--palette-navy-900);
+  --nav-border: rgb(255 255 255 / 0.08);
+  --nav-text: #a9bad3;
+  --nav-text-strong: var(--palette-white);
+  --nav-label: #7f93b3;
+  --nav-item-hover: rgb(255 255 255 / 0.06);
+  --nav-item-active: rgb(255 255 255 / 0.1);
+  --nav-glow: radial-gradient(120% 60% at 100% 0%, rgb(8 107 250 / 0.22) 0%, transparent 60%),
+    radial-gradient(90% 50% at 0% 100%, rgb(27 196 180 / 0.12) 0%, transparent 65%);
+
+  /* Tooltip */
+  --color-tooltip-bg: var(--palette-navy-900);
+  --color-tooltip-text: var(--palette-white);
+
+  /* Focus */
+  --focus-ring-color: rgb(8 107 250 / 0.28);
+  --focus-ring: 0 0 0 3px var(--focus-ring-color);
+  --focus-outline: 2px solid var(--color-primary-solid);
+  --focus-ring-danger: 0 0 0 3px rgb(200 40 59 / 0.18);
+
+  /* Typography */
+  --font-sans: var(--font-heebo), "Segoe UI", Arial, sans-serif;
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-base: 15px;
+  --text-lg: 17px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 28px;
+  --text-4xl: 34px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-heavy: 800;
+  --leading-tight: 1.2;
+  --leading-snug: 1.4;
+  --leading-normal: 1.6;
+  --tracking-tight: -0.015em;
+  --tracking-wide: 0.06em;
+
+  /* Spacing: 4px grid */
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radii: restrained */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --radius-3xl: 24px;
+  --radius-full: 999px;
+  --radius-control: var(--radius-md);
+  --radius-card: var(--radius-xl);
+  --radius-modal: var(--radius-2xl);
+
+  /* Elevation: navy-tinted, soft */
+  --shadow-xs: 0 1px 2px rgb(6 37 78 / 0.05);
+  --shadow-sm: 0 1px 2px rgb(6 37 78 / 0.04), 0 2px 8px -2px rgb(6 37 78 / 0.06);
+  --shadow-md: 0 4px 14px -4px rgb(6 37 78 / 0.1), 0 2px 4px rgb(6 37 78 / 0.04);
+  --shadow-lg: 0 18px 40px -12px rgb(6 37 78 / 0.18), 0 4px 10px rgb(6 37 78 / 0.05);
+  --shadow-xl: 0 32px 80px -16px rgb(6 37 78 / 0.32);
+  --shadow-primary-rest: 0 1px 2px rgb(6 37 78 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.14);
+  --shadow-primary: 0 6px 16px -6px rgb(8 107 250 / 0.55);
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 280ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Layout */
+  --sidebar-width: 264px;
+  --topbar-height: 68px;
+  --content-max-width: 1500px;
+  --page-gutter: 32px;
+
+  /* Controls */
+  --control-height: 44px;
+  --control-height-compact: 36px;
+  --control-height-dense: 30px;
+
+  /* Layers */
+  --z-sticky: 10;
+  --z-drawer: 90;
+  --z-floating: 120;
+  --z-modal: 4000;
+  --z-popover: 6500;
+  --z-app-loader: 9000;
+  --z-toast: 10000;
+
+  /* Loading */
+  --skeleton-base: var(--palette-slate-150);
+  --skeleton-highlight: var(--palette-slate-50);
+
+  /* Scrollbars */
+  --scrollbar-thumb: #b3bfce;
+  --scrollbar-thumb-hover: #6a8bb8;
+  --scrollbar-thumb-active: var(--palette-blue-500);
+  --scrollbar-size: 8px;
+}
+
+/* ── Dark theme ──────────────────────────────────────────────────────────── */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --gradient-brand-surface: linear-gradient(135deg, var(--palette-navy-800) 0%, var(--palette-ink-750) 60%, var(--palette-navy-700) 130%);
+  --color-brand-mark: var(--palette-white);
+
+  --color-control-bg: var(--palette-ink-850);
+  --color-control-bg-disabled: var(--palette-ink-900);
+  --color-control-border: var(--palette-ink-500);
+  --color-control-border-hover: var(--palette-ink-400);
+
+  --color-bg: var(--palette-ink-900);
+  --color-surface: var(--palette-ink-800);
+  --color-surface-raised: var(--palette-ink-750);
+  --color-surface-sunken: var(--palette-ink-850);
+  --color-surface-muted: var(--palette-ink-750);
+  --color-surface-hover: var(--palette-ink-750);
+  --color-surface-selected: #10264a;
+  --color-surface-disabled: var(--palette-ink-850);
+  --color-overlay: rgb(2 6 14 / 0.72);
+  --color-topbar: rgb(13 25 45 / 0.86);
+
+  --color-border: var(--palette-ink-600);
+  --color-border-subtle: #172540;
+  --color-border-strong: var(--palette-ink-500);
+  --color-border-hover: var(--palette-ink-400);
+
+  --color-heading: #f3f7fd;
+  --color-text: var(--palette-ink-50);
+  --color-text-secondary: var(--palette-ink-100);
+  --color-text-muted: var(--palette-ink-200);
+  --color-text-placeholder: var(--palette-ink-300);
+  --color-text-disabled: var(--palette-ink-300);
+
+  --color-primary: var(--palette-blue-400);
+  --color-primary-soft: #0f2647;
+  --color-primary-soft-hover: #143059;
+  --color-primary-border: #1f4a85;
+
+  --color-accent: var(--palette-teal-300);
+  --color-accent-soft: #0b2a33;
+  --color-accent-border: #165048;
+
+  --color-success: var(--palette-teal-300);
+  --color-success-soft: #0b2a30;
+  --color-success-border: #165048;
+
+  --color-warning: var(--palette-amber-300);
+  --color-warning-soft: #2a2111;
+  --color-warning-border: #5a4417;
+
+  --color-danger: var(--palette-red-300);
+  --color-danger-solid: var(--palette-red-600);
+  --color-danger-soft: #2c1520;
+  --color-danger-border: #5c2433;
+
+  --color-info: var(--palette-blue-400);
+  --color-info-soft: #0f2647;
+  --color-info-border: #1f4a85;
+
+  --color-neutral: var(--palette-ink-100);
+  --color-neutral-soft: #16233a;
+  --color-neutral-border: #24344f;
+
+  --nav-bg: linear-gradient(180deg, #071733 0%, var(--palette-ink-950) 100%);
+  --nav-bg-solid: #071733;
+  --nav-border: rgb(255 255 255 / 0.06);
+
+  --color-tooltip-bg: #1a2c4b;
+
+  --focus-ring-color: rgb(90 156 255 / 0.36);
+  --focus-ring-danger: 0 0 0 3px rgb(255 141 153 / 0.22);
+
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.28), 0 2px 8px -2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 14px -4px rgb(0 0 0 / 0.45), 0 2px 4px rgb(0 0 0 / 0.25);
+  --shadow-lg: 0 18px 40px -12px rgb(0 0 0 / 0.55), 0 4px 10px rgb(0 0 0 / 0.25);
+  --shadow-xl: 0 32px 80px -16px rgb(0 0 0 / 0.7);
+  --shadow-primary: 0 6px 18px -6px rgb(8 107 250 / 0.6);
+
+  --skeleton-base: var(--palette-ink-750);
+  --skeleton-highlight: var(--palette-ink-700);
+
+  --scrollbar-thumb: #435c76;
+  --scrollbar-thumb-hover: #6f9cda;
+  --scrollbar-thumb-active: #93b7ff;
+}
+
+@media (pointer: coarse) {
+  :root { --scrollbar-size: 5px; }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --page-gutter: 14px;
+    --topbar-height: 64px;
+  }
+}

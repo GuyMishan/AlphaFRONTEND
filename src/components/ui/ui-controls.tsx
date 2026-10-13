@@ -10,6 +10,8 @@ import {
   useState,
   type ButtonHTMLAttributes,
   type CSSProperties,
+  type ForwardedRef,
+  type RefObject,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
@@ -26,9 +28,36 @@ function controlClass(base: string, size: ControlSize, className?: string) {
   return [base, size === "compact" ? "ui-control-compact" : "ui-control-default", className].filter(Boolean).join(" ");
 }
 
+function setRef<T>(ref: ForwardedRef<T>, node: T | null) {
+  if (typeof ref === "function") ref(node);
+  else if (ref) ref.current = node;
+}
+
+/**
+ * Forms render `<div className="field"><label>…</label><Control /></div>` (directly or via Field)
+ * without htmlFor. After mount, link that label to the control so the control gets an accessible
+ * name and clicking the label focuses it. Explicit aria-label / aria-labelledby always win.
+ */
+function useFieldLabelLink(ref: RefObject<HTMLElement | null>, enabled = true) {
+  const generatedId = useId();
+  useEffect(() => {
+    const control = ref.current;
+    if (!enabled || !control || control.hasAttribute("aria-label") || control.hasAttribute("aria-labelledby")) return;
+    const label = control.closest(".field")?.querySelector<HTMLLabelElement>(":scope > label");
+    if (!label || label.contains(control) || (label.htmlFor && label.htmlFor !== control.id)) return;
+    if (!control.id) control.id = `${generatedId}-control`;
+    label.htmlFor = control.id;
+  });
+}
+
+const UNLABELLED_INPUT_TYPES = new Set(["checkbox", "radio", "hidden", "file"]);
+
 export const UiInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { controlSize?: ControlSize }>(
   function UiInput({ className, controlSize = "default", ...props }, ref) {
-    return <input ref={ref} className={controlClass("ui-control", controlSize, className)} {...props} />;
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    useFieldLabelLink(inputRef, !UNLABELLED_INPUT_TYPES.has(props.type ?? "text"));
+    return <input ref={(node) => { inputRef.current = node; setRef(ref, node); }}
+      className={controlClass("ui-control", controlSize, className)} {...props} />;
   },
 );
 
@@ -59,6 +88,8 @@ export function UiDateInput({
   mode?: "day" | "month";
 }) {
   const pickerRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLInputElement>(null);
+  useFieldLabelLink(textRef);
   const isMonth = mode === "month";
   const formatValue = (raw?: string | null) => {
     if (!raw) return "";
@@ -100,7 +131,7 @@ export function UiDateInput({
   }
 
   return <div className={["ui-date-control", disabled ? "is-disabled" : "", className].filter(Boolean).join(" ")}>
-    <input {...props} type="text" inputMode="numeric" dir="ltr" disabled={disabled}
+    <input {...props} ref={textRef} type="text" inputMode="numeric" dir="ltr" disabled={disabled}
       placeholder={props.placeholder ?? (isMonth ? "חודש/שנה" : "יום/חודש/שנה")}
       maxLength={isMonth ? 7 : 10} value={displayValue}
       className={controlClass("ui-control ui-date-text", controlSize)}
@@ -128,6 +159,7 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
     const nativeRef = useRef<HTMLSelectElement | null>(null);
     const triggerRef = useRef<HTMLButtonElement | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
+    useFieldLabelLink(triggerRef);
     const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
     const [active, setActive] = useState(-1);
@@ -239,6 +271,8 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
       <select ref={assignRef} value={value} defaultValue={value === undefined ? defaultValue : undefined} disabled={disabled} onChange={onChange}
         className="ui-select-native" tabIndex={-1} aria-hidden="true" {...props}>{children}</select>
       <button ref={triggerRef} type="button" className={controlClass("ui-control ui-select-trigger", controlSize)} disabled={disabled}
+        role="combobox" aria-label={props["aria-label"]} aria-labelledby={props["aria-labelledby"]} aria-describedby={props["aria-describedby"]}
+        aria-invalid={props["aria-invalid"]} aria-required={props.required || props["aria-required"] || undefined}
         aria-haspopup="listbox" aria-controls={open ? menuId : undefined} aria-expanded={open}
         aria-activedescendant={open && active >= 0 ? `${menuId}-option-${active}` : undefined} onKeyDown={keyDown}
         onClick={() => {
@@ -342,10 +376,40 @@ export function UiActionMenu({
     };
   }, [open, mounted, items.length]);
 
+  // Focus lands on the first item once the panel is positioned and visible (the panel is portaled,
+  // so Tab cannot reach it). Only once per opening: repositioning on scroll must not move focus.
+  const focusedOnOpen = useRef(false);
+  useEffect(() => {
+    if (!open) { focusedOnOpen.current = false; return; }
+    if (focusedOnOpen.current || placement.visibility !== "visible") return;
+    focusedOnOpen.current = true;
+    menuItems()[0]?.focus();
+  }, [open, placement]);
+
+  function menuItems() {
+    return Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []);
+  }
+
   function select(item: UiActionMenuItem) {
     if (item.disabled) return;
     setOpen(false);
+    triggerRef.current?.focus();
     item.onSelect();
+  }
+
+  function menuKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const enabled = menuItems();
+    const index = enabled.indexOf(document.activeElement as HTMLButtonElement);
+    const focusAt = (next: number) => { event.preventDefault(); enabled[(next + enabled.length) % enabled.length]?.focus(); };
+    if (event.key === "ArrowDown") focusAt(index + 1);
+    else if (event.key === "ArrowUp") focusAt(index - 1);
+    else if (event.key === "Home") focusAt(0);
+    else if (event.key === "End") focusAt(enabled.length - 1);
+    else if (event.key === "Tab") {
+      event.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus();
+    }
   }
 
   return <span className="ui-action-menu">
@@ -361,15 +425,21 @@ export function UiActionMenu({
         event.stopPropagation();
         setOpen((current) => !current);
       }}
+      onKeyDown={(event) => {
+        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+        event.preventDefault();
+        setOpen(true);
+      }}
     >
       <EllipsisVertical size={18} />
     </button>
     {open && mounted ? createPortal(
-      <div ref={menuRef} id={menuId} className="ui-action-menu-panel" role="menu" aria-label={ariaLabel} style={placement}>
+      <div ref={menuRef} id={menuId} className="ui-action-menu-panel" role="menu" aria-label={ariaLabel} style={placement} onKeyDown={menuKeyDown}>
         {items.map((item) => <div key={item.key} className={item.separatorBefore ? "ui-action-menu-group-start" : undefined}>
           <button
             type="button"
             role="menuitem"
+            tabIndex={-1}
             disabled={item.disabled}
             onClick={() => select(item)}
           >
@@ -385,7 +455,10 @@ export function UiActionMenu({
 
 export const UiTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement> & { controlSize?: ControlSize }>(
   function UiTextarea({ className, controlSize = "default", ...props }, ref) {
-    return <textarea ref={ref} className={controlClass("ui-control ui-textarea", controlSize, className)} {...props} />;
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    useFieldLabelLink(textareaRef);
+    return <textarea ref={(node) => { textareaRef.current = node; setRef(ref, node); }}
+      className={controlClass("ui-control ui-textarea", controlSize, className)} {...props} />;
   },
 );
 

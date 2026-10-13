@@ -6,6 +6,7 @@ import { UiInput, UiTextarea } from "@/components/ui/ui-controls";
 import { UiFileUpload } from "@/components/ui/ui-file-upload";
 import { formatDateTimeDDMMYYYY } from "@/lib/format/date";
 import { reportFeedbackApi, type ExternalFeedbackCase, type FeedbackResolutionGroup } from "@/features/feedback/api";
+import { LoadingState } from "@/components/loading/loading-state";
 
 function statusLabel(status: ExternalFeedbackCase["status"]) {
   if (status === "waiting") return "ממתין לתשובה";
@@ -118,7 +119,7 @@ export function FeedbackExternalCaseResolver({
     }
   }
 
-  if (loading) return <section className="feedback-external-case"><div className="empty">טוען תיק טיפול...</div></section>;
+  if (loading) return <section className="feedback-external-case"><LoadingState label="טוען תיק טיפול..." /></section>;
 
   if (!externalCase) return <section className="feedback-external-case">
     <div className="feedback-resolution-section-head">

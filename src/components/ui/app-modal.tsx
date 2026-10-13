@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, Fragment, isValidElement, useEffect, useId, type ReactNode } from "react";
+import { Children, Fragment, isValidElement, useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 /**
@@ -9,6 +9,8 @@ import { X } from "lucide-react";
  * locked until the final dialog closes.
  */
 let openModalCount = 0;
+
+const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
 let initialBodyOverflow = "";
 
 /** Footer action placement is semantic and independent of the caller's JSX order. */
@@ -65,6 +67,37 @@ export function AppModal({
     };
   }, [open]);
 
+  // Focus management: move focus into the dialog, keep Tab inside the top-most dialog,
+  // and give focus back to the element that opened it.
+  const dialogRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    // Content that focuses itself (autoFocus) keeps focus; otherwise the dialog is focused so
+    // the title is announced and no action is preselected.
+    if (dialog && !dialog.contains(document.activeElement)) dialog.focus({ preventScroll: true });
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || event.defaultPrevented || !dialog) return;
+      const dialogs = document.querySelectorAll<HTMLElement>(".app-modal[role='dialog']");
+      if (dialogs.item(dialogs.length - 1) !== dialog || !dialog.contains(document.activeElement)) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE))
+        .filter((element) => element.getClientRects().length > 0);
+      if (!focusable.length) { event.preventDefault(); return; }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const current = document.activeElement;
+      if (event.shiftKey && (current === first || current === dialog)) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && current === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open || !onClose || closeDisabled) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -85,7 +118,7 @@ export function AppModal({
   return <div className="app-modal-backdrop" role="presentation" onMouseDown={event => {
     if (closeOnBackdrop && !closeDisabled && event.target === event.currentTarget) onClose?.();
   }}>
-    <section className={["app-modal", `app-modal-${width}`, className ?? ""].filter(Boolean).join(" ")}
+    <section ref={dialogRef} tabIndex={-1} className={["app-modal", `app-modal-${width}`, className ?? ""].filter(Boolean).join(" ")}
       role="dialog" aria-modal="true" aria-labelledby={titleId}
       aria-label={ariaLabel}>
       <header className="app-modal-header">

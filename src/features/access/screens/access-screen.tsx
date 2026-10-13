@@ -27,6 +27,8 @@ import { INVITATION_FIELD_ORDER, invitationSchema, type InvitationValues } from 
 import { digitsOnly } from "@/lib/forms/input-masks";
 import { useZodForm } from "@/lib/forms/use-zod-form";
 import { FormSelect } from "@/components/forms/form-select";
+import { TableSkeleton } from "@/components/loading/skeleton";
+import { PageHeader } from "@/components/layout/page-header";
 
 const PAGE_SIZE = 50;
 
@@ -341,12 +343,8 @@ export default function AccessPage() {
   }
 
   return <AppShell title="משתמשים והרשאות">
-    <div className="page-head">
-      <div>
-        <h1>משתמשים והרשאות</h1>
-        <p>ניהול משתמשים והרשאות לפי הארגון והמעסיק שנבחרו.</p>
-      </div>
-      <button className="btn btn-primary" type="button" onClick={() => {
+    <PageHeader title="משתמשים והרשאות" description="ניהול משתמשים והרשאות לפי הארגון והמעסיק שנבחרו."
+      actions={<button className="btn btn-primary" type="button" onClick={() => {
           // Internal referents are not customer seats; platform admins may choose
           // their user type even when the currently selected customer's quota is full.
           if (!isPlatformAdmin && entitlements && entitlements.users.maximum !== null &&
@@ -356,8 +354,7 @@ export default function AccessPage() {
           }
           setNewUserKind("customer");
           setInviteOpen(true);
-        }}><Mail size={18} />משתמש חדש</button>
-    </div>
+        }}><Mail size={18} />משתמש חדש</button>} />
 
     {error || loadError ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error || loadError}</div> : null}
 
@@ -373,7 +370,7 @@ export default function AccessPage() {
       </div> : null}
 
       {invitations.length ? <section className="card" style={{ marginBottom: 18 }}>
-        <div className="card-head"><div><h2>הזמנות</h2><span style={{ color: "var(--muted)" }}>הזמנות שנשלחו מהארגון ועדיין מנוהלות כאן.</span></div></div>
+        <div className="card-head"><div><h2>הזמנות</h2><span style={{ color: "var(--color-text-muted)" }}>הזמנות שנשלחו מהארגון ועדיין מנוהלות כאן.</span></div></div>
         <DataTable
           items={invitations}
           rowKey={(item) => item.id}
@@ -400,7 +397,7 @@ export default function AccessPage() {
           <div className="search"><Search size={17} /><UiInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="חיפוש משתמש לפי שם או אימייל" /></div>
           <span className="badge badge-blue">{organizations.find((x) => x.id === organizationId)?.name ?? "ארגון"}</span>
         </div>
-        {loading && users.length === 0 ? <div className="empty">טוען משתמשים...</div> : users.length ? <DataTable
+        {loading && users.length === 0 ? <TableSkeleton columns={4} label="טוען משתמשים..." /> : users.length ? <DataTable
           items={users}
           rowKey={(item) => item.userId}
           onRowClick={setSelected}
@@ -549,7 +546,7 @@ export default function AccessPage() {
               rowKey={(item) => item.id}
               columns={[{ key: "name", label: "מעסיק" }, { key: "action", label: "" }]}
               renderCells={(item) => [
-                <span key="cell-709"><b>{item.legalName}</b><div style={{ color: "var(--muted)" }}>{item.registrationNumber}</div></span>,
+                <span key="cell-709"><b>{item.legalName}</b><div style={{ color: "var(--color-text-muted)" }}>{item.registrationNumber}</div></span>,
                 item.assigned ? <span className="badge badge-green">מוקצה</span> : <button className="btn btn-primary" type="button" onClick={() => void grantEmployer(item)}>הקצה</button>,
               ]}
             /> : employerSearch.trim().length >= 2 ? <div className="empty">לא נמצאו מעסיקים.</div> : null}

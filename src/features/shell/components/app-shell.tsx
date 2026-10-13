@@ -1,10 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, Landmark, LogOut, Menu, Settings, ShieldCheck, Users, X } from "lucide-react";
-import { Brand } from "@/components/layout/brand";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useIsFetching, useIsMutating } from "@tanstack/react-query";
+import { Building2, DatabaseZap, FileClock, FilePlus2, Gauge, Landmark, LogOut, Menu, Settings, ShieldCheck, Users, X, type LucideIcon } from "lucide-react";
+import { Brand } from "@/components/brand/brand";
+import { AppLoader } from "@/components/loading/app-loader";
 import { ScopeController } from "@/features/scope/components/scope-controller";
 import { UpgradeModal } from "@/features/billing/components/upgrade-modal";
 import { AppModal } from "@/components/ui/app-modal";
@@ -29,6 +31,33 @@ const nav = [
   { href: "/employees", label: "עובדים", icon: Users },
   { href: "/employers", label: "מעסיקים", icon: Building2 },
 ];
+
+type NavItem = { href: string; label: string; icon: LucideIcon; active: boolean };
+
+/** Lights up while the navigation started by this link is pending (Next.js useLinkStatus). */
+function NavPendingIndicator() {
+  const { pending } = useLinkStatus();
+  return <span className={`nav-pending${pending ? " is-pending" : ""}`} aria-hidden="true" />;
+}
+
+function NavSection({ label, items }: { label: string; items: NavItem[] }) {
+  return <div className="nav-section" role="group" aria-label={label}>
+    <span className="nav-section-label" aria-hidden="true">{label}</span>
+    {items.map(({ href, label: itemLabel, icon: Icon, active }) => (
+      <Link key={href} href={href} className={`nav-link${active ? " active" : ""}`} aria-current={active ? "page" : undefined}>
+        <Icon size={18} aria-hidden="true" className="nav-icon" />
+        <span className="nav-label">{itemLabel}</span>
+        <NavPendingIndicator />
+      </Link>
+    ))}
+  </div>;
+}
+
+/** Thin progress line under the topbar while TanStack Query fetches or mutates. */
+function FetchIndicator() {
+  const busy = useIsFetching() + useIsMutating() > 0;
+  return <span className={`fetch-indicator${busy ? " is-active" : ""}`} aria-hidden="true" />;
+}
 
 type ShellPageConfig = {
   title: string;
@@ -64,6 +93,8 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   const [hasOrganizationScope, setHasOrganizationScope] = useState<boolean | null>(null);
   const [singleOrganizationTarget, setSingleOrganizationTarget] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileDrawerRef = useRef<HTMLElement>(null);
   const [pageConfig, setPageConfigState] = useState<ShellPageConfig>(initialConfig);
   const upgradeDetail = useStore(upgradeDialogStore, (state) => state.detail);
   const [onboardingRequired, setOnboardingRequired] = useState(false);
@@ -157,6 +188,40 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     if (detail) openUpgradeDialog(detail);
   }), []);
 
+  // The mobile drawer is a modal navigation panel: focus moves in on open and stays inside
+  // (the page behind it is inert), Escape closes it, and closing in any way (Escape, backdrop,
+  // close button, a link) returns focus to the menu button unless focus already moved elsewhere.
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const menuButton = mobileMenuButtonRef.current;
+    const drawer = mobileDrawerRef.current;
+    const frame = requestAnimationFrame(() => drawer?.querySelector<HTMLElement>(".nav-link")?.focus());
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setMobileMenuOpen(false); return; }
+      if (event.key !== "Tab" || !drawer) return;
+      const focusable = Array.from(drawer.querySelectorAll<HTMLElement>("a[href], button:not(:disabled)"));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const inside = drawer.contains(document.activeElement);
+      if (event.shiftKey && (!inside || document.activeElement === first)) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (!inside || document.activeElement === last)) { event.preventDefault(); first.focus(); }
+    };
+    // The drawer only exists below the mobile breakpoint; close it if the viewport grows past it.
+    const desktop = window.matchMedia("(min-width: 761px)");
+    const onViewportChange = () => { if (desktop.matches) setMobileMenuOpen(false); };
+    document.addEventListener("keydown", onKeyDown);
+    desktop.addEventListener("change", onViewportChange);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKeyDown);
+      desktop.removeEventListener("change", onViewportChange);
+      const active = document.activeElement;
+      const focusWasInDrawer = !active || active === document.body || drawer?.contains(active) || active.classList.contains("mobile-sidebar-backdrop");
+      if (menuButton?.isConnected && focusWasInDrawer) menuButton.focus();
+    };
+  }, [mobileMenuOpen]);
+
   useEffect(() => {
     if (!mobileMenuOpen && !onboardingRequired) return;
     const previous = document.body.style.overflow;
@@ -193,33 +258,37 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     void logout();
   }
 
-  if (!session || singleEmployerUser === null || canManageOrganization === null || hasOrganizationScope === null) return null;
+  if (!session || singleEmployerUser === null || canManageOrganization === null || hasOrganizationScope === null) return <AppLoader />;
 
   const platformAdmin = isPlatformAdminSession(session);
-  const visibleNav = nav.map((item) => {
-    if (item.href !== "/employers" || !singleEmployerUser || !singleEmployerTarget) return item;
-    return {
-      ...item,
-      href: `/employers/${singleEmployerTarget.employerId}?organizationId=${singleEmployerTarget.organizationId}`,
-      label: "המעסיק שלי",
-    };
+  const operations: NavItem[] = nav.map((item) => {
+    if (item.href === "/employers" && singleEmployerUser && singleEmployerTarget) {
+      return {
+        ...item,
+        href: `/employers/${singleEmployerTarget.employerId}?organizationId=${singleEmployerTarget.organizationId}`,
+        label: "המעסיק שלי",
+        active: pathname.startsWith("/employers/"),
+      };
+    }
+    return { ...item, active: pathname === item.href };
   });
+  const management: NavItem[] = [
+    platformAdmin ? { href: "/organizations", label: "ארגונים", icon: Landmark, active: pathname.startsWith("/organizations") } : null,
+    !platformAdmin && session.isReferent && hasOrganizationScope ? { href: "/organizations", label: "ארגונים בניהול", icon: Landmark, active: pathname.startsWith("/organizations") } : null,
+    !session.platformAdmin && !singleEmployerUser && singleOrganizationTarget ? { href: `/organizations/${singleOrganizationTarget}`, label: "הארגון שלי", icon: Landmark, active: pathname.startsWith(`/organizations/${singleOrganizationTarget}`) } : null,
+    platformAdmin ? { href: "/admin", label: "אדמין", icon: DatabaseZap, active: pathname === "/admin" } : null,
+    canManageOrganization ? { href: "/access", label: "משתמשים והרשאות", icon: ShieldCheck, active: pathname === "/access" } : null,
+  ].filter((item): item is NavItem => item !== null);
+
   const navigation = (
     <>
       <nav className="nav" aria-label="ניווט ראשי">
-        {visibleNav.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} className={href.startsWith("/employers/") ? (pathname.startsWith("/employers/") ? "active" : "") : (pathname === href ? "active" : "")}><Icon size={18} />{label}</Link>
-        ))}
-        <div className="nav-divider" />
-        {platformAdmin ? <Link href="/organizations" className={pathname.startsWith("/organizations") ? "active" : ""}><Landmark size={18} />ארגונים</Link> : null}
-        {!platformAdmin && session.isReferent && hasOrganizationScope ? <Link href="/organizations" className={pathname.startsWith("/organizations") ? "active" : ""}><Landmark size={18} />ארגונים בניהול</Link> : null}
-        {!session.platformAdmin && !singleEmployerUser && singleOrganizationTarget ? <Link href={`/organizations/${singleOrganizationTarget}`} className={pathname.startsWith(`/organizations/${singleOrganizationTarget}`) ? "active" : ""}><Landmark size={18} />הארגון שלי</Link> : null}
-        {platformAdmin ? <Link href="/admin" className={pathname === "/admin" ? "active" : ""}><DatabaseZap size={18} />אדמין</Link> : null}
-        {canManageOrganization ? <Link href="/access" className={pathname === "/access" ? "active" : ""}><ShieldCheck size={18} />משתמשים והרשאות</Link> : null}
-        <Link href="/settings" className={pathname === "/settings" ? "active" : ""}><Settings size={18} />הגדרות</Link>
+        <NavSection label="תפעול" items={operations} />
+        {management.length ? <NavSection label="ניהול" items={management} /> : null}
       </nav>
-      <div className="sidebar-bottom nav">
-        <button className="btn" onClick={handleLogout} style={{ justifyContent: "flex-start", color: "#c9d7e6", background: "transparent" }}><LogOut size={18} />יציאה</button>
+      <div className="sidebar-bottom">
+        <NavSection label="חשבון" items={[{ href: "/settings", label: "הגדרות", icon: Settings, active: pathname === "/settings" }]} />
+        <button type="button" className="nav-link nav-logout" onClick={handleLogout}><LogOut size={18} aria-hidden="true" className="nav-icon" /><span className="nav-label">יציאה</span></button>
       </div>
     </>
   );
@@ -227,27 +296,33 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
   return (
     <ShellContext.Provider value={shellContext}>
       <div className="app-shell">
-        <aside className="sidebar">
-          <Brand />
+        <aside className="sidebar" aria-label="תפריט צד">
+          <div className="sidebar-brand"><Brand className="brand-inverse" /></div>
           {navigation}
         </aside>
 
         {mobileMenuOpen ? <button className="mobile-sidebar-backdrop" aria-label="סגירת תפריט" onClick={() => setMobileMenuOpen(false)} /> : null}
-        <aside className={`mobile-sidebar${mobileMenuOpen ? " open" : ""}`} aria-hidden={!mobileMenuOpen}>
+        <aside ref={mobileDrawerRef} className={`mobile-sidebar${mobileMenuOpen ? " open" : ""}`} aria-hidden={!mobileMenuOpen} aria-label="תפריט ניווט"
+          role={mobileMenuOpen ? "dialog" : undefined}>
           <div className="mobile-sidebar-head">
-            <Brand />
+            <Brand className="brand-inverse" />
             <button className="mobile-close" onClick={() => setMobileMenuOpen(false)} aria-label="סגירת תפריט"><X size={22} /></button>
           </div>
           {navigation}
         </aside>
 
-        <div className="workspace">
+        {/* While the drawer is open the page behind it is inert, which makes the drawer modal for keyboard and assistive tech. */}
+        <div className="workspace" inert={mobileMenuOpen || undefined}>
           <header className="topbar">
             <div className="topbar-leading">
-              <button className="mobile-menu" onClick={() => setMobileMenuOpen(true)} aria-label="פתיחת תפריט"><Menu size={23} /></button>
-              <div className="topbar-title"><b>{pageConfig.title}</b><span>מערכת תפעול פנסיוני</span></div>
+              <button ref={mobileMenuButtonRef} className="mobile-menu" onClick={() => setMobileMenuOpen(true)} aria-label="פתיחת תפריט" aria-expanded={mobileMenuOpen}><Menu size={22} /></button>
+              <div className="topbar-title"><span>מערכת תפעול פנסיוני</span><b>{pageConfig.title}</b></div>
             </div>
-            <div className="user-chip"><div><b>{session.displayName}</b><div className="api-state"><span className="dot online" />{session.isReferent ? "רפרנט · המערכת מחוברת" : "המערכת מחוברת"}</div></div><span className="avatar">{session.displayName.slice(0, 1)}</span></div>
+            <div className="user-chip">
+              <div className="user-chip-copy"><b>{session.displayName}</b><div className="api-state"><span className="dot online" />{session.isReferent ? "רפרנט · המערכת מחוברת" : "המערכת מחוברת"}</div></div>
+              <span className="avatar" aria-hidden="true">{session.displayName.slice(0, 1)}</span>
+            </div>
+            <FetchIndicator />
           </header>
           {pageConfig.hideScopeController ? null : <ScopeController />}
           <main className="main">{children}</main>

@@ -1,0 +1,206 @@
+/*
+ * Loading system (src/components/loading): skeletons, the animated Alpha symbol, the
+ * full-screen app loader, inline loading states and the workspace fetch indicator.
+ *
+ * Loaders fade in after a short CSS delay, so fast loads never flash a loader.
+ * All motion stops under prefers-reduced-motion and the accessibility menu's motion mode.
+ */
+
+/* ── Skeletons ─────────────────────────────────────────────────────────── */
+.skeleton {
+  display: block;
+  width: 100%;
+  height: 12px;
+  border-radius: var(--radius-xs);
+  background-color: var(--skeleton-base);
+  background-image: linear-gradient(90deg, transparent 0%, var(--skeleton-highlight) 50%, transparent 100%);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+.skeleton-radius-sm { border-radius: var(--radius-sm); }
+.skeleton-radius-md { border-radius: var(--radius-control); }
+.skeleton-radius-lg { border-radius: var(--radius-lg); }
+.skeleton-radius-full { border-radius: var(--radius-full); }
+.skeleton-text { display: grid; gap: 10px; }
+.skeleton-stack { display: grid; gap: var(--space-5); }
+.skeleton-row-flex { display: flex; align-items: center; gap: var(--space-3); }
+.skeleton-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-6); }
+.skeleton-head > div { display: grid; gap: var(--space-3); flex: 1; min-width: 0; }
+.skeleton-card { display: grid; gap: var(--space-4); }
+.skeleton-hero { border-radius: var(--radius-2xl); margin-bottom: var(--space-1); }
+.skeleton-split { display: grid; grid-template-columns: 1.45fr 0.85fr; gap: var(--space-5); align-items: start; }
+.skeleton-field-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.skeleton-field { display: grid; gap: var(--space-2); }
+
+.skeleton-table { overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); }
+.skeleton-table-row {
+  display: grid;
+  grid-template-columns: repeat(var(--skeleton-columns, 4), minmax(0, 1fr));
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--skeleton-row-height, 56px);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.skeleton-table-row:last-child { border-bottom: 0; }
+.skeleton-table-head { height: 42px; background: var(--color-surface-sunken); border-bottom-color: var(--color-border); }
+
+@keyframes skeleton-shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+/* ── Animated Alpha symbol: the three strokes assemble in sequence ───── */
+.alpha-symbol.is-animated path {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: alpha-assemble 1.8s var(--ease-standard) infinite;
+}
+.alpha-symbol.is-animated .alpha-symbol-navy { animation-delay: 0.15s; }
+.alpha-symbol.is-animated .alpha-symbol-teal { animation-delay: 0.3s; }
+
+@keyframes alpha-assemble {
+  0%, 100% { opacity: 0.28; transform: translateY(6%) scale(0.94); }
+  40%, 72% { opacity: 1; transform: none; }
+}
+
+/* ── Full-screen app loader (AppLoader) ─────────────────────────────── */
+.app-loader {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-app-loader);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-5);
+  background:
+    radial-gradient(60% 45% at 50% 42%, color-mix(in srgb, var(--color-brand-blue) 9%, transparent) 0%, transparent 70%),
+    var(--color-bg);
+}
+.app-loader > * { animation: loader-appear 320ms var(--ease-out) 160ms backwards; }
+.app-loader-mark {
+  width: 92px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-3xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+.app-loader-symbol { width: 54px; height: auto; }
+.app-loader-progress {
+  position: relative;
+  width: 148px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+.app-loader-progress > span {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--gradient-brand);
+  animation: loader-progress 1.3s var(--ease-standard) infinite;
+}
+.app-loader-label { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+
+/* ── Inline loading state (LoadingState) and spinner ───────────────── */
+.loading-state {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-3);
+  min-height: 168px;
+  padding: var(--space-8) var(--space-5);
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  text-align: center;
+}
+.loading-state > * { animation: loader-appear 240ms var(--ease-out) 120ms backwards; }
+.loading-state-symbol { width: 36px; height: auto; }
+.loading-state-compact {
+  min-height: 0;
+  padding: var(--space-4);
+  grid-auto-flow: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+.loading-state-compact .loading-state-symbol { width: 22px; }
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Workspace fetch indicator (top edge of the topbar) ─────────────── */
+.fetch-indicator {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-standard);
+}
+.fetch-indicator.is-active { opacity: 1; transition-delay: 250ms; }
+.fetch-indicator::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 28%;
+  background: var(--gradient-brand);
+  border-radius: var(--radius-full);
+}
+.fetch-indicator.is-active::before { animation: loader-progress 1.2s var(--ease-standard) infinite; }
+
+/* Navigation pending indicator (useLinkStatus) */
+.nav-pending {
+  width: 6px;
+  height: 6px;
+  margin-inline-start: auto;
+  border-radius: 50%;
+  background: var(--color-brand-teal);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+.nav-pending.is-pending { opacity: 1; transition-delay: 120ms; animation: pending-pulse 1s ease-in-out infinite; }
+
+@keyframes loader-appear { from { opacity: 0; transform: translateY(4px); } }
+@keyframes loader-progress {
+  from { transform: translateX(260%); }
+  to { transform: translateX(-110%); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pending-pulse { 50% { opacity: 0.35; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .alpha-symbol.is-animated path,
+  .app-loader > *,
+  .loading-state > *,
+  .nav-pending.is-pending { animation: none; }
+  .app-loader-progress > span,
+  .fetch-indicator.is-active::before { animation: none; left: 0; width: 100%; opacity: 0.6; }
+}
+[data-a11y-motion="true"] .app-loader-progress > span,
+[data-a11y-motion="true"] .fetch-indicator.is-active::before { width: 100%; opacity: 0.6; }
+
+@media (max-width: 760px) {
+  .skeleton-split { grid-template-columns: 1fr; }
+  .skeleton-field-grid { grid-template-columns: 1fr; }
+  .skeleton-head { flex-direction: column; align-items: stretch; }
+}

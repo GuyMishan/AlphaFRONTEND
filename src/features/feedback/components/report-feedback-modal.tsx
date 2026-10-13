@@ -16,6 +16,7 @@ import { formatDateTimeDDMMYYYY } from "@/lib/format/date";
 import { formatMoney } from "@/lib/format/number";
 import { formatReportingMonth } from "@/lib/format/date";
 import { reportKindLabel } from "@/features/reporting/labels";
+import { LoadingState } from "@/components/loading/loading-state";
 
 export type ReportFeedbackModalMode = "employer" | "report" | "deposit";
 
@@ -126,7 +127,7 @@ export function ReportFeedbackModal({
     onClose={onClose}
     actions={<button type="button" className="btn btn-secondary" onClick={onClose}>סגירה</button>}
   >
-    {loading ? <div className="empty">טוען פרטים ומשוב...</div> : null}
+    {loading ? <LoadingState label="טוען פרטים ומשוב..." /> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
 
     {!loading && !error && mode === "employer" && employerContext ? <>

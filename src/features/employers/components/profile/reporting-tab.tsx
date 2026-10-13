@@ -33,7 +33,7 @@ export function ReportingTab({ organizationId, employerId, canEdit, value, onSav
   }
 
   return <section className="card profile-card reporting-settings-card">
-    <div className="card-head"><div><h2>הגדרות דיווח</h2><span style={{ color: "var(--muted)" }}>ברירות מחדל נוחות לדיווחים חדשים. בכל דיווח ניתן לשנות אותן לפי הצורך.</span></div></div>
+    <div className="card-head"><div><h2>הגדרות דיווח</h2><span style={{ color: "var(--color-text-muted)" }}>ברירות מחדל נוחות לדיווחים חדשים. בכל דיווח ניתן לשנות אותן לפי הצורך.</span></div></div>
     {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הגדרות הדיווח מוצגות לקריאה בלבד לפי ההרשאה שלך.</div> : null}
     <form className="form" onSubmit={save}>
       <div className="grid two-cols">
@@ -51,7 +51,7 @@ export function ReportingTab({ organizationId, employerId, canEdit, value, onSav
             <option value={2}>קוד 2</option>
             <option value={3}>מעסיק קטן (קוד 3)</option>
           </UiSelect>
-          <small style={{ color: "var(--muted)" }}>בכללי גרסה 6 מוגדר במפורש קוד 3 למעסיק קטן.</small>
+          <small style={{ color: "var(--color-text-muted)" }}>בכללי גרסה 6 מוגדר במפורש קוד 3 למעסיק קטן.</small>
         </div>
         <div className="field">
           <label>סוג מזהה מעסיק בממשק 006</label>

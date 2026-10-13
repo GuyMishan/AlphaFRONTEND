@@ -10,6 +10,7 @@ import type { BankDebitMandateStatus, EmployerPaymentAccount, EmployerPaymentAcc
 import type { BankBranchOption, BankOption } from "@/features/reference-data/types";
 import { autocompleteLookupTerm } from "@/features/reference-data/lookup-term";
 import { isCompletePaymentAccount, PAYMENT_ACCOUNT_REQUIRED_MESSAGE } from "@/features/payment-accounts/schemas";
+import { CardSkeleton } from "@/components/loading/skeleton";
 
 const EMPTY: EmployerPaymentAccountInput = {
   bankId: 0,
@@ -135,13 +136,13 @@ export function OrganizationPensionPaymentAccount({
     }
   }
 
-  if (loading) return <div className="empty">טוען חשבון תשלום פנסיוני...</div>;
+  if (loading) return <CardSkeleton lines={4} label="טוען חשבון תשלום פנסיוני..." />;
 
   return <section className="card profile-payment-card payment-horizontal-shell organization-payment-card">
     <div className="card-head">
       <div>
         <h2>תשלום פנסיוני</h2>
-        <span style={{ color: "var(--muted)" }}>חשבון ברירת המחדל של הארגון עבור מעסיקים שמוגדרים להשתמש בחשבון הארגוני.</span>
+        <span style={{ color: "var(--color-text-muted)" }}>חשבון ברירת המחדל של הארגון עבור מעסיקים שמוגדרים להשתמש בחשבון הארגוני.</span>
       </div>
       {account ? <span className={account.mandateIsActive ? "badge badge-green" : "badge badge-gray"}>{mandateLabel(account.mandate?.status)}</span> : null}
     </div>

@@ -23,6 +23,8 @@ import { GeneralTab } from "@/features/employers/components/profile/general-tab"
 import { PensionPaymentTab } from "@/features/employers/components/profile/pension-payment-tab";
 import { EmployerBillingInheritanceTab } from "@/features/employers/components/profile/billing-tab";
 import { EmployeesTab } from "@/features/employers/components/profile/employees-tab";
+import { PageSkeleton } from "@/components/loading/skeleton";
+import { PageHeader } from "@/components/layout/page-header";
 
 type TabKey = "general" | "employees" | "pension-payment" | "billing" | "reporting" | "documents";
 
@@ -115,17 +117,12 @@ export default function EmployerProfilePage() {
     ]);
   }
 
-  if (loading) return <AppShell title="פרופיל מעסיק" hideScopeController><div className="empty">טוען פרופיל מעסיק...</div></AppShell>;
+  if (loading) return <AppShell title="פרופיל מעסיק" hideScopeController><PageSkeleton variant="form" label="טוען פרופיל מעסיק..." /></AppShell>;
   if (error || !employer) return <AppShell title="פרופיל מעסיק" hideScopeController><div className="notice notice-error">{error || "המעסיק לא נמצא."}</div></AppShell>;
 
   return <AppShell title="פרופיל מעסיק" hideScopeController>
-    <div className="page-head">
-      <div>
-        <h1>{employer.legalName}</h1>
-        <p>מרכז ניהול המעסיק · ח.פ./עוסק {employer.registrationNumber}</p>
-      </div>
-      {getSession()?.platformAdmin ? <button className="btn btn-secondary" type="button" onClick={() => setTransferOpen(true)}>העברה לארגון אחר</button> : null}
-    </div>
+    <PageHeader title={employer.legalName} description={`מרכז ניהול המעסיק · ח.פ./עוסק ${employer.registrationNumber}`}
+      actions={getSession()?.platformAdmin ? <button className="btn btn-secondary" type="button" onClick={() => setTransferOpen(true)}>העברה לארגון אחר</button> : null} />
 
     <AppTabs
       items={baseTabs}

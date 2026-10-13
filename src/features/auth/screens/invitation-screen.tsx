@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Building2, Mail, ShieldCheck } from "lucide-react";
-import { AuthBrand } from "@/features/auth/components/auth-brand";
+import { AuthBrand, AuthMobileBrand } from "@/features/auth/components/auth-brand";
+import { LoadingState } from "@/components/loading/loading-state";
 import { authApi } from "@/features/auth/api";
 import { formatDateDDMMYYYY } from "@/lib/format/date";
 
@@ -30,7 +31,8 @@ export default function InvitationPage() {
     <AuthBrand />
     <section className="auth-form-wrap">
       <div className="auth-card">
-        {loading ? <div className="empty">טוען הזמנה...</div> : error || !invitation ? <>
+        <AuthMobileBrand />
+        {loading ? <LoadingState label="טוען הזמנה..." /> : error || !invitation ? <>
           <h2>לא ניתן לפתוח את ההזמנה</h2>
           <div className="notice notice-error">{error || "ההזמנה אינה זמינה."}</div>
           <div className="auth-footer"><Link href="/login">חזרה להתחברות</Link></div>

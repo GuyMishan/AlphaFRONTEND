@@ -6,6 +6,7 @@ import { EmployeeForm } from "@/features/employees/components/employee-form";
 import { employeesApi } from "@/features/employees/api";
 import { reportFeedbackApi, type FeedbackResolutionGroup } from "@/features/feedback/api";
 import type { Employee } from "@/features/employees/types";
+import { LoadingState } from "@/components/loading/loading-state";
 
 // Match employee comparison fields to the official error being resolved.
 const errorFields: Record<number, readonly string[]> = {
@@ -149,7 +150,7 @@ export function FeedbackEmployeeResolver({
       פרטי העובד עודכנו והוכנו בגרסת התיקון. השגיאה תישאר דורשת טיפול עד להשלמת הדיווח החוזר; שגיאות Decision נשארות לטיפול נפרד.
     </div> : null}
 
-    {loading ? <div className="empty">טוען את פרטי העובד...</div> : null}
+    {loading ? <LoadingState label="טוען את פרטי העובד..." /> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
 
     {!loading && !error && employee && canEdit ? <button

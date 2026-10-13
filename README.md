@@ -7,7 +7,7 @@ The employer-facing web application of **ALPHA**, a multi-tenant pension operati
 - **Next.js 16** (App Router) · **React 19** · **TypeScript** (strict)
 - **TanStack Query 5** for server state · **Zustand** for shared client state
 - **React Hook Form + Zod** for forms
-- Global CSS with design tokens (`src/styles`) · `lucide-react` icons · `sonner` toasts
+- Global CSS design system with semantic tokens, light and dark themes (`src/styles`, see `docs/DESIGN-SYSTEM.md`) · `lucide-react` icons · `sonner` toasts
 - **Vitest** for unit tests
 
 The browser never talks to the backend directly: every call goes through the same-origin proxy `/api/backend/*`, which forwards it to AlphaBACKEND with the session token kept in an HttpOnly cookie.
@@ -51,6 +51,7 @@ Run `npm run verify` before opening a pull request.
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the frontend is organized and why
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — recipes: adding a feature, endpoint, query, form or component
+- [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) — tokens, shared components, loading patterns and how to build a screen
 - [`docs/CODEMAP.md`](docs/CODEMAP.md) — where each flow and shared building block lives
 - [`AGENTS.md`](AGENTS.md) — rules for automated and human contributors
 

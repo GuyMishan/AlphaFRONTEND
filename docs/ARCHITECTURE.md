@@ -14,9 +14,11 @@ src/
 │   ├── components/      Feature UI
 │   └── screens/         One component per route
 ├── components/          Shared, feature-agnostic UI
-│   ├── ui/              Controls, modal, table, tabs, tooltip, file upload, notifications
+│   ├── ui/              Controls, modal, table, tabs, tooltip, file upload, notifications, StatCard, EmptyState
 │   ├── forms/           Field and the server-validation bridge
-│   └── layout/          Brand, accessibility menu
+│   ├── brand/           Alpha logo, symbol and lockup
+│   ├── loading/         AppLoader, skeletons, LoadingState, Spinner
+│   └── layout/          PageHeader, accessibility menu
 ├── lib/                 Shared infrastructure (never imports from features)
 │   ├── api/             Client, transport, ApiError, Hebrew error messages, paging
 │   ├── query/           QueryClient defaults and provider
@@ -25,7 +27,7 @@ src/
 │   ├── server/          Server-only helpers for route handlers
 │   ├── format/          Date, month and money formatting
 │   └── hooks/, download.ts
-└── styles/              Global stylesheets and design tokens
+└── styles/              Design system: theme tokens, foundation, component, layout and feature stylesheets
 ```
 
 Dependencies point one way: `app → features → components / lib`. Features may use another feature's `api`, `types`, `queries` or exported components; `lib` and `components` never import features. There are no barrel (`index.ts`) files and no circular imports.
@@ -85,7 +87,9 @@ Forms use `useZodForm(schema, { defaultValues })` (`src/lib/forms/use-zod-form.t
 
 ## Styling
 
-Global CSS is imported once, in cascade order, by `src/app/layout.tsx`. Theme values are tokens in `src/styles/tokens.css` (light on `:root`, dark under `html[data-theme="dark"]`); use `var(--token)` instead of new hex values. Screen-only styles sit next to their screen. Shared controls (`src/components/ui`) are mandatory, and `scripts/check-ui-primitives.mjs` rejects raw inputs, tables and dialogs. Layout is RTL; numbers and identifiers use `dir="ltr"` where needed.
+The design system is described in `docs/DESIGN-SYSTEM.md`. Global CSS is imported once by `src/app/layout.tsx` in cascade order: theme (`src/styles/theme/palette.css` raw scales, `tokens.css` semantic tokens), `foundation.css`, shared component styles (`src/styles/components`), app layout (`src/styles/layout`), then feature refinements (`src/styles/features`). Light values sit on `:root` and dark values under `html[data-theme="dark"]`, so code written with semantic tokens (`var(--color-*)`, `--space-*`, `--radius-*`) needs no dark-mode rules. Raw colors and palette references outside `src/styles/theme` are rejected by `scripts/check-design-tokens.mjs`. Screen-only styles sit next to their screen. Shared controls (`src/components/ui`) are mandatory, and `scripts/check-ui-primitives.mjs` rejects raw inputs, tables and dialogs. Layout is RTL; numbers and identifiers use `dir="ltr"` where needed.
+
+Loading states use the shared components in `src/components/loading` (branded `AppLoader` for bootstrap, skeletons for pages, cards and tables, `LoadingState` for dialogs and panels). Route segments have `loading.tsx` files that re-export the shell's `RouteLoading`, and the shell shows TanStack Query activity in the topbar.
 
 ## Quality gates
 

@@ -45,7 +45,7 @@ export function OrganizationGeneralForm({ profile, onSaved }: { profile: Organiz
   }
 
   return <section className="card profile-card">
-    <div className="card-head"><div><h2>פרטים כלליים</h2><span style={{ color: "var(--muted)" }}>פרטי החברה, כתובת ואיש קשר ארגוני.</span></div></div>
+    <div className="card-head"><div><h2>פרטים כלליים</h2><span style={{ color: "var(--color-text-muted)" }}>פרטי החברה, כתובת ואיש קשר ארגוני.</span></div></div>
     {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הפרטים מוצגים לקריאה בלבד. משתמש מורשה יכול לעדכן את פרטי הארגון.</div> : null}
     <form className="form" onSubmit={handleSubmit(save)}>
       <div className="grid organization-details-grid">

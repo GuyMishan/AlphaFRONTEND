@@ -1,0 +1,161 @@
+/*
+ * Surfaces and page structure: page header, cards, stat cards, layout grids, profile
+ * summaries and list toolbars. Components: PageHeader, StatCard, UiCard.
+ */
+
+/* Page header (PageHeader component, or the .page-head markup it renders). */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+.page-head > div:first-child { min-width: 0; }
+.page-head h1 {
+  margin: 0 0 var(--space-1-5);
+  color: var(--color-heading);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+}
+.page-head p { margin: 0; color: var(--color-text-muted); font-size: var(--text-base); line-height: var(--leading-normal); }
+.page-head-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--color-accent);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+}
+.page-head-eyebrow::before {
+  content: "";
+  width: 18px;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--gradient-brand);
+}
+.page-head-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; flex: 0 0 auto; }
+
+/* Cards */
+.card {
+  --card-padding: var(--space-6);
+  padding: var(--card-padding);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.card-head h2,
+.card-head h3 { margin: 0; }
+.card-head h2 { font-size: var(--text-lg); font-weight: var(--weight-bold); }
+.card-head h3 { font-size: var(--text-base); font-weight: var(--weight-bold); }
+.card-head h2 + span,
+.card-head h3 + span,
+.card-head h2 + p,
+.card-head h3 + p { display: block; margin: var(--space-1) 0 0; color: var(--color-text-muted); font-size: var(--text-sm); font-weight: var(--weight-regular); }
+
+/* Stat cards (StatCard component). Tones: blue (default), teal, navy, amber, neutral. */
+.stat-card {
+  --stat-tone: var(--color-primary);
+  --stat-tone-soft: var(--color-primary-soft);
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+.stat-card[data-tone="teal"] { --stat-tone: var(--color-accent); --stat-tone-soft: var(--color-accent-soft); }
+.stat-card[data-tone="navy"] { --stat-tone: var(--color-heading); --stat-tone-soft: var(--color-surface-muted); }
+.stat-card[data-tone="amber"] { --stat-tone: var(--color-warning); --stat-tone-soft: var(--color-warning-soft); }
+.stat-card[data-tone="neutral"] { --stat-tone: var(--color-text-muted); --stat-tone-soft: var(--color-surface-muted); }
+.stat-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); color: var(--color-text-secondary); font-size: var(--text-md); font-weight: var(--weight-medium); }
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: var(--stat-tone-soft);
+  color: var(--stat-tone);
+}
+.stat-value {
+  color: var(--color-heading);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.stat-card[data-pending="true"] .stat-value { color: var(--color-text-placeholder); }
+.stat-foot { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; color: var(--color-text-muted); font-size: var(--text-sm); }
+
+/* Layout grids */
+.grid { display: grid; gap: var(--space-5); }
+/* Stat rows fill the width with as many 200px+ columns as fit, so 3, 5 or 6 cards never leave a gap. */
+.stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.two-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* Profile cards and entity summaries */
+.profile-card { max-width: 820px; margin: auto; }
+.profile-summary {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-xl);
+  background: var(--gradient-brand);
+  color: var(--color-on-primary);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--shadow-primary);
+}
+.profile-link { color: var(--color-primary); font-weight: var(--weight-semibold); text-decoration: none; }
+.profile-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.form-actions { display: flex; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-1-5); }
+
+/* List toolbars and search fields */
+.toolbar { display: flex; gap: var(--space-3); align-items: center; margin-bottom: var(--space-4); }
+.search { position: relative; flex: 1; min-width: 0; }
+.search > svg { position: absolute; inset-inline-start: 13px; top: 50%; transform: translateY(-50%); color: var(--color-text-muted); pointer-events: none; z-index: 1; }
+.search input { width: 100%; padding-inline-start: 40px; }
+
+@media (max-width: 760px) {
+  .card { --card-padding: var(--space-4); min-width: 0; max-width: 100%; }
+  .card-head { min-width: 0; align-items: flex-start; }
+  .card-head > div { min-width: 0; }
+  .card-head span { overflow-wrap: anywhere; }
+  .page-head { width: 100%; min-width: 0; align-items: stretch; flex-direction: column; margin-bottom: var(--space-5); }
+  .page-head h1 { font-size: var(--text-2xl); }
+  .page-head .btn, .page-head-actions { width: 100%; }
+  .grid, .stats { width: 100%; min-width: 0; }
+  .stat-card { min-width: 0; max-width: 100%; }
+  .two-cols { grid-template-columns: 1fr; }
+  .toolbar, .search { min-width: 0; width: 100%; }
+}

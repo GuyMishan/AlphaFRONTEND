@@ -22,6 +22,8 @@ import type { EntitlementSnapshot } from "@/features/billing/types";
 import type { Employer } from "@/features/employers/types";
 import type { OrganizationEmployerBilling, OrganizationMemberSummary } from "@/features/organizations/types";
 import { OrganizationGeneralForm } from "@/features/organizations/components/organization-general-form";
+import { PageSkeleton } from "@/components/loading/skeleton";
+import { PageHeader } from "@/components/layout/page-header";
 
 type TabKey = "general" | "employers" | "users" | "pension-payment" | "billing";
 
@@ -75,14 +77,12 @@ export default function OrganizationProfilePage() {
     ]);
   }
 
-  if (loading) return <AppShell title="פרופיל ארגון" hideScopeController><div className="empty">טוען פרופיל ארגון...</div></AppShell>;
+  if (loading) return <AppShell title="פרופיל ארגון" hideScopeController><PageSkeleton variant="form" label="טוען פרופיל ארגון..." /></AppShell>;
   if (error || !profile) return <AppShell title="פרופיל ארגון" hideScopeController><div className="notice notice-error">{error || "הארגון לא נמצא או שאין לך גישה אליו."}</div></AppShell>;
 
   return <AppShell title="פרופיל ארגון" hideScopeController>
-    <div className="page-head">
-      <div><h1>{profile.name}</h1><p>מרכז ניהול הארגון</p></div>
-      <button className="btn btn-secondary" type="button" onClick={() => router.push("/dashboard")}>חזרה לדף הבית</button>
-    </div>
+    <PageHeader title={profile.name} description="מרכז ניהול הארגון"
+      actions={<button className="btn btn-secondary" type="button" onClick={() => router.push("/dashboard")}>חזרה לדף הבית</button>} />
 
     <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל ארגון" />
 
@@ -109,7 +109,7 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
 
   return <><section className="card">
     <div className="card-head">
-      <div><h2>מעסיקים</h2><span style={{ color: "var(--muted)" }}>כל המעסיקים בארגון ואופן החיוב שלהם. שינוי הגדרות החיוב מתבצע מתוך כרטיס המעסיק.</span></div>
+      <div><h2>מעסיקים</h2><span style={{ color: "var(--color-text-muted)" }}>כל המעסיקים בארגון ואופן החיוב שלהם. שינוי הגדרות החיוב מתבצע מתוך כרטיס המעסיק.</span></div>
       {canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}>מעסיק חדש</Link> : null}
     </div>
     {entitlements?.plan.code === "FREE" ? <div style={{ marginBottom: 18 }}><PlanUsage label="מעסיקים במסלול" usage={entitlements.employers} /></div> : null}
@@ -137,7 +137,7 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
 function UsersTab({ organizationId, members, canManage }: { organizationId: string; members: OrganizationMemberSummary[]; canManage: boolean }) {
   const roleLabel = (role: number) => role === 1 ? "Admin" : role === 2 ? "Payroll Manager" : role === 3 ? "Operations Agent" : "Viewer";
   return <section className="card">
-    <div className="card-head"><div><h2>משתמשים והרשאות</h2><span style={{ color: "var(--muted)" }}>משתמשי Organization-level והגישה שלהם למעסיקים.</span></div>{canManage ? <Link className="btn btn-primary" href="/access">ניהול הרשאות</Link> : null}</div>
+    <div className="card-head"><div><h2>משתמשים והרשאות</h2><span style={{ color: "var(--color-text-muted)" }}>משתמשי Organization-level והגישה שלהם למעסיקים.</span></div>{canManage ? <Link className="btn btn-primary" href="/access">ניהול הרשאות</Link> : null}</div>
     {members.length === 0 ? <div className="empty">אין משתמשים פעילים בארגון.</div> : <DataTable
       items={members}
       rowKey={(item) => item.userId}

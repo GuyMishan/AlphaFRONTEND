@@ -1,20 +1,21 @@
 # ALPHA Frontend code map
 
-Where things live. Conventions and the reasons behind them: `docs/ARCHITECTURE.md`; recipes: `docs/DEVELOPMENT.md`. Business rules (Employer Interface 006, billing, feedback playbooks) are owned by the backend and its documentation; the frontend only presents them.
+Where things live. Conventions and the reasons behind them: `docs/ARCHITECTURE.md`; recipes: `docs/DEVELOPMENT.md`; visual conventions: `docs/DESIGN-SYSTEM.md`. Business rules (Employer Interface 006, billing, feedback playbooks) are owned by the backend and its documentation; the frontend only presents them.
 
-Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<feature>/screens/`.
+Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<feature>/screens/`; `loading.tsx` files only re-export the shell's `RouteLoading`.
 
 ## App shell and session
 
 | Path | Responsibility |
 | --- | --- |
 | `src/app/layout.tsx` | Root layout: global stylesheets in cascade order, `QueryProvider`, `ThemeProvider`, toaster, `ValidationUxBridge`, `SessionTimeoutGuard` |
-| `src/features/shell/components/persistent-app-layout.tsx` | Lists the public routes rendered without the shell (`/login`, `/register`, `/invite`, `/session-timeout`) |
-| `src/features/shell/components/app-shell.tsx` | Authenticated shell: navigation from the access scope, route guards, self-service onboarding, plan-upgrade dialog (`subscribeToApiErrors`) |
+| `src/features/shell/components/persistent-app-layout.tsx` | Lists the public routes rendered without the shell (`/login`, `/register`, `/invite`, `/session-timeout`); `isPublicPath` |
+| `src/features/shell/components/app-shell.tsx` | Authenticated shell: navigation rail (sections from the access scope, `useLinkStatus` pending state), topbar with the TanStack Query fetch indicator, `AppLoader` while the session and scope resolve, route guards, self-service onboarding, plan-upgrade dialog (`subscribeToApiErrors`) |
+| `src/features/shell/components/route-loading.tsx` | Route loading UI re-exported by `src/app/**/loading.tsx`: page skeleton inside the shell, `AppLoader` on public pages |
 | `src/lib/session/` | `app-store.ts` (Zustand: session display metadata, selected organization/employer/employee), `storage.ts` (persistence, never tokens), `lifecycle.ts` (logout, expiry, multi-tab broadcast) |
 | `src/features/auth/` | Login/OTP, registration, invitation and session-timeout screens; `session-timeout-guard.tsx` (local 30-minute idle check, then server validation); `restore-session.ts` (`resolveSession`: one backend check for a tab without session metadata); `api.ts` maps auth error codes to Hebrew |
 | `src/features/scope/` | `scope-context.ts` (`/api/scope` query), `components/scope-controller.tsx` (organization/employer/employee selection), `scope-events.ts` (page scope resolved/changed), `use-employer-scope.ts` |
-| `src/features/settings/` | Theme provider (light/dark/system saved to user preferences) and the settings screen |
+| `src/features/settings/` | Theme provider (light/dark/system saved to user preferences; follows the session in the app store), `theme-init.ts` (storage keys and the pre-paint script inlined in the root layout's `<head>`, so the saved theme and accessibility modes apply before first paint), and the settings screen |
 
 ## Shared UI (`src/components`)
 
@@ -27,9 +28,12 @@ Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<fe
 | `ui/ui-selection-list.tsx`, `ui/app-tabs.tsx`, `ui/tooltip.tsx`, `ui/notifications.tsx` | Searchable multi-select, tabs, tooltip, `notify` toasts |
 | `forms/form-feedback.tsx`, `forms/form-select.tsx` | `Field` (label + error), `FormSelect` (`UiSelect` bound to React Hook Form) |
 | `forms/validation-ux-bridge.tsx` | Highlights fields from error notices and server validation for forms not on React Hook Form |
-| `layout/` | Brand, accessibility menu |
+| `layout/page-header.tsx`, `layout/accessibility-menu.tsx` | `PageHeader` (every page title), accessibility menu |
+| `brand/` | `AlphaLogo`, `AlphaSymbol` (inline, themeable marks from `public/branding`), `Brand` lockup |
+| `loading/` | `AppLoader`, `LoadingState`, `Spinner`, skeletons (`PageSkeleton`, `TableSkeleton`, `CardSkeleton`, `FormSkeleton`, `StatGridSkeleton`) |
+| `ui/stat-card.tsx`, `ui/empty-state.tsx` | `StatCard`, `EmptyState` |
 
-Styles: `src/styles` (`tokens.css` first, `dark-theme.css` and `responsive.css` for theme and breakpoints); screen-only styles sit next to the screen (`src/features/reporting/screens/reports-screen.css`).
+Styles (`docs/DESIGN-SYSTEM.md`): `src/styles/theme` (palette and semantic tokens, light and dark), `foundation.css`, `components/` (one file per shared pattern), `layout/` (shell, auth pages), `features/` (management screens, reporting, report feedback, payment editor); screen-only styles sit next to the screen (`dashboard-screen.css`, `reports-screen.css`). The browser icon is `src/app/icon.svg`; brand source files are in `public/branding/`.
 
 ## Infrastructure (`src/lib`)
 
@@ -64,7 +68,7 @@ Server routes: `src/app/api/backend/[...path]/route.ts` (proxy) and `src/app/api
 - `reporting/screens/new-report-screen.tsx` — the report wizard: report type, details, employees, deposits, summary/transmission; resumes drafts and correction workspaces (`resumeReportId`, focus parameters from feedback). Steps in `components/new-report/`.
 - `reporting/components/manual-report-data.tsx` (employees and products), `manual-deposit-data.tsx` + `deposit-payment-editor.tsx` (payment details, V006 metadata, payment evidence, report attachments), `employer-interface-xml-intake.tsx` (XML/DAT/TST import), `report-validation-errors-modal.tsx`, `salary-template-tools.tsx` (template in `public/templates/`).
 - API modules: `api.ts` (drafts), `deposits-api.ts`, `validation-api.ts`, `transmission-api.ts`, `derived-reports-api.ts` (corrections and differences), `attachments-api.ts`, `payment-confirmations-api.ts`, `employer-interface-api.ts` (006 profiles, metadata, preflight, options).
-- `reporting/screens/reports-screen.tsx` — Reports & Feedback: paged report grid with server-side filters, per-report deposit rows, exports and correction entry points.
+- `reporting/screens/reports-screen.tsx` — Reports & Feedback: paged report grid with server-side filters, per-report deposit rows, exports and correction entry points The actions column stays pinned to the visible inline end while the wide grid scrolls horizontally (`src/styles/features/report-feedback.css`).
 
 Invariants:
 - Submitted reports are immutable; corrections happen in a backend-created correction workspace and are sent again as a whole report.
@@ -81,7 +85,7 @@ Invariants: the backend decides which groups are executable (`canExecute`), the 
 ### Billing and payments
 - `billing/` — subscription plan and pricing (`subscription-billing-panel.tsx`), the account that pays Alpha (`alpha-billing-account-form.tsx`, provider redirects restricted to HTTPS or this origin), `billing-gate-modal.tsx`, `upgrade-modal.tsx` + `upgrade.ts` (plan-limit dialog store).
 - `payment-accounts/` — bank accounts that pay pension deposits (organization and employer); unmasked bank details stay in component state.
-- `dashboard/` — statistics from `/api/dashboard/stats` and plan usage.
+- `dashboard/` — statistics from `/api/dashboard/stats` and plan usage; brand hero, employer picker and quick actions (`dashboard-screen.css`).
 
 ## Quality gates
 
@@ -89,6 +93,7 @@ Invariants: the backend decides which groups are executable (`canExecute`), the 
 | --- | --- |
 | `npm run test` | Vitest (`src/**/*.test.ts`): API client and errors, proxy/logout security, form schemas |
 | `scripts/check-ui-primitives.mjs` | Shared controls, checkboxes and `AppModal` only |
+| `scripts/check-design-tokens.mjs` | No raw colors, palette references or retired token names outside `src/styles/theme`; every `var(--*)` used is defined |
 | `scripts/check-hardcoded-select-options.mjs` | Select data comes from reference data, not literals |
 | `scripts/check-v006-preventable-validations.mjs` | V006 validation ownership split |
 | `scripts/check-regex-escaping.mjs` | No double-escaped regex literals |

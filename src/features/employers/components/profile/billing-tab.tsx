@@ -10,6 +10,7 @@ import type { EmployerBillingResolution } from "@/features/billing/types";
 import type { Employer, EmployerProfileCenterSettings } from "@/features/employers/types";
 import { UiChoiceCard } from "@/components/ui/ui-controls";
 import { Tooltip } from "@/components/ui/tooltip";
+import { CardSkeleton } from "@/components/loading/skeleton";
 
 export function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmployer, billing, hasOrganizationContext, onModeSaved }: {
   organizationId: string;
@@ -56,13 +57,13 @@ export function EmployerBillingInheritanceTab({ organizationId, employer, canMan
     }
   }
 
-  if (loading || !resolution) return <div className="empty">טוען הגדרות חיוב...</div>;
+  if (loading || !resolution) return <CardSkeleton lines={4} label="טוען הגדרות חיוב..." />;
 
   const organizationAvailable = resolution.organizationAccount.configured;
 
   return <section className="card profile-payment-card payment-horizontal-shell">
     <div className="card-head">
-      <div><h2>חיוב ALPHA</h2><span style={{ color: "var(--muted)" }}>בחרו אם החיוב של המעסיק מתבצע דרך הארגון או באמצעות פרטי חיוב עצמאיים.</span></div>
+      <div><h2>חיוב ALPHA</h2><span style={{ color: "var(--color-text-muted)" }}>בחרו אם החיוב של המעסיק מתבצע דרך הארגון או באמצעות פרטי חיוב עצמאיים.</span></div>
       {billing.modeOverridden && resolution.effectiveAccount.configured ? <span className={resolution.source === "Organization" ? "badge badge-blue" : "badge badge-green"}>{resolution.source === "Organization" ? "פעיל: חיוב ארגוני" : "פעיל: חיוב מעסיק"}</span> : null}
     </div>
 

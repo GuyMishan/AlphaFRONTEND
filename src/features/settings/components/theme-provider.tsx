@@ -1,9 +1,10 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 import { getSession } from "@/lib/session/storage";
+import { useAppStore } from "@/lib/session/use-app-store";
 import { userPreferencesApi, type AppearancePreference } from "@/features/settings/api";
+import { THEME_CACHE_PREFIX, THEME_LAST_KEY } from "@/features/settings/theme-init";
 
 type ThemeContextValue = {
   appearance: AppearancePreference;
@@ -20,9 +21,19 @@ function resolveTheme(preference: AppearancePreference): "light" | "dark" {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+function isPreference(value: string | null): value is AppearancePreference {
+  return value === "system" || value === "light" || value === "dark";
+}
+
 function cacheKey() {
   const session = getSession();
-  return `alpha-appearance:${session?.userId ?? session?.displayName ?? "anonymous"}`;
+  return `${THEME_CACHE_PREFIX}${session?.userId ?? session?.displayName ?? "anonymous"}`;
+}
+
+/** Remembers the user's preference, and the device's last one for the pre-paint script (theme-init.ts). */
+function rememberPreference(key: string, preference: AppearancePreference) {
+  localStorage.setItem(key, preference);
+  localStorage.setItem(THEME_LAST_KEY, preference);
 }
 
 function applyTheme(preference: AppearancePreference) {
@@ -34,7 +45,8 @@ function applyTheme(preference: AppearancePreference) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  // Follows sign-in, session restore and sign-out without waiting for a navigation.
+  const sessionUserKey = useAppStore((state) => state.session ? state.session.userId ?? state.session.displayName : null);
   const loadedUserKey = useRef<string | null>(null);
   const [appearance, setAppearanceState] = useState<AppearancePreference>("system");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
@@ -48,32 +60,29 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     loadedUserKey.current = userKey;
     setLoading(true);
 
+    // Same order as the pre-paint script, so this never flips the theme it already applied:
+    // the user's cached preference, else the device's last one, else the OS setting.
+    const key = cacheKey();
+    const cached = session ? localStorage.getItem(key) : null;
+    const lastUsed = localStorage.getItem(THEME_LAST_KEY);
+    const initial = isPreference(cached) ? cached : isPreference(lastUsed) ? lastUsed : "system";
+    setAppearanceState(initial);
+    setResolvedTheme(applyTheme(initial));
+
     if (!session) {
-      setAppearanceState("system");
-      setResolvedTheme(applyTheme("system"));
       setLoading(false);
       return;
-    }
-
-    const key = cacheKey();
-    const cached = localStorage.getItem(key) as AppearancePreference | null;
-    if (cached === "system" || cached === "light" || cached === "dark") {
-      setAppearanceState(cached);
-      setResolvedTheme(applyTheme(cached));
-    } else {
-      setAppearanceState("system");
-      setResolvedTheme(applyTheme("system"));
     }
 
     userPreferencesApi.get()
       .then((preferences) => {
         setAppearanceState(preferences.appearance);
-        localStorage.setItem(key, preferences.appearance);
+        rememberPreference(key, preferences.appearance);
         setResolvedTheme(applyTheme(preferences.appearance));
       })
       .catch(() => undefined)
       .finally(() => setLoading(false));
-  }, [pathname]);
+  }, [sessionUserKey]);
 
   useEffect(() => {
     if (appearance !== "system") return;
@@ -86,7 +95,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   async function setAppearance(next: AppearancePreference) {
     setSaving(true);
     setAppearanceState(next);
-    localStorage.setItem(cacheKey(), next);
+    rememberPreference(cacheKey(), next);
     setResolvedTheme(applyTheme(next));
     try {
       await userPreferencesApi.setAppearance(next);

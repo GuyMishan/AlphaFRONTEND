@@ -17,6 +17,7 @@ import type { IntegrationRow, RunDetail } from "@/features/admin/types";
 import type { BillingAccountPricingType, BillingCustomerRow } from "@/features/billing/types";
 import { formatDateTimeDDMMYYYY } from "@/lib/format/date";
 import { subscribeToScopeChanges, type ScopeChange } from "@/features/scope/scope-events";
+import { PageHeader } from "@/components/layout/page-header";
 
 function formatDate(value?: string | null) {
   return formatDateTimeDDMMYYYY(value, "—");
@@ -187,18 +188,16 @@ export default function AdminPage() {
   });
 
   return <AppShell title="מסך אדמין" hideScopeController={tab !== "subscriptions"}>
-    <div className="page-head">
-      <div><h1>מסך אדמין</h1><p>ניהול ממשקי המערכת וניהול הגבייה והתמחור</p></div>
-    </div>
+    <PageHeader title="מסך אדמין" description="ניהול ממשקי המערכת וניהול הגבייה והתמחור" />
 
     <AppTabs items={adminTabs} activeKey={tab} onChange={setTab} ariaLabel="מסך אדמין" />
 
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
     {tab === "referents" ? <ReferentsAdminTab autoCreate={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("create") === "1"} /> : tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
-      <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
+      <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--color-border)" }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
-        <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>
+        <p style={{ margin: "5px 0 0", color: "var(--color-text-muted)" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>
       </div>
       <DataTable
         items={rows}
@@ -209,7 +208,7 @@ export default function AdminPage() {
         tableClassName="admin-interfaces-table"
         columns={["ממשק","הרצה אחרונה","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","פעולות"].map((label, index) => ({ key: String(index), label }))}
         renderCells={(row) => [
-          <span key="name"><b>{row.name}</b><span style={{ display: "block", color: "var(--muted)", fontSize: 12 }}>{row.key}</span></span>,
+          <span key="name"><b>{row.name}</b><span style={{ display: "block", color: "var(--color-text-muted)", fontSize: 12 }}>{row.key}</span></span>,
           formatDate(row.lastRun?.finishedAt ?? row.lastRun?.startedAt),
           statusLabel(row.lastRun?.status),
           row.lastRun?.recordsReceived ?? "-",
@@ -223,10 +222,10 @@ export default function AdminPage() {
         ]}
       />
     </section> : <section className="card admin-section-card" style={{ overflow: "hidden" }}>
-      <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border, #dce3ea)" }}>
+      <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--color-border)" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 18 }}>מנויים</h2>
-          <p style={{ margin: "5px 0 0", color: "var(--muted)" }}>כל ארגון וכל מעסיק, המסלול שלו והתעריף שלו.</p>
+          <p style={{ margin: "5px 0 0", color: "var(--color-text-muted)" }}>כל ארגון וכל מעסיק, המסלול שלו והתעריף שלו.</p>
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
           <label className="field" style={{ minWidth: 180 }}>
@@ -320,11 +319,11 @@ export default function AdminPage() {
     {selectedRun ? <AppModal title="דוח הרצה" subtitle={selectedRun.integrationName}
       onClose={() => setSelectedRun(null)} width="lg">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 16 }}>
-          {[["סטטוס",statusLabel(selectedRun.status)],["התחלה",formatDate(selectedRun.startedAt)],["סיום",formatDate(selectedRun.finishedAt)],["נקלטו",selectedRun.recordsReceived],["חדשות",selectedRun.recordsInserted],["עודכנו",selectedRun.recordsUpdated],["הושבתו",selectedRun.recordsDeactivated]].map(([label,value]) => <div key={String(label)} style={{ padding: 12, border: "1px solid var(--line)", borderRadius: 10 }}><div style={{ color: "var(--muted)", fontSize: 12 }}>{label}</div><b>{value}</b></div>)}
+          {[["סטטוס",statusLabel(selectedRun.status)],["התחלה",formatDate(selectedRun.startedAt)],["סיום",formatDate(selectedRun.finishedAt)],["נקלטו",selectedRun.recordsReceived],["חדשות",selectedRun.recordsInserted],["עודכנו",selectedRun.recordsUpdated],["הושבתו",selectedRun.recordsDeactivated]].map(([label,value]) => <div key={String(label)} style={{ padding: 12, border: "1px solid var(--color-border)", borderRadius: 10 }}><div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{label}</div><b>{value}</b></div>)}
         </div>
         {selectedRun.errorMessage ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{selectedRun.errorMessage}</div> : null}
         <h3 style={{ marginBottom: 8 }}>פרטי מקור</h3>
-        <pre style={{ direction: "ltr", textAlign: "left", background: "var(--bg)", padding: 12, borderRadius: 10, overflow: "auto", whiteSpace: "pre-wrap" }}>{JSON.stringify(selectedRun.details ?? {}, null, 2)}</pre>
+        <pre style={{ direction: "ltr", textAlign: "left", background: "var(--color-bg)", padding: 12, borderRadius: 10, overflow: "auto", whiteSpace: "pre-wrap" }}>{JSON.stringify(selectedRun.details ?? {}, null, 2)}</pre>
     </AppModal> : null}
   </AppShell>;
 }

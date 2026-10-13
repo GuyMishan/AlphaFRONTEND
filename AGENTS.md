@@ -16,6 +16,7 @@ This repository is the employer-facing ALPHA pension operations application. It 
 - Reuse shared controls from `src/components/ui/ui-controls.tsx` instead of native ad-hoc controls.
 - Keep Dark/Light, responsive behavior, keyboard interaction, ARIA and disabled states intact.
 - Check global CSS plus page/modal-specific CSS before adding overrides.
+- Style with the semantic tokens and shared patterns in `docs/DESIGN-SYSTEM.md` (no raw colors; `npm run check:tokens`), and use the shared loading components instead of text-only "loading" placeholders.
 - Validation can come from Zod schemas (React Hook Form forms), component props, native browser validity and `ValidationUxBridge`; a fix must account for all relevant layers.
 - Do not create a page-specific workaround for a shared control unless the behavior is genuinely page-specific.
 
@@ -46,3 +47,13 @@ Documentation maintenance is part of implementation, not a separate optional tas
 - Do not edit documentation for trivial internal refactors that do not change how the system is understood or operated.
 - A change that requires documentation is not complete until the relevant Markdown is updated in the same work.
 - Keep detailed business rules in backend/domain documentation rather than duplicating volatile values here.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

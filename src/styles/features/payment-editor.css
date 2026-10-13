@@ -1,12 +1,12 @@
 
 
-.payment-modal { position: relative; width: min(980px, 94vw); max-height: 88vh; overflow-y: auto; overflow-x: hidden; border-radius: 18px; background: var(--surface); box-shadow: 0 24px 70px rgba(5,20,36,.28); padding: 14px 14px 12px; }
+.payment-modal { position: relative; width: min(980px, 94vw); max-height: 88vh; overflow-y: auto; overflow-x: hidden; border-radius: var(--radius-modal); background: var(--color-surface); box-shadow: var(--shadow-xl); padding: 14px 14px 12px; }
 
-.payment-employer-chip { min-height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: white; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 3px 12px rgba(25,44,66,.05); margin-bottom: 9px; font-size: 13px; }
-.payment-employer-chip span { margin-inline-start: auto; color: #4b535b; font-size: 12px; }
+.payment-employer-chip { min-height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; box-shadow: var(--shadow-xs); margin-bottom: 9px; font-size: 13px; }
+.payment-employer-chip span { margin-inline-start: auto; color: var(--color-text-secondary); font-size: 12px; }
 .payment-layout { display: grid; grid-template-columns: minmax(190px, .58fr) minmax(0, 2fr); gap: 9px; align-items: stretch; }
 .payment-main { min-width: 0; display: grid; gap: 9px; }
-.payment-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 3px 12px rgba(25,44,66,.04); }
+.payment-panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; box-shadow: var(--shadow-xs); }
 
 .payment-panel { padding: 10px 12px; }
 .payment-panel h3 { margin: 0 0 8px; font-size: 14px; }
@@ -17,13 +17,10 @@
 
 .payment-method-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: end; }
 .payment-method { grid-column: auto; }
-.payment-upload { min-height: var(--control-height-compact); display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; background: white; cursor: pointer; color: #2980d9; padding: 0 9px; min-width: 0; font-size: 12px; }
+.payment-upload { min-height: var(--control-height-compact); display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-control-bg); cursor: pointer; color: var(--color-primary); padding: 0 9px; min-width: 0; font-size: 12px; }
 .payment-upload span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .payment-error { margin-bottom: 8px; }
 
-/* Error text is intentionally capped visually across the product. Detailed validation stays in the API/logs. */
-.notice-error { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; max-height: 4.8em; overflow-wrap: anywhere; }
-[data-sonner-toast][data-type="error"] [data-content] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; overflow-wrap: anywhere; }
 
 @media (max-width: 900px) {
   .payment-provider-grid { grid-template-columns: minmax(0,1.4fr) minmax(120px,.6fr); }
@@ -55,4 +52,10 @@
 .payment-provider-grid .payment-summary-item { display: grid; align-content: start; gap: 3px; }
 .payment-provider-grid .payment-summary-item b { font-size: 13px; }
 .payment-provider-grid .account-number { display: block; direction: ltr; text-align: right; unicode-bidi: isolate; overflow-wrap: anywhere; }
-.payment-evidence-empty { font-size: 12px; color: var(--muted); }
+.payment-evidence-empty { font-size: 12px; color: var(--color-text-muted); }
+
+/* Payment evidence chips and the field-error bubble exception inside the payment dialog. */
+.payment-evidence-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.payment-evidence-list .btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: normal; text-align: right; }
+.payment-modal .field-invalid[data-error]:hover::after,
+.payment-modal .field-invalid[data-error]:focus-within::after { content: none; }

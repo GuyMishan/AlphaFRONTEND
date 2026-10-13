@@ -17,6 +17,8 @@ import { useWatch } from "react-hook-form";
 import { newOrganizationSchema } from "@/features/organizations/schemas";
 import { useZodForm } from "@/lib/forms/use-zod-form";
 import { FormSelect } from "@/components/forms/form-select";
+import { TableSkeleton } from "@/components/loading/skeleton";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default function OrganizationsPage() {
   const router = useRouter();
@@ -59,17 +61,16 @@ export default function OrganizationsPage() {
   }, [organizations, query]);
 
   return <AppShell title="ארגונים" hideScopeController>
-    <div className="page-head">
-      <div><h1>{session?.platformAdmin ? "ארגונים" : "ארגונים בניהול"}</h1><p>{session?.platformAdmin ? "צפייה וניהול כלל הארגונים במערכת" : "הארגונים שהוקצו לך לניהול מלא"}</p></div>
-      {session?.platformAdmin ? <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}><Plus size={17} /> ארגון חדש</button> : null}
-    </div>
+    <PageHeader title={session?.platformAdmin ? "ארגונים" : "ארגונים בניהול"}
+      description={session?.platformAdmin ? "צפייה וניהול כלל הארגונים במערכת" : "הארגונים שהוקצו לך לניהול מלא"}
+      actions={session?.platformAdmin ? <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}><Plus size={17} /> ארגון חדש</button> : null} />
     {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
     <section className="card">
       <div className="toolbar">
         <div className="search"><Search size={17} /><UiInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש ארגון לפי שם" /></div>
         <span className="badge badge-blue">{filtered.length} ארגונים</span>
       </div>
-      {loading ? <div className="empty">טוען ארגונים...</div> : filtered.length ? <DataTable
+      {loading ? <TableSkeleton columns={4} label="טוען ארגונים..." /> : filtered.length ? <DataTable
         items={filtered}
         rowKey={(item) => item.id}
         columns={[

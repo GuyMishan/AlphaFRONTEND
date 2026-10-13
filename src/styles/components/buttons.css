@@ -1,0 +1,110 @@
+/*
+ * Buttons. Every variant only sets the --btn-* properties; states live once on .btn.
+ * Sizes: default (44px, matches --control-height), .btn-lg (48px), .btn-sm (34px).
+ * Variants: (none) quiet, .btn-primary, .btn-secondary, .btn-soft, .btn-danger, .btn-ghost.
+ */
+.btn {
+  --btn-bg: transparent;
+  --btn-bg-hover: var(--color-surface-hover);
+  --btn-fg: var(--color-text);
+  --btn-fg-hover: var(--btn-fg);
+  --btn-border: transparent;
+  --btn-border-hover: var(--btn-border);
+  --btn-shadow: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 10px 17px;
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-control);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--btn-shadow);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  line-height: 22px;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+}
+.btn:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--btn-bg-hover);
+  border-color: var(--btn-border-hover);
+  color: var(--btn-fg-hover);
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:focus-visible { outline: var(--focus-outline); outline-offset: 2px; }
+.btn:disabled,
+.btn[aria-disabled="true"] { cursor: not-allowed; opacity: 0.5; box-shadow: none; transform: none; }
+.btn[aria-busy="true"] { cursor: progress; }
+.btn > svg { flex: 0 0 auto; }
+
+.btn-primary {
+  --btn-bg: var(--color-primary-solid);
+  --btn-bg-hover: var(--color-primary-solid-hover);
+  --btn-fg: var(--color-on-primary);
+  --btn-border: var(--color-primary-solid);
+  --btn-border-hover: var(--color-primary-solid-hover);
+  --btn-shadow: var(--shadow-primary-rest);
+}
+.btn-primary:hover:not(:disabled) { box-shadow: var(--shadow-primary); }
+.btn-primary:active:not(:disabled) { background: var(--color-primary-solid-active); }
+
+.btn-secondary {
+  --btn-bg: var(--color-control-bg);
+  --btn-bg-hover: var(--color-surface-hover);
+  --btn-border: var(--color-control-border);
+  --btn-border-hover: var(--color-control-border-hover);
+  --btn-shadow: var(--shadow-xs);
+}
+
+.btn-soft {
+  --btn-bg: var(--color-primary-soft);
+  --btn-bg-hover: var(--color-primary-soft-hover);
+  --btn-fg: var(--color-primary);
+}
+
+.btn-danger {
+  --btn-bg: var(--color-danger-soft);
+  --btn-bg-hover: color-mix(in srgb, var(--color-danger) 14%, var(--color-surface));
+  --btn-fg: var(--color-danger);
+}
+
+.btn-ghost {
+  --btn-fg: var(--color-text-secondary);
+  --btn-fg-hover: var(--color-text);
+}
+
+.btn-lg { padding: 12px 22px; font-size: var(--text-base); }
+.btn-sm { padding: 5px 11px !important; min-height: 34px; font-size: var(--text-xs); line-height: 22px; border-radius: var(--radius-sm); }
+
+/* Square icon-only button. Always give it an aria-label. */
+.btn-icon,
+.icon-button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+.btn-icon:hover:not(:disabled),
+.icon-button:hover:not(:disabled) { background: var(--color-primary-soft); border-color: var(--color-primary-border); color: var(--color-primary); }
+.btn-icon:disabled,
+.icon-button:disabled { cursor: not-allowed; opacity: 0.5; }
+.icon-button { width: 34px; height: 34px; }
+.icon-button.danger { color: var(--color-danger); background: var(--color-danger-soft); border-color: var(--color-danger-border); }
+
+.wide { width: 100%; }

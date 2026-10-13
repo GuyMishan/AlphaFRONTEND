@@ -1,6 +1,7 @@
 "use client";
 
 import { UiInput } from "@/components/ui/ui-controls";
+import "./dashboard-screen.css";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -10,11 +11,19 @@ import {
   CircleCheck,
   FilePenLine,
   FilePlus2,
+  Landmark,
   Search,
   ShieldCheck,
   UserCog,
+  UserX,
   Users,
 } from "lucide-react";
+import { AlphaSymbol } from "@/components/brand/alpha-logo";
+import { LoadingState } from "@/components/loading/loading-state";
+import { PageSkeleton } from "@/components/loading/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatCard } from "@/components/ui/stat-card";
+import { formatCount } from "@/lib/format/number";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { PlanUsage } from "@/features/billing/components/plan-usage";
 import { useEntitlements } from "@/features/billing/queries";
@@ -46,12 +55,18 @@ const EMPTY_STATS: DashboardStats = {
   inactiveEmployees: 0,
 };
 
-function StatCard({ label, value, icon, badge }: { label: string; value: number | string; icon: ReactNode; badge?: string }) {
-  return <div className="stat-card">
-    <div className="stat-top"><span>{label}</span><span className="stat-icon">{icon}</span></div>
-    <div className="stat-value">{value}</div>
-    {badge ? <span className="badge badge-gray">{badge}</span> : null}
-  </div>;
+const MODE_LABEL: Record<DashboardMode, string> = {
+  admin: "ניהול מערכת",
+  organization: "מרכז ארגוני",
+  employer: "מרכז מעסיק",
+};
+
+function QuickAction({ href, icon, title, description }: { href: string; icon: ReactNode; title: string; description: string }) {
+  return <Link className="quick-action" href={href}>
+    <span className="quick-action-icon" aria-hidden="true">{icon}</span>
+    <span className="quick-action-copy"><b>{title}</b><span>{description}</span></span>
+    <ArrowLeft size={17} aria-hidden="true" className="quick-action-arrow" />
+  </Link>;
 }
 
 export default function DashboardPage() {
@@ -190,32 +205,39 @@ export default function DashboardPage() {
 
   const quickActions = mode === "admin" ? (
     <aside className="card"><div className="card-head"><h2>פעולות ניהול</h2></div><div className="quick-actions">
-      <Link className="quick-action" href="/admin"><div className="quick-action-icon"><ShieldCheck size={19} /></div><span><b>ניהול מערכת</b><span>משתמשים והגדרות מערכת</span></span><ArrowLeft size={17} /></Link>
-      <Link className="quick-action" href="/employers"><div className="quick-action-icon"><Building2 size={19} /></div><span><b>מעסיקים</b><span>מעבר לרשימת המעסיקים</span></span><ArrowLeft size={17} /></Link>
-      <Link className="quick-action" href="/reports"><div className="quick-action-icon"><CircleCheck size={19} /></div><span><b>דיווחים</b><span>צפייה בדיווחים במערכת</span></span><ArrowLeft size={17} /></Link>
+      <QuickAction href="/admin" icon={<ShieldCheck size={19} />} title="ניהול מערכת" description="משתמשים והגדרות מערכת" />
+      <QuickAction href="/employers" icon={<Building2 size={19} />} title="מעסיקים" description="מעבר לרשימת המעסיקים" />
+      <QuickAction href="/reports" icon={<CircleCheck size={19} />} title="דיווחים" description="צפייה בדיווחים במערכת" />
     </div></aside>
   ) : (
     <aside className="card"><div className="card-head"><h2>פעולות מהירות</h2></div><div className="quick-actions">
-      <Link className="quick-action" href="/reports/new"><div className="quick-action-icon"><FilePlus2 size={19} /></div><span><b>דיווח חודשי חדש</b><span>יצירת דיווח חדש</span></span><ArrowLeft size={17} /></Link>
-      <Link className="quick-action" href="/reports/new?mode=correction"><div className="quick-action-icon"><FilePenLine size={19} /></div><span><b>תיקון דיווח</b><span>תיקון או דיווח הפרשים</span></span><ArrowLeft size={17} /></Link>
-      <Link className="quick-action" href="/employees"><div className="quick-action-icon"><Users size={19} /></div><span><b>רשימת עובדים</b><span>צפייה וניהול עובדים</span></span><ArrowLeft size={17} /></Link>
-      {mode === "organization" && hasOrganizationScope && organizationId ? <Link className="quick-action" href={`/organizations/${organizationId}`}><div className="quick-action-icon"><Building2 size={19} /></div><span><b>פרופיל ארגון</b><span>פרטים, מנוי, Billing והרשאות</span></span><ArrowLeft size={17} /></Link> : null}
-      {mode === "organization" && hasOrganizationScope ? <Link className="quick-action" href="/access"><div className="quick-action-icon"><UserCog size={19} /></div><span><b>הרשאות משתמשים</b><span>ניהול גישה בארגון</span></span><ArrowLeft size={17} /></Link> : null}
+      <QuickAction href="/reports/new" icon={<FilePlus2 size={19} />} title="דיווח חודשי חדש" description="יצירת דיווח חדש" />
+      <QuickAction href="/reports/new?mode=correction" icon={<FilePenLine size={19} />} title="תיקון דיווח" description="תיקון או דיווח הפרשים" />
+      <QuickAction href="/employees" icon={<Users size={19} />} title="רשימת עובדים" description="צפייה וניהול עובדים" />
+      {mode === "organization" && hasOrganizationScope && organizationId ? <QuickAction href={`/organizations/${organizationId}`} icon={<Building2 size={19} />} title="פרופיל ארגון" description="פרטים, מנוי, Billing והרשאות" /> : null}
+      {mode === "organization" && hasOrganizationScope ? <QuickAction href="/access" icon={<UserCog size={19} />} title="הרשאות משתמשים" description="ניהול גישה בארגון" /> : null}
     </div></aside>
   );
 
-  if (loading) return <AppShell title="דף הבית">{null}</AppShell>;
+  if (loading) return <AppShell title="דף הבית"><PageSkeleton variant="dashboard" label="טוען את דף הבית..." /></AppShell>;
+
+  const searching = Boolean(search) && searchQuery.isLoading;
 
   return <AppShell title="דף הבית">
-    <div className="page-head">
-      <div><h1>{title}</h1><p>{subtitle}</p></div>
+    <section className="dashboard-hero" aria-labelledby="dashboard-title">
+      <AlphaSymbol className="dashboard-hero-mark" />
+      <div className="dashboard-hero-copy">
+        <span className="dashboard-hero-eyebrow">{MODE_LABEL[mode]}</span>
+        <h1 id="dashboard-title">{title}</h1>
+        <p>{subtitle}</p>
+      </div>
       {mode !== "admin" ? <Link href="/reports/new" className="btn btn-primary btn-lg"><FilePlus2 size={18} />דיווח חדש</Link> : <Link href="/admin" className="btn btn-primary btn-lg"><ShieldCheck size={18} />ניהול מערכת</Link>}
-    </div>
+    </section>
 
-    {error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}
+    {error ? <div className="notice notice-error dashboard-section">{error}</div> : null}
 
-    {mode !== "admin" && entitlements?.plan.code === "FREE" ? <section className="card" style={{ marginBottom: 18 }}>
-      <div className="card-head"><div><h2>מסלול {entitlements.plan.name}</h2><span style={{ color: "var(--muted)" }}>השימוש הנוכחי מול מכסת המסלול</span></div></div>
+    {mode !== "admin" && entitlements?.plan.code === "FREE" ? <section className="card dashboard-section">
+      <div className="card-head"><div><h2>מסלול {entitlements.plan.name}</h2><span>השימוש הנוכחי מול מכסת המסלול</span></div></div>
       <div className="grid stats">
         <PlanUsage label="מעסיקים" usage={entitlements.employers} />
         <PlanUsage label="עובדים פעילים" usage={entitlements.activeEmployees} />
@@ -223,25 +245,27 @@ export default function DashboardPage() {
       </div>
     </section> : null}
 
-    <section className="grid stats">
-      {mode === "admin" ? <StatCard label="ארגונים" value={stats.organizations} icon={<Building2 size={18} />} /> : null}
-      {mode !== "employer" ? <StatCard label="מעסיקים" value={stats.employers} icon={<Building2 size={18} />} badge={`${stats.activeEmployers} פעילים`} /> : null}
-      <StatCard label="עובדים" value={stats.employees} icon={<Users size={18} />} badge={`${stats.activeEmployees} פעילים`} />
-      <StatCard label="עובדים לא פעילים" value={stats.inactiveEmployees} icon={<AlertTriangle size={18} />} />
-      <StatCard label="דיווחים החודש" value="—" icon={<CircleCheck size={18} />} badge="יתחבר לנתוני הדיווחים" />
-      <StatCard label="שגיאות פתוחות" value="—" icon={<AlertTriangle size={18} />} badge="יתחבר למשובי המסלקה" />
+    <section className="grid stats dashboard-section" aria-label="נתונים מרכזיים">
+      {mode === "admin" ? <StatCard label="ארגונים" value={formatCount(stats.organizations)} icon={<Landmark size={19} />} tone="navy" /> : null}
+      {mode !== "employer" ? <StatCard label="מעסיקים" value={formatCount(stats.employers)} icon={<Building2 size={19} />}
+        footer={<span className="badge badge-green">{formatCount(stats.activeEmployers)} פעילים</span>} /> : null}
+      <StatCard label="עובדים" value={formatCount(stats.employees)} icon={<Users size={19} />} tone="teal"
+        footer={<span className="badge badge-green">{formatCount(stats.activeEmployees)} פעילים</span>} />
+      <StatCard label="עובדים לא פעילים" value={formatCount(stats.inactiveEmployees)} icon={<UserX size={19} />} tone="amber" />
+      <StatCard label="דיווחים החודש" value="—" pending icon={<CircleCheck size={19} />} tone="neutral" footer="יתחבר לנתוני הדיווחים" />
+      <StatCard label="שגיאות פתוחות" value="—" pending icon={<AlertTriangle size={19} />} tone="neutral" footer="יתחבר למשובי המסלקה" />
     </section>
 
     {mode === "organization" ? (
       <section className="grid content-grid">
         <div className="card">
-          <div className="card-head"><div><h2>מעסיקים בארגון</h2><span style={{ color: "var(--muted)" }}>בחרו מעסיק כדי לעבוד בהקשר שלו</span></div></div>
-          <div className="toolbar"><div className="search"><Search size={17} /><UiInput placeholder="חיפוש לפי שם או ח.פ..." value={query} onChange={(event) => setQuery(event.target.value)} /></div></div>
-          {loading ? <div className="empty">טוען נתונים...</div> : employers.length ? <div className="employer-list">{employers.map((employer) => <div key={employer.id} className={`employer${employer.id === employerId ? " active" : ""}`}>
-            <button className="employer-select" onClick={() => chooseEmployer(employer.id)}><span className="employer-logo">{employer.legalName.slice(0, 2)}</span><span className="employer-info"><b>{employer.legalName}</b><span>ח.פ. {employer.registrationNumber} · תיק ניכויים {employer.withholdingFileNumber}</span></span></button>
-            <Link className="btn btn-soft" href={`/employers/${employer.id}?organizationId=${organizationId}`}>לפרופיל</Link>
+          <div className="card-head"><div><h2>מעסיקים בארגון</h2><span>בחרו מעסיק כדי לעבוד בהקשר שלו</span></div><span className="badge badge-gray">{formatCount(employers.length)}</span></div>
+          <div className="toolbar"><div className="search"><Search size={17} aria-hidden="true" /><UiInput aria-label="חיפוש מעסיק" placeholder="חיפוש לפי שם או ח.פ..." value={query} onChange={(event) => setQuery(event.target.value)} /></div></div>
+          {searching ? <LoadingState compact label="מחפש מעסיקים..." /> : employers.length ? <div className="employer-list">{employers.map((employer) => <div key={employer.id} className={`employer${employer.id === employerId ? " active" : ""}`}>
+            <button className="employer-select" onClick={() => chooseEmployer(employer.id)} aria-pressed={employer.id === employerId}><span className="employer-logo" aria-hidden="true">{employer.legalName.slice(0, 2)}</span><span className="employer-info"><b>{employer.legalName}</b><span>ח.פ. {employer.registrationNumber} · תיק ניכויים {employer.withholdingFileNumber}</span></span></button>
+            <Link className="btn btn-soft btn-sm" href={`/employers/${employer.id}?organizationId=${organizationId}`}>לפרופיל</Link>
             <span className={employerStatusBadgeClass(employer.status)}>{employerStatusLabel(employer.status)}</span>
-          </div>)}</div> : <div className="empty"><Building2 size={34} /><div>לא נמצאו מעסיקים בארגון הזה.</div></div>}
+          </div>)}</div> : <EmptyState icon={<Building2 size={22} />} title="לא נמצאו מעסיקים בארגון הזה." description={search ? "נסו לחפש לפי שם אחר או מספר ח.פ." : undefined} />}
         </div>
         {quickActions}
       </section>

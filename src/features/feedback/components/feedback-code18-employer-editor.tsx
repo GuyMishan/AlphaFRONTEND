@@ -5,6 +5,7 @@ import { employersApi } from "@/features/employers/api";
 import type { Employer } from "@/features/employers/types";
 import { EmployerForm } from "@/features/employers/components/employer-form";
 import type { FeedbackResolutionProblem } from "@/features/feedback/api";
+import { LoadingState } from "@/components/loading/loading-state";
 
 // Only fields actually stored by EmployerForm are editable here.
 // Clearinghouse sender/recipient identifiers must be edited in integration
@@ -56,7 +57,7 @@ export function FeedbackCode18EmployerEditor({
       <strong>שדה לתיקון: {problem.feedbackValues.missingFieldName}</strong>
       <div>מספר {problem.feedbackValues.missingFieldNumber} · <code dir="ltr">{xmlTag}</code></div>
     </div>
-    {loading ? <div className="empty">טוען טופס עריכה...</div> : null}
+    {loading ? <LoadingState label="טוען טופס עריכה..." /> : null}
     {error ? <div className="notice notice-error" role="alert">{error}</div> : null}
     {employer && !loading && !error ? <EmployerForm
       key={employer.id}

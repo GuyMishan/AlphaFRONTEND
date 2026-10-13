@@ -30,6 +30,8 @@ import { feedbackKeys, useEmployerFeedbackContext, useReportFeedbackList, useTre
 import { useReferenceOptions } from "@/features/reference-data/queries";
 import { errorMessage } from "@/lib/api/error-messages";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { LoadingState } from "@/components/loading/loading-state";
+import { PageHeader } from "@/components/layout/page-header";
 
 const REPORTS_PAGE_SIZE = 100;
 const EMPTY_SUMMARY: ReportFeedbackSummary = { total: 0, completed: 0, attention: 0, pending: 0 };
@@ -520,12 +522,8 @@ export default function ReportsPage() {
   const activeColumns = visibleColumns.map((key) => allColumns[key].column);
 
   return <AppShell title="דיווחים ומשובים">
-    <div className="page-head">
-      <div>
-        <h1>דיווחים ומשובים</h1>
-        <p>מעקב, משוב, מצב כספים וטיפול ידני — במקום אחד.</p>
-      </div>
-      <div className="report-page-actions">
+    <PageHeader title="דיווחים ומשובים" description="מעקב, משוב, מצב כספים וטיפול ידני — במקום אחד."
+      actions={<div className="report-page-actions">
         {scope && employerIssueCount > 0 ? <button
           type="button"
           className="employer-error-section"
@@ -540,8 +538,7 @@ export default function ReportsPage() {
           <RefreshCw size={16} />רענון
         </button>
         <Link className="btn btn-primary" href="/reports/new"><Plus size={16} />דיווח חדש</Link>
-      </div>
-    </div>
+      </div>} />
 
     {!scope ? <div className="notice notice-info">יש לבחור ארגון ומעסיק בבורר העליון כדי לצפות בדיווחים.</div> : null}
     {error || listError ? <div className="notice notice-error report-page-error">{error || listError}</div> : null}
@@ -652,7 +649,7 @@ export default function ReportsPage() {
           if (expanded) void loadExpanded(report);
         }}
         expandedRowComponent={(report) => <div className="report-deposits-expanded">
-          {expandedLoading[report.id] && !expandedContent[report.id] ? <div className="empty">טוען הפקדות ומשובים...</div> : null}
+          {expandedLoading[report.id] && !expandedContent[report.id] ? <LoadingState compact label="טוען הפקדות ומשובים..." /> : null}
           {expandedErrors[report.id] ? <div className="notice notice-error">
             {expandedErrors[report.id]}
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadExpanded(report, true)}>נסה שוב</button>

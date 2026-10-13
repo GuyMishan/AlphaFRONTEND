@@ -1,9 +1,10 @@
 import { appStore, type EmployerSelection } from "@/lib/session/app-store";
 import { getQueryClient } from "@/lib/query/query-client";
 import type { Session } from "@/lib/session/types";
+import { SESSION_META_STORAGE_KEY } from "@/lib/session/storage-keys";
 
 const SESSION_KEY = "alpha.session.v1";
-const SESSION_META_KEY = "alpha.session.meta.v2";
+const SESSION_META_KEY = SESSION_META_STORAGE_KEY;
 const EMPLOYER_KEY = "alpha.employer.v1";
 const ORGANIZATION_KEY = "alpha.organization.v1";
 const EMPLOYEE_KEY = "alpha.employee.v1";

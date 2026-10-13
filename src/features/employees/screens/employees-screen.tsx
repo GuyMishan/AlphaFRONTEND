@@ -7,6 +7,7 @@ import { useEntitlements } from "@/features/billing/queries";
 import { useEmployer, useEmployerCapabilities } from "@/features/employers/queries";
 import { useEmployerScope } from "@/features/scope/use-employer-scope";
 import { errorMessage } from "@/lib/api/error-messages";
+import { PageSkeleton } from "@/components/loading/skeleton";
 
 export default function EmployeesPage() {
   const { organizationId, employerId } = useEmployerScope();
@@ -19,7 +20,7 @@ export default function EmployeesPage() {
   const failure = employer.error ?? capabilities.error ?? entitlements.error;
 
   return <AppShell title="עובדים">
-    {loading ? <div className="empty">טוען עובדים...</div> : failure ? <div className="notice notice-error">{errorMessage(failure, "טעינת המעסיק נכשלה")}</div> : employer.data && hasScope
+    {loading ? <PageSkeleton label="טוען עובדים..." /> : failure ? <div className="notice notice-error">{errorMessage(failure, "טעינת המעסיק נכשלה")}</div> : employer.data && hasScope
       ? <>
           {entitlements.data?.plan.code === "FREE" ? <section className="card" style={{ marginBottom: 18 }}><div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.data.plan.name}</h3></div></div><PlanUsage label="עובדים פעילים" usage={entitlements.data.activeEmployees} /></section> : null}
           <EmployerEmployeesPanel organizationId={organizationId} employer={employer.data} canCreate={Boolean(capabilities.data?.canCreateEmployee)} showHeader />
