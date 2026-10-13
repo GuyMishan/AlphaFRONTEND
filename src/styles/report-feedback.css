@@ -1,0 +1,151 @@
+.report-feedback-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+.report-feedback-summary .card { padding:14px 16px; display:grid; gap:2px; }
+.report-feedback-summary strong { font-size:24px; }
+.report-feedback-summary span { color:var(--muted); font-size:12px; }
+
+.report-feedback-table { width:100%; border-collapse:collapse; min-width: 0; }
+.report-feedback-table th, .report-feedback-table td { padding:12px 14px; border-bottom:1px solid var(--line); text-align:right; vertical-align:middle; }
+.report-feedback-table th { color:var(--muted); font-size:12px; font-weight:650; background:var(--surface); }
+.report-feedback-table tr:last-child td { border-bottom:0; }
+.report-feedback-badge { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:6px 9px; font-size:12px; font-weight:700; white-space:nowrap; }
+.report-feedback-badge.success { color:#167447; background:#eaf8f0; }
+.report-feedback-badge.error { color:#a33434; background:#fff0f0; }
+.report-feedback-badge.pending { color:#8a6415; background:#fff8e5; }
+.report-feedback-badge.not-sent { color:#5e6875; background:#f1f4f7; }
+.report-feedback-error-count { display:inline-grid; place-items:center; min-width:28px; height:28px; padding:0 8px; border-radius:999px; background:#fff0f0; color:#a33434; font-weight:800; }
+.report-feedback-transmission { display:grid; gap:2px; }
+.report-feedback-transmission small { color:var(--muted); }
+.btn-sm { padding:7px 10px !important; min-height:34px; font-size:12px; }
+.report-feedback-modal { width:min(820px,95vw); }
+
+@media (max-width:760px) { .report-feedback-summary { grid-template-columns:1fr; }
+ }
+
+[data-theme="dark"] .report-feedback-table th { background:var(--surface); color:var(--muted); }
+[data-theme="dark"] .report-feedback-badge.success { color:#86e3b4; background:rgba(22,116,71,.24); }
+[data-theme="dark"] .report-feedback-badge.error { color:#ffaaaa; background:rgba(163,52,52,.24); }
+[data-theme="dark"] .report-feedback-badge.pending { color:#f4cf78; background:rgba(138,100,21,.24); }
+[data-theme="dark"] .report-feedback-badge.not-sent { color:var(--muted); background:rgba(94,104,117,.22); }
+[data-theme="dark"] .report-feedback-error-count { color:#ffaaaa; background:rgba(163,52,52,.24); }
+
+/* Per-report expanded deposit rows; visually distinct from the parent report. */
+.report-feedback-table .data-table-expanded-row > td { padding: 0 !important; }
+.report-deposits-expanded { direction: rtl; min-width: 0; }
+.report-deposits-panel { display: grid; gap: 12px; padding: 4px; min-width: 0; }
+.report-deposits-heading { display: flex; width: 100%; gap: 14px; align-items: center; justify-content: flex-start; flex-wrap: wrap; text-align: right; }
+.report-deposits-heading > div { display: grid; gap: 3px; }
+.report-deposits-heading small { color: var(--muted); font-size: 12px; }
+.report-deposits-grid { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: visible; min-width: 0; }
+.report-deposits-header, .report-deposits-item {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,.65fr) minmax(0,1.35fr) minmax(0,.75fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.75fr) 40px;
+  gap: 8px; align-items: center; padding: 10px 12px;
+}
+.report-deposits-header { background: var(--blue-soft); color: var(--text); font-size: 12px; font-weight: 700; }
+.report-deposits-item { background: color-mix(in srgb, var(--surface) 93%, var(--blue-soft)); border-top: 1px solid var(--line); font-size: 13px; }
+.report-deposits-item:nth-child(odd) { background: var(--surface); }
+.report-deposits-item > div { min-width: 0; align-self: center; overflow-wrap: anywhere; }
+.report-deposits-item b, .report-deposits-item small { display: block; }
+.report-deposits-item small { color: var(--muted); font-size: 11px; line-height: 1.55; }
+.report-deposits-money { font-weight: 700; white-space: nowrap; direction: ltr; text-align: right; }
+
+.report-deposits-load-more { justify-self: start; }
+
+@media(max-width:850px) {
+  .report-deposits-expanded { overflow-x: auto; }
+  .report-deposits-grid { min-width: 0; }
+}
+
+/* RTL: keep Details at the start and pin the expansion button to the far end of its cell. */
+.report-feedback-table .data-table-row > td:last-child {
+  position: relative;
+  white-space: nowrap;
+  text-align: right;
+  padding-left: 38px;
+}
+.report-feedback-table .data-table-row > td:last-child .data-table-expand-toggle {
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+}
+.report-deposits-header > *, .report-deposits-item > * { align-self: center; }
+
+/* Deposit feedback modal: keep payment metadata compact; reconciliation already repeats contributions when feedback exists. */
+.report-deposit-feedback-modal .feedback-modal-section {
+  margin-top: 14px;
+}
+.report-deposit-feedback-modal .feedback-modal-section-head {
+  margin-bottom: 8px;
+}
+.report-deposit-feedback-modal .feedback-modal-section-head h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+}
+.report-deposit-feedback-modal .feedback-modal-section-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.report-deposit-feedback-modal .money-feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+.report-deposit-feedback-modal .money-feedback-grid > div {
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface) 96%, var(--blue-soft));
+}
+.report-deposit-feedback-modal .money-feedback-grid > div > span,
+.report-deposit-feedback-modal .money-feedback-grid > div > b {
+  display: block;
+  min-width: 0;
+}
+.report-deposit-feedback-modal .money-feedback-grid > div > span {
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+.report-deposit-feedback-modal .money-feedback-grid > div > b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.report-deposit-feedback-modal .feedback-money-detail {
+  grid-column: span 5;
+}
+.report-deposit-feedback-modal .feedback-evidence-panel {
+  margin-top: 10px;
+}
+
+@media (max-width: 1050px) {
+  .report-deposit-feedback-modal .money-feedback-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .report-deposit-feedback-modal .feedback-money-detail {
+    grid-column: span 3;
+  }
+}
+@media (max-width: 700px) {
+  .report-deposit-feedback-modal .money-feedback-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .report-deposit-feedback-modal .feedback-money-detail {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 430px) {
+  .report-deposit-feedback-modal .money-feedback-grid {
+    grid-template-columns: 1fr;
+  }
+  .report-deposit-feedback-modal .feedback-money-detail {
+    grid-column: auto;
+  }
+}
+

@@ -5,19 +5,11 @@ import nextTs from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([".next/**", "node_modules/**", "next-env.d.ts"]),
+  // The backend checkout (any letter case) is a separate repository.
+  globalIgnores([".next/**", "node_modules/**", "next-env.d.ts", "[Aa][Ll][Pp][Hh][Aa][Bb][Aa][Cc][Kk][Ee][Nn][Dd]/**"]),
   {
     rules: {
       "react-hooks/set-state-in-effect": "off",
     },
-  },
-  {
-    files: [
-      "src/app/access/page.tsx",
-      "src/app/employees/page.tsx",
-      "src/app/employers/page.tsx",
-      "src/components/manual-deposit-data.tsx",
-    ],
-    rules: { "react/jsx-key": "off" },
   },
 ]);

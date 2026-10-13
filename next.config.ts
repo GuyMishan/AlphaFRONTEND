@@ -9,6 +9,12 @@ const securityHeaders = [
   { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'" },
 ];
 
+// ALPHA_API_URL is read at request time (src/lib/server/backend.ts), so a build may run without it,
+// but a production server without it refuses backend requests. Make that visible in deployment logs.
+if (process.env.NODE_ENV === "production" && !process.env.ALPHA_API_URL?.trim()) {
+  console.warn("ALPHA_API_URL is not set: the production server will answer backend requests with 503 until it is configured.");
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   async headers() {

@@ -1,0 +1,479 @@
+"use client";
+
+import { UiCheckbox, UiInput } from "@/components/ui/ui-controls";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CircleAlert, CircleCheck, Pencil, Save, Search, UserPlus } from "lucide-react";
+import { InlineEmployeeCreateModal } from "@/features/employees/components/inline-employee-create-modal";
+import { AppModal } from "@/components/ui/app-modal";
+import { PensionProductsEditor, normalizePensionEditorProducts, validatePensionEditorProducts, type PensionEditorProduct } from "@/features/pension/components/pension-products-editor";
+import { notify } from "@/components/ui/notifications";
+import { employeesApi } from "@/features/employees/api";
+import { manualReportsApi } from "@/features/reporting/api";
+import type { Employee } from "@/features/employees/types";
+import type { EmployeePensionProduct, EmployeePensionProductInput, ManualProductInput, PensionProductType, SalaryAllocationType, Section14Code } from "@/features/pension/types";
+import type { ManualReportEmployeeDetail, ManualReportEmployeeSummary } from "@/features/reporting/types";
+import type { PensionEditorContributionLimit } from "@/features/reference-data/types";
+
+type Props = {
+  organizationId: string;
+  employerId: string;
+  reportId: string;
+  month: string;
+  employees: Employee[];
+  selectedIds: string[];
+  setSelectedIds: (ids: string[]) => void;
+  correctionWorkspace?: boolean;
+  focusReportEmployeeId?: string;
+  focusReportProductId?: string;
+  focusMissingFieldNumber?: string;
+};
+
+function snapshotEmployee(row: ManualReportEmployeeSummary): Employee {
+  return {
+    id: row.employmentId,
+    personId: row.personId,
+    nationalId: row.nationalId,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    employeeNumber: row.employeeNumber,
+    monthlySalary: row.monthlySalary,
+    status: 1,
+    startDate: "",
+    endDate: null,
+  };
+}
+
+function matchesEmployee(employee: Employee, search: string) {
+  const term = search.trim().toLowerCase();
+  return !term || `${employee.firstName} ${employee.lastName} ${employee.nationalId} ${employee.employeeNumber}`.toLowerCase().includes(term);
+}
+
+function toEditorProduct(product: ManualProductInput, index: number): PensionEditorProduct {
+  return {
+    workspaceReportProductId: product.workspaceReportProductId ?? null,
+    sourceReportProductId: product.sourceReportProductId ?? null,
+    productType: Number(product.productType) as PensionProductType,
+    policyNumber: product.policyNumber,
+    fundExternalKey: product.fundExternalKey ?? "",
+    fundCode: product.fundCode ?? "",
+    fundName: product.fundName ?? "",
+    fundCompanyName: product.fundCompanyName ?? "",
+    salaryMonth: product.salaryMonth,
+    salary: Number(product.salary || 0),
+    salaryAllocationType: Number(product.salaryAllocationType ?? 1) as SalaryAllocationType,
+    salaryAllocationValue: Number(product.salaryAllocationType ?? 1) === 4 ? null : Number(product.salaryAllocationValue ?? product.salary ?? 0),
+    reportingType: product.reportingType,
+    salaryLayer: product.salaryLayer || "1",
+    section14: product.section14,
+    section14Code: product.section14Code == null ? undefined : Number(product.section14Code) as Section14Code,
+    section14StartDate: product.section14StartDate,
+    depositStatus: product.depositStatus ?? 1,
+    employerContributions: product.employerContributions.map((entry) => ({
+      component: entry.component,
+      amount: Number(entry.amount || 0),
+      percentage: Number(entry.percentage || 0),
+      exemptPayments: Number(entry.exemptPayments || 0),
+    })),
+    employeeContributions: product.employeeContributions.map((entry) => ({
+      component: entry.component,
+      amount: Number(entry.amount || 0),
+      percentage: Number(entry.percentage || 0),
+      exemptPayments: Number(entry.exemptPayments || 0),
+    })),
+  };
+}
+
+function sameMixProduct(a: { productType: PensionProductType; policyNumber: string; fundExternalKey?: string }, b: { productType: PensionProductType; policyNumber: string; fundExternalKey?: string }) {
+  return Number(a.productType) === Number(b.productType)
+    && (a.policyNumber.trim()
+      ? a.policyNumber.trim().toLowerCase() === b.policyNumber.trim().toLowerCase()
+      : Boolean(a.fundExternalKey) && a.fundExternalKey === b.fundExternalKey);
+}
+
+function toEmployeeMixProduct(product: ManualProductInput, existingProducts: EmployeePensionProduct[]): EmployeePensionProductInput {
+  const existing = existingProducts.find((item) => sameMixProduct(product, item));
+  return {
+    productType: product.productType, policyNumber: product.policyNumber,
+    fundExternalKey: product.fundExternalKey ?? "", fundCode: product.fundCode ?? "", fundName: product.fundName ?? "", fundCompanyName: product.fundCompanyName ?? "",
+    salary: Number(product.salary || 0), reportingType: product.reportingType, salaryLayer: product.salaryLayer,
+    section14: product.section14, section14Code: product.section14Code, section14StartDate: product.section14StartDate,
+    // A report snapshot has no product effective-from field. Preserve the real profile dates for
+    // existing products; for a genuinely new product, let the employee-mix API use its normal
+    // creation default rather than inventing the first day of the reporting month.
+    isActive: existing?.isActive ?? true,
+    effectiveFrom: existing?.effectiveFrom,
+    effectiveTo: existing?.effectiveTo ?? null,
+    institutionalBody: existing?.institutionalBody,
+    manufacturer: existing?.manufacturer,
+    salaryAllocationType: product.salaryAllocationType, salaryAllocationValue: product.salaryAllocationValue ?? null,
+    allocationOrder: existing?.allocationOrder,
+    employerContributions: product.employerContributions.map((entry) => ({ component: entry.component, amount: Number(entry.amount || 0), percentage: Number(entry.percentage || 0), exemptPayments: Number(entry.exemptPayments || 0) })),
+    employeeContributions: product.employeeContributions.map((entry) => ({ component: entry.component, amount: Number(entry.amount || 0), percentage: Number(entry.percentage || 0), exemptPayments: Number(entry.exemptPayments || 0) })),
+  };
+}
+
+function mixSignature(products: Array<{ productType: PensionProductType; policyNumber: string; fundExternalKey?: string; fundCode?: string; salaryAllocationType?: SalaryAllocationType; salaryAllocationValue?: number | null; employerContributions: Array<{ component: string | number; percentage: number }>; employeeContributions: Array<{ component: string | number; percentage: number }> }>) {
+  return JSON.stringify(products.map((p) => ({ type: Number(p.productType), policy: p.policyNumber.trim(), fund: p.fundExternalKey || p.fundCode || "", allocationType: Number(p.salaryAllocationType ?? 1), allocationValue: Number(p.salaryAllocationValue ?? 0), employer: p.employerContributions.map((x) => [String(x.component), Number(x.percentage || 0)]), employee: p.employeeContributions.map((x) => [String(x.component), Number(x.percentage || 0)]) })).sort((a, b) => `${a.type}:${a.policy}:${a.fund}`.localeCompare(`${b.type}:${b.policy}:${b.fund}`)));
+}
+
+function toManualProduct(product: PensionEditorProduct, month: string): ManualProductInput {
+  return {
+    workspaceReportProductId: product.workspaceReportProductId ?? null,
+    sourceReportProductId: product.sourceReportProductId ?? null,
+    productType: product.productType,
+    policyNumber: product.policyNumber,
+    fundExternalKey: product.fundExternalKey ?? "",
+    fundCode: product.fundCode ?? "",
+    fundName: product.fundName ?? "",
+    fundCompanyName: product.fundCompanyName ?? "",
+    salaryMonth: product.salaryMonth || `${month.slice(0, 7)}-01`,
+    salary: Number(product.salary || 0),
+    salaryAllocationType: Number(product.salaryAllocationType ?? 1) as SalaryAllocationType,
+    salaryAllocationValue: product.salaryAllocationValue ?? null,
+    reportingType: product.reportingType,
+    salaryLayer: product.salaryLayer,
+    section14: product.section14,
+    section14Code: product.section14Code,
+    section14StartDate: product.section14StartDate,
+    depositStatus: product.depositStatus ?? 1,
+    employerContributions: product.employerContributions.map((entry) => ({
+      component: entry.component,
+      amount: Number(entry.amount || 0),
+      percentage: Number(entry.percentage || 0),
+      exemptPayments: Number(entry.exemptPayments || 0),
+    })),
+    employeeContributions: product.employeeContributions.map((entry) => ({
+      component: entry.component,
+      amount: Number(entry.amount || 0),
+      percentage: Number(entry.percentage || 0),
+      exemptPayments: Number(entry.exemptPayments || 0),
+    })),
+  };
+}
+
+export function ManualReportData({ organizationId, employerId, reportId, month, employees, selectedIds, setSelectedIds, correctionWorkspace = false, focusReportEmployeeId = "", focusReportProductId = "", focusMissingFieldNumber = "" }: Props) {
+  const [rows, setRows] = useState<ManualReportEmployeeSummary[]>([]);
+  const [visibleEmployees, setVisibleEmployees] = useState<Employee[]>(employees);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState("");
+  const [editing, setEditing] = useState<ManualReportEmployeeDetail | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [mixPrompt, setMixPrompt] = useState<{ employeeId: string; employeeName: string; monthlySalary: number; products: ManualProductInput[] } | null>(null);
+  const [savingMix, setSavingMix] = useState(false);
+  const selectionQueue = useRef<string[] | null>(null);
+  const selectionSyncRunning = useRef(false);
+  const selectedIdsRef = useRef(selectedIds);
+  const automaticEditorTarget = useRef("");
+
+  useEffect(() => { selectedIdsRef.current = selectedIds; }, [selectedIds]);
+
+  async function loadList(search = "", showLoading = true) {
+    if (showLoading) setLoading(true);
+    setError("");
+    const [employeeResult, reportResult] = await Promise.allSettled([
+      employeesApi.employeeSearch(organizationId, employerId, search, 0, 100),
+      manualReportsApi.manualReportEmployees(organizationId, employerId, reportId, search, 0, 100),
+    ]);
+    const reportRows = reportResult.status === "fulfilled" ? reportResult.value.items : [];
+    if (reportResult.status === "fulfilled") setRows(reportRows);
+    if (employeeResult.status === "fulfilled" && employeeResult.value.items.length > 0) {
+      setVisibleEmployees(employeeResult.value.items);
+    } else {
+      const fromProps = employees.filter((employee) => matchesEmployee(employee, search));
+      setVisibleEmployees(fromProps.length ? fromProps : reportRows.map(snapshotEmployee));
+    }
+    if (employeeResult.status === "rejected" && reportResult.status === "rejected") {
+      const message = (employeeResult.reason instanceof Error ? employeeResult.reason.message : "") || (reportResult.reason instanceof Error ? reportResult.reason.message : "") || "טעינת רשימת העובדים נכשלה";
+      setError(message);
+      notify.error(message);
+    } else if (reportResult.status === "rejected") {
+      const message = reportResult.reason instanceof Error ? reportResult.reason.message : "טעינת נתוני העובדים בדיווח נכשלה";
+      setError(message);
+      notify.error(message);
+    }
+    if (showLoading) setLoading(false);
+  }
+
+  async function loadRows(search = "") {
+    try {
+      const result = await manualReportsApi.manualReportEmployees(organizationId, employerId, reportId, search, 0, 100);
+      setRows(result.items);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "טעינת עובדי הדיווח נכשלה";
+      setError(message);
+      notify.error(message);
+    }
+  }
+
+  useEffect(() => {
+    setQuery("");
+    setVisibleEmployees(employees);
+    void loadList("", true);
+  }, [organizationId, employerId, reportId, employees]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(async () => {
+      if (loading) return;
+      setSearching(true);
+      await loadList(query.trim(), false);
+      setSearching(false);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [query, organizationId, employerId, reportId]);
+
+  useEffect(() => {
+    if (!focusReportEmployeeId || !correctionWorkspace) return;
+    const target = reportId + ":" + focusReportEmployeeId;
+    if (automaticEditorTarget.current === target) return;
+    automaticEditorTarget.current = target;
+    let active = true;
+    manualReportsApi.manualReportEmployee(organizationId, employerId, reportId, focusReportEmployeeId)
+      .then(detail => { if (active) setEditing(detail); })
+      .catch(error => {
+        if (!active) return;
+        automaticEditorTarget.current = "";
+        setError(error instanceof Error ? error.message : "לא ניתן לפתוח את העובד בסביבת התיקון");
+      });
+    return () => { active = false; };
+  }, [organizationId, employerId, reportId, correctionWorkspace, focusReportEmployeeId]);
+
+  const rowByEmployment = useMemo(() => new Map(rows.map((row) => [row.employmentId, row])), [rows]);
+
+  async function flushSelectionQueue() {
+    if (selectionSyncRunning.current) return;
+    selectionSyncRunning.current = true;
+    setSyncing(true);
+    try {
+      while (selectionQueue.current) {
+        const ids = selectionQueue.current;
+        selectionQueue.current = null;
+        await manualReportsApi.syncManualReportEmployees(organizationId, employerId, reportId, ids);
+      }
+      await loadRows(query.trim());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "עדכון העובדים בדיווח נכשל";
+      setError(message);
+      notify.error(message);
+    } finally {
+      selectionSyncRunning.current = false;
+      setSyncing(false);
+      if (selectionQueue.current) void flushSelectionQueue();
+    }
+  }
+
+  function queueSelection(next: string[]) {
+    selectionQueue.current = next;
+    void flushSelectionQueue();
+  }
+
+  function changeSelection(employeeId: string, checked: boolean) {
+    const current = selectedIdsRef.current;
+    const next = checked ? Array.from(new Set([...current, employeeId])) : current.filter((id) => id !== employeeId);
+    selectedIdsRef.current = next;
+    setSelectedIds(next);
+    if (!checked) setRows((existing) => existing.filter((row) => row.employmentId !== employeeId));
+    setError("");
+    queueSelection(next);
+  }
+
+  function selectAllVisibleActive() {
+    const ids = visibleEmployees.filter((item) => item.status === 1).map((item) => item.id);
+    const next = Array.from(new Set([...selectedIdsRef.current, ...ids]));
+    selectedIdsRef.current = next;
+    setSelectedIds(next);
+    setError("");
+    queueSelection(next);
+  }
+
+  async function employeeCreated(employee: Employee) {
+    setVisibleEmployees((current) => [employee, ...current.filter((item) => item.id !== employee.id)]);
+    const next = Array.from(new Set([...selectedIdsRef.current, employee.id]));
+    selectedIdsRef.current = next;
+    setSelectedIds(next);
+    await manualReportsApi.syncManualReportEmployees(organizationId, employerId, reportId, next);
+    await loadList(query.trim(), false);
+  }
+
+  async function editEmployee(row: ManualReportEmployeeSummary) {
+    setError("");
+    try {
+      setEditing(await manualReportsApi.manualReportEmployee(organizationId, employerId, reportId, row.id));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "טעינת פרטי העובד נכשלה";
+      setError(message);
+      notify.error(message);
+    }
+  }
+
+  const ready = rows.filter((row) => row.validationStatus === "ready").length;
+
+  return <>
+    <div className="card-head manual-report-head">
+      <div><h2>עובדים בדיווח</h2><span style={{ color: "var(--muted)" }}>בחרו עובד וערכו את השכר החודשי, הקופה וחלוקת השכר בין המוצרים.</span></div>
+      <div className="manual-report-badges"><span className="badge badge-blue">{selectedIds.length} עובדים</span><span className="badge badge-green">{ready} הושלמו</span></div>
+    </div>
+    {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}
+    {correctionWorkspace ? <div className="notice notice-info" style={{ marginBottom: 14 }}>זהו עותק העבודה של הגרסה הבאה. אפשר לערוך, להוסיף או להסיר עובדים ומוצרים; בלחיצה על “דיווח חוזר” ALPHA תחשב את הדלתא מול הגרסה שנשלחה.</div> : null}
+    <div className="toolbar manual-report-toolbar">
+      <div className="search"><Search size={17} /><UiInput value={query} maxLength={80} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
+      <>
+        <button type="button" className="btn btn-primary" onClick={() => setShowCreate(true)}><UserPlus size={16} />הקמת עובד חדש</button>
+        <button className="btn btn-soft" disabled={!visibleEmployees.some((item) => item.status === 1)} onClick={selectAllVisibleActive}>{syncing ? "מעדכן..." : "בחירת כל הפעילים בתוצאות"}</button>
+      </>
+    </div>
+    <div className="manual-employee-list">
+      {loading || searching ? <div className="empty">{searching ? "מחפש עובדים..." : "טוען את עובדי המעסיק..."}</div> : visibleEmployees.length === 0 ? <div className="empty"><b>לא נמצאו עובדים</b></div> : visibleEmployees.map((employee) => {
+        const selected = selectedIds.includes(employee.id);
+        const row = rowByEmployment.get(employee.id);
+        return <div className={`manual-employee-row${selected ? " selected" : ""}`} key={employee.id}>
+          <label className="manual-employee-check"><UiCheckbox aria-label={`בחירת ${employee.firstName} ${employee.lastName} לדיווח`} checked={selected} onChange={(event) => changeSelection(employee.id, event.target.checked)} /></label>
+          <div className="manual-employee-main"><b>{employee.firstName} {employee.lastName}</b><span>ת״ז {employee.nationalId} · עובד {employee.employeeNumber}{row?.monthlySalary ? ` · ₪${Number(row.monthlySalary).toLocaleString("he-IL")}` : ""}</span></div>
+          <div className="manual-employee-products">{selected && row ? row.productCount ? <span className="badge badge-green"><CircleCheck size={13} />{row.productCount} מוצרים</span> : <span className="badge badge-orange"><CircleAlert size={13} />חסר תמהיל/מוצרים</span> : selected ? <span className="badge badge-gray">שומר...</span> : <span className="badge badge-gray">לא בדיווח</span>}</div>
+          <button className="btn btn-soft manual-edit-btn" disabled={!selected || !row} onClick={() => row && void editEmployee(row)}><Pencil size={16} />עריכה</button>
+        </div>;
+      })}
+    </div>
+    {showCreate ? <InlineEmployeeCreateModal organizationId={organizationId} employerId={employerId} onClose={() => setShowCreate(false)} onCreated={employeeCreated} /> : null}
+    {editing ? <EmployeeProductsModal employee={editing} month={month} focusReportProductId={focusReportProductId} focusMissingFieldNumber={focusMissingFieldNumber}
+      organizationId={organizationId} employerId={employerId} correctionWorkspace={correctionWorkspace} onClose={() => setEditing(null)}
+      onSave={async (monthlySalary, products) => {
+      const currentEditing = editing;
+      let mixChanged = true;
+      try {
+        const employeeMix = await employeesApi.employeePensionMix(organizationId, employerId, currentEditing.employmentId);
+        mixChanged = mixSignature(employeeMix) !== mixSignature(products);
+      } catch {
+        mixChanged = true;
+      }
+
+      if (mixChanged) {
+        setMixPrompt({ employeeId: currentEditing.employmentId, employeeName: currentEditing.firstName + " " + currentEditing.lastName, monthlySalary, products });
+        return;
+      }
+
+      await manualReportsApi.saveManualReportEmployee(organizationId, employerId, reportId, currentEditing.id, monthlySalary, products);
+      setEditing(null);
+      await loadRows(query.trim());
+      notify.success("נתוני העובד והקצאות השכר נשמרו בהצלחה");
+    }} /> : null}
+    {mixPrompt && editing ? <AppModal title="לעדכן את תמהיל המוצרים בכרטיס העובד?"
+      subtitle={mixPrompt.employeeName} width="md"
+      onClose={() => setMixPrompt(null)} closeDisabled={savingMix}
+      actions={<>
+          <button className="btn btn-secondary" disabled={savingMix} onClick={() => void (async () => {
+            const pending = mixPrompt;
+            if (!pending) return;
+            setSavingMix(true);
+            try {
+              await manualReportsApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, pending.monthlySalary, pending.products);
+              setMixPrompt(null);
+              setEditing(null);
+              await loadRows(query.trim());
+              notify.success("הנתונים נשמרו לדיווח הנוכחי");
+            } catch (err) {
+              notify.error(err instanceof Error ? err.message : "שמירת נתוני העובד בדיווח נכשלה");
+            } finally { setSavingMix(false); }
+          })()}>{savingMix ? "שומר..." : "לא, רק לדיווח הזה"}</button>
+          <button className="btn btn-primary" disabled={savingMix} onClick={() => void (async () => {
+            const pending = mixPrompt;
+            if (!pending) return;
+            setSavingMix(true);
+            try {
+              await manualReportsApi.saveManualReportEmployee(organizationId, employerId, reportId, editing.id, pending.monthlySalary, pending.products);
+              const existingMix = await employeesApi.employeePensionMix(organizationId, employerId, pending.employeeId);
+              await employeesApi.saveEmployeePensionMix(organizationId, employerId, pending.employeeId, pending.products.map((product) => toEmployeeMixProduct(product, existingMix)), pending.monthlySalary);
+              setMixPrompt(null);
+              setEditing(null);
+              await loadRows(query.trim());
+              notify.success("הנתונים נשמרו לדיווח ותמהיל העובד עודכן");
+            } catch (err) {
+              notify.error(err instanceof Error ? err.message : "שמירת הנתונים נכשלה");
+            } finally { setSavingMix(false); }
+          })()}><Save size={15} />{savingMix ? "שומר..." : "כן, שמור גם בכרטיס העובד"}</button>
+        </>}>
+      <p style={{ marginTop: 0 }}>התמהיל שהגדרת שונה מהתמהיל השמור כרגע בכרטיס העובד.</p>
+      <p>האם לשמור את המוצרים האלה גם כתמהיל הקבוע של העובד?</p>
+      <div className="notice notice-info">עדכון כרטיס העובד יעזור בדיווחים הבאים: המוצרים והנתונים שהגדרת ייטענו אוטומטית ולא תצטרכו להזין אותם מחדש.</div>
+    </AppModal> : null}
+  </>;
+}
+
+function EmployeeProductsModal({ employee, month, onClose, onSave, organizationId, employerId, correctionWorkspace, focusReportProductId = "", focusMissingFieldNumber = "" }: {
+  employee: ManualReportEmployeeDetail; month: string; onClose: () => void;
+  onSave: (monthlySalary: number, products: ManualProductInput[]) => Promise<void>;
+  organizationId: string; employerId: string; correctionWorkspace: boolean;
+  focusReportProductId?: string; focusMissingFieldNumber?: string;
+}) {
+  const [monthlySalary, setMonthlySalary] = useState(Number(employee.monthlySalary || 0));
+  const [products, setProducts] = useState<PensionEditorProduct[]>(() => employee.products.map(toEditorProduct));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [validationAttempted, setValidationAttempted] = useState(false);
+  const [contributionLimits, setContributionLimits] = useState<PensionEditorContributionLimit[]>([]);
+  useEffect(() => {
+    if (!focusReportProductId) return;
+    const frame = requestAnimationFrame(() => {
+      const node = document.getElementById(`report-product-${focusReportProductId}`);
+      node?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusReportProductId]);
+  async function save() {
+    setValidationAttempted(true);
+    const normalized = normalizePensionEditorProducts(monthlySalary, products);
+    const validationError = normalized.error || validatePensionEditorProducts(normalized.products, "report", contributionLimits);
+    if (validationError) {
+      setError(validationError);
+      notify.error(validationError);
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await onSave(monthlySalary, normalized.products.map((product) => toManualProduct(product, month)));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "שמירת נתוני העובד נכשלה";
+      setError(message);
+      notify.error(message);
+      setSaving(false);
+    }
+  }
+
+  const totalDeposits = products.reduce((sum, product) => sum + [...product.employerContributions, ...product.employeeContributions].reduce((subtotal, contribution) => subtotal + Number(contribution.amount || 0), 0), 0);
+
+  return <AppModal className="report-modal report-editor-app-modal" title="עריכת מוצרים לעובד"
+      subtitle={`${employee.firstName} ${employee.lastName} · ת״ז ${employee.nationalId} · מספר עובד ${employee.employeeNumber}`}
+      onClose={onClose} closeDisabled={saving} width="xl"
+      bodyClassName="report-modal-body"
+      actions={<>
+        <button className="btn btn-secondary" onClick={onClose} disabled={saving}>ביטול</button>
+        <button className="btn btn-primary" disabled={saving} onClick={() => void save()}>
+          <Save size={15} />{saving ? "שומר..." : "שמירת נתוני העובד"}
+        </button>
+      </>}>
+        {error ? <div className="notice notice-error">{error}</div> : null}
+        <div className="employee-report-summary"><div><span>חודש דיווח</span><b>{month}</b></div><div><span>מספר מוצרים</span><b>{products.length}</b></div><div><span>סה״כ הפקדות</span><b>₪{totalDeposits.toLocaleString("he-IL")}</b></div></div>
+        <p className="report-profile-address-link">
+          יש לתקן מיקוד ותא דואר בכרטיס העובד.
+          <a href={`/employees/${employee.employmentId}?organizationId=${organizationId}&employerId=${employerId}`} target="_blank" rel="noopener noreferrer">פתיחת כרטיס העובד בלשונית חדשה</a>
+          לאחר השמירה, הטיוטה הפתוחה תתעדכן אוטומטית. מומלץ לסגור ולפתוח את העריכה מחדש.
+        </p>
+        {focusMissingFieldNumber && focusReportProductId ? <div className="notice notice-info" role="status">שדה {focusMissingFieldNumber}: יש לערוך את הנתון במוצר המודגש מטה ולשמור. שמירה אינה שולחת דיווח חוזר.</div> : null}
+        <PensionProductsEditor
+          focusedReportProductId={focusReportProductId}
+          context="report"
+          month={month}
+          monthlySalary={monthlySalary}
+          products={products}
+          allowAdd
+          allowRemove
+          showAllocationError={validationAttempted}
+          onMonthlySalaryChange={(value) => { setMonthlySalary(value); setError(""); setValidationAttempted(false); }}
+          onProductsChange={(value) => { setProducts(value); setError(""); setValidationAttempted(false); }}
+          onReferenceDataLoaded={(data) => setContributionLimits(data.contributionLimits ?? [])}
+        />
+    </AppModal>;
+}

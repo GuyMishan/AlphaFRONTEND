@@ -1,83 +1,60 @@
 # Alpha Frontend
 
-Employer-facing web application for **ALPHA**, a multi-tenant pension operations platform.
+The employer-facing web application of **ALPHA**, a multi-tenant pension operations platform: organizations, employers, employees, pension products, Employer Interface 006 reporting and feedback, payments and subscription billing. The UI is Hebrew and right-to-left, in light and dark themes.
 
-## Stack
+## Tech stack
 
-- Next.js 16.3.5 (App Router)
-- React 19
-- TypeScript
-- Server-side proxy to AlphaBACKEND through `/api/backend/*`
+- **Next.js 16** (App Router) · **React 19** · **TypeScript** (strict)
+- **TanStack Query 5** for server state · **Zustand** for shared client state
+- **React Hook Form + Zod** for forms
+- Global CSS with design tokens (`src/styles`) · `lucide-react` icons · `sonner` toasts
+- **Vitest** for unit tests
 
-Node.js 20.9+ is required. CI currently uses Node 22.
+The browser never talks to the backend directly: every call goes through the same-origin proxy `/api/backend/*`, which forwards it to AlphaBACKEND with the session token kept in an HttpOnly cookie.
 
-## Main product areas
+## Prerequisites
 
-- Authentication, OTP login, registration and invitations
-- Platform / organization / employer scope and permissions
-- Admin-only referent management tab: create internal referents and assign complete organizations or specific employers from multiple organizations
-- Organizations, employers and employees
-- Employee pension products and pension-fund reference data
-- Employer Interface 006 reporting
-  - Manual reporting
-  - Excel intake
-  - XML / DAT / TST intake
-  - Validation, transmission and feedback
-- Pension payment-account configuration
-- ALPHA subscription billing, entitlements and upgrade/contact flows
-- Dark/Light UI, RTL, responsive layout and accessibility
+- Node.js 22 (see `.nvmrc`; 20.9+ works)
+- npm
+- A running AlphaBACKEND instance (local or remote)
 
-See `docs/CODEMAP.md` for the current source map and `AGENTS.md` for development rules.
-
-## Backend integration
-
-Browser requests are proxied through:
-
-```text
-/api/backend/*
-```
-
-to AlphaBACKEND. Configure the backend origin with:
+## Getting started
 
 ```bash
-ALPHA_API_URL=http://localhost:5080
+cp .env.example .env.local   # then point ALPHA_API_URL at your backend
+npm ci                       # exact versions from package-lock.json
+npm run dev                  # http://localhost:3000
 ```
 
-API calls are primarily defined in `src/lib/api.ts` and focused `src/lib/*-api.ts` modules. The proxy implementation is `src/app/api/backend/[...path]/route.ts`.
+### Environment variables
 
-Do not duplicate backend business rules in the frontend when they belong to authorization, entitlements, billing or Employer Interface 006 validation. The backend and the official 006 specifications stored in AlphaBACKEND are authoritative for those rules.
+| Name | Where | Purpose |
+| --- | --- | --- |
+| `ALPHA_API_URL` | server only | Origin of AlphaBACKEND, without a trailing `/api` (e.g. `http://localhost:5080`). Required in production: without it the server answers backend requests with 503 (and the build logs a warning). `npm run dev` and tests default to `http://localhost:5080`. |
 
-## Shared UI
+No secrets are needed in the frontend; never expose backend URLs or tokens through `NEXT_PUBLIC_*` variables.
 
-Shared controls live in `src/components/ui-controls.tsx`. Before introducing a native/ad-hoc input, select, autocomplete or date control, check whether a shared primitive already exists.
+## Commands
 
-Important global UI layers include:
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Development server |
+| `npm run build` / `npm start` | Production build / serve it |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript (`tsc --noEmit`) |
+| `npm run test` | Unit tests (Vitest) |
+| `npm run verify` | Everything CI runs: guard scripts, lint, typecheck, tests and the production build |
 
-- `src/app/globals.css`
-- `src/app/ui-fixes.css`
-- `src/app/dark-mode.css`
-- `src/app/mobile.css`
-- `src/app/form-feedback.css`
-- `src/components/validation-ux-bridge.tsx`
+Run `npm run verify` before opening a pull request.
 
-## Run locally
+## Documentation
 
-```bash
-npm install
-npm run dev
-```
-
-## Verification
-
-Run the complete local verification sequence with:
-
-```bash
-npm run verify
-```
-
-This runs the select-data guard, shared UI guard, ESLint, TypeScript typecheck and production build. The authoritative CI sequence is in `.github/workflows/ci.yml`.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the frontend is organized and why
+- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — recipes: adding a feature, endpoint, query, form or component
+- [`docs/CODEMAP.md`](docs/CODEMAP.md) — where each flow and shared building block lives
+- [`AGENTS.md`](AGENTS.md) — rules for automated and human contributors
 
 ## Related repositories
 
-- `GuyMishan/AlphaBACKEND` — API, domain, database, Employer Interface 006, billing and integrations.
-- `GuyMishan/AlphaMarketing` — public ALPHA marketing website.
+- `GuyMishan/AlphaBACKEND` — API, domain, database, Employer Interface 006, billing and integrations. The backend and the official 006 specifications are authoritative for authorization, entitlements, billing and 006 validation.
+- `GuyMishan/AlphaMarketing` — the public ALPHA marketing site.

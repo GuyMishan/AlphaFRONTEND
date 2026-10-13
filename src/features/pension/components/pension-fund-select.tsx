@@ -1,0 +1,97 @@
+"use client";
+
+import { UiAutocomplete, UiInput } from "@/components/ui/ui-controls";
+import { useEffect, useState } from "react";
+import { referenceDataApi } from "@/features/reference-data/api";
+import type { PensionFundOption, PensionProductType } from "@/features/pension/types";
+
+type FundValue = {
+  fundExternalKey?: string;
+  fundCode?: string;
+  fundName?: string;
+  fundCompanyName?: string;
+  fundClassification?: string;
+};
+
+type Props = {
+  productType: PensionProductType;
+  value: FundValue;
+  disabled?: boolean;
+  onChange: (value: Required<FundValue>) => void;
+  onInteraction?: () => void;
+  showValidation?: boolean;
+};
+
+function optionLabel(item: PensionFundOption) {
+  return [item.fundCode, item.fundName, item.companyName].filter(Boolean).join(" · ");
+}
+
+function valueLabel(value: FundValue) {
+  return [value.fundCode, value.fundName, value.fundCompanyName].filter(Boolean).join(" · ");
+}
+
+export function PensionFundSelect({ productType, value, disabled = false, onChange, onInteraction, showValidation = false }: Props) {
+  const [query, setQuery] = useState(valueLabel(value));
+  const [options, setOptions] = useState<PensionFundOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setQuery(valueLabel(value));
+  }, [value.fundExternalKey, value.fundCode, value.fundName, value.fundCompanyName]);
+
+  useEffect(() => {
+    if (productType === 99) {
+      setOptions([]);
+      setError("");
+      setOpen(false);
+      return;
+    }
+
+    if (!open) {
+      setLoading(false);
+      return;
+    }
+
+    // Once an option is selected, query contains the full display label
+    // ("code · fund · company"). That is presentation text, not a search term,
+    // so do not issue a redundant API request for the already-selected value.
+    const selectedLabel = valueLabel(value).trim();
+    if ((value.fundExternalKey ?? "").trim() && query.trim() === selectedLabel) {
+      setOptions([]);
+      setError("");
+      setLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      let active = true;
+      setLoading(true);
+      setError("");
+      referenceDataApi.pensionFunds(productType, query.trim(), 30)
+        .then((items) => {
+          if (!active) return;
+          setOptions(items);
+        })
+        .catch((err) => {
+          if (!active) return;
+          setError(err instanceof Error ? err.message : "טעינת רשימת הקופות נכשלה");
+          setOptions([]);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+      return () => {
+        active = false;
+      };
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [productType, query, open]);
+
+  if (productType === 99) {
+    return <div className="field"><label>קופה</label><UiInput disabled value="לא נדרש עבור מוצר מסוג אחר" /></div>;
+  }
+
+  return <div className="field"><label>קופה *</label><UiAutocomplete value={query} disabled={disabled} required onOpenChange={setOpen} invalid={showValidation && !(value.fundExternalKey ?? "").trim()} loading={loading} ariaLabel="בחירת קופה" placeholder="חיפוש לפי שם / מספר קופה" loadingText="טוען קופות..." emptyText={error || "לא נמצאו קופות מהסוג שנבחר."} options={options.map(item=>({value:item.externalKey,label:optionLabel(item)}))} onClear={()=>{setOptions([]);onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}} onValueChange={(next)=>{onInteraction?.();setQuery(next);const item=options.find(x=>optionLabel(x)===next);if(item){setError("");onChange({fundExternalKey:item.externalKey,fundCode:item.fundCode,fundName:item.fundName,fundCompanyName:item.companyName,fundClassification:item.classification||""})}else if(value.fundExternalKey){onChange({ fundExternalKey:"",fundCode:"",fundName:"",fundCompanyName:"",fundClassification:"" })}}}/></div>}

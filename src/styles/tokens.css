@@ -1,0 +1,61 @@
+/*
+ * Design tokens: the single source of theme values.
+ * Light values live on :root; dark values override the same names under html[data-theme="dark"]
+ * (ThemeProvider sets data-theme). Component styles reference tokens via var(--name).
+ */
+
+/* Light theme */
+:root {
+  --navy: #102640;
+  --brand-tile: #102640;
+  --brand-symbol: #ffffff;
+  --brand-text: #102640;
+  --navy-2: #193957;
+  --blue: #2865d8;
+  --blue-soft: #eaf1ff;
+  --teal: #0d927b;
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --text: #172231;
+  --muted: #69788b;
+  --line: #e1e7ef;
+  --danger: #c43d4b;
+  --warning: #b86d10;
+  --shadow: 0 12px 36px rgba(16, 38, 64, 0.08);
+  --control-height: 44px;
+  --control-height-compact: 36px;
+  --control-height-dense: 30px;
+}
+
+/* Dark theme */
+html[data-theme="dark"] {
+  --navy: #0b1624;
+  --brand-tile: #ffffff;
+  --brand-symbol: #0b1624;
+  --brand-text: #ffffff;
+  --navy-2: #132235;
+  --blue: #6ea2ff;
+  --blue-soft: #172a46;
+  --teal: #43c7ad;
+  --bg: #0f1722;
+  --surface: #16202d;
+  --text: #edf3fa;
+  --muted: #9bacc0;
+  --line: #2a394a;
+  --danger: #ff7b88;
+  --warning: #f3ad54;
+  --shadow: 0 12px 36px rgba(0,0,0,.28);
+}
+
+/* Scrollbars */
+:root {
+  --alpha-scroll-thumb: #b3bfce;
+  --alpha-scroll-hover: #658bbf;
+  --alpha-scroll-active: #2865d8;
+  --alpha-scroll-size: 8px;
+}
+html[data-theme="dark"] {
+  --alpha-scroll-thumb: #435c76;
+  --alpha-scroll-hover: #6f9cda;
+  --alpha-scroll-active: #93b7ff;
+}

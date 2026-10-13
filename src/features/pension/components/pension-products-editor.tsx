@@ -1,0 +1,418 @@
+"use client";
+
+import { UiDateInput, UiInput  } from "@/components/ui/ui-controls";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { DataTable } from "@/components/ui/data-table";
+import { CircleCheck, Plus, Trash2 } from "lucide-react";
+import { EmployerInterfaceOptionSelect } from "@/features/reporting/components/employer-interface-option-select";
+import { PensionFundSelect } from "@/features/pension/components/pension-fund-select";
+import { ReferenceOptionSelect } from "@/features/reference-data/components/reference-option-select";
+import { SalaryLayerSelect } from "@/features/pension/components/salary-layer-select";
+import type { ContributionComponent, PensionProductType, SalaryAllocationType, Section14Code } from "@/features/pension/types";
+import { referenceDataApi } from "@/features/reference-data/api";
+import type { PensionEditorContributionLimit, PensionEditorReferenceData } from "@/features/reference-data/types";
+import { calculateContributionAmount, roundMoney, roundPercentage } from "@/features/pension/contribution-math";
+
+export type PensionEditorContribution = {
+  component: ContributionComponent;
+  percentage: number;
+  amount?: number;
+  exemptPayments?: number;
+};
+
+export type PensionEditorProduct = {
+  employeePensionProductId?: string;
+  workspaceReportProductId?: string | null;
+  sourceReportProductId?: string | null;
+  productType: PensionProductType;
+  policyNumber: string;
+  fundExternalKey?: string;
+  fundCode?: string;
+  fundName?: string;
+  fundCompanyName?: string;
+  fundClassification?: string;
+  salary: number;
+  salaryMonth?: string;
+  salaryAllocationType?: SalaryAllocationType;
+  salaryAllocationValue?: number | null;
+  reportingType: string;
+  salaryLayer: string;
+  section14: boolean;
+  section14Code?: Section14Code;
+  section14StartDate: string | null;
+  depositStatus?: number | null;
+  isActive?: boolean;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  institutionalBody?: string;
+  manufacturer?: string;
+  employerContributions: PensionEditorContribution[];
+  employeeContributions: PensionEditorContribution[];
+};
+
+const employerComponents: { value: ContributionComponent; label: string }[] = [
+  { value: 1, label: "פיצויים" }, { value: 2, label: "תגמולים" }, { value: 3, label: "אכ״ע" }, { value: 4, label: "שונות" },
+];
+const employeeComponents: { value: ContributionComponent; label: string }[] = [
+  { value: 1, label: "תג 47" }, { value: 2, label: "תגמולי עובד (תג 45)" }, { value: 3, label: "אכ״ע" }, { value: 4, label: "שונות" },
+];
+
+const israelDateParts = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jerusalem",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return { year: value("year"), month: value("month"), day: value("day") };
+};
+const today = () => {
+  const { year, month, day } = israelDateParts();
+  return `${year}-${month}-${day}`;
+};
+const currentIsraelMonth = () => {
+  const { year, month } = israelDateParts();
+  return `${year}-${month}`;
+};
+export function inferPensionSection14Code(product: Pick<PensionEditorProduct, "section14" | "section14Code" | "section14StartDate">): Section14Code {
+  if (product.section14Code && [1, 2, 3, 4, 5].includes(Number(product.section14Code))) return Number(product.section14Code) as Section14Code;
+  if (!product.section14 && product.section14StartDate) return 4;
+  if (!product.section14) return 3;
+  return product.section14StartDate ? 2 : 1;
+}
+
+export function resolvePensionAllocations(monthlySalary: number, products: PensionEditorProduct[]) {
+  const resolved = new Map<number, number>();
+  const active = products.map((product, index) => ({ product, index }))
+    .filter(({ product }) => product.isActive !== false)
+;
+  if (!active.length) return { resolved, error: "" };
+  if (monthlySalary < 0) return { resolved, error: "שכר חודשי לא יכול להיות שלילי." };
+  if (monthlySalary === 0) {
+    for (const { index } of active) resolved.set(index, 0);
+    return { resolved, error: "" };
+  }
+  if (active.filter(({ product }) => Number(product.salaryAllocationType ?? 1) === 4).length > 1)
+    return { resolved, error: "אפשר להגדיר מוצר אחד בלבד בשיטת יתרת שכר." };
+
+  let allocated = 0;
+  for (const { product, index } of active) {
+    const type = Number(product.salaryAllocationType ?? 1) as SalaryAllocationType;
+    const value = type === 1 ? monthlySalary : Number(product.salaryAllocationValue ?? 0);
+    if (type !== 4 && (!Number.isFinite(value) || value <= 0)) return { resolved, error: `מוצר ${index + 1}: יש להזין ערך הקצאת שכר גדול מאפס.` };
+    if (type === 2 && value > 100) return { resolved, error: `מוצר ${index + 1}: אחוז מהשכר לא יכול לעבור 100%.` };
+    const insuredSalary = type === 1 ? value : type === 2 ? roundMoney(monthlySalary * value / 100) : type === 3 ? Math.min(monthlySalary, value) : Math.max(monthlySalary - allocated, 0);
+    if (allocated + insuredSalary > monthlySalary + 0.01) return { resolved, error: "הקצאות השכר חורגות מהשכר החודשי של העובד." };
+    allocated += insuredSalary;
+    resolved.set(index, insuredSalary);
+  }
+  return { resolved, error: "" };
+}
+
+export function sanitizePensionProductContributions(product: PensionEditorProduct): PensionEditorProduct {
+  const allowed = (party: "employer" | "employee", component: ContributionComponent) => {
+    if (product.productType === 2) return component === 2;
+    if (product.productType === 1 || product.productType === 4) return component !== 3 && component !== 4;
+    return true;
+  };
+  const sanitize = (items: PensionEditorContribution[], party: "employer" | "employee") =>
+    items.map((item) => allowed(party, item.component) ? item : { ...item, percentage: 0, amount: 0, exemptPayments: 0 });
+  return {
+    ...product,
+    employerContributions: sanitize(product.employerContributions, "employer"),
+    employeeContributions: sanitize(product.employeeContributions, "employee"),
+  };
+}
+
+export function normalizePensionEditorProducts(monthlySalary: number, products: PensionEditorProduct[]) {
+  const allocation = resolvePensionAllocations(monthlySalary, products);
+  return {
+    error: allocation.error,
+    products: products.map((rawProduct, index) => {
+      const product = sanitizePensionProductContributions(rawProduct);
+      const section14Code = inferPensionSection14Code(product);
+      const salary = allocation.resolved.get(index) ?? 0;
+      const normalize = (item: PensionEditorContribution): PensionEditorContribution => ({
+        ...item,
+        amount: calculateContributionAmount(salary, Number(item.percentage || 0)),
+        exemptPayments: roundMoney(Number(item.exemptPayments || 0)),
+      });
+      return {
+        ...product,
+        salary,
+        section14Code,
+        section14: section14Code === 1 || section14Code === 2,
+        section14StartDate: section14Code === 2 || section14Code === 4 ? product.section14StartDate : null,
+        salaryAllocationValue: Number(product.salaryAllocationType ?? 1) === 4 ? null : Number(product.salaryAllocationType ?? 1) === 1 ? monthlySalary : product.salaryAllocationValue,
+        employerContributions: product.employerContributions.map(normalize),
+        employeeContributions: product.employeeContributions.map(normalize),
+      };
+    }),
+  };
+}
+
+function validateContributionRows(product: PensionEditorProduct, productIndex: number, contributionLimits: PensionEditorContributionLimit[] = [], context: "employee" | "report" = "employee") {
+  const insuredSalary = Number(product.salary || 0);
+  const usesEmployeeEmployerRegulation19 = context === "employee";
+  const validateParty = (items: PensionEditorContribution[], party: "employer" | "employee", label: string) => {
+    const populated = items.filter((item) => Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0);
+    if (!populated.length) return `מוצר ${productIndex + 1}: יש להזין לפחות רכיב הפקדה אחד ב${label}.`;
+    for (const item of populated) {
+      const pct = Number(item.percentage || 0), amount = Number(item.amount || 0), exempt = Number(item.exemptPayments || 0);
+      if (exempt < 0 || exempt > amount) return `מוצר ${productIndex + 1}: תשלומים פטורים ב${label} חייבים להיות בין 0 לסכום ההפקדה.`;
+
+      // In a report draft the official deposit status is selected later, in Deposits.
+      // Do not guess salaried Regulation-19 rules here: self-employed/status-suppressed rows
+      // have different rules. The deposit editor and authoritative backend final validation
+      // apply errors 16/17/23/53/71/72/75 once the real status is known.
+      if (!usesEmployeeEmployerRegulation19) continue;
+
+      if (pct <= 0 || amount <= 0) return `מוצר ${productIndex + 1}: בכל שורת ${label} שמדווחת נדרשים גם אחוז וגם סכום גדולים מאפס.`;
+      const year = Number((product.salaryMonth || today()).slice(0, 4));
+      const max = maxPercentage(product.productType, party, item.component, year, contributionLimits);
+      if (max == null) return `מוצר ${productIndex + 1}: לא הוגדרה תקרת הפקדה רשמית לשנת ${year} עבור הרכיב שנבחר. לא ניתן לשמור עד לעדכון טבלת התקרות.`;
+      if (pct > max) return `מוצר ${productIndex + 1}: אחוז ב${label} עבור הרכיב שנבחר לא יכול לעבור ${max}%.`;
+      if (insuredSalary > 0 && amount > insuredSalary + 0.01) return `מוצר ${productIndex + 1}: סכום הפקדה ב${label} לא יכול להיות גבוה מהשכר המבוטח.`;
+      const expected = calculateContributionAmount(insuredSalary, pct);
+      if (insuredSalary > 0 && Math.abs(roundMoney(amount) - expected) > 0.001) return `מוצר ${productIndex + 1}: סכום ההפקדה ב${label} חייב להתאים לשכר המבוטח כפול אחוז ההפקדה.`;
+    }
+    return "";
+  };
+  const employerRewardsRow = product.employerContributions.find((item) => item.component === 2);
+  const employeeRewardsRow = product.employeeContributions.find((item) => item.component === 2);
+  const severanceRow = product.employerContributions.find((item) => item.component === 1);
+  const employerRewards = Number(employerRewardsRow?.percentage || 0);
+  const employeeRewards = Number(employeeRewardsRow?.percentage || 0);
+  const employerRewardsAmount = Number(employerRewardsRow?.amount || 0);
+  const employeeRewardsAmount = Number(employeeRewardsRow?.amount || 0);
+  const severanceAmount = Number(severanceRow?.amount || 0);
+  const disability = Number(product.employerContributions.find((item) => item.component === 3)?.percentage || 0);
+
+  if (usesEmployeeEmployerRegulation19) {
+    if (employeeRewardsAmount > 0 && employerRewardsAmount <= 0)
+      return `מוצר ${productIndex + 1}: קוד שגיאה 16 — לא ניתן להפקיד תגמולי עובד ללא תגמולי מעסיק.`;
+    if (employerRewardsAmount > 0 && employeeRewardsAmount <= 0)
+      return `מוצר ${productIndex + 1}: קוד שגיאה 17 — לא ניתן להפקיד תגמולי מעסיק ללא תגמולי עובד.`;
+    if (Number(product.productType) === 1 && severanceAmount > 0 && (employeeRewardsAmount <= 0 || employerRewardsAmount <= 0))
+      return `מוצר ${productIndex + 1}: קוד שגיאה 23 — בקרן פנסיה לא ניתן להפקיד פיצויים ללא תגמולי עובד ותגמולי מעסיק.`;
+    if (employeeRewards > 0 && employerRewards > 0 && employeeRewards <= 5 && employerRewards <= 5
+        && Math.abs(employeeRewards - employerRewards) > 0.0001)
+      return `מוצר ${productIndex + 1}: קוד שגיאה 71 — תגמולי עובד ומעסיק עד 5% חייבים להיות באותו אחוז.`;
+    if (employerRewards + disability > 7.5 + 0.0001)
+      return `מוצר ${productIndex + 1}: קוד שגיאה 72 — תגמולי מעסיק ואכ״ע יחד לא יכולים לעבור 7.5%.`;
+  }
+  const employerError = validateParty(product.employerContributions, "employer", "הפקדות מעסיק");
+  if (employerError) return employerError;
+  const employeeError = validateParty(product.employeeContributions, "employee", "הפקדות עובד");
+  if (employeeError) return employeeError;
+  return "";
+}
+
+export function validatePensionEditorProducts(products: PensionEditorProduct[], context: "employee" | "report", contributionLimits: PensionEditorContributionLimit[] = []) {
+  const activeProducts = products.filter((product) => product.isActive !== false);
+  if (context === "report") {
+    const seen = new Set<string>();
+    for (const product of activeProducts) {
+      const fundIdentity = ((product.fundCode || product.fundExternalKey || "").trim()).toLowerCase();
+      const policyIdentity = (product.policyNumber || "").trim().toLowerCase();
+      const identity = fundIdentity ? `${fundIdentity}|${policyIdentity || "<no-policy>"}` : "";
+      const key = `${Number(product.productType)}|${identity}|${(product.salaryMonth || "").slice(0, 7)}`;
+      if (identity && seen.has(key))
+        return "קוד שגיאה 28/43 — אותו מוצר ואותו חודש שכר מופיעים יותר מפעם אחת בדיווח. יש להסיר את התנועה הכפולה.";
+      seen.add(key);
+    }
+  }
+
+  for (let index = 0; index < products.length; index++) {
+    const product = products[index];
+    if (product.isActive === false) continue;
+    if (context === "report" && product.productType === 99) return `מוצר ${index + 1}: סוג מוצר "אחר" אינו נתמך בממשק מעסיקים 006. יש לבחור סוג קופה רשמי.`;
+    if (product.productType !== 99 && !(product.fundExternalKey ?? "").trim()) return `מוצר ${index + 1}: יש לבחור קופה.`;
+    if (!/^\d+$/.test(product.reportingType || "")) return `מוצר ${index + 1}: יש לבחור סוג תקבול תקין.`;
+    if (!/^\d+$/.test(product.salaryLayer || "")) return `מוצר ${index + 1}: יש לבחור רובד שכר תקין.`;
+    if (context === "report" && product.salaryMonth) {
+      const salaryMonth = product.salaryMonth.slice(0, 7);
+      if (salaryMonth > currentIsraelMonth())
+        return `מוצר ${index + 1}: קוד שגיאה 27 — לא ניתן לדווח הפקדה בגין חודש שכר עתידי.`;
+    }
+    const code = inferPensionSection14Code(product);
+    if ((code === 2 || code === 4) && !product.section14StartDate) return `מוצר ${index + 1}: יש להזין תאריך תחולה/ביטול לסעיף 14.`;
+    if (product.productType === 2) {
+      const invalidEmployer = product.employerContributions.some((item) => item.component !== 2 && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
+      const invalidEmployee = product.employeeContributions.some((item) => item.component !== 2 && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
+      if (invalidEmployer || invalidEmployee) return `מוצר ${index + 1}: בקרן השתלמות ממשק מעסיקים 006 מאפשר רק תגמולי עובד (קוד 2) ותגמולי מעסיק (קוד 3).`;
+    }
+    if (product.productType === 1 || product.productType === 4) {
+      const forbiddenEmployer = product.employerContributions.some((item) => (item.component === 3 || item.component === 4) && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
+      const forbiddenEmployee = product.employeeContributions.some((item) => (item.component === 3 || item.component === 4) && (Number(item.percentage || 0) > 0 || Number(item.amount || 0) > 0 || Number(item.exemptPayments || 0) > 0));
+      if (forbiddenEmployer || forbiddenEmployee) return `מוצר ${index + 1}: בקרן פנסיה ובקופת גמל ניתן לדווח בממשק מעסיקים 006 רק רכיבי פיצויים ותגמולים. יש להסיר אכ״ע/שונות.`;
+    }
+    const contributionError = validateContributionRows(product, index, contributionLimits, context);
+    if (contributionError) return contributionError;
+    if (context === "employee") {
+      if (!product.effectiveFrom) return `מוצר ${index + 1}: יש להזין תאריך תחילת תוקף.`;
+      if (product.effectiveTo && product.effectiveFrom && product.effectiveTo < product.effectiveFrom) return `מוצר ${index + 1}: תאריך סיום לא יכול להיות מוקדם מתאריך תחילת התוקף.`;
+    }
+  }
+  return "";
+}
+
+export function createEmptyPensionEditorProduct(context: "employee" | "report", order: number, month?: string): PensionEditorProduct {
+  const base: PensionEditorProduct = {
+    productType: 1, policyNumber: "", fundExternalKey: "", fundCode: "", fundName: "", fundCompanyName: "", fundClassification: "", salary: 0,
+    salaryAllocationType: 1, salaryAllocationValue: null, reportingType: "1", salaryLayer: "1", section14: false,
+    section14Code: 3, section14StartDate: null, employerContributions: employerComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
+    employeeContributions: employeeComponents.map(({ value }) => ({ component: value, percentage: 0, amount: 0, exemptPayments: 0 })),
+  };
+  if (context === "employee") return { ...base, isActive: true, effectiveFrom: today(), effectiveTo: null, institutionalBody: "", manufacturer: "" };
+  return { ...base, salaryMonth: month ? `${month.slice(0, 7)}-01` : today().slice(0, 7) + "-01" };
+}
+
+function allocationValueLabel(type: SalaryAllocationType) {
+  if (type === 2) return "אחוז מהשכר (%)";
+  if (type === 3) return "תקרת שכר (₪)";
+  return "שכר קבוע (₪)";
+}
+
+function maxPercentage(productType: PensionProductType, party: "employer" | "employee", component: ContributionComponent, year: number, contributionLimits: PensionEditorContributionLimit[]) {
+  const partyCode = party === "employer" ? 1 : 2;
+  const match = contributionLimits.find((item) =>
+    item.year === year
+    && Number(item.productType) === Number(productType)
+    && Number(item.party) === partyCode
+    && Number(item.component) === Number(component));
+  return match?.maxPercentage ?? null;
+}
+
+export function PensionProductsEditor({ context, month, monthlySalary, products, editable = true, allowAdd = true, allowRemove = true, showAllocationError = true, onMonthlySalaryChange, onProductsChange, onFieldInteraction, onReferenceDataLoaded, renderProductExtra, focusedReportProductId = "" }: {
+  context: "employee" | "report";
+  month?: string;
+  monthlySalary: number;
+  products: PensionEditorProduct[];
+  editable?: boolean;
+  allowAdd?: boolean;
+  allowRemove?: boolean;
+  showAllocationError?: boolean;
+  onMonthlySalaryChange: (value: number) => void;
+  onProductsChange: (products: PensionEditorProduct[]) => void;
+  onFieldInteraction?: () => void;
+  onReferenceDataLoaded?: (data: PensionEditorReferenceData) => void;
+  renderProductExtra?: (product: PensionEditorProduct, index: number) => ReactNode;
+  focusedReportProductId?: string;
+}) {
+  const [referenceData, setReferenceData] = useState<PensionEditorReferenceData | null>(null);
+  const onReferenceDataLoadedRef = useRef(onReferenceDataLoaded);
+  useEffect(() => { onReferenceDataLoadedRef.current = onReferenceDataLoaded; }, [onReferenceDataLoaded]);
+  const [referenceDataError, setReferenceDataError] = useState("");
+  const [referenceDataLoading, setReferenceDataLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setReferenceDataLoading(true);
+    setReferenceDataError("");
+    referenceDataApi.pensionEditorOptions()
+      .then((data) => {
+        if (!active) return;
+        setReferenceData(data);
+        onReferenceDataLoadedRef.current?.(data);
+      })
+      .catch((err) => { if (active) setReferenceDataError(err instanceof Error ? err.message : "טעינת אפשרויות עורך המוצרים נכשלה"); })
+      .finally(() => { if (active) setReferenceDataLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const referenceOptions = (category: string) => referenceData?.referenceOptions[category] ?? [];
+  const interfaceOptions = (category: string) => referenceData?.interfaceOptions[category] ?? [];
+  const allocation = resolvePensionAllocations(monthlySalary, products);
+  const updateProduct = (index: number, patch: Partial<PensionEditorProduct>) => onProductsChange(products.map((product, i) => i === index ? { ...product, ...patch } : product));
+  const changeProductType = (index: number, productType: PensionProductType) => onProductsChange(products.map((product, i) => i !== index ? product : sanitizePensionProductContributions({
+    ...product,
+    productType,
+    fundExternalKey: "",
+    fundCode: "",
+    fundName: "",
+    fundCompanyName: "",
+    fundClassification: "",
+  })));
+  const updateContribution = (index: number, party: "employerContributions" | "employeeContributions", component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => {
+    const salary = allocation.resolved.get(index) ?? 0;
+    onProductsChange(products.map((product, i) => i !== index ? product : {
+      ...product,
+      [party]: product[party].map((item) => {
+        if (item.component !== component) return item;
+        const safe = Math.max(0, Number.isFinite(value) ? value : 0);
+        if (key === "percentage") return { ...item, percentage: roundPercentage(safe), amount: calculateContributionAmount(salary, safe) };
+        if (key === "amount") return { ...item, amount: roundMoney(safe), percentage: salary > 0 ? roundPercentage(safe / salary * 100) : 0 };
+        return { ...item, exemptPayments: roundMoney(safe) };
+      }),
+    }));
+  };
+
+  return <>
+    <div className="grid two-cols" style={{ marginBottom: 12 }}>
+      <div className="field"><label>{context === "report" ? "שכר חודשי של העובד בדיווח *" : "שכר חודשי של העובד *"}</label><UiInput disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={monthlySalary || ""} onChange={(e) => onMonthlySalaryChange(roundMoney(Number(e.target.value)))} /></div>
+      <div className="field"><label>סה״כ שכר מבוטח מחושב</label><UiInput disabled value={`₪${Array.from(allocation.resolved.values()).reduce((sum, value) => sum + value, 0).toLocaleString("he-IL")}`} /></div>
+    </div>
+    {showAllocationError && allocation.error ? <div className="notice notice-error" style={{ marginBottom: 12 }}>{allocation.error}</div> : null}
+    <div className="product-editor-list">{products.map((product, index) => {
+      const allocationType = Number(product.salaryAllocationType ?? 1) as SalaryAllocationType;
+      const section14Code = inferPensionSection14Code(product);
+      const section14DateRequired = section14Code === 2 || section14Code === 4;
+      const insuredSalary = allocation.resolved.get(index) ?? 0;
+      return <section id={product.workspaceReportProductId ? `report-product-${product.workspaceReportProductId}` : undefined} className={`report-product-card${focusedReportProductId && product.workspaceReportProductId === focusedReportProductId ? " feedback-product-focus" : ""}`} key={index} style={{ opacity: product.isActive === false ? .72 : 1 }}>
+        <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <div className="status-pill-active"><CircleCheck size={13} /><div>פעיל</div></div>}{editable && allowRemove ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
+        <div className="grid report-product-fields">
+          {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} suppliedOptions={referenceOptions("product-active-status")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
+          <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required suppliedOptions={referenceOptions("pension-product-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => changeProductType(index, Number(value) as PensionProductType)} /></div>
+          <PensionFundSelect disabled={!editable} productType={product.productType} value={product} onInteraction={onFieldInteraction} showValidation={showAllocationError} onChange={(fund) => updateProduct(index, { ...fund, ...(context === "employee" ? { institutionalBody: fund.fundCompanyName || product.institutionalBody, manufacturer: fund.fundCompanyName || product.manufacturer } : {}) })} />
+          <div className="field"><label>מספר פוליסה / חשבון</label><UiInput disabled={!editable} maxLength={20} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} placeholder="אופציונלי" /></div>
+          {context === "report" ? <div className="field"><label>חודש שכר *</label><UiDateInput mode="month" disabled={!editable} required value={(product.salaryMonth ?? month ?? "").slice(0, 7)} onValueChange={(value) => updateProduct(index, { salaryMonth: value ? `${value}-01` : "" })} /></div> : null}
+          <div className="field"><label>שיטת הקצאת שכר *</label><ReferenceOptionSelect category="salary-allocation-type" disabled={!editable} value={allocationType} required suppliedOptions={referenceOptions("salary-allocation-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => { const next = Number(value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: next, salaryAllocationValue: next === 4 ? null : next === 1 ? monthlySalary : product.salaryAllocationValue ?? product.salary ?? 0 }); }} /></div>
+          {allocationType !== 4 ? <div className="field"><label>{allocationValueLabel(allocationType)} *</label><UiInput disabled={!editable || allocationType === 1} type="number" min="0" max={allocationType === 2 ? 100 : undefined} step="0.01" value={allocationType === 1 ? monthlySalary : product.salaryAllocationValue ?? ""} onChange={(e) => updateProduct(index, { salaryAllocationValue: Number(e.target.value) })} /></div> : <div className="field"><label>ערך הקצאה</label><UiInput disabled value="מחושב אוטומטית" /></div>}
+          <div className="field"><label>שכר מבוטח מחושב</label><UiInput disabled value={`₪${insuredSalary.toLocaleString("he-IL")}`} /></div>
+          {context === "employee" ? <><div className="field"><label>גוף מוסדי</label><UiInput disabled={!editable} maxLength={160} value={product.institutionalBody ?? ""} onChange={(e) => updateProduct(index, { institutionalBody: e.target.value })} /></div><div className="field"><label>יצרן</label><UiInput disabled={!editable} maxLength={160} value={product.manufacturer ?? ""} onChange={(e) => updateProduct(index, { manufacturer: e.target.value })} /></div><div className="field"><label>תחילת תוקף *</label><UiDateInput disabled={!editable} value={product.effectiveFrom ?? ""} onValueChange={(value) => updateProduct(index, { effectiveFrom: value })} /></div><div className="field"><label>סיום תוקף</label><UiDateInput disabled={!editable} min={product.effectiveFrom || undefined} value={product.effectiveTo ?? ""} onValueChange={(value) => updateProduct(index, { effectiveTo: value || null })} /></div></> : null}
+          <div className="field"><label>{context === "employee" ? "סוג תקבול ברירת מחדל *" : "סוג תקבול *"}</label><EmployerInterfaceOptionSelect category="receipt-type" value={Number(product.reportingType) || null} disabled={!editable} required suppliedOptions={interfaceOptions("receipt-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { reportingType: value == null ? "" : String(value) })} /></div>
+          <div className="field"><label>רובד שכר *</label><SalaryLayerSelect disabled={!editable} value={product.salaryLayer} suppliedOptions={referenceData?.salaryLayers ?? []} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { salaryLayer: value })} /></div>
+          <div className="field"><label>סעיף 14 *</label><EmployerInterfaceOptionSelect category="section14-code" value={section14Code} disabled={!editable} required suppliedOptions={interfaceOptions("section14-code")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => { const code = Number(value ?? 3) as Section14Code; updateProduct(index, { section14Code: code, section14: code === 1 || code === 2, section14StartDate: code === 2 || code === 4 ? product.section14StartDate : null }); }} /></div>
+          <div className="field"><label>תאריך תחולה/ביטול סעיף 14{section14DateRequired ? " *" : ""}</label><UiDateInput disabled={!editable || !section14DateRequired} required={section14DateRequired} value={section14DateRequired ? product.section14StartDate ?? "" : ""} onValueChange={(value) => updateProduct(index, { section14StartDate: value || null })} /></div>
+        </div>
+        {renderProductExtra?.(product, index)}
+        <div className="contribution-grid"><ContributionEditor context={context} title="הפקדות מעסיק" party="employer" product={product} items={product.employerContributions} contributionLimits={referenceData?.contributionLimits ?? []} editable={editable} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} /><ContributionEditor context={context} title="הפקדות עובד" party="employee" product={product} items={product.employeeContributions} contributionLimits={referenceData?.contributionLimits ?? []} editable={editable} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} /></div>
+      </section>;
+    })}</div>
+    {editable && allowAdd ? <button className="btn btn-soft wide" onClick={() => onProductsChange([...products, createEmptyPensionEditorProduct(context, products.length, month)])}><Plus size={15} />הוספת מוצר</button> : null}
+  </>;
+}
+
+function ContributionEditor({ context, title, party, product, items, contributionLimits, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; contributionLimits: PensionEditorContributionLimit[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
+  const allLabels = party === "employee" ? employeeComponents : employerComponents;
+  const labels = product.productType === 2
+    ? allLabels.filter(({ value }) => value === 2)
+    : (product.productType === 1 || product.productType === 4)
+      ? allLabels.filter(({ value }) => value !== 3 && value !== 4)
+      : allLabels;
+  return <div className="contribution-section"><h3>{title}</h3><DataTable
+    items={labels}
+    rowKey={(item) => String(item.value)}
+    tableClassName="contribution-table"
+    maxHeight={360}
+    columns={[
+      { key: "component", label: "רכיב", width: "25%" },
+      { key: "amount", label: "סכום", width: "25%" },
+      { key: "percentage", label: "אחוז", width: "25%" },
+      { key: "exempt", label: "פטורים", width: "25%" },
+    ]}
+    renderCells={({ value, label }) => {
+      const item = items.find((entry) => entry.component === value) ?? { component: value, percentage: 0, amount: 0, exemptPayments: 0 };
+      const year = Number((product.salaryMonth || today()).slice(0, 4));
+      const max = maxPercentage(product.productType, party, value, year, contributionLimits);
+      return [
+        <b key="component">{label}</b>,
+        <UiInput key="amount" className="contribution-input" disabled={!editable} type="number" min="0" max={product.salary || undefined} step="0.01" value={item.amount || ""} onChange={(e) => onChange(value, "amount", Number(e.target.value))} />,
+        <UiInput key="percentage" className="contribution-input" disabled={!editable} type="number" min="0" max={max ?? undefined} step="0.01" value={item.percentage || ""} onChange={(e) => onChange(value, "percentage", roundPercentage(Number(e.target.value)))} />,
+        <UiInput key="exempt" className="contribution-input" disabled={!editable} type="number" min="0" max={item.amount || undefined} step="0.01" value={item.exemptPayments || ""} onChange={(e) => onChange(value, "exemptPayments", Number(e.target.value))} />,
+      ];
+    }}
+  /></div>;
+}
