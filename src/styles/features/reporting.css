@@ -179,8 +179,10 @@
 /* Keep expanded details as one full-width card in mobile deposit grids. */
 
 
-/* Product status matches the adjacent trash button height; the title keeps only its actions. */
-.report-product-title > div:first-child { display: none; }
+/* The dense report editor keeps its compact card: no product heading, section titles or insured-salary chip. */
+.report-modal .report-product-title > div:first-child,
+.report-modal .product-fields-heading,
+.report-modal .report-product-insured { display: none; }
 .report-product-title:has(> button:last-child) { justify-content: flex-end; }
 .report-product-title .status-pill-active { height: 36px; min-height: 36px; padding: 0 11px; display: flex !important; align-items: center; justify-content: center; }
 
@@ -469,3 +471,73 @@
   max-height: calc(100dvh - 40px);
 }
 .app-modal.report-editor-app-modal > .app-modal-body { min-height: 0; flex: 1 1 auto; }
+
+/* ── Pension product editor (shared by the employee pension mix and the report editor) ── */
+.product-editor-summary { margin-bottom: var(--space-4); }
+.report-product-card.is-inactive { opacity: 0.72; }
+.report-product-heading { display: grid; gap: 2px; min-width: 0; }
+.report-product-heading span { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: var(--weight-semibold); }
+.report-product-heading b { overflow: hidden; color: var(--color-heading); text-overflow: ellipsis; white-space: nowrap; }
+.report-product-heading small { color: var(--color-text-muted); font-size: var(--text-xs); }
+.report-product-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2); flex: 0 0 auto; }
+.report-product-insured {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+.report-product-insured b { color: var(--color-heading); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.report-product-card .field-readonly { min-height: 40px; height: 40px; }
+/* Section titles inside the field grid: a full-width label with a hairline rule. */
+.product-fields-heading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+}
+.product-fields-heading::after { content: ""; flex: 1; height: 1px; background: var(--color-border); }
+.report-product-fields > .product-fields-heading:first-child { margin-top: 0; }
+
+/* Employee pension mix: roomier cards with a header band and separated sections. */
+.product-editor-employee { gap: var(--space-5); margin-bottom: var(--space-4); }
+.product-editor-employee .report-product-card { padding: 0; overflow: hidden; border-radius: var(--radius-card); box-shadow: var(--shadow-sm); }
+.product-editor-employee .report-product-title {
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-sunken);
+}
+.product-editor-employee .report-product-heading b { font-size: var(--text-lg); }
+.product-editor-employee .report-product-fields { padding: var(--space-5) var(--space-5) var(--space-2); gap: 14px 16px; }
+.product-editor-employee .contribution-grid { padding: var(--space-2) var(--space-5) var(--space-5); gap: var(--space-4); }
+.product-editor-employee .contribution-section h3 { margin-bottom: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); }
+.product-editor-employee .report-product-card > .profile-form-section {
+  margin: 0;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 0;
+  background: var(--color-surface-sunken);
+}
+.product-editor-employee .report-product-card > .profile-form-section .notice { margin: 0; }
+.product-editor-add { min-height: 48px; border: 1px dashed var(--color-primary-border); }
+
+@media (max-width: 760px) {
+  .product-editor-employee .report-product-title { flex-wrap: wrap; padding: var(--space-3) var(--space-4); }
+  .product-editor-employee .report-product-actions { justify-content: flex-start; }
+  .product-editor-employee .report-product-fields,
+  .product-editor-employee .contribution-grid,
+  .product-editor-employee .report-product-card > .profile-form-section { padding-inline: var(--space-4); }
+}
+.product-editor-employee .report-product-card > .profile-form-section .profile-form-section { padding: 0; border: 0; }
+/* The title's generic `span, b { display: block }` must not stack the insured-salary chip. */
+.report-product-title .report-product-insured { display: inline-flex; white-space: nowrap; }
+.report-product-title .report-product-insured b { display: inline; margin: 0; font-size: var(--text-sm); }

@@ -68,13 +68,15 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
     } catch (e) { toast.error(e instanceof Error ? e.message : "המחיקה נכשלה"); }
     finally { setBusy(false); }
   }
+  // Embedded inside a pension product card: compact rows and buttons so the card stays readable.
+  const buttonClass = embedded ? "btn btn-secondary btn-sm" : "btn btn-secondary";
   return <section className={embedded ? "profile-form-section" : "card profile-card"} aria-label={employmentId ? "מסמכי עובד" : "מסמכי מעסיק"}>
-    <div className="card-head"><div><h2>מסמכים</h2><span style={{ color: "var(--color-text-muted)" }}>{employmentId ? "טפסים רשמיים המשויכים למוצר הפנסיוני הזה." : "טפסים רשמיים של המעסיק."} צירוף לדיווח נעשה בנפרד.</span></div></div>
+    <div className="card-head"><div>{embedded ? <h3>מסמכים</h3> : <h2>מסמכים</h2>}<span style={{ color: "var(--color-text-muted)" }}>{employmentId ? "טפסים רשמיים המשויכים למוצר הפנסיוני הזה." : "טפסים רשמיים של המעסיק."} צירוף לדיווח נעשה בנפרד.</span></div></div>
     <DataTable
       items={availableTypes}
       columns={[{ key: "type", label: "סוג מסמך", width: "28%" }, { key: "file", label: "מסמך שהועלה", width: "42%" }, { key: "actions", label: "פעולות", width: "30%" }]}
       rowKey={(item) => String(item.code)}
-      rowHeight={92}
+      rowHeight={embedded ? 64 : 92}
       minTableWidth={440}
       loading={loading}
       maxHeight={500}
@@ -91,14 +93,14 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
           </div>,
           <div key="actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {existing.map(doc => <div key={doc.id} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button type="button" className="btn btn-secondary" onClick={() => void download(doc)}
+              <button type="button" className={buttonClass} onClick={() => void download(doc)}
                 aria-label={`הורדת ${doc.originalFileName}`}>הורדה</button>
-              {canEdit ? <button type="button" className="btn btn-secondary" disabled={busy}
+              {canEdit ? <button type="button" className={buttonClass} disabled={busy}
                 onClick={() => void remove(doc.id)} aria-label={`מחיקת ${doc.originalFileName}`}>מחיקה</button> : null}
             </div>)}
             {canEdit && existing.length === 0 ? <UiFileUpload
               id={`employer-document-file-${employeePensionProductId ?? "employer"}-${item.code}`}
-              label="העלאה" className="btn btn-secondary" accept=".pdf,application/pdf"
+              label="העלאה" className={buttonClass} accept=".pdf,application/pdf"
               maxBytes={10 * 1024 * 1024} disabled={busy} busy={busy}
               onFileSelected={(selected) => upload(selected, item.code)} onInvalid={toast.error} /> : null}
           </div>

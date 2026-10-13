@@ -65,6 +65,7 @@ Use the React component when one exists; otherwise use the CSS class API below. 
 | Buttons | `.btn` + `.btn-primary` / `-secondary` / `-soft` / `-danger` / `-ghost`; sizes `.btn-lg`, `.btn-sm`; icon-only `.btn-icon` with `aria-label` |
 | Status | `.badge` + `.badge-blue` / `-green` / `-teal` / `-orange` / `-red` / `-gray`; `.notice` + `.notice-info` / `-success` / `-warning` / `-error` |
 | Forms, tables, dialogs, tabs, tooltips, uploads | `src/components/ui` primitives and `Field`, as before (`scripts/check-ui-primitives.mjs` enforces them) |
+| Computed, non-editable value in a form | `<output className="field-readonly">` inside a `.field` with a linked label; never a disabled input |
 | List toolbar | `.toolbar` with `.search` (icon + `UiInput`) and a count badge |
 | Brand | `Brand` (logo + product line), `AlphaLogo`, `AlphaSymbol` (`src/components/brand`). Add `.brand-inverse` on navy surfaces. The browser icon is `src/app/icon.svg` |
 

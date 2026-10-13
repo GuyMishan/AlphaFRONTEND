@@ -52,6 +52,24 @@
 .ui-control-default { min-height: var(--control-height); }
 .ui-control-compact { min-height: var(--control-height-compact); height: var(--control-height-compact); padding-top: 5px; padding-bottom: 5px; border-radius: var(--radius-sm); }
 
+/* Computed, non-editable value placed in a form grid (<output className="field-readonly">).
+   Dashed and sunken so it never reads as a disabled or broken input. */
+.field-readonly {
+  min-height: var(--control-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0 14px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-sunken);
+  color: var(--color-heading);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.field-readonly small { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: var(--weight-regular); }
+
 input[type="date"], input[type="month"] { cursor: pointer; }
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="month"]::-webkit-calendar-picker-indicator { cursor: pointer; }

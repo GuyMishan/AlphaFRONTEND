@@ -1,7 +1,7 @@
 "use client";
 
 import { UiDateInput, UiInput  } from "@/components/ui/ui-controls";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { CircleCheck, Plus, Trash2 } from "lucide-react";
 import { EmployerInterfaceOptionSelect } from "@/features/reporting/components/employer-interface-option-select";
@@ -349,6 +349,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
   }, []);
 
   const referenceOptions = (category: string) => referenceData?.referenceOptions[category] ?? [];
+  const listRef = useRef<HTMLDivElement>(null);
   const interfaceOptions = (category: string) => referenceData?.interfaceOptions[category] ?? [];
   const allocation = resolvePensionAllocations(monthlySalary, products);
   const updateProduct = (index: number, patch: Partial<PensionEditorProduct>) => onProductsChange(products.map((product, i) => i === index ? { ...product, ...patch } : product));
@@ -375,40 +376,89 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
     }));
   };
 
+  const totalInsuredSalary = Array.from(allocation.resolved.values()).reduce((sum, value) => sum + value, 0);
+  const productTypeLabel = (type: PensionProductType) =>
+    referenceOptions("pension-product-type").find((option) => Number(option.value) === Number(type))?.label ?? "";
+  function addProduct() {
+    onProductsChange([...products, createEmptyPensionEditorProduct(context, products.length, month)]);
+    // Bring the new, empty product into view so the user can start filling it in.
+    requestAnimationFrame(() => listRef.current?.lastElementChild?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }
+
   return <>
-    <div className="grid two-cols" style={{ marginBottom: 12 }}>
+    <div className="grid two-cols product-editor-summary">
       <div className="field"><label>{context === "report" ? "שכר חודשי של העובד בדיווח *" : "שכר חודשי של העובד *"}</label><UiInput disabled={!editable} type="number" min="0" max="10000000" step="0.01" value={monthlySalary || ""} onChange={(e) => onMonthlySalaryChange(roundMoney(Number(e.target.value)))} /></div>
-      <div className="field"><label>סה״כ שכר מבוטח מחושב</label><UiInput disabled value={`₪${Array.from(allocation.resolved.values()).reduce((sum, value) => sum + value, 0).toLocaleString("he-IL")}`} /></div>
+      <ReadOnlyField label="סה״כ שכר מבוטח מחושב" value={formatShekels(totalInsuredSalary)} />
     </div>
     {showAllocationError && allocation.error ? <div className="notice notice-error" style={{ marginBottom: 12 }}>{allocation.error}</div> : null}
-    <div className="product-editor-list">{products.map((product, index) => {
+    <div ref={listRef} className={`product-editor-list product-editor-${context}`}>{products.map((product, index) => {
       const allocationType = Number(product.salaryAllocationType ?? 1) as SalaryAllocationType;
       const section14Code = inferPensionSection14Code(product);
       const section14DateRequired = section14Code === 2 || section14Code === 4;
       const insuredSalary = allocation.resolved.get(index) ?? 0;
-      return <section id={product.workspaceReportProductId ? `report-product-${product.workspaceReportProductId}` : undefined} className={`report-product-card${focusedReportProductId && product.workspaceReportProductId === focusedReportProductId ? " feedback-product-focus" : ""}`} key={index} style={{ opacity: product.isActive === false ? .72 : 1 }}>
-        <div className="report-product-title"><div><span>מוצר {index + 1}</span><b>{product.fundName || "מוצר פנסיוני"}</b></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}>{product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <div className="status-pill-active"><CircleCheck size={13} /><div>פעיל</div></div>}{editable && allowRemove ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label="מחיקת מוצר"><Trash2 size={16} /></button> : null}</div></div>
+      const typeLabel = productTypeLabel(product.productType);
+      return <section id={product.workspaceReportProductId ? `report-product-${product.workspaceReportProductId}` : undefined} className={`report-product-card${product.isActive === false ? " is-inactive" : ""}${focusedReportProductId && product.workspaceReportProductId === focusedReportProductId ? " feedback-product-focus" : ""}`} key={index} aria-label={`מוצר ${index + 1}${product.fundName ? ` · ${product.fundName}` : ""}`}>
+        <div className="report-product-title">
+          <div className="report-product-heading">
+            <span>מוצר {index + 1}{typeLabel ? ` · ${typeLabel}` : ""}</span>
+            <b>{product.fundName || "מוצר חדש · יש לבחור קופה"}</b>
+            {product.fundCompanyName ? <small>{product.fundCompanyName}</small> : null}
+          </div>
+          <div className="report-product-actions">
+            <span className="report-product-insured">שכר מבוטח <b>{formatShekels(insuredSalary)}</b></span>
+            {product.isActive === false ? <span className="badge badge-gray">לא פעיל</span> : <div className="status-pill-active"><CircleCheck size={13} /><div>פעיל</div></div>}
+            {editable && allowRemove ? <button className="icon-button danger" onClick={() => onProductsChange(products.filter((_, i) => i !== index))} aria-label={`מחיקת מוצר ${index + 1}`}><Trash2 size={16} /></button> : null}
+          </div>
+        </div>
         <div className="grid report-product-fields">
+          <h4 className="product-fields-heading">פרטי המוצר</h4>
           {context === "employee" ? <div className="field"><label>סטטוס מוצר</label><ReferenceOptionSelect category="product-active-status" disabled={!editable} value={product.isActive === false ? "inactive" : "active"} suppliedOptions={referenceOptions("product-active-status")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { isActive: value === "active" })} /></div> : null}
           <div className="field"><label>סוג מוצר *</label><ReferenceOptionSelect category="pension-product-type" disabled={!editable} value={product.productType} required suppliedOptions={referenceOptions("pension-product-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => changeProductType(index, Number(value) as PensionProductType)} /></div>
           <PensionFundSelect disabled={!editable} productType={product.productType} value={product} onInteraction={onFieldInteraction} showValidation={showAllocationError} onChange={(fund) => updateProduct(index, { ...fund, ...(context === "employee" ? { institutionalBody: fund.fundCompanyName || product.institutionalBody, manufacturer: fund.fundCompanyName || product.manufacturer } : {}) })} />
           <div className="field"><label>מספר פוליסה / חשבון</label><UiInput disabled={!editable} maxLength={20} value={product.policyNumber} onChange={(e) => updateProduct(index, { policyNumber: e.target.value })} placeholder="אופציונלי" /></div>
+          {context === "employee" ? <>
+            <div className="field"><label>גוף מוסדי</label><UiInput disabled={!editable} maxLength={160} value={product.institutionalBody ?? ""} onChange={(e) => updateProduct(index, { institutionalBody: e.target.value })} /></div>
+            <div className="field"><label>יצרן</label><UiInput disabled={!editable} maxLength={160} value={product.manufacturer ?? ""} onChange={(e) => updateProduct(index, { manufacturer: e.target.value })} /></div>
+            <div className="field"><label>תחילת תוקף *</label><UiDateInput disabled={!editable} value={product.effectiveFrom ?? ""} onValueChange={(value) => updateProduct(index, { effectiveFrom: value })} /></div>
+            <div className="field"><label>סיום תוקף</label><UiDateInput disabled={!editable} min={product.effectiveFrom || undefined} value={product.effectiveTo ?? ""} onValueChange={(value) => updateProduct(index, { effectiveTo: value || null })} /></div>
+          </> : null}
           {context === "report" ? <div className="field"><label>חודש שכר *</label><UiDateInput mode="month" disabled={!editable} required value={(product.salaryMonth ?? month ?? "").slice(0, 7)} onValueChange={(value) => updateProduct(index, { salaryMonth: value ? `${value}-01` : "" })} /></div> : null}
+
+          <h4 className="product-fields-heading">שכר והקצאה</h4>
           <div className="field"><label>שיטת הקצאת שכר *</label><ReferenceOptionSelect category="salary-allocation-type" disabled={!editable} value={allocationType} required suppliedOptions={referenceOptions("salary-allocation-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => { const next = Number(value) as SalaryAllocationType; updateProduct(index, { salaryAllocationType: next, salaryAllocationValue: next === 4 ? null : next === 1 ? monthlySalary : product.salaryAllocationValue ?? product.salary ?? 0 }); }} /></div>
-          {allocationType !== 4 ? <div className="field"><label>{allocationValueLabel(allocationType)} *</label><UiInput disabled={!editable || allocationType === 1} type="number" min="0" max={allocationType === 2 ? 100 : undefined} step="0.01" value={allocationType === 1 ? monthlySalary : product.salaryAllocationValue ?? ""} onChange={(e) => updateProduct(index, { salaryAllocationValue: Number(e.target.value) })} /></div> : <div className="field"><label>ערך הקצאה</label><UiInput disabled value="מחושב אוטומטית" /></div>}
-          <div className="field"><label>שכר מבוטח מחושב</label><UiInput disabled value={`₪${insuredSalary.toLocaleString("he-IL")}`} /></div>
-          {context === "employee" ? <><div className="field"><label>גוף מוסדי</label><UiInput disabled={!editable} maxLength={160} value={product.institutionalBody ?? ""} onChange={(e) => updateProduct(index, { institutionalBody: e.target.value })} /></div><div className="field"><label>יצרן</label><UiInput disabled={!editable} maxLength={160} value={product.manufacturer ?? ""} onChange={(e) => updateProduct(index, { manufacturer: e.target.value })} /></div><div className="field"><label>תחילת תוקף *</label><UiDateInput disabled={!editable} value={product.effectiveFrom ?? ""} onValueChange={(value) => updateProduct(index, { effectiveFrom: value })} /></div><div className="field"><label>סיום תוקף</label><UiDateInput disabled={!editable} min={product.effectiveFrom || undefined} value={product.effectiveTo ?? ""} onValueChange={(value) => updateProduct(index, { effectiveTo: value || null })} /></div></> : null}
-          <div className="field"><label>{context === "employee" ? "סוג תקבול ברירת מחדל *" : "סוג תקבול *"}</label><EmployerInterfaceOptionSelect category="receipt-type" value={Number(product.reportingType) || null} disabled={!editable} required suppliedOptions={interfaceOptions("receipt-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { reportingType: value == null ? "" : String(value) })} /></div>
+          {allocationType === 4
+            ? <ReadOnlyField label="ערך הקצאה" value="מחושב אוטומטית" />
+            : allocationType === 1
+              ? <ReadOnlyField label={allocationValueLabel(allocationType)} value={formatShekels(monthlySalary)} hint="לפי השכר החודשי" />
+              : <div className="field"><label>{allocationValueLabel(allocationType)} *</label><UiInput disabled={!editable} type="number" min="0" max={allocationType === 2 ? 100 : undefined} step="0.01" value={product.salaryAllocationValue ?? ""} onChange={(e) => updateProduct(index, { salaryAllocationValue: Number(e.target.value) })} /></div>}
+          <ReadOnlyField label="שכר מבוטח מחושב" value={formatShekels(insuredSalary)} />
           <div className="field"><label>רובד שכר *</label><SalaryLayerSelect disabled={!editable} value={product.salaryLayer} suppliedOptions={referenceData?.salaryLayers ?? []} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { salaryLayer: value })} /></div>
+
+          <h4 className="product-fields-heading">דיווח וסעיף 14</h4>
+          <div className="field"><label>{context === "employee" ? "סוג תקבול ברירת מחדל *" : "סוג תקבול *"}</label><EmployerInterfaceOptionSelect category="receipt-type" value={Number(product.reportingType) || null} disabled={!editable} required suppliedOptions={interfaceOptions("receipt-type")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => updateProduct(index, { reportingType: value == null ? "" : String(value) })} /></div>
           <div className="field"><label>סעיף 14 *</label><EmployerInterfaceOptionSelect category="section14-code" value={section14Code} disabled={!editable} required suppliedOptions={interfaceOptions("section14-code")} suppliedLoading={referenceDataLoading} suppliedError={referenceDataError} onChange={(value) => { const code = Number(value ?? 3) as Section14Code; updateProduct(index, { section14Code: code, section14: code === 1 || code === 2, section14StartDate: code === 2 || code === 4 ? product.section14StartDate : null }); }} /></div>
-          <div className="field"><label>תאריך תחולה/ביטול סעיף 14{section14DateRequired ? " *" : ""}</label><UiDateInput disabled={!editable || !section14DateRequired} required={section14DateRequired} value={section14DateRequired ? product.section14StartDate ?? "" : ""} onValueChange={(value) => updateProduct(index, { section14StartDate: value || null })} /></div>
+          {/* The date only applies to codes that start or cancel section 14 from a specific date. */}
+          {section14DateRequired ? <div className="field"><label>תאריך תחולה/ביטול סעיף 14 *</label><UiDateInput disabled={!editable} required value={product.section14StartDate ?? ""} onValueChange={(value) => updateProduct(index, { section14StartDate: value || null })} /></div> : null}
         </div>
-        {renderProductExtra?.(product, index)}
         <div className="contribution-grid"><ContributionEditor context={context} title="הפקדות מעסיק" party="employer" product={product} items={product.employerContributions} contributionLimits={referenceData?.contributionLimits ?? []} editable={editable} onChange={(component, key, value) => updateContribution(index, "employerContributions", component, key, value)} /><ContributionEditor context={context} title="הפקדות עובד" party="employee" product={product} items={product.employeeContributions} contributionLimits={referenceData?.contributionLimits ?? []} editable={editable} onChange={(component, key, value) => updateContribution(index, "employeeContributions", component, key, value)} /></div>
+        {renderProductExtra?.(product, index)}
       </section>;
     })}</div>
-    {editable && allowAdd ? <button className="btn btn-soft wide" onClick={() => onProductsChange([...products, createEmptyPensionEditorProduct(context, products.length, month)])}><Plus size={15} />הוספת מוצר</button> : null}
+    {editable && allowAdd ? <button className="btn btn-soft wide product-editor-add" onClick={addProduct}><Plus size={15} />הוספת מוצר</button> : null}
   </>;
+}
+
+function formatShekels(value: number) {
+  return `₪${(Number.isFinite(value) ? value : 0).toLocaleString("he-IL", { maximumFractionDigits: 2 })}`;
+}
+
+/** A computed value shown in the field grid: labelled like a field, but clearly not editable. */
+function ReadOnlyField({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
+  const id = useId();
+  return <div className="field">
+    <label htmlFor={id}>{label}</label>
+    <output id={id} className="field-readonly">{value}{hint ? <small>{hint}</small> : null}</output>
+  </div>;
 }
 
 function ContributionEditor({ context, title, party, product, items, contributionLimits, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; contributionLimits: PensionEditorContributionLimit[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
