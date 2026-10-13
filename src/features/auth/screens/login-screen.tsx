@@ -1,7 +1,7 @@
 "use client";
 
 import { UiInput } from "@/components/ui/ui-controls";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -13,6 +13,7 @@ import { loginSchema, OTP_CODE_PATTERN, type LoginValues } from "@/features/auth
 import { Field } from "@/components/forms/form-feedback";
 import { digitsOnly } from "@/lib/forms/input-masks";
 import { INVALID_FORM_MESSAGE, useZodForm } from "@/lib/forms/use-zod-form";
+import { resolveSession } from "@/features/auth/restore-session";
 import { announceSignIn } from "@/lib/session/lifecycle";
 import { setSession } from "@/lib/session/storage";
 
@@ -26,6 +27,20 @@ export default function LoginPage() {
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [loading, setLoading] = useState(false);
   const [nextSendAt, setNextSendAt] = useState(0);
+
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // A returning user whose session cookie is still valid goes straight in;
+  // everyone else (no session, or the check failed) gets the form.
+  useEffect(() => {
+    let active = true;
+    void resolveSession().then((resolved) => {
+      if (!active) return;
+      if (resolved.status === "authenticated") router.replace("/dashboard");
+      else setCheckingSession(false);
+    });
+    return () => { active = false; };
+  }, [router]);
 
   async function requestCode({ nationalId, phone }: LoginValues) {
     if (Date.now() < nextSendAt) {
@@ -77,7 +92,7 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <AuthBrand />
-      <section className="auth-form-wrap">
+      {checkingSession ? null : <section className="auth-form-wrap">
         <div className="auth-card">
           <h2>כניסה למערכת</h2>
           <p>{challenge ? "הזינו את הקוד בן 6 הספרות שנשלח לדוא״ל הרשום" : "התחברו כדי להמשיך לסביבת העבודה שלכם"}</p>
@@ -142,7 +157,7 @@ export default function LoginPage() {
 
           <div className="auth-footer">צריכים ליצור משתמש? <Link href="/register">להרשמה</Link></div>
         </div>
-      </section>
+      </section>}
     </main>
   );
 }

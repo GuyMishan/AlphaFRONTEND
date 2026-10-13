@@ -26,6 +26,8 @@ export type RegistrationRequest = {
 
 export const authApi = {
   refreshSession: (signal?: AbortSignal) => apiRequest<RefreshedSession>("/api/auth/session", { signal }),
+  /** Same endpoint, for a tab without session metadata: a 401 only means "not signed in", not expiry. */
+  currentSession: () => apiRequest<RefreshedSession>("/api/auth/session", { anonymous: true }),
 
   // Anonymous endpoints: a 401 means wrong details or code, not an expired session.
   requestLoginCode: (nationalId: string, phone: string) =>

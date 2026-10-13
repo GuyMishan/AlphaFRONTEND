@@ -69,6 +69,7 @@ ScopeController resolves the working organization/employer for each page and pub
 
 - The token exists only in the HttpOnly, `SameSite=Strict`, `Secure` (production) cookie. JavaScript stores only display metadata (`sessionStorage`), never tokens.
 - Logout and expiry (`src/lib/session/lifecycle.ts`) clear session storage and the whole Query cache, call `/api/session/logout` (which revokes the backend session and clears the cookie), and perform a full navigation. Signing in as a different user also clears the cache.
+- A tab without session metadata (new tab, reopened browser) asks the backend once per page load whether the cookie is valid (`resolveSession`, `src/features/auth/restore-session.ts`): authenticated rebuilds the metadata, 401 means sign in, and a network/server failure is reported as unavailable and retried by the next caller. The proxy answers that check with 401 itself when there is no cookie, so anonymous visitors do not use the backend's `/api/auth` rate limit.
 - Tabs share the cookie but not session metadata: sign-in/sign-out is broadcast (`BroadcastChannel("alpha-session")`), and other tabs of a signed-out or replaced user drop their local data and go to `/login`.
 - The proxy and logout route reject state-changing requests whose `Origin` does not match the host (CSRF defense on top of SameSite). The proxy only forwards `api/...` paths and rejects dot segments.
 - Navigation to a URL returned by the API (payment-provider setup) is limited to `https:` or this app's origin.
