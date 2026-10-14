@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Building2, CreditCard, FileSliders, Files, Users, WalletCards } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { EmployerDocumentsTab } from "@/features/employers/components/employer-documents-tab";
@@ -66,13 +66,9 @@ export default function EmployerProfilePage() {
   const router = useRouter();
   const [transferOpen, setTransferOpen] = useState(false);
   const { organizationId } = useUrlScope();
-  const [tab, setTab] = useState<TabKey>("general");
-  useEffect(() => {
-    const requestedTab = new URLSearchParams(window.location.search).get("tab");
-    if (requestedTab && baseTabs.some((item) => item.key === requestedTab)) {
-      setTab(requestedTab as TabKey);
-    }
-  }, []);
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const tab: TabKey = requestedTab && baseTabs.some(item => item.key === requestedTab) ? requestedTab as TabKey : "general";
 
   const queryClient = useQueryClient();
   const employerQuery = useEmployer(organizationId, id);
@@ -127,11 +123,15 @@ export default function EmployerProfilePage() {
     <AppTabs
       items={baseTabs}
       activeKey={tab}
-      onChange={setTab}
+      onChange={(next) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", next);
+        window.history.replaceState(window.history.state, "", `${url.pathname}?${url.searchParams.toString()}`);
+      }}
       ariaLabel="פרופיל מעסיק"
     />
 
-    {tab === "general" ? <GeneralTab
+    {tab === "general" ? <GeneralTab key={`${organizationId}:${id}`}
       organizationId={organizationId}
       employer={employer}
       canEdit={capabilities.canEditEmployer}
@@ -149,7 +149,7 @@ export default function EmployerProfilePage() {
       canCreate={capabilities.canCreateEmployee}
     /> : null}
 
-    {tab === "pension-payment" ? <PensionPaymentTab
+    {tab === "pension-payment" ? <PensionPaymentTab key={`${organizationId}:${id}`}
       organizationId={organizationId}
       employerId={employer.id}
       canManage={capabilities.canManageEmployer}
@@ -160,7 +160,7 @@ export default function EmployerProfilePage() {
       onModeSaved={(pensionPayment) => setSettings((current) => ({ ...current, pensionPayment }))}
     /> : null}
 
-    {tab === "billing" ? <div className="employer-profile-stack">
+    {tab === "billing" ? <div key={`${organizationId}:${id}`} className="employer-profile-stack">
       {singleEmployerUser && entitlements ? <SubscriptionBillingPanel
         organizationId={organizationId}
         employerId={employer.id}
@@ -179,7 +179,7 @@ export default function EmployerProfilePage() {
       />
     </div> : null}
 
-    {tab === "reporting" ? <ReportingTab
+    {tab === "reporting" ? <ReportingTab key={`${organizationId}:${id}`}
       organizationId={organizationId}
       employerId={employer.id}
       canEdit={capabilities.canEditEmployer}

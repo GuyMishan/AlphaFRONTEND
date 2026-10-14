@@ -12,13 +12,14 @@ type FormSelectProps<TValues extends FieldValues> = Omit<ComponentProps<typeof U
 };
 
 /**
- * UiSelect bound to a react-hook-form field. UiSelect renders its trigger label
- * from `value`, so it must be controlled; `register()` alone would leave it blank.
+ * UiSelect bound to a react-hook-form field, including numeric enum values and
+ * the ref used to focus the visible control after validation fails.
  */
 export function FormSelect<TValues extends FieldValues>({ control, name, numeric = false, ...props }: FormSelectProps<TValues>) {
-  const { field: { name: fieldName, value, onBlur, onChange } } = useController({ control, name });
+  const { field: { name: fieldName, value, onBlur, onChange, ref } } = useController({ control, name });
   return <UiSelect
     {...props}
+    ref={ref}
     name={fieldName}
     value={value ?? ""}
     onBlur={onBlur}

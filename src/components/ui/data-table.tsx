@@ -64,7 +64,7 @@ export function DataTable<T>({
     () => new Set(defaultExpandedRowKeys),
   );
   const activeExpandedKeys = expandedRowKeys ?? internalExpandedKeys;
-  const rowCanExpand = (item: T) => Boolean(expandedRowComponent && (!canExpandRow || canExpandRow(item)));
+  const rowCanExpand = useCallback((item: T) => Boolean(expandedRowComponent && (!canExpandRow || canExpandRow(item))), [expandedRowComponent, canExpandRow]);
   const toggleExpanded = (item: T) => {
     if (!rowCanExpand(item)) return;
     const key = rowKey(item);
@@ -110,7 +110,7 @@ export function DataTable<T>({
       result.push(result[result.length - 1] + rowHeight + panelHeight);
     }
     return result;
-  }, [items, rowHeight, rowKey, expandedRowComponent, expandedRowComponentSize, activeExpandedKeys]);
+  }, [items, rowHeight, rowKey, rowCanExpand, expandedRowComponentSize, activeExpandedKeys]);
 
   // First row whose bottom extends past the requested pixel offset.
   const indexAtOffset = (offset: number) => {
@@ -163,7 +163,7 @@ export function DataTable<T>({
             {visibleItems.map((item, offset) => {
               const key = rowKey(item);
               const index = firstRenderIndex + offset;
-              const expanded = Boolean(expandedRowComponent && activeExpandedKeys.has(key));
+              const expanded = Boolean(rowCanExpand(item) && activeExpandedKeys.has(key));
               const panelHeight = expanded ? Math.max(1, typeof expandedRowComponentSize === "function"
                 ? expandedRowComponentSize(item) : expandedRowComponentSize) : 0;
               const panelId = `${tableId}-expanded-${index}`;

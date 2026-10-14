@@ -9,7 +9,6 @@ import {
   useId,
   useState,
   type ButtonHTMLAttributes,
-  type CSSProperties,
   type ForwardedRef,
   type RefObject,
   type InputHTMLAttributes,
@@ -19,6 +18,8 @@ import {
 } from "react";
 import { CalendarDays, ChevronDown, EllipsisVertical, X } from "lucide-react";
 import { createPortal } from "react-dom";
+import { LoadingState } from "@/components/loading/loading-state";
+import { nextEnabledOption, useFloatingMenu } from "@/components/ui/floating-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { formatDateDDMMYYYY, normalizeDDMMYYYYInput, parseDDMMYYYY } from "@/lib/format/date";
 
@@ -68,6 +69,13 @@ export const UiCheckbox = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<
   },
 );
 
+function formatDateInputValue(raw: string | null | undefined, isMonth: boolean) {
+  if (!raw) return "";
+  if (!isMonth) return formatDateDDMMYYYY(raw);
+  const [year, month] = raw.slice(0, 7).split("-");
+  return year && month ? `${month}/${year}` : "";
+}
+
 export function UiDateInput({
   value,
   onValueChange,
@@ -77,6 +85,7 @@ export function UiDateInput({
   controlSize = "default",
   onBlur,
   disabled,
+  readOnly,
   mode = "day",
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "defaultValue" | "onChange" | "min" | "max"> & {
@@ -91,17 +100,9 @@ export function UiDateInput({
   const textRef = useRef<HTMLInputElement>(null);
   useFieldLabelLink(textRef);
   const isMonth = mode === "month";
-  const formatValue = (raw?: string | null) => {
-    if (!raw) return "";
-    if (isMonth) {
-      const [year, month] = raw.slice(0, 7).split("-");
-      return year && month ? `${month}/${year}` : "";
-    }
-    return formatDateDDMMYYYY(raw);
-  };
-  const [displayValue, setDisplayValue] = useState(() => formatValue(value));
+  const [displayValue, setDisplayValue] = useState(() => formatDateInputValue(value, isMonth));
 
-  useEffect(() => { setDisplayValue(formatValue(value)); }, [value, mode]);
+  useEffect(() => { setDisplayValue(formatDateInputValue(value, isMonth)); }, [value, isMonth]);
 
   function commit(nextDisplay: string) {
     if (!nextDisplay) { onValueChange(""); return true; }
@@ -123,7 +124,7 @@ export function UiDateInput({
   }
 
   function openPicker() {
-    if (disabled) return;
+    if (disabled || readOnly) return;
     const picker = pickerRef.current;
     if (!picker) return;
     if (typeof picker.showPicker === "function") picker.showPicker();
@@ -131,7 +132,7 @@ export function UiDateInput({
   }
 
   return <div className={["ui-date-control", disabled ? "is-disabled" : "", className].filter(Boolean).join(" ")}>
-    <input {...props} ref={textRef} type="text" inputMode="numeric" dir="ltr" disabled={disabled}
+    <input {...props} ref={textRef} type="text" inputMode="numeric" dir="ltr" disabled={disabled} readOnly={readOnly}
       placeholder={props.placeholder ?? (isMonth ? "חודש/שנה" : "יום/חודש/שנה")}
       maxLength={isMonth ? 7 : 10} value={displayValue}
       className={controlClass("ui-control ui-date-text", controlSize)}
@@ -144,7 +145,7 @@ export function UiDateInput({
         if (!commit(displayValue)) { onValueChange(""); setDisplayValue(""); }
         onBlur?.(event);
       }} />
-    {!disabled ? <>
+    {!disabled && !readOnly ? <>
       <button type="button" className="ui-date-picker-button" onClick={openPicker} aria-label={isMonth ? "פתיחת בחירת חודש" : "פתיחת לוח שנה"}><CalendarDays size={18} /></button>
       <input ref={pickerRef} type={isMonth ? "month" : "date"} tabIndex={-1} aria-hidden="true"
         className="ui-date-native-picker" value={value ?? ""} min={min} max={max}
@@ -160,69 +161,22 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
     const triggerRef = useRef<HTMLButtonElement | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
     useFieldLabelLink(triggerRef);
-    const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
     const [active, setActive] = useState(-1);
-    const [placement, setPlacement] = useState<CSSProperties>({ visibility: "hidden" });
     const menuId = useId();
     const options = Children.toArray(children).filter(isValidElement).map((child) => {
       const optionProps = child.props as { value?: string | number; children?: ReactNode; disabled?: boolean };
       return { value: String(optionProps.value ?? ""), label: optionProps.children, disabled: Boolean(optionProps.disabled) };
     });
-    const selectedValue = String(value ?? defaultValue ?? "");
+    const [uncontrolledValue, setUncontrolledValue] = useState(() => defaultValue === undefined ? undefined : String(defaultValue));
+    const selectedValue = String(value ?? uncontrolledValue ?? options[0]?.value ?? "");
     const selected = options.find((option) => option.value === selectedValue);
 
-    useEffect(() => { setMounted(true); }, []);
+    const { mounted, placement } = useFloatingMenu({
+      open, setOpen, anchorRef: triggerRef, menuRef,
+      desiredHeight: Math.min(260, Math.max(40, options.length * 40 + 14)),
+    });
     useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
-
-    useEffect(() => {
-      if (!open || !mounted) return;
-      const positionMenu = () => {
-        const rect = triggerRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        const gutter = 8;
-        const availableBelow = window.innerHeight - rect.bottom - gutter * 2;
-        const availableAbove = rect.top - gutter * 2;
-        const desired = Math.min(260, Math.max(40, options.length * 40 + 14));
-        const above = availableBelow < Math.min(desired, 170) && availableAbove > availableBelow;
-        const available = above ? availableAbove : availableBelow;
-        const maxHeight = Math.max(64, Math.min(desired, available));
-        const top = above ? Math.max(gutter, rect.top - maxHeight - 6) : rect.bottom + 6;
-        setPlacement({
-          position: "fixed", visibility: "visible", top, left: rect.left, width: rect.width,
-          maxHeight, zIndex: 6500,
-        });
-      };
-      positionMenu();
-      const onOutside = (event: PointerEvent) => {
-        const target = event.target as Node;
-        if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
-      };
-      const onFocusOutside = (event: FocusEvent) => {
-        const target = event.target as Node;
-        if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
-      };
-      const onEscape = (event: KeyboardEvent) => {
-        if (event.key === "Escape") {
-          setOpen(false);
-          triggerRef.current?.focus();
-          event.stopPropagation();
-        }
-      };
-      document.addEventListener("pointerdown", onOutside);
-      document.addEventListener("focusin", onFocusOutside);
-      document.addEventListener("keydown", onEscape, true);
-      window.addEventListener("resize", positionMenu);
-      // A scrolled modal/table may move the trigger while the list is open.
-      window.addEventListener("scroll", positionMenu, true);
-      return () => {
-        document.removeEventListener("pointerdown", onOutside);
-        document.removeEventListener("focusin", onFocusOutside);
-        document.removeEventListener("keydown", onEscape, true);
-        window.removeEventListener("resize", positionMenu);
-        window.removeEventListener("scroll", positionMenu, true);
-      };
-    }, [open, mounted, options.length]);
 
     useEffect(() => {
       if (!open) return;
@@ -232,6 +186,8 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
 
     function assignRef(node: HTMLSelectElement | null) {
       nativeRef.current = node;
+      // Form libraries focus the native ref; the visible combobox receives that focus.
+      if (node) node.focus = (options) => triggerRef.current?.focus(options);
       if (typeof forwardedRef === "function") forwardedRef(node);
       else if (forwardedRef) forwardedRef.current = node;
     }
@@ -244,12 +200,7 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
       triggerRef.current?.focus();
     }
     function moveActive(direction: number) {
-      const enabled = options.map((option, index) => option.disabled ? -1 : index).filter(index => index >= 0);
-      if (!enabled.length) return;
-      const current = enabled.indexOf(active);
-      const next = current < 0 ? (direction > 0 ? 0 : enabled.length - 1) :
-        (current + direction + enabled.length) % enabled.length;
-      setActive(enabled[next]);
+      setActive(current => nextEnabledOption(options, open ? current : options.findIndex(option => option.value === selectedValue), direction));
     }
     const keyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -257,8 +208,10 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
         if (!open) setOpen(true);
         moveActive(event.key === "ArrowDown" ? 1 : -1);
       } else if (event.key === "Enter" || event.key === " ") {
-        if (open && active >= 0 && !options[active].disabled) {
-          event.preventDefault(); choose(options[active].value);
+        if (open) {
+          event.preventDefault();
+          const option = options[active];
+          if (option && !option.disabled) choose(option.value);
         }
       } else if (event.key === "Home" && open) {
         event.preventDefault(); setActive(options.findIndex(option => !option.disabled));
@@ -268,21 +221,26 @@ export const UiSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
     };
 
     return <div className={["ui-select", open ? "is-open" : "", disabled ? "is-disabled" : "", className].filter(Boolean).join(" ")}>
-      <select ref={assignRef} value={value} defaultValue={value === undefined ? defaultValue : undefined} disabled={disabled} onChange={onChange}
+      <select ref={assignRef} value={value} defaultValue={value === undefined ? defaultValue : undefined} disabled={disabled} onChange={(event) => {
+        if (value === undefined) setUncontrolledValue(event.target.value);
+        onChange?.(event);
+      }}
         className="ui-select-native" tabIndex={-1} aria-hidden="true" {...props}>{children}</select>
       <button ref={triggerRef} type="button" className={controlClass("ui-control ui-select-trigger", controlSize)} disabled={disabled}
         role="combobox" aria-label={props["aria-label"]} aria-labelledby={props["aria-labelledby"]} aria-describedby={props["aria-describedby"]}
         aria-invalid={props["aria-invalid"]} aria-required={props.required || props["aria-required"] || undefined}
         aria-haspopup="listbox" aria-controls={open ? menuId : undefined} aria-expanded={open}
-        aria-activedescendant={open && active >= 0 ? `${menuId}-option-${active}` : undefined} onKeyDown={keyDown}
+        aria-activedescendant={open && options[active] ? `${menuId}-option-${active}` : undefined} onKeyDown={keyDown}
         onClick={() => {
-          setActive(Math.max(0, options.findIndex(option => option.value === selectedValue && !option.disabled)));
+          const selectedIndex = options.findIndex(option => option.value === selectedValue && !option.disabled);
+          setActive(selectedIndex >= 0 ? selectedIndex : nextEnabledOption(options, -1, 1));
           setOpen(current => !current);
         }}>
         <span>{selected?.label ?? ""}</span><ChevronDown size={17} />
       </button>
       {open && mounted && !disabled ? createPortal(
         <div ref={menuRef} id={menuId} className="ui-select-menu ui-select-menu-portal" role="listbox" style={placement}
+          onClick={event => event.stopPropagation()}
           aria-label={props["aria-label"]}>
           {options.map((option, index) => <button key={option.value} id={`${menuId}-option-${index}`} type="button" role="option"
             aria-selected={option.value === selectedValue} tabIndex={-1}
@@ -314,67 +272,11 @@ export function UiActionMenu({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
-  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
-  const [placement, setPlacement] = useState<CSSProperties>({ visibility: "hidden" });
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (!open || !mounted) return;
-    const positionMenu = () => {
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const gutter = 8;
-      const width = Math.min(260, Math.max(220, window.innerWidth - gutter * 2));
-      const desiredHeight = Math.max(48, items.length * 42 + 14);
-      const below = window.innerHeight - rect.bottom - gutter * 2;
-      const above = rect.top - gutter * 2;
-      const openAbove = below < desiredHeight && above >= desiredHeight;
-      const left = Math.min(
-        Math.max(gutter, rect.right - width),
-        Math.max(gutter, window.innerWidth - width - gutter),
-      );
-      setPlacement({
-        position: "fixed",
-        visibility: "visible",
-        top: openAbove ? Math.max(gutter, rect.top - desiredHeight - 6) : rect.bottom + 6,
-        left,
-        width,
-        zIndex: 7000,
-      });
-    };
-
-    positionMenu();
-    const outsidePointer = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
-    };
-    const outsideFocus = (event: FocusEvent) => {
-      const target = event.target as Node;
-      if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setOpen(false);
-      triggerRef.current?.focus();
-      event.preventDefault();
-      event.stopPropagation();
-    };
-
-    document.addEventListener("pointerdown", outsidePointer);
-    document.addEventListener("focusin", outsideFocus);
-    document.addEventListener("keydown", escape, true);
-    window.addEventListener("resize", positionMenu);
-    window.addEventListener("scroll", positionMenu, true);
-    return () => {
-      document.removeEventListener("pointerdown", outsidePointer);
-      document.removeEventListener("focusin", outsideFocus);
-      document.removeEventListener("keydown", escape, true);
-      window.removeEventListener("resize", positionMenu);
-      window.removeEventListener("scroll", positionMenu, true);
-    };
-  }, [open, mounted, items.length]);
+  const { mounted, placement } = useFloatingMenu({
+    open, setOpen, anchorRef: triggerRef, menuRef,
+    desiredHeight: Math.max(48, items.length * 48 + 14), desiredWidth: 260,
+  });
 
   // Focus lands on the first item once the panel is positioned and visible (the panel is portaled,
   // so Tab cannot reach it). Only once per opening: repositioning on scroll must not move focus.
@@ -434,7 +336,8 @@ export function UiActionMenu({
       <EllipsisVertical size={18} />
     </button>
     {open && mounted ? createPortal(
-      <div ref={menuRef} id={menuId} className="ui-action-menu-panel" role="menu" aria-label={ariaLabel} style={placement} onKeyDown={menuKeyDown}>
+      <div ref={menuRef} id={menuId} className="ui-action-menu-panel" role="menu" aria-label={ariaLabel} style={placement} onKeyDown={menuKeyDown}
+        onClick={event => event.stopPropagation()}>
         {items.map((item) => <div key={item.key} className={item.separatorBefore ? "ui-action-menu-group-start" : undefined}>
           <button
             type="button"
@@ -500,112 +403,127 @@ export function UiCard({
 }
 
 export type UiAutocompleteOption = { value: string; label: string; disabled?: boolean };
-export function UiAutocomplete({value,onValueChange,options,loading=false,disabled=false,required=false,invalid=false,placeholder="התחילו להקליד",emptyText="לא נמצאו תוצאות.",loadingText="טוען...",ariaLabel="בחירה",maxLength,onClear,onOpenChange}:{value:string;onValueChange:(value:string)=>void;options:UiAutocompleteOption[];loading?:boolean;disabled?:boolean;required?:boolean;invalid?:boolean;placeholder?:string;emptyText?:string;loadingText?:string;ariaLabel?:string;maxLength?:number;onClear?:()=>void;onOpenChange?:(open:boolean)=>void}) {
- const [open,setOpen]=useState(false); const [active,setActive]=useState(-1); const [inputGeneration,setInputGeneration]=useState(0);
- const [mounted,setMounted]=useState(false);
- const [placement,setPlacement]=useState<CSSProperties>({visibility:"hidden"});
- const inputRef=useRef<HTMLInputElement>(null);
- const menuRef=useRef<HTMLDivElement>(null);
- const menuId=useId();
- useEffect(()=>{setMounted(true)},[]);
- useEffect(()=>{if(disabled)setOpen(false)},[disabled]);
- useEffect(()=>{onOpenChange?.(open)},[open,onOpenChange]);
- useEffect(()=>{
-   if(!open||!mounted||disabled)return;
-   const position=()=>{
-     const rect=inputRef.current?.getBoundingClientRect();
-     if(!rect)return;
-     const gutter=8;
-     const below=window.innerHeight-rect.bottom-gutter*2;
-     const above=rect.top-gutter*2;
-     const desired=Math.min(260,Math.max(64,options.length*40+14));
-     const openAbove=below<Math.min(desired,170)&&above>below;
-     const available=openAbove?above:below;
-     const height=Math.max(64,Math.min(desired,available));
-     setPlacement({
-       position:"fixed",visibility:"visible",left:rect.left,
-       top:openAbove?Math.max(gutter,rect.top-height-6):rect.bottom+6,
-       width:rect.width,maxHeight:height,zIndex:6500,
-     });
-   };
-   position();
-   const outsidePointer=(event:PointerEvent)=>{
-     const target=event.target as Node;
-     if(!inputRef.current?.parentElement?.contains(target)&&!menuRef.current?.contains(target))setOpen(false);
-   };
-   const outsideFocus=(event:FocusEvent)=>{
-     const target=event.target as Node;
-     if(!inputRef.current?.parentElement?.contains(target)&&!menuRef.current?.contains(target))setOpen(false);
-   };
-   const escape=(event:KeyboardEvent)=>{
-     if(event.key!=="Escape"||event.defaultPrevented)return;
-     setOpen(false);
-     inputRef.current?.focus();
-     event.preventDefault();
-     event.stopImmediatePropagation();
-   };
-   document.addEventListener("pointerdown",outsidePointer);
-   document.addEventListener("focusin",outsideFocus);
-   document.addEventListener("keydown",escape,true);
-   window.addEventListener("scroll",position,true);
-   window.addEventListener("resize",position);
-   return()=>{
-     document.removeEventListener("pointerdown",outsidePointer);
-     document.removeEventListener("focusin",outsideFocus);
-     document.removeEventListener("keydown",escape,true);
-     window.removeEventListener("scroll",position,true);
-     window.removeEventListener("resize",position);
-   };
- },[open,mounted,disabled,options.length]);
- useEffect(()=>{
-   if(!open||active<0)return;
-   menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]')[active]?.scrollIntoView({block:"nearest"});
- },[open,active]);
- useEffect(()=>{setActive(-1)},[options,open]);
- function clearValidationState(){const input=inputRef.current;if(!input)return;input.setCustomValidity("");input.removeAttribute("aria-invalid");input.closest(".field-invalid")?.dispatchEvent(new Event("alpha:field-valid",{bubbles:true}))}
- function choose(option:UiAutocompleteOption){
-  if(option.disabled)return;
-  clearValidationState();
-  onValueChange(option.label);
-  setOpen(false);
-  setActive(-1);
-  // Browsers can retain :user-invalid after a required autocomplete was submitted empty.
-  // Remounting the native input clears that interaction state once a valid option is selected.
-  setInputGeneration((generation)=>generation+1);
- }
- function clear(){clearValidationState();onValueChange("");onClear?.();setOpen(true);setActive(-1);requestAnimationFrame(()=>inputRef.current?.focus())}
- function keyDown(e:React.KeyboardEvent<HTMLInputElement>){
-   if(e.key==="ArrowDown"||e.key==="ArrowUp"){
-     e.preventDefault();setOpen(true);
-     const direction=e.key==="ArrowDown"?1:-1;
-     const enabled=options.map((option,index)=>option.disabled?-1:index).filter(index=>index>=0);
-     if(!enabled.length)return;
-     setActive(current=>{
-       const index=enabled.indexOf(current);
-       return enabled[index<0?(direction>0?0:enabled.length-1):(index+direction+enabled.length)%enabled.length];
-     });
-   }else if(e.key==="Enter"&&open&&active>=0&&!options[active].disabled){
-     e.preventDefault();choose(options[active]);
-   }else if(e.key==="Escape"&&open){
-     e.preventDefault();e.stopPropagation();setOpen(false);
-   }
- }
- return <div className="pension-fund-autocomplete">
-  <div className="pension-fund-search"><UiInput key={inputGeneration} ref={inputRef} disabled={disabled} aria-required={required} aria-invalid={invalid} autoComplete="off" maxLength={maxLength} value={value} placeholder={placeholder} role="combobox" aria-label={ariaLabel} aria-autocomplete="list" aria-expanded={open}
-    aria-controls={open?menuId:undefined}
-    aria-activedescendant={open&&active>=0?`${menuId}-option-${active}`:undefined} onFocus={()=>setOpen(true)} onClick={()=>setOpen(true)} onKeyDown={keyDown} onChange={e=>{clearValidationState();onValueChange(e.target.value);setOpen(true)}}/>
-   <div className="autocomplete-actions">{value&&!disabled?<button type="button" className="autocomplete-action autocomplete-clear" aria-label="ניקוי" onMouseDown={e=>e.preventDefault()} onClick={clear}><X size={16}/></button>:null}<button type="button" className="autocomplete-action autocomplete-toggle" disabled={disabled} aria-label={open?"סגירת רשימה":"פתיחת רשימה"} aria-expanded={open} onMouseDown={e=>e.preventDefault()} onClick={()=>setOpen(v=>!v)}><ChevronDown size={17}/></button></div>
-  </div>
-  {open&&mounted&&!disabled?createPortal(
-   <div ref={menuRef} id={menuId} className="pension-fund-options pension-fund-options-portal"
-     role="listbox" aria-label={ariaLabel} aria-busy={loading} style={placement}>
-     {loading?<div className="pension-fund-loading" role="status">{loadingText}</div>:
-      options.length===0?<div className="pension-fund-empty">{emptyText}</div>:
-      options.map((o,i)=><button type="button" key={o.value} id={`${menuId}-option-${i}`}
-       role="option" aria-selected={i===active} disabled={o.disabled}
-       className={`pension-fund-option${i===active?" selected":""}`}
-       onMouseDown={e=>e.preventDefault()} onMouseEnter={()=>setActive(i)}
-       onClick={()=>choose(o)}>{o.label}</button>)}
-   </div>,document.body):null}
- </div>
+
+export function UiAutocomplete({
+  value, onValueChange, options, loading = false, disabled = false, required = false,
+  invalid = false, placeholder = "התחילו להקליד", emptyText = "לא נמצאו תוצאות.",
+  loadingText = "טוען...", ariaLabel = "בחירה", maxLength, onClear, onOpenChange,
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
+  options: UiAutocompleteOption[];
+  loading?: boolean;
+  disabled?: boolean;
+  required?: boolean;
+  invalid?: boolean;
+  placeholder?: string;
+  emptyText?: string;
+  loadingText?: string;
+  ariaLabel?: string;
+  maxLength?: number;
+  onClear?: () => void;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [inputGeneration, setInputGeneration] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const suppressNextFocus = useRef(false);
+  const menuId = useId();
+  const { mounted, placement } = useFloatingMenu({
+    open, setOpen, anchorRef: inputRef, menuRef, containerRef,
+    desiredHeight: Math.min(260, Math.max(64, options.length * 40 + 14)),
+  });
+
+  useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
+  useEffect(() => { onOpenChange?.(open); }, [open, onOpenChange]);
+  useEffect(() => { setActive(-1); }, [options]);
+  useEffect(() => {
+    if (!open || active < 0) return;
+    menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]')[active]?.scrollIntoView({ block: "nearest" });
+  }, [open, active]);
+  useEffect(() => {
+    if (inputGeneration) inputRef.current?.focus({ preventScroll: true });
+  }, [inputGeneration]);
+
+  function clearValidationState() {
+    const input = inputRef.current;
+    if (!input) return;
+    input.setCustomValidity("");
+    input.removeAttribute("aria-invalid");
+    input.closest(".field-invalid")?.dispatchEvent(new Event("alpha:field-valid", { bubbles: true }));
+  }
+
+  function choose(option: UiAutocompleteOption) {
+    if (option.disabled || loading) return;
+    clearValidationState();
+    onValueChange(option.label);
+    setOpen(false);
+    setActive(-1);
+    // Remount clears native :user-invalid; restore keyboard focus without reopening the list.
+    suppressNextFocus.current = true;
+    setInputGeneration(generation => generation + 1);
+  }
+
+  function clear() {
+    clearValidationState();
+    onValueChange("");
+    onClear?.();
+    setOpen(true);
+    setActive(-1);
+    inputRef.current?.focus();
+  }
+
+  function keyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      if (!loading) setActive(current => nextEnabledOption(options, current, event.key === "ArrowDown" ? 1 : -1));
+    } else if ((event.key === "Home" || event.key === "End") && open) {
+      event.preventDefault();
+      if (!loading) setActive(nextEnabledOption(options, -1, event.key === "Home" ? 1 : -1));
+    } else if (event.key === "Enter" && open && active >= 0) {
+      event.preventDefault();
+      const option = options[active];
+      if (option) choose(option);
+    }
+  }
+
+  return <div ref={containerRef} className="pension-fund-autocomplete">
+    <div className="pension-fund-search">
+      <UiInput key={inputGeneration} ref={inputRef} disabled={disabled} aria-required={required} aria-invalid={invalid}
+        autoComplete="off" maxLength={maxLength} value={value} placeholder={placeholder} role="combobox"
+        aria-label={ariaLabel} aria-autocomplete="list" aria-expanded={open && !disabled}
+        aria-controls={open && !disabled ? menuId : undefined}
+        aria-activedescendant={open && !loading && options[active] ? menuId + "-option-" + active : undefined}
+        onFocus={() => {
+          if (suppressNextFocus.current) suppressNextFocus.current = false;
+          else setOpen(true);
+        }}
+        onClick={() => setOpen(true)} onKeyDown={keyDown}
+        onChange={event => { clearValidationState(); onValueChange(event.target.value); setOpen(true); }} />
+      <div className="autocomplete-actions">
+        {value && !disabled ? <button type="button" className="autocomplete-action autocomplete-clear" aria-label="ניקוי"
+          onMouseDown={event => event.preventDefault()} onClick={clear}><X size={16} /></button> : null}
+        <button type="button" className="autocomplete-action autocomplete-toggle" disabled={disabled}
+          aria-label={open ? "סגירת רשימה" : "פתיחת רשימה"} aria-expanded={open && !disabled}
+          onMouseDown={event => event.preventDefault()} onClick={() => setOpen(current => !current)}><ChevronDown size={17} /></button>
+      </div>
+    </div>
+    {open && mounted && !disabled ? createPortal(
+      <div ref={menuRef} id={menuId} className="pension-fund-options pension-fund-options-portal"
+        onClick={event => event.stopPropagation()}
+        role="listbox" aria-label={ariaLabel} aria-busy={loading} style={placement}>
+        {loading ? <LoadingState compact label={loadingText} />
+          : options.length === 0 ? <div className="pension-fund-empty">{emptyText}</div>
+          : options.map((option, index) => <button type="button" key={option.value} id={menuId + "-option-" + index}
+            role="option" aria-selected={index === active} disabled={option.disabled} tabIndex={-1}
+            className={"pension-fund-option" + (index === active ? " selected" : "")}
+            onMouseDown={event => event.preventDefault()} onMouseEnter={() => setActive(index)}
+            onClick={() => choose(option)}>{option.label}</button>)}
+      </div>, document.body,
+    ) : null}
+  </div>;
 }

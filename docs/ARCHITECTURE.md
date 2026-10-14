@@ -53,7 +53,7 @@ Every failure becomes one `ApiError` (`src/lib/api/errors.ts`):
 | `fieldErrors` | Field → messages for `VALIDATION_FAILED` |
 | `traceId`, `problem` | Correlation id and the full Problem Details (incl. extensions such as `limit`) |
 
-`error.message` is already user-facing Hebrew (`src/lib/api/error-messages.ts`): backend `detail` wins unless it is one of the framework's generic English defaults, then validation messages, then per-code and per-status wording. The backend currently puts validation messages only under `errors.request` (it copies the generic `detail` there too); per-field keys are part of the contract, so `applyServerErrors` and the validation bridge map them when present. Components show `errorMessage(error, fallback)` and never parse responses. The client has no UI side effects; the app shell subscribes to API errors to open the plan-upgrade dialog. A 401 ends the session once, globally.
+`error.message` is already user-facing Hebrew (`src/lib/api/error-messages.ts`): backend `detail` wins unless it is one of the framework's generic English defaults, then validation messages, then per-code and per-status wording. Backend endpoints that identify an invalid field return `errors.<field>`; request-wide validation uses `errors.request`. `applyServerErrors` and the validation bridge map field keys when present. Components show `errorMessage(error, fallback)` and never parse responses. The client has no UI side effects; the app shell subscribes to API errors to open the plan-upgrade dialog. A 401 ends the session once, globally.
 
 ## State
 
@@ -66,6 +66,8 @@ Every failure becomes one `ApiError` (`src/lib/api/errors.ts`):
 Query defaults (`src/lib/query/query-client.ts`): data revalidates when a screen mounts, no polling or focus refetch, one retry for network/timeout/5xx on queries, no automatic retry for mutations. Query keys start with the feature and include the organization (and employer) so tenants never share cache entries; mutations invalidate the keys they affect. The access scope (`/api/scope`) is cached until invalidated.
 
 ScopeController resolves the working organization/employer for each page and publishes it through `src/features/scope/scope-events.ts`; screens subscribe (or use `useEmployerScope`) and key their queries by the result.
+
+An organization without an employer clears employer-specific screen state. Local asynchronous workspaces (report wizard, expanded feedback deposits) invalidate older reads when scope or filters change; late success, error and loading updates must not overwrite the current selection. Complete employee lists are collected from the paged search endpoint, rather than relying on the legacy list endpoint's 500-row cap.
 
 ## Authentication and security
 

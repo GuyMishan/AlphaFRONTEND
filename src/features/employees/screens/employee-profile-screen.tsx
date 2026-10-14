@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { UserRound, WalletCards } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { AppTabs } from "@/components/ui/app-tabs";
@@ -23,6 +22,7 @@ const tabs = [
 
 export default function EmployeeProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const { organizationId, employerId } = useUrlScope();
   const employeeQuery = useEmployee(organizationId, employerId, id);
   const employerQuery = useEmployer(organizationId, employerId);
@@ -34,13 +34,9 @@ export default function EmployeeProfilePage() {
   const employee = ready ? employeeQuery.data : undefined;
   const employer = ready ? employerQuery.data : undefined;
   const canEditEmployee = Boolean(capabilities.data?.canEditEmployee);
-  const [tab, setTab] = useState<ProfileTab>("details");
-  useEffect(() => {
-    const requested = new URLSearchParams(window.location.search).get("tab");
-    if (requested === "documents" || requested === "mix") setTab("mix");
-  }, []);
+  const requestedTab = searchParams.get("tab");
+  const tab: ProfileTab = requestedTab === "documents" || requestedTab === "mix" ? "mix" : "details";
   function changeTab(next: string) {
-    setTab(next as ProfileTab);
     const url = new URL(window.location.href);
     url.searchParams.set("tab", next);
     window.history.replaceState(window.history.state, "", `${url.pathname}?${url.searchParams.toString()}`);
@@ -50,8 +46,8 @@ export default function EmployeeProfilePage() {
     <PageHeader title="פרופיל עובד" description={employer ? <>משויך אל <a className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}>{employer.legalName}</a></> : "פרטי העובד וההעסקה"} />
     {employee ? <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל עובד" /> : null}
     {error ? <div className="notice notice-error">{error}</div> : employee ? tab === "details"
-      ? <div className="employee-profile-layout"><EmployeeForm organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /></div>
-      : <EmployeePensionMix organizationId={organizationId} employerId={employerId} employeeId={employee.id} employee={employee} editable={canEditEmployee} />
+      ? <div className="employee-profile-layout"><EmployeeForm key={`${organizationId}:${employerId}:${id}`} organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /></div>
+      : <EmployeePensionMix key={`${organizationId}:${employerId}:${id}`} organizationId={organizationId} employerId={employerId} employeeId={employee.id} employee={employee} editable={canEditEmployee} />
       : <FormSkeleton label="טוען פרופיל..." />}
   </AppShell>;
 }

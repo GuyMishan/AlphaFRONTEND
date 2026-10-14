@@ -22,6 +22,7 @@ Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<fe
 | Path | Responsibility |
 | --- | --- |
 | `ui/ui-controls.tsx` | `UiInput`, `UiTextarea`, `UiCheckbox`, `UiDateInput` (DD/MM/YYYY), `UiSelect`, `UiAutocomplete`, `UiActionMenu`. Option lists and menus are portaled to `document.body` so modals and tables never clip them |
+| `ui/floating-menu.ts` | Shared viewport placement, outside-focus/pointer dismissal and Escape handling for select, autocomplete and action menus; enabled-option navigation |
 | `ui/app-modal.tsx` | The only dialog shell: fixed header/footer, scrollable body, nested scroll locking; cancel/back on the RTL right, positive actions on the left (`data-modal-side="positive"`) |
 | `ui/data-table.tsx` | The only table: fixed layout, windowed rows, infinite loading (`hasMore`/`onLoadMore`), optional expandable rows (`expandedRowComponent`, `canExpandRow`, `expandToggleColumnKey`); links use `DataTableLink` (no prefetch) |
 | `ui/ui-file-upload.tsx` | File picker with drag/drop, type and size checks (each caller passes the backend's limit) |
@@ -41,7 +42,7 @@ Styles (`docs/DESIGN-SYSTEM.md`): `src/styles/theme` (palette and semantic token
 | --- | --- |
 | `api/client.ts`, `api/transport.ts` | `apiRequest`, `apiBlob`, `queryString`, `subscribeToApiErrors`; same-origin transport, global 401 → session expiry |
 | `api/errors.ts`, `api/error-messages.ts` | `ApiError` (kind, status, `code`, `fieldErrors`, `traceId`, `problem`) and the Hebrew message policy |
-| `api/paging.ts` | `PagedResult` (`{ items, hasMore }`, offset paging with `skip`/`take`) |
+| `api/paging.ts` | `PagedResult` (`{ items, hasMore }`, offset paging with `skip`/`take`), `collectPages` for flows that need a complete list |
 | `query/` | `QueryClient` defaults and provider |
 | `forms/` | `useZodForm`, shared Zod rules, input masks, `applyServerErrors`, validators |
 | `format/` | Dates (DD/MM/YYYY), reporting months, money |
@@ -56,6 +57,7 @@ Server routes: `src/app/api/backend/[...path]/route.ts` (proxy) and `src/app/api
 - `organizations/` — list and creation (platform admin), profile screen, general details form, `organization-types.ts` (selectable categories).
 - `employers/` — list, creation, profile screen with tabs in `components/profile/` (general, employees, pension payment, billing, reporting); `employer-transfer-modal.tsx` (platform admin), `employer-documents-tab.tsx` + `documents-api.ts` (employer and pension-product PDF library), `employer-status.ts` (Active/Closed).
 - `employees/` — list, creation, profile; `employee-form.tsx`, `employee-pension-mix.tsx` (pension products + product documents), `excel-employee-intake.tsx`, `inline-employee-create-modal.tsx`.
+- `employeesApi.employees` collects the `/employees/search` pages, including beyond 500 rows; the report wizard and employee selectors use the complete list. Profile URL scope and tabs follow Next navigation; employee forms and employer editors are keyed by scope/entity so cached navigation cannot reuse another entity's draft.
 - `access/` — users, roles, permissions, employer assignments and invitations (`access-screen.tsx`).
 - `admin/` — platform administration: billing customers, reference-data integrations, platform users, referents (`referents-admin-tab.tsx`).
 

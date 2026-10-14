@@ -123,7 +123,10 @@ td { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
 .ui-action-menu-trigger:focus-visible { outline: var(--focus-outline); outline-offset: 2px; }
 .ui-action-menu-trigger > svg { position: absolute; inset: 50% auto auto 50%; display: block; width: 18px; height: 18px; margin: 0; transform: translate(-50%, -50%); }
 .ui-action-menu-panel {
-  overflow: visible;
+  z-index: var(--z-popover);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 7px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);

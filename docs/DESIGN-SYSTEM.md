@@ -90,6 +90,8 @@ Rules: show real loading state only, never an artificial delay. Loaders fade in 
 - **Field labels:** text inputs, textareas, date controls and `UiSelect` link themselves to the `<label>` of their `.field` (via `Field` or plain markup) after mount, which gives them an accessible name and makes label clicks focus them. Explicit `aria-label` / `aria-labelledby` win.
 - **`UiSelect`:** select-only combobox (`role="combobox"` trigger, `listbox` options, arrows/Home/End/Enter/Space/Escape).
 - **`UiAutocomplete`:** editable combobox with the same keys.
+- **Floating menus:** `src/components/ui/floating-menu.ts` shares positioning and dismissal across selects, autocompletes and action menus. Panels align to the trigger's RTL end, stay within viewport gutters, open above when needed and scroll when space is limited. Escape dismisses the panel before its parent dialog; menu clicks do not activate a containing table row. Autocomplete selection restores input focus without reopening the list.
+- **`AppTabs`:** only the selected tab is in the Tab sequence; Left/Right follow RTL order and Home/End select the first/last tab.
 - **`UiActionMenu`:** menu button; opening moves focus to the first item, arrows/Home/End move, Escape or Tab closes and returns focus to the trigger.
 - **`AppModal`:** focuses the dialog on open (unless content uses `autoFocus`), keeps Tab inside the top-most dialog, closes on Escape and restores focus to the opener.
 - **`Tooltip`:** describes its trigger (`aria-describedby`) and is dismissed with Escape; when it wraps a button or link, that element stays the only tab stop.

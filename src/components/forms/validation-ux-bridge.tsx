@@ -41,12 +41,17 @@ function productScope(scope: Element, message: string) {
   return cards[index] ?? scope;
 }
 
+function visibleFieldControl(field: HTMLElement) {
+  return field.querySelector<HTMLElement>("[role='combobox']")
+    ?? field.querySelector<HTMLElement>("input:not([type='hidden']), select, textarea");
+}
+
 function markField(field: HTMLElement, message: string) {
   field.classList.add("field-invalid");
   field.dataset.error = message;
   field.dataset.validationErrorTitle = "true";
   field.title = message;
-  const control = field.querySelector<HTMLElement>("input, select, textarea, button[role='combobox']");
+  const control = visibleFieldControl(field);
   control?.setAttribute("aria-invalid", "true");
   if (control) {
     control.dataset.validationErrorTitle = "true";
@@ -62,7 +67,7 @@ function clearField(field: HTMLElement) {
     field.removeAttribute("title");
     delete field.dataset.validationErrorTitle;
   }
-  const control = field.querySelector<HTMLElement>("input, select, textarea, button[role='combobox']");
+  const control = visibleFieldControl(field);
   control?.removeAttribute("aria-invalid");
   if (control?.dataset.validationErrorTitle === "true") {
     control.removeAttribute("title");
@@ -79,10 +84,9 @@ function splitValidationMessages(message: string) {
 }
 
 function handleNotice(element: HTMLElement) {
-  if (element.dataset.validationUxHandled === "true") return;
   const message = element.textContent?.trim();
-  if (!message) return;
-  element.dataset.validationUxHandled = "true";
+  if (!message || element.dataset.validationUxMessage === message) return;
+  element.dataset.validationUxMessage = message;
   element.style.display = "none";
 
   const baseScope = findScope(element);
@@ -157,13 +161,19 @@ export function ValidationUxBridge() {
     process();
 
     const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) for (const node of mutation.addedNodes) {
-        if (!(node instanceof HTMLElement)) continue;
-        if (node.matches(".notice.notice-error")) handleNotice(node);
-        process(node);
+      for (const mutation of mutations) {
+        // React can reuse a notice and replace only its text after the next failure.
+        const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
+        const notice = target?.closest<HTMLElement>(".notice.notice-error");
+        if (notice) handleNotice(notice);
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof HTMLElement)) continue;
+          if (node.matches(".notice.notice-error")) handleNotice(node);
+          process(node);
+        }
       }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, characterData: true, subtree: true });
 
     const clear = (event: Event) => {
       const target = event.target;

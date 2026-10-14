@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -145,6 +145,13 @@ export default function NewReportPage() {
   const [billingGate, setBillingGate] = useState<BillingGateStatus | null>(null);
   const [showBillingGateModal, setShowBillingGateModal] = useState(false);
   const scopeLoadKeyRef = useRef("");
+  const scopeLoadVersionRef = useRef(0);
+  const sourceRequestVersionRef = useRef(0);
+  const invalidateScopeReads = useCallback(() => {
+    scopeLoadKeyRef.current = "";
+    scopeLoadVersionRef.current++;
+    sourceRequestVersionRef.current++;
+  }, []);
 
   const selectedSource = useMemo(() => sourceReports.find((report) => report.id === selectedSourceReportId) ?? null, [sourceReports, selectedSourceReportId]);
   const eligibleCorrectionSources = useMemo(
@@ -161,18 +168,24 @@ export default function NewReportPage() {
     const scopeKey = `${nextScope.organizationId}:${nextScope.employerId}`;
     if (scopeLoadKeyRef.current === scopeKey) return;
     scopeLoadKeyRef.current = scopeKey;
+    const version = ++scopeLoadVersionRef.current;
+    sourceRequestVersionRef.current++;
+    setEmployer(null); setEmployees([]); setSelectedIds([]); setPaymentAccounts([]); setSelectedPaymentAccountId("");
+    setCanCreateReport(false); setCanTransmitReport(false); setShowBillingGateModal(false);
+    setAdvancing(false);
+    setLoadingSources(false); setLoadingOpenReports(false); setOpenReportsHasMore(false); setSourceHasMore(false);
     setLoading(true); setError(""); setValidationResult(null); setScope(nextScope); setManualReportId(""); setResumingDraft(false); setShowOpenReports(false); setOpenReports([]); setSelectedSourceReportId(""); setSourceReports([]); setExcelIntake(null); setFileName(""); setSentExternalId(""); setBillingGate(null);
     try {
-      const [employerItem, employeePage, capabilities, profileSettings, accountRows, globalScope, draftPage] = await Promise.all([
+      const [employerItem, employeeRows, capabilities, profileSettings, accountRows, globalScope, draftPage] = await Promise.all([
         employersApi.employer(nextScope.organizationId, nextScope.employerId),
-        employeesApi.employeeSearch(nextScope.organizationId, nextScope.employerId, "", 0, 100),
+        employeesApi.employees(nextScope.organizationId, nextScope.employerId),
         employersApi.employerCapabilities(nextScope.organizationId, nextScope.employerId),
         employersApi.employerProfileCenterSettings(nextScope.organizationId, nextScope.employerId),
         paymentAccountsApi.employerPaymentAccounts(nextScope.organizationId, nextScope.employerId),
         getScopeContext(),
         manualReportsApi.openManualReports(nextScope.organizationId, nextScope.employerId),
       ]);
-      if (scopeLoadKeyRef.current !== scopeKey) return;
+      if (scopeLoadVersionRef.current !== version) return;
       setOpenReports(draftPage.items);
       setOpenReportsHasMore(draftPage.hasMore);
       setEmployer(employerItem);
@@ -181,8 +194,8 @@ export default function NewReportPage() {
       setCanManageEmployerBilling(capabilities.canManageEmployer);
       const currentOrganization = globalScope.organizations.find((item) => item.id === nextScope.organizationId);
       setCanManageOrganizationBilling(Boolean(currentOrganization?.hasOrganizationScope && currentOrganization?.canManageOrganization));
-      setEmployees(employeePage.items);
-      setSelectedIds(employeePage.items.filter((x) => x.status === 1).map((x) => x.id));
+      setEmployees(employeeRows);
+      setSelectedIds(employeeRows.filter((x) => x.status === 1).map((x) => x.id));
       setPaymentAccounts(accountRows);
       setSelectedPaymentAccountId(accountRows.find((x) => x.isDefault)?.id ?? accountRows[0]?.id ?? "");
       setShowBillingGateModal(accountRows.length === 0);
@@ -190,24 +203,28 @@ export default function NewReportPage() {
         setSalaryPaymentDate(defaultSalaryDate(month, profileSettings.reporting.defaultSalaryPaymentDay));
       }
     } catch (err) {
+      if (scopeLoadVersionRef.current !== version) return;
       scopeLoadKeyRef.current = "";
       setError(err instanceof Error ? err.message : "טעינת הנתונים נכשלה");
-    } finally { setLoading(false); }
+    } finally { if (scopeLoadVersionRef.current === version) setLoading(false); }
   }
 
   async function loadMoreOpenReports() {
     if (!scope || loadingOpenReports || !openReportsHasMore) return;
+    const version = scopeLoadVersionRef.current;
     setLoadingOpenReports(true);
     try {
       const result = await manualReportsApi.openManualReports(scope.organizationId, scope.employerId, openReports.length);
+      if (scopeLoadVersionRef.current !== version) return;
       setOpenReports((current) => [...current, ...result.items.filter((item) => !current.some((existing) => existing.id === item.id))]);
       setOpenReportsHasMore(result.hasMore);
-    } catch (err) { toast.error(err instanceof Error ? err.message : "טעינת הטיוטות נכשלה"); }
-    finally { setLoadingOpenReports(false); }
+    } catch (err) { if (scopeLoadVersionRef.current === version) toast.error(err instanceof Error ? err.message : "טעינת הטיוטות נכשלה"); }
+    finally { if (scopeLoadVersionRef.current === version) setLoadingOpenReports(false); }
   }
 
   async function resumeReportById(reportId: string) {
     if (!scope || !canCreateReport || advancing) return;
+    const version = scopeLoadVersionRef.current;
     setAdvancing(true);
     try {
       // Re-fetch and enforce scope/editable state rather than trusting stale list data.
@@ -215,6 +232,7 @@ export default function NewReportPage() {
         manualReportsApi.manualReport(scope.organizationId, scope.employerId, reportId),
         loadReportEmploymentIds(reportId),
       ]);
+      if (scopeLoadVersionRef.current !== version) return;
       if (!["1", "2", "9", "Draft", "ReadyForValidation", "Error"].includes(String(current.status)))
         throw new Error("הדיווח כבר אינו ניתן לעריכה.");
       const kind = Number(current.reportKind) as ManualReportKind;
@@ -239,8 +257,8 @@ export default function NewReportPage() {
       setStep(focusedReportProductId && depositResolvers.has(resolutionResolver) ? 3 : 2);
       toast.success("הטיוטה נטענה. ניתן להמשיך לערוך ולשמור.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "לא ניתן לפתוח את הטיוטה");
-    } finally { setAdvancing(false); }
+      if (scopeLoadVersionRef.current === version) toast.error(err instanceof Error ? err.message : "לא ניתן לפתוח את הטיוטה");
+    } finally { if (scopeLoadVersionRef.current === version) setAdvancing(false); }
   }
 
   async function resumeReport(draft: ResumableManualReport) {
@@ -249,10 +267,12 @@ export default function NewReportPage() {
 
   async function loadSources(reset = true, search = sourceSearch) {
     if (!scope) return;
+    const version = ++sourceRequestVersionRef.current;
     setLoadingSources(true);
     try {
       const skip = reset ? 0 : sourceReports.length;
       const first = await derivedReportsApi.sourceReports(scope.organizationId, scope.employerId, search.trim(), skip, 30);
+      if (sourceRequestVersionRef.current !== version) return;
       let items = first.items;
       let hasMore = first.hasMore;
 
@@ -265,6 +285,7 @@ export default function NewReportPage() {
           const page = await derivedReportsApi.sourceReports(
             scope.organizationId, scope.employerId, search.trim(), nextSkip, 100,
           );
+          if (sourceRequestVersionRef.current !== version) return;
           items = [...items, ...page.items.filter((item) => !items.some((existing) => existing.id === item.id))];
           hasMore = page.hasMore;
           if (items.some((item) => item.id === requestedSourceReportId) || page.items.length === 0) break;
@@ -284,8 +305,8 @@ export default function NewReportPage() {
           setSelectedSourceReportId("");
         }
       }
-    } catch (err) { setError(err instanceof Error ? err.message : "טעינת הדיווחים הקודמים נכשלה"); }
-    finally { setLoadingSources(false); }
+    } catch (err) { if (sourceRequestVersionRef.current === version) setError(err instanceof Error ? err.message : "טעינת הדיווחים הקודמים נכשלה"); }
+    finally { if (sourceRequestVersionRef.current === version) setLoadingSources(false); }
   }
 
   async function loadReportEmploymentIds(reportId: string) {
@@ -322,7 +343,11 @@ export default function NewReportPage() {
         .filter(Boolean),
     );
   }, []);
-  useEffect(() => { const selected = getEmployerSelection(); if (selected) void loadScope(selected); else setLoading(false); }, []);
+  useEffect(() => {
+    const selected = getEmployerSelection();
+    if (selected) void loadScope(selected); else setLoading(false);
+    return invalidateScopeReads;
+  }, [invalidateScopeReads]);
   useEffect(() => {
     if (!scope || !manualReportId || !correctionWorkspaceEntry || resolutionProblemIds.length) return;
     let cancelled = false;
@@ -353,7 +378,19 @@ export default function NewReportPage() {
     resumeEntryInitialized.current = true;
     void resumeReportById(requestedResumeReportId);
   }, [scope?.organizationId, scope?.employerId, canCreateReport, requestedResumeReportId]);
-  useEffect(() => { const handler = (detail: ScopeChange) => { if (step !== 1) return; if (detail.employerId) void loadScope({ organizationId: detail.organizationId, employerId: detail.employerId }); }; const unsubscribeScope = subscribeToScopeChanges(handler); return () => unsubscribeScope(); }, [step]);
+  useEffect(() => {
+    return subscribeToScopeChanges((detail: ScopeChange) => {
+      if (step !== 1) return;
+      if (detail.employerId) {
+        void loadScope({ organizationId: detail.organizationId, employerId: detail.employerId });
+      } else {
+        invalidateScopeReads();
+        setScope(null); setEmployer(null); setEmployees([]); setSelectedIds([]);
+        setCanCreateReport(false); setCanTransmitReport(false); setLoading(false);
+        setShowBillingGateModal(false); setShowOpenReports(false); setError("");
+      }
+    });
+  }, [step, invalidateScopeReads]);
   useEffect(() => {
     if (!scope || !requestedSourceReportId || correctionEntryInitialized.current) return;
     correctionEntryInitialized.current = true;
@@ -719,7 +756,7 @@ export default function NewReportPage() {
   }
 
   const steps = isExcel ? excelSteps : manualSteps;
-  return <AppShell title="דיווח חדש" hideScopeController={step > 1}><div className={step > 1 ? "wizard wizard-wide" : "wizard"}><PageHeader title="יצירת דיווח פנסיוני" description={employer && scope ? <><Link className="profile-link" href={`/employers/${employer.id}?organizationId=${scope.organizationId}`}>{employer.legalName}</Link>{` · ח.פ. ${employer.registrationNumber}`}</> : "יש לבחור מעסיק בבורר העליון"} /><ReportTypeBanner reportKind={reportKind} source={selectedSource} month={month} correctionOperationCode={isCorrection ? correctionOperationCode : null} /><div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>{error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}{!loading && employer && !canCreateReport ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק, אך אין לך הרשאה ליצור או לערוך דיווחים.</div> : null}{loading ? <div className="card"><LoadingState label="טוען את המעסיק והעובדים..." /></div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : <section className="card">
+  return <AppShell title="דיווח חדש" hideScopeController={step > 1 || advancing || sending}><div className={step > 1 ? "wizard wizard-wide" : "wizard"}><PageHeader title="יצירת דיווח פנסיוני" description={employer && scope ? <><Link className="profile-link" href={`/employers/${employer.id}?organizationId=${scope.organizationId}`}>{employer.legalName}</Link>{` · ח.פ. ${employer.registrationNumber}`}</> : "יש לבחור מעסיק בבורר העליון"} /><ReportTypeBanner reportKind={reportKind} source={selectedSource} month={month} correctionOperationCode={isCorrection ? correctionOperationCode : null} /><div className="steps">{steps.map((label, index) => { const number = index + 1; return <div key={label} className={`step${number === step ? " current" : number < step ? " done" : ""}`}><div className="step-number">{number < step ? <Check size={16} /> : number}</div>{label}</div>; })}</div>{error ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error}</div> : null}{!loading && employer && !canCreateReport ? <div className="notice notice-info" style={{ marginBottom: 18 }}>יש לך הרשאת צפייה במעסיק, אך אין לך הרשאה ליצור או לערוך דיווחים.</div> : null}{loading ? <div className="card"><LoadingState label="טוען את המעסיק והעובדים..." /></div> : !employer ? <div className="card empty"><Info size={34} /><h3>עדיין לא נבחר מעסיק</h3><button className="btn btn-primary" onClick={() => router.push("/dashboard")}>לבחירת מעסיק</button></div> : <section className="card">
     {step === 1 ? <ReportDetails reportKind={reportKind} setReportKind={chooseKind} selectingExisting={showOpenReports} onSelectExisting={() => { setShowOpenReports(true); setError(""); }} mode={mode} setMode={chooseMode} correctionOperationCode={correctionOperationCode} setCorrectionOperationCode={setCorrectionOperationCode} month={month} setMonth={setMonth} salaryPaymentDate={salaryPaymentDate} setSalaryPaymentDate={(value) => { setSalaryPaymentDate(value); if (value) setError(""); }} showValidation={stepOneAttempted} paymentAccounts={paymentAccounts} selectedPaymentAccountId={selectedPaymentAccountId} sourceReports={isCorrection ? eligibleCorrectionSources : sourceReports} sourceSearch={sourceSearch} setSourceSearch={setSourceSearch} sourceHasMore={sourceHasMore} loadingSources={loadingSources} selectedSourceReportId={selectedSourceReportId} chooseSource={chooseSource} searchSources={() => void loadSources(true, sourceSearch)} loadMoreSources={() => void loadSources(false, sourceSearch)} /> : null}
     {step === 1 && showOpenReports && canCreateReport ? <div className="resume-report-section">
       <div id="open-report-drafts" className="resume-report-list">

@@ -18,7 +18,7 @@ export function useEmployerScope(): EmployerSelection {
     const saved = getEmployerSelection();
     if (saved) setScope(saved);
     return subscribeToScopeChanges((change) => {
-      if (change.employerId) setScope({ organizationId: change.organizationId, employerId: change.employerId });
+      setScope({ organizationId: change.organizationId, employerId: change.employerId ?? "" });
     });
   }, []);
   return scope;

@@ -1,5 +1,5 @@
 import { apiRequest, queryString } from "@/lib/api/client";
-import type { PagedResult } from "@/lib/api/paging";
+import { collectPages, type PagedResult } from "@/lib/api/paging";
 import type { Employee, EmployeeInput } from "@/features/employees/types";
 import type { EmployeePensionProduct, EmployeePensionProductInput } from "@/features/pension/types";
 
@@ -8,7 +8,7 @@ const employeesPath = (organizationId: string, employerId: string) =>
 
 export const employeesApi = {
   employees: (organizationId: string, employerId: string, signal?: AbortSignal) =>
-    apiRequest<Employee[]>(employeesPath(organizationId, employerId), { signal }),
+    collectPages((skip) => employeesApi.employeeSearch(organizationId, employerId, "", skip, 100, signal)),
   employeeSearch: (organizationId: string, employerId: string, search = "", skip = 0, take = 50, signal?: AbortSignal) =>
     apiRequest<PagedResult<Employee>>(`${employeesPath(organizationId, employerId)}/search${queryString({ search, skip, take })}`, { signal }),
   employee: (organizationId: string, employerId: string, employeeId: string, signal?: AbortSignal) =>

@@ -75,7 +75,7 @@ export default function ReportsPage() {
   const [expandedMoreLoading, setExpandedMoreLoading] = useState<Record<string, boolean>>({});
   const [expandedManufacturerInput, setExpandedManufacturerInput] = useState<Record<string, string>>({});
   const [expandedManufacturerFilter, setExpandedManufacturerFilter] = useState<Record<string, string>>({});
-  const expandedRequests = useRef(new Set<string>());
+  const expandedRequests = useRef(new Map<string, symbol>());
   const [feedbackModal, setFeedbackModal] = useState<{
     mode: ReportFeedbackModalMode;
     report?: ReportFeedbackRow;
@@ -117,8 +117,9 @@ export default function ReportsPage() {
   }
 
   async function loadExpanded(report: ReportFeedbackRow, force = false, manufacturerOverride?: string) {
-    if (!scope || expandedRequests.current.has(report.id) || (!force && expandedContent[report.id])) return;
-    expandedRequests.current.add(report.id);
+    if (!scope || (!force && (expandedRequests.current.has(report.id) || expandedContent[report.id]))) return;
+    const request = Symbol();
+    expandedRequests.current.set(report.id, request);
     setExpandedLoading((previous) => ({ ...previous, [report.id]: true }));
     setExpandedErrors((previous) => ({ ...previous, [report.id]: "" }));
     try {
@@ -126,6 +127,7 @@ export default function ReportsPage() {
       const deposits = await reportFeedbackApi.deposits(
         scope.organizationId, scope.employerId, report.id, "", 0, 100, manufacturer,
       );
+      if (expandedRequests.current.get(report.id) !== request) return;
       setExpandedContent((previous) => ({
         ...previous,
         [report.id]: {
@@ -135,15 +137,21 @@ export default function ReportsPage() {
         },
       }));
     } catch (err) {
-      setExpandedErrors((previous) => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת ההפקדות נכשלה" }));
+      if (expandedRequests.current.get(report.id) === request)
+        setExpandedErrors((previous) => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת ההפקדות נכשלה" }));
     } finally {
-      expandedRequests.current.delete(report.id);
-      setExpandedLoading((previous) => ({ ...previous, [report.id]: false }));
+      if (expandedRequests.current.get(report.id) === request) {
+        expandedRequests.current.delete(report.id);
+        setExpandedLoading((previous) => ({ ...previous, [report.id]: false }));
+        setExpandedMoreLoading((previous) => ({ ...previous, [report.id]: false }));
+      }
     }
   }
 
   async function loadMoreDeposits(report: ReportFeedbackRow) {
-    if (!scope || expandedMoreLoading[report.id] || !expandedContent[report.id]?.hasMore) return;
+    if (!scope || expandedRequests.current.has(report.id) || expandedMoreLoading[report.id] || !expandedContent[report.id]?.hasMore) return;
+    const request = Symbol();
+    expandedRequests.current.set(report.id, request);
     setExpandedMoreLoading((previous) => ({ ...previous, [report.id]: true }));
     try {
       const current = expandedContent[report.id];
@@ -156,6 +164,7 @@ export default function ReportsPage() {
         100,
         expandedManufacturerFilter[report.id] ?? "",
       );
+      if (expandedRequests.current.get(report.id) !== request) return;
       setExpandedContent((previous) => ({
         ...previous,
         [report.id]: {
@@ -165,9 +174,13 @@ export default function ReportsPage() {
         },
       }));
     } catch (err) {
-      setExpandedErrors((previous) => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת הפקדות נוספות נכשלה" }));
+      if (expandedRequests.current.get(report.id) === request)
+        setExpandedErrors((previous) => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת הפקדות נוספות נכשלה" }));
     } finally {
-      setExpandedMoreLoading((previous) => ({ ...previous, [report.id]: false }));
+      if (expandedRequests.current.get(report.id) === request) {
+        expandedRequests.current.delete(report.id);
+        setExpandedMoreLoading((previous) => ({ ...previous, [report.id]: false }));
+      }
     }
   }
 
@@ -223,11 +236,11 @@ export default function ReportsPage() {
   }
 
   useEffect(() => {
+    const requests = expandedRequests.current;
     const initial = getEmployerSelection();
     if (initial) setScope(initial);
     const handler = (detail: ScopeChange) => {
-      if (!detail.employerId) return;
-      setScope({ organizationId: detail.organizationId, employerId: detail.employerId });
+      setScope(detail.employerId ? { organizationId: detail.organizationId, employerId: detail.employerId } : null);
       setFilters({ status: "all" });
       setExtraFilters([]);
       setFeedbackModal(null);
@@ -237,12 +250,14 @@ export default function ReportsPage() {
       setExpandedKeys(new Set());
       setExpandedContent({});
       setExpandedErrors({});
+      setExpandedLoading({});
+      setExpandedMoreLoading({});
       setExpandedManufacturerInput({});
       setExpandedManufacturerFilter({});
-      expandedRequests.current.clear();
+      requests.clear();
     };
     const unsubscribeScope = subscribeToScopeChanges(handler);
-    return () => unsubscribeScope();
+    return () => { unsubscribeScope(); requests.clear(); };
   }, []);
 
 
@@ -398,6 +413,7 @@ export default function ReportsPage() {
     setError("");
     try {
       await manualReportsApi.deleteManualReport(scope.organizationId, scope.employerId, report.id);
+      expandedRequests.current.delete(report.id);
       setDeleteReport(null);
       setExpandedKeys((current) => {
         const next = new Set(current);
@@ -417,7 +433,7 @@ export default function ReportsPage() {
     }
   }
 
-  const allColumns = useMemo<Record<ColumnKey, { column: DataTableColumn; render: (row: ReportFeedbackRow) => ReactNode }>>(() => ({
+  const allColumns: Record<ColumnKey, { column: DataTableColumn; render: (row: ReportFeedbackRow) => ReactNode }> = {
     employer: { column: { key: "employer", label: "מעסיק", width: "170px" }, render: (row) => <strong>{row.employerName || "—"}</strong> },
     month: { column: { key: "month", label: "חודש", width: "110px" }, render: (row) => <strong>{formatReportingMonth(row.reportingMonth)}</strong> },
     kind: { column: { key: "kind", label: "סוג דיווח", width: "110px" }, render: (row) => reportKindLabel(row.reportKind) },
@@ -517,7 +533,7 @@ export default function ReportsPage() {
         ]}
       />
     </div> },
-  }), [expandedContent, scope, exportingReportId, correctionBusyId, router]);
+  };
 
   const activeColumns = visibleColumns.map((key) => allColumns[key].column);
 
