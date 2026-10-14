@@ -11,6 +11,7 @@ import type { ReportValidationIssue, ReportValidationResult } from "@/features/r
 
 const PAGE_SIZE = 12;
 type EmployeeLabel = { name: string; employeeNumber: string };
+type ProductLabel = { name: string; type: string };
 type GroupedRow = { key: string; employeeId: string | null; productId: string | null; issues: ReportValidationIssue[] };
 
 function groupedRows(issues: ReportValidationIssue[]): GroupedRow[] {
@@ -43,6 +44,7 @@ export function ReportValidationErrorsModal({ result, onClose, reportMonth, orga
   const [rowSearch, setRowSearch] = useState("");
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [people, setPeople] = useState<Record<string, EmployeeLabel>>({});
+  const [products, setProducts] = useState<Record<string, ProductLabel>>({});
   const [loadingPeople, setLoadingPeople] = useState(false);
   const [peopleError, setPeopleError] = useState("");
 
@@ -64,6 +66,26 @@ export function ReportValidationErrorsModal({ result, onClose, reportMonth, orga
           if (!page.hasMore || page.items.length === 0) break;
         }
         if (active) setPeople(labels);
+        // Resolve only employees actually referenced by validation issues.
+        const affectedIds = [...new Set(issues.map(issue => issue.employeeId).filter((id): id is string => Boolean(id)))];
+        const productLabels: Record<string, ProductLabel> = {};
+        await Promise.all(affectedIds.map(async id => {
+          try {
+            const detail = await manualReportsApi.manualReportEmployee(organizationId!, employerId!, reportId!, id);
+            for (const product of detail.products) {
+              const type = product.fundClassification?.trim() || ({
+                1: "קרן פנסיה", 2: "קרן השתלמות", 3: "ביטוח מנהלים", 4: "קופת גמל",
+              } as Record<number, string>)[product.productType] || "מוצר פנסיוני";
+              productLabels[product.id] = {
+                type,
+                name: product.fundName?.trim() || product.fundCompanyName?.trim() || product.policyNumber?.trim() || "מוצר ללא שם",
+              };
+            }
+          } catch {
+            // Employee names and original validation details remain available.
+          }
+        }));
+        if (active) setProducts(productLabels);
       } catch {
         if (active) setPeopleError("לא ניתן לטעון את שמות העובדים. מזהי השגיאות עדיין זמינים.");
       } finally {
@@ -80,7 +102,8 @@ export function ReportValidationErrorsModal({ result, onClose, reportMonth, orga
   const rows = selected ? groupedRows(selected.issues) : [];
   const filteredRows = rows.filter(row => {
     const label = row.employeeId ? people[row.employeeId] : null;
-    const text = [label?.name, label?.employeeNumber, row.employeeId, row.productId, ...row.issues.map(item => item.message)].join(" ").toLocaleLowerCase("he");
+    const product = row.productId ? products[row.productId] : null;
+    const text = [label?.name, label?.employeeNumber, row.employeeId, row.productId, product?.name, product?.type, ...row.issues.map(item => item.message)].join(" ").toLocaleLowerCase("he");
     return text.includes(rowSearch.trim().toLocaleLowerCase("he"));
   });
   function download() {
@@ -130,8 +153,11 @@ export function ReportValidationErrorsModal({ result, onClose, reportMonth, orga
                 <strong>{row.employeeId ? people[row.employeeId]?.name || "עובד בדיווח" : "שגיאה ברמת הדיווח"}</strong>
                 <small>{row.issues.length > 1 ? `${row.issues.length} שגיאות` : "שגיאה אחת"}</small>
               </div>
-              {row.employeeId && people[row.employeeId]?.employeeNumber ? <small>מספר עובד: {people[row.employeeId].employeeNumber}</small> : null}
-              {row.productId ? <small>מוצר בדיווח: <span dir="ltr">{row.productId.slice(0, 8)}</span></small> : null}
+              <div className="report-validation-row-meta">
+                {row.employeeId && people[row.employeeId]?.employeeNumber ? <small>עובד מס׳ {people[row.employeeId].employeeNumber}</small> : null}
+                {row.productId && products[row.productId] ? <small><strong>{products[row.productId].type}</strong> · {products[row.productId].name}</small> : null}
+                {row.productId && !products[row.productId] && !loadingPeople ? <small>מוצר בדיווח (השם אינו זמין)</small> : null}
+              </div>
               {row.issues.map((issue, index) => <div key={index} className="report-validation-row-message">
                 <AlertCircle size={15} aria-hidden="true" />
                 <span dir="auto">{issue.message}</span>
