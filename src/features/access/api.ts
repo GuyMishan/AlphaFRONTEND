@@ -36,6 +36,8 @@ export const accessApi = {
 
   accessUsers: (organizationId: string, search = "", skip = 0, take = 30, employerId = "", signal?: AbortSignal) =>
     apiRequest<PagedResult<AccessUser>>(`${organizationPath(organizationId)}/access/users${queryString({ search, skip, take, employerId })}`, { signal }),
+  updateUserType: (organizationId: string, userId: string, payload: AccessPermissions & { type: "platform" | "organization" | "employer"; employers: { employerId: string; role: EmployerRole }[] }) =>
+    apiRequest<void>(`${userPath(organizationId, userId)}/type`, { method: "PUT", body: payload }),
   updateAccessUser: (organizationId: string, userId: string, payload: AccessPermissions) =>
     apiRequest<void>(userPath(organizationId, userId), { method: "PUT", body: payload }),
   removeAccessUser: (organizationId: string, userId: string) =>
