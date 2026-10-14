@@ -51,6 +51,12 @@ const employerAccessLabels: Record<EmployerAccessMode, string> = {
   2: "מעסיקים נבחרים",
 };
 
+const userTypeOptions = [
+  { value: "platform", label: "אדמין מערכת" },
+  { value: "organization", label: "משתמש ארגון" },
+  { value: "employer", label: "משתמש מעסיק" },
+] as const;
+
 const permissionOptions = [
   { value: "1", label: "מורשה" },
   { value: "0", label: "לא מורשה" },
@@ -481,9 +487,8 @@ export default function AccessPage() {
             setPermissions(roleDefaults(role, 2));
           }
         }}>
-          {isPlatformAdmin ? <option value="platform">אדמין מערכת</option> : null}
-          <option value="organization">משתמש ארגון</option>
-          <option value="employer">משתמש מעסיק</option>
+          {userTypeOptions.filter((item) => isPlatformAdmin || item.value !== "platform")
+            .map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </UiSelect>
       </div>
       {userType === "platform" ? <div className="notice notice-info" style={{ marginBottom: 16 }}>
