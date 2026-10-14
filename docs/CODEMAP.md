@@ -47,7 +47,7 @@ Styles (`docs/DESIGN-SYSTEM.md`): `src/styles/theme` (palette and semantic token
 | `forms/` | `useZodForm`, shared Zod rules, input masks, `applyServerErrors`, validators |
 | `format/` | Dates (DD/MM/YYYY), reporting months, money |
 | `server/backend.ts` | Server-only: backend URL, session cookie, cross-site request check |
-| `download.ts`, `browser-storage.ts`, `hooks/` | `saveBlob`; Web Storage that never throws; `useDebouncedValue`, `useUrlScope`, `useLatestRequest` (drops stale replies after a scope change) |
+| `download.ts`, `browser-storage.ts`, `url-search-params.ts`, `hooks/` | `saveBlob`; Web Storage that never throws; `replaceSearchParams` (query state in sync with `useSearchParams`); `useDebouncedValue`, `useUrlScope`, `useLatestRequest` (drops stale replies after a scope change) |
 
 Server routes: `src/app/api/backend/[...path]/route.ts` (proxy) and `src/app/api/session/logout/route.ts`.
 

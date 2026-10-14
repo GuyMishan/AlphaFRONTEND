@@ -11,6 +11,7 @@ import { useZodForm } from "@/lib/forms/use-zod-form";
 import { LoadingState } from "@/components/loading/loading-state";
 import { errorMessage } from "@/lib/api/error-messages";
 import { useLatestRequest } from "@/lib/hooks/use-latest-request";
+import { replaceSearchParams } from "@/lib/url-search-params";
 
 /** The payment provider's HTTPS page, or this app itself (the development fake provider redirects back here). */
 function isAllowedPaymentRedirect(value: unknown): value is string {
@@ -127,9 +128,7 @@ export function AlphaBillingAccountForm({
     const result = url.searchParams.get("payment");
     if (!result) return;
 
-    url.searchParams.delete("payment");
-    const cleanUrl = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "") + url.hash;
-    window.history.replaceState(window.history.state, "", cleanUrl);
+    replaceSearchParams((params) => params.delete("payment"));
 
     if (result === "success") {
       toast.success("אמצעי התשלום נקלט אצל ספק הסליקה. ממתין לאישור המאומת...");

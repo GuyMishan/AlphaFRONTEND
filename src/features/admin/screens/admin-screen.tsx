@@ -7,7 +7,7 @@ import { Eye, Play, Settings2, CreditCard, Pencil, Info } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { AppModal } from "@/components/ui/app-modal";
 import { ReferentsAdminTab } from "@/features/admin/components/referents-admin-tab";
-import { AppTabs } from "@/components/ui/app-tabs";
+import { AppTabPanel, AppTabs } from "@/components/ui/app-tabs";
 import { DataTable, DataTableLink } from "@/components/ui/data-table";
 import { useBillingCustomers, useReferenceDataIntegrations, useRunReferenceDataIntegration } from "@/features/admin/queries";
 import { errorMessage } from "@/lib/api/error-messages";
@@ -190,10 +190,11 @@ export default function AdminPage() {
   return <AppShell title="מסך אדמין" hideScopeController={tab !== "subscriptions"}>
     <PageHeader title="מסך אדמין" description="ניהול ממשקי המערכת וניהול הגבייה והתמחור" />
 
-    <AppTabs items={adminTabs} activeKey={tab} onChange={setTab} ariaLabel="מסך אדמין" />
+    <AppTabs id="admin" items={adminTabs} activeKey={tab} onChange={setTab} ariaLabel="מסך אדמין" />
 
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
+    <AppTabPanel id="admin" activeKey={tab}>
     {tab === "referents" ? <ReferentsAdminTab autoCreate={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("create") === "1"} /> : tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--color-border)" }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
@@ -294,6 +295,7 @@ export default function AdminPage() {
         }}
       />
     </section>}
+    </AppTabPanel>
 
     {historyKey ? <AppModal title="דוחות הרצה" subtitle={rows.find(x => x.key === historyKey)?.name}
       onClose={() => setHistoryKey(null)} width="xl">

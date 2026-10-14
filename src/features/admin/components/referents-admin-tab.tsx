@@ -14,6 +14,7 @@ import { useScopeContext } from "@/features/scope/scope-context";
 import { errorMessage } from "@/lib/api/error-messages";
 import type { PlatformUser, Referent } from "@/features/admin/types";
 import type { ScopeOrganization } from "@/features/scope/types";
+import { replaceSearchParams } from "@/lib/url-search-params";
 
 type Editor = { kind: "existing"; referent: Referent } | { kind: "new" };
 
@@ -54,9 +55,7 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
     if (!autoCreate) return;
     openNew();
     // Avoid reopening after closing the modal or navigating between admin tabs.
-    const url = new URL(window.location.href);
-    url.searchParams.delete("create");
-    window.history.replaceState(window.history.state, "", url);
+    replaceSearchParams((params) => params.delete("create"));
   }, [autoCreate]);
 
   function openNew() {

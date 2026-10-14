@@ -1,48 +1,59 @@
 /* In-page navigation: tabs (AppTabs) and the step indicator used by wizards. */
 
-/* Tabs */
+/* Tabs (AppTabs + AppTabPanel): a segmented control on a recessed track. */
 .app-tabs {
   display: flex;
   align-items: center;
   gap: var(--space-0-5);
   flex-wrap: wrap;
-  margin-bottom: var(--space-5);
-  padding: var(--space-1);
   width: fit-content;
   max-width: 100%;
+  margin-bottom: var(--space-6);
+  padding: var(--space-1);
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-muted);
+  border-radius: var(--radius-xl);
+  background: var(--color-segmented-track);
 }
 .app-tab {
   appearance: none;
-  min-height: 40px;
+  position: relative;
+  min-height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-secondary);
   font: inherit;
   font-size: var(--text-md);
   font-weight: var(--weight-medium);
   line-height: var(--leading-snug);
+  white-space: nowrap;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard), color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
 }
-.app-tab svg { display: block; flex: 0 0 auto; }
-.app-tab:hover { color: var(--color-text); background: var(--color-surface-hover); }
-.app-tab.active,
+.app-tab svg { display: block; flex: 0 0 auto; color: var(--color-text-muted); transition: color var(--duration-fast) var(--ease-standard); }
+.app-tab:hover:not([aria-selected="true"]) { color: var(--color-heading); background: color-mix(in srgb, var(--color-segmented-selected) 55%, transparent); }
+.app-tab:hover:not([aria-selected="true"]) svg { color: var(--color-text-secondary); }
+.app-tab:active:not([aria-selected="true"]) { background: color-mix(in srgb, var(--color-segmented-selected) 80%, transparent); }
 .app-tab[aria-selected="true"] {
-  color: var(--color-primary);
-  background: var(--color-surface-raised);
-  border-color: var(--color-border);
+  color: var(--color-heading);
+  font-weight: var(--weight-semibold);
+  background: var(--color-segmented-selected);
+  border-color: var(--color-border-subtle);
   box-shadow: var(--shadow-xs);
+  cursor: default;
 }
-.app-tab:focus-visible { outline: none; border-color: var(--color-primary-solid); box-shadow: var(--focus-ring); }
+.app-tab[aria-selected="true"] svg { color: var(--color-primary); }
+.app-tab:focus-visible { outline: var(--focus-outline); outline-offset: 2px; }
+
+/* The selected panel fades in on switch; the global reduced-motion rules disable it. */
+.app-tab-panel { min-width: 0; animation: tab-panel-enter var(--duration-slow) var(--ease-out); }
+.app-tab-panel:focus-visible { outline: var(--focus-outline); outline-offset: 4px; border-radius: var(--radius-card); }
+@keyframes tab-panel-enter { from { opacity: 0; transform: translateY(4px); } }
 
 /* Step indicator */
 .steps {
@@ -74,8 +85,10 @@
 .step.done .step-number { background: var(--color-accent-soft); border-color: var(--color-accent-border); color: var(--color-accent); }
 
 @media (max-width: 760px) {
-  .app-tabs { width: 100%; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; scroll-padding-inline: var(--space-2); }
-  .app-tab { flex: 0 0 auto; white-space: nowrap; }
+  /* One scrollable row; the selected tab is scrolled into view by the keyboard handler. */
+  .app-tabs { width: 100%; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; scroll-padding-inline: var(--space-2); scrollbar-width: none; margin-bottom: var(--space-5); }
+  .app-tabs::-webkit-scrollbar { display: none; }
+  .app-tab { flex: 0 0 auto; }
   .steps {
     max-width: 100%;
     grid-template-columns: none;

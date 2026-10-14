@@ -3,7 +3,8 @@
 import { useParams, useSearchParams } from "next/navigation";
 import { UserRound, WalletCards } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
-import { AppTabs } from "@/components/ui/app-tabs";
+import { AppTabPanel, AppTabs } from "@/components/ui/app-tabs";
+import { replaceSearchParams } from "@/lib/url-search-params";
 import { EmployeeForm } from "@/features/employees/components/employee-form";
 import { EmployeePensionMix } from "@/features/employees/components/employee-pension-mix";
 import { useEmployee } from "@/features/employees/queries";
@@ -37,17 +38,17 @@ export default function EmployeeProfilePage() {
   const requestedTab = searchParams.get("tab");
   const tab: ProfileTab = requestedTab === "documents" || requestedTab === "mix" ? "mix" : "details";
   function changeTab(next: string) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", next);
-    window.history.replaceState(window.history.state, "", `${url.pathname}?${url.searchParams.toString()}`);
+    replaceSearchParams((params) => params.set("tab", next));
   }
 
   return <AppShell title="פרופיל עובד" hideScopeController>
     <PageHeader title="פרופיל עובד" description={employer ? <>משויך אל <a className="profile-link" href={`/employers/${employer.id}?organizationId=${organizationId}`}>{employer.legalName}</a></> : "פרטי העובד וההעסקה"} />
-    {employee ? <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל עובד" /> : null}
-    {error ? <div className="notice notice-error">{error}</div> : employee ? tab === "details"
-      ? <div className="employee-profile-layout"><EmployeeForm key={`${organizationId}:${employerId}:${id}`} organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /></div>
-      : <EmployeePensionMix key={`${organizationId}:${employerId}:${id}`} organizationId={organizationId} employerId={employerId} employeeId={employee.id} employee={employee} editable={canEditEmployee} />
+    {employee ? <AppTabs id="employee-profile" items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל עובד" /> : null}
+    {error ? <div className="notice notice-error">{error}</div> : employee ? <AppTabPanel id="employee-profile" activeKey={tab}>
+      {tab === "details"
+        ? <div className="employee-profile-layout"><EmployeeForm key={`${organizationId}:${employerId}:${id}`} organizationId={organizationId} employerId={employerId} employee={employee} employer={employer} editable={canEditEmployee} /></div>
+        : <EmployeePensionMix key={`${organizationId}:${employerId}:${id}`} organizationId={organizationId} employerId={employerId} employeeId={employee.id} employee={employee} editable={canEditEmployee} />}
+    </AppTabPanel>
       : <FormSkeleton label="טוען פרופיל..." />}
   </AppShell>;
 }

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Building2, CreditCard, Landmark, Users } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { DataTable, DataTableLink } from "@/components/ui/data-table";
-import { AppTabs } from "@/components/ui/app-tabs";
+import { AppTabPanel, AppTabs } from "@/components/ui/app-tabs";
+import { replaceSearchParams } from "@/lib/url-search-params";
 import { SubscriptionBillingPanel } from "@/features/billing/components/subscription-billing-panel";
 import { EmployerTransferModal } from "@/features/employers/components/employer-transfer-modal";
 import { getSession } from "@/lib/session/storage";
@@ -38,18 +39,12 @@ const tabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
 export default function OrganizationProfilePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [tab, setTab] = useState<TabKey>("general");
-  useEffect(() => {
-    const requestedTab = new URLSearchParams(window.location.search).get("tab");
-    if (requestedTab && tabs.some((item) => item.key === requestedTab)) setTab(requestedTab as TabKey);
-  }, []);
+  // The selected tab lives in the URL (?tab=), so reloads, links and back/forward keep it.
+  const requestedTab = useSearchParams().get("tab");
+  const tab: TabKey = requestedTab && tabs.some((item) => item.key === requestedTab) ? requestedTab as TabKey : "general";
 
-  function changeTab(nextTab: string) {
-    const next = nextTab as TabKey;
-    setTab(next);
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", next);
-    window.history.replaceState(window.history.state, "", url.pathname + `?${url.searchParams.toString()}` + url.hash);
+  function changeTab(next: string) {
+    replaceSearchParams((params) => params.set("tab", next));
   }
   const [receiveOpen, setReceiveOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -84,7 +79,9 @@ export default function OrganizationProfilePage() {
     <PageHeader title={profile.name} description="מרכז ניהול הארגון"
       actions={<button className="btn btn-secondary" type="button" onClick={() => router.push("/dashboard")}>חזרה לדף הבית</button>} />
 
-    <AppTabs items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל ארגון" />
+    <AppTabs id="organization-profile" items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל ארגון" />
+
+    <AppTabPanel id="organization-profile" activeKey={tab}>
 
     {tab === "general" ? <OrganizationGeneralForm profile={profile} onSaved={async () => { await load(); }} /> : null}
     {tab === "employers" ? <>
@@ -100,6 +97,7 @@ export default function OrganizationProfilePage() {
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
     {tab === "pension-payment" ? <OrganizationPensionPaymentAccount organizationId={id} canManage={profile.canManageOrganization} /> : null}
     {tab === "billing" && entitlements ? <SubscriptionBillingPanel organizationId={id} entitlements={entitlements} canManage={profile.canManageOrganization} onChanged={load} /> : null}
+    </AppTabPanel>
   </AppShell>;
 }
 

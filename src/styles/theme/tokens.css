@@ -32,6 +32,9 @@
   --color-surface-hover: var(--palette-slate-50);
   --color-surface-selected: var(--palette-blue-50);
   --color-surface-disabled: var(--palette-slate-100);
+  /* Segmented controls (AppTabs): a recessed track and a raised selected segment */
+  --color-segmented-track: var(--palette-slate-100);
+  --color-segmented-selected: var(--palette-white);
   --color-overlay: rgb(4 24 51 / 0.55);
   --color-topbar: rgb(255 255 255 / 0.86);
 
@@ -254,6 +257,8 @@ html[data-theme="dark"] {
   --color-surface-hover: var(--palette-ink-750);
   --color-surface-selected: #10264a;
   --color-surface-disabled: var(--palette-ink-850);
+  --color-segmented-track: var(--palette-ink-850);
+  --color-segmented-selected: var(--palette-ink-700);
   --color-overlay: rgb(2 6 14 / 0.72);
   --color-topbar: rgb(25 33 46 / 0.9);
 

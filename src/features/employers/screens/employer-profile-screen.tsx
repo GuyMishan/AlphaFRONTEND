@@ -7,7 +7,8 @@ import { AppShell } from "@/features/shell/components/app-shell";
 import { EmployerDocumentsTab } from "@/features/employers/components/employer-documents-tab";
 import { EmployerTransferModal } from "@/features/employers/components/employer-transfer-modal";
 import { getSession, setEmployerSelection } from "@/lib/session/storage";
-import { AppTabs } from "@/components/ui/app-tabs";
+import { AppTabPanel, AppTabs } from "@/components/ui/app-tabs";
+import { replaceSearchParams } from "@/lib/url-search-params";
 import { SubscriptionBillingPanel } from "@/features/billing/components/subscription-billing-panel";
 import { billingKeys, useEntitlements } from "@/features/billing/queries";
 import { employerKeys, useEmployer, useEmployerCapabilities, useEmployerProfileSettings } from "@/features/employers/queries";
@@ -121,16 +122,14 @@ export default function EmployerProfilePage() {
       actions={getSession()?.platformAdmin ? <button className="btn btn-secondary" type="button" onClick={() => setTransferOpen(true)}>העברה לארגון אחר</button> : null} />
 
     <AppTabs
+      id="employer-profile"
       items={baseTabs}
       activeKey={tab}
-      onChange={(next) => {
-        const url = new URL(window.location.href);
-        url.searchParams.set("tab", next);
-        window.history.replaceState(window.history.state, "", `${url.pathname}?${url.searchParams.toString()}`);
-      }}
+      onChange={(next) => replaceSearchParams((params) => params.set("tab", next))}
       ariaLabel="פרופיל מעסיק"
     />
 
+    <AppTabPanel id="employer-profile" activeKey={tab}>
     {tab === "general" ? <GeneralTab key={`${organizationId}:${id}`}
       organizationId={organizationId}
       employer={employer}
@@ -186,6 +185,7 @@ export default function EmployerProfilePage() {
       value={settings.reporting}
       onSaved={(reporting) => setSettings((current) => ({ ...current, reporting }))}
     /> : null}
+    </AppTabPanel>
 
     {getSession()?.platformAdmin ? <EmployerTransferModal open={transferOpen}
       employer={employer} onClose={() => setTransferOpen(false)}
