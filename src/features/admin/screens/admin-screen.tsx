@@ -272,6 +272,7 @@ export default function AdminPage() {
         emptyState="לא נמצאו מנויים בהתאם לסינון."
         rowKey={(item) => `${item.payerType}:${item.payerId}`}
         tableClassName="admin-subscriptions-table"
+        minTableWidth={1280}
         columns={[
           { key: "entity", label: "סוג ישות" },
           { key: "organization", label: "ארגון" },
@@ -280,7 +281,7 @@ export default function AdminPage() {
           { key: "plan", label: "מסלול" },
           { key: "price", label: "תעריף" },
           { key: "pensionPayment", label: "אמצעי תשלום פנסיוני" },
-          { key: "actions", label: "פעולות" },
+          { key: "actions", label: "פעולות", width: "360px" },
         ]}
         renderCells={(item) => {
           return [

@@ -345,7 +345,7 @@
 /* Admin */
 .admin-section-card { color: var(--color-text); }
 .admin-interfaces-table { min-width: 760px; }
-.admin-subscriptions-table { min-width: 860px; }
+.admin-subscriptions-table { min-width: 1280px; }
 
 .admin-actions { display: flex; gap: 8px; flex-wrap: nowrap; }
 .admin-actions .btn { white-space: nowrap; padding-inline: 12px; }
@@ -354,7 +354,7 @@
 .admin-run-history-table td:last-child .btn { width: 100%; padding-inline: 8px !important; }
 @media (max-width: 760px) {
   .admin-interfaces-table { min-width: 700px; }
-  .admin-subscriptions-table { min-width: 820px; }
+  .admin-subscriptions-table { min-width: 1180px; }
 }
 .user-modal {
   width: min(980px, 96vw);
@@ -455,6 +455,7 @@
   overflow: visible !important;
 }
  .admin-subscriptions-table .data-table-row > td:nth-child(4),
+.admin-subscriptions-table .data-table-row > td:nth-child(5),
 .admin-subscriptions-table .data-table-row > td:nth-child(7) {
   overflow: visible;
   position: relative;
@@ -462,6 +463,8 @@
 }
  .admin-subscriptions-table .data-table-row > td:nth-child(4):hover,
 .admin-subscriptions-table .data-table-row > td:nth-child(4):focus-within,
+.admin-subscriptions-table .data-table-row > td:nth-child(5):hover,
+.admin-subscriptions-table .data-table-row > td:nth-child(5):focus-within,
 .admin-subscriptions-table .data-table-row > td:nth-child(7):hover,
 .admin-subscriptions-table .data-table-row > td:nth-child(7):focus-within {
   z-index: 8;
