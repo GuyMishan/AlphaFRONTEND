@@ -433,7 +433,7 @@ export default function ReportsPage() {
     }
   }
 
-  const allColumns: Record<ColumnKey, { column: DataTableColumn; render: (row: ReportFeedbackRow) => ReactNode }> = {
+  const allColumns: Record<ColumnKey, { column: DataTableColumn; render: (row: ReportFeedbackRow, expandToggle?: ReactNode) => ReactNode }> = {
     employer: { column: { key: "employer", label: "מעסיק", width: "170px" }, render: (row) => <strong>{row.employerName || "—"}</strong> },
     month: { column: { key: "month", label: "חודש", width: "110px" }, render: (row) => <strong>{formatReportingMonth(row.reportingMonth)}</strong> },
     kind: { column: { key: "kind", label: "סוג דיווח", width: "110px" }, render: (row) => reportKindLabel(row.reportKind) },
@@ -460,7 +460,8 @@ export default function ReportsPage() {
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDateTimeDDMMYYYY(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt, "—")}</small></div>
       : "—" },
-    actions: { column: { key: "actions", label: "פעולות", width: "210px" }, render: (row) => <div className="report-row-actions">
+    actions: { column: { key: "actions", label: "פעולות", width: "210px" }, render: (row, expandToggle) => <div className="report-row-actions">
+      {expandToggle}
       {!row.canEdit && row.reportIssueCount > 0 ? <FeedbackErrorsButton
         compact
         label={`שגיאות · ${row.reportIssueCount}`}
@@ -652,6 +653,7 @@ export default function ReportsPage() {
         rowKey={(row) => row.id}
         tableClassName="report-feedback-table"
         expandToggleColumnKey="actions"
+        embedExpandToggle
         canExpandRow={(report) => report.feedbackStatus !== "not-sent"}
         expandedRowKeys={expandedKeys}
         expandedRowComponentSize={430}
@@ -681,7 +683,7 @@ export default function ReportsPage() {
           /> : null}
         </div>}
         columns={activeColumns}
-        renderCells={(row) => visibleColumns.map((key) => <span key={key} className="report-cell-content">{allColumns[key].render(row)}</span>)}
+        renderCells={(row, expandToggle) => visibleColumns.map((key) => <span key={key} className="report-cell-content">{allColumns[key].render(row, key === "actions" ? expandToggle : undefined)}</span>)}
       />
     </div>
 
