@@ -163,6 +163,7 @@
   .auth-brand { display: none; }
   .auth-form-wrap { padding: var(--space-10) var(--space-6); place-items: start center; border: 0; border-radius: 0; }
   .auth-mobile-brand { display: flex; margin-bottom: var(--space-12); }
+  .auth-form-wrap.auth-form-loading { place-items: center; }
 }
 @media (max-width: 640px) {
   .session-timeout-page { padding: 86px 16px 28px; }
