@@ -118,7 +118,7 @@
   text-align: start;
   transition: background-color var(--duration-fast) var(--ease-standard);
 }
-.quick-action:last-child { border-bottom-color: transparent; }
+.content-grid:not(.employer-quick-actions-wrap) .quick-action:last-child { border-bottom-color: transparent; }
 .quick-action:hover { background: var(--color-surface-hover); }
 .quick-action:focus-visible { outline: var(--focus-outline); outline-offset: 2px; }
 .quick-action-icon { width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center; border-radius: var(--radius-lg); background: var(--color-primary-soft); color: var(--color-primary); }
