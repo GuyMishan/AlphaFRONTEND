@@ -102,3 +102,5 @@ Invariants: the backend decides which groups are executable (`canExecute`), the 
 | `.github/workflows/ci.yml` | The authoritative CI sequence (same as `npm run verify`) |
 
 Reporting pre-send validation modal: `reporting/components/report-validation-errors-modal.tsx` groups by exact backend error code using `reporting/validation-groups.ts`, preserves every scoped issue in XLSX, resolves report employee names, and navigates to report/employee/product/payment editing in the wizard.
+
+User list filtering: the global platform-administrator view uses `/api/platform/users` and hides the shell scope picker; organization scope lists all non-platform users linked by membership or direct employer access, while selecting an employer returns direct employer users only. Filtering is enforced server-side for tenant-scoped users.
