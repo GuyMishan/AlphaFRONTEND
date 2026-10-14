@@ -207,7 +207,17 @@ export default function AdminPage() {
         emptyState="לא נמצאו ממשקים."
         rowKey={(row) => row.key}
         tableClassName="admin-interfaces-table"
-        columns={["ממשק","הרצה אחרונה","סטטוס","נקלטו","חדשות","עודכנו","הושבתו","פעולות"].map((label, index) => ({ key: String(index), label }))}
+        columns={[
+          { key: "interface", label: "ממשק" },
+          { key: "lastRun", label: "הרצה אחרונה" },
+          { key: "status", label: "סטטוס" },
+          { key: "received", label: "נקלטו" },
+          { key: "inserted", label: "חדשות" },
+          { key: "updated", label: "עודכנו" },
+          { key: "deactivated", label: "הושבתו" },
+          { key: "actions", label: "פעולות", width: "260px" },
+        ]}
+        minTableWidth={960}
         renderCells={(row) => [
           <span key="name"><b>{row.name}</b><span style={{ display: "block", color: "var(--color-text-muted)", fontSize: 12 }}>{row.key}</span></span>,
           formatDate(row.lastRun?.finishedAt ?? row.lastRun?.startedAt),
