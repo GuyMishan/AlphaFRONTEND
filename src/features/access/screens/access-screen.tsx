@@ -9,6 +9,7 @@ import { PlanUsage } from "@/features/billing/components/plan-usage";
 import { UserEditorModal } from "@/features/access/components/user-editor-modal";
 import { UiChoiceCard, UiInput, UiSelect } from "@/components/ui/ui-controls";
 import { accessApi } from "@/features/access/api";
+import { adminApi } from "@/features/admin/api";
 import { accessKeys, useAccessUsers, useInvitations } from "@/features/access/queries";
 import { billingKeys, useEntitlements } from "@/features/billing/queries";
 import { getScopeContext, useScopeContext } from "@/features/scope/scope-context";
@@ -16,7 +17,7 @@ import { errorMessage } from "@/lib/api/error-messages";
 import { isApiError } from "@/lib/api/errors";
 import type { PagedResult } from "@/lib/api/paging";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
-import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { getEmployerSelection, getOrganizationSelection, getSession } from "@/lib/session/storage";
 import { openUpgradeDialog } from "@/features/billing/upgrade";
 import type { AccessEmployer, AccessUser, EmployerAccessMode, EmployerOption, EmployerRole, OrganizationRole, UserInvitation } from "@/features/access/types";
@@ -92,6 +93,7 @@ export default function AccessPage() {
   const [employerId, setEmployerId] = useState("");
   const [selected, setSelected] = useState<AccessUser | null>(null);
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"scope" | "platform">("scope");
   const [error, setError] = useState("");
   const [role, setRole] = useState<OrganizationRole>(4);
   const [userType, setUserType] = useState<"platform" | "organization" | "employer">("organization");
@@ -102,13 +104,28 @@ export default function AccessPage() {
   const scope = useScopeContext();
   const organizations = useMemo(() => scope.data?.organizations ?? [], [scope.data]);
   const debouncedSearch = useDebouncedValue(search.trim(), 250);
-  const usersQuery = useAccessUsers(organizationId, employerId, debouncedSearch, PAGE_SIZE);
-  const users = useMemo(() => usersQuery.data?.pages.flatMap((page) => page.items) ?? [], [usersQuery.data]);
-  const loading = usersQuery.isLoading || usersQuery.isFetchingNextPage;
+  const usersQuery = useAccessUsers(viewMode === "scope" ? organizationId : "", viewMode === "scope" ? employerId : "", debouncedSearch, PAGE_SIZE);
+  const platformUsersQuery = useQuery({
+    queryKey: ["platform", "users", "access-management"],
+    queryFn: adminApi.platformUsers,
+    enabled: viewMode === "platform" && isPlatformAdmin,
+  });
+  const users = useMemo<AccessUser[]>(() => {
+    if (viewMode === "scope") return usersQuery.data?.pages.flatMap((page) => page.items) ?? [];
+    return (platformUsersQuery.data ?? []).filter((user) => user.isPlatformAdmin &&
+      (user.email.toLowerCase().includes(debouncedSearch.toLowerCase()) || user.displayName.toLowerCase().includes(debouncedSearch.toLowerCase())))
+      .map((user) => ({
+        membershipId: null, userId: user.id, displayName: user.displayName, email: user.email,
+        isActive: user.isActive, isPlatformAdmin: true, role: null, employerAccessMode: 2,
+        canCreateEmployer: false, canEditEmployer: false, canCreateEmployee: false,
+        canEditEmployee: false, canCreateReport: false, canTransmitReport: false, directEmployerOnly: true,
+      }));
+  }, [viewMode, usersQuery.data, platformUsersQuery.data, debouncedSearch]);
+  const loading = viewMode === "scope" ? (usersQuery.isLoading || usersQuery.isFetchingNextPage) : platformUsersQuery.isLoading;
   const entitlements = useEntitlements(organizationId).data ?? null;
   const invitations = useInvitations(organizationId).data ?? [];
   const inviteEmployers = useMemo(() => organizations.find((item) => item.id === organizationId)?.employers ?? [], [organizations, organizationId]);
-  const loadError = usersQuery.error ? errorMessage(usersQuery.error, "אין לך הרשאה לנהל משתמשים בארגון הזה") : "";
+  const loadError = (viewMode === "scope" ? usersQuery.error : platformUsersQuery.error) ? errorMessage((viewMode === "scope" ? usersQuery.error : platformUsersQuery.error), "טעינת המשתמשים נכשלה") : "";
 
   const [assigned, setAssigned] = useState<AccessEmployer[]>([]);
   const [assignedSearch, setAssignedSearch] = useState("");
@@ -258,7 +275,10 @@ export default function AccessPage() {
         employers: userType === "platform" || (userType === "organization" && accessMode === 1)
           ? [] : assigned.map(({ id, role: employerRole }) => ({ employerId: id, role: employerRole })),
       });
-      await queryClient.invalidateQueries({ queryKey: accessKeys.organization(organizationId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: accessKeys.organization(organizationId) }),
+        queryClient.invalidateQueries({ queryKey: ["platform", "users", "access-management"] }),
+      ]);
       setSelected(null);
     } catch (err) {
       setError(errorMessage(err, "שמירת ההרשאות נכשלה"));
@@ -337,7 +357,7 @@ export default function AccessPage() {
     setEmployerOptions((items) => items.map((x) => x.id === employerId ? { ...x, assigned: false } : x));
   }
 
-  return <AppShell title="משתמשים והרשאות">
+  return <AppShell title="משתמשים והרשאות" hideScopeController={viewMode === "platform"}>
     <PageHeader title="משתמשים והרשאות" description="ניהול משתמשים והרשאות לפי הארגון והמעסיק שנבחרו."
       actions={<button className="btn btn-primary" type="button" onClick={() => {
           // Internal referents are not customer seats; platform admins may choose
@@ -389,8 +409,20 @@ export default function AccessPage() {
 
       <section className="card">
         <div className="toolbar">
+          {isPlatformAdmin ? <div className="field" style={{ minWidth: 190 }}>
+            <label htmlFor="access-view-filter">הצגת משתמשים</label>
+            <UiSelect id="access-view-filter" value={viewMode} onChange={(event) => {
+              setViewMode(event.target.value as "scope" | "platform");
+              setSelected(null);
+              setSearch("");
+            }}>
+              {[{ value: "scope", label: "משתמשי ארגון ומעסיק" },
+                { value: "platform", label: "מנהלי מערכת בלבד" }].map((item) =>
+                  <option key={item.value} value={item.value}>{item.label}</option>)}
+            </UiSelect>
+          </div> : null}
           <div className="search"><Search size={17} /><UiInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="חיפוש משתמש לפי שם או אימייל" /></div>
-          <span className="badge badge-blue">{organizations.find((x) => x.id === organizationId)?.name ?? "ארגון"}</span>
+          {viewMode === "scope" ? <span className="badge badge-blue">{organizations.find((x) => x.id === organizationId)?.name ?? "ארגון"}</span> : null}
         </div>
         {loading && users.length === 0 ? <TableSkeleton columns={4} label="טוען משתמשים..." /> : users.length ? <DataTable
           items={users}
@@ -405,12 +437,12 @@ export default function AccessPage() {
           renderCells={(item) => [
             <button key="cell-553" className="table-entity-link" type="button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>{item.displayName}</button>,
             item.email,
-            item.role ? organizationRoleLabels[item.role] : "—",
-            item.directEmployerOnly ? "גישה ישירה למעסיק" : employerAccessLabels[item.employerAccessMode],
+            item.isPlatformAdmin ? "אדמין מערכת" : item.role ? organizationRoleLabels[item.role] : "—",
+            item.isPlatformAdmin ? "גישה גלובלית" : item.directEmployerOnly ? "גישה ישירה למעסיק" : employerAccessLabels[item.employerAccessMode],
           ]}
-          hasMore={Boolean(usersQuery.hasNextPage)}
-          loadingMore={usersQuery.isFetchingNextPage}
-          onLoadMore={() => { if (!usersQuery.isFetching && usersQuery.hasNextPage) void usersQuery.fetchNextPage(); }}
+          hasMore={viewMode === "scope" && Boolean(usersQuery.hasNextPage)}
+          loadingMore={viewMode === "scope" && usersQuery.isFetchingNextPage}
+          onLoadMore={() => { if (viewMode === "scope" && !usersQuery.isFetching && usersQuery.hasNextPage) void usersQuery.fetchNextPage(); }}
         /> : <div className="empty"><ShieldCheck size={34} /><div>לא נמצאו משתמשים.</div></div>}
       </section>
 
