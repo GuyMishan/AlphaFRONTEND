@@ -16,7 +16,9 @@ type Props<T> = {
   items: T[];
   columns: DataTableColumn[];
   rowKey: (item: T) => string;
-  renderCells: (item: T) => ReactNode[];
+  renderCells: (item: T, expandToggle?: ReactNode) => ReactNode[];
+  /** Let the caller place the expansion control inside its own actions content. */
+  embedExpandToggle?: boolean;
   /** Optional per-row detail panel; not mounted for rows outside the virtual viewport. */
   expandedRowComponent?: (item: T) => ReactNode;
   /** Fixed expanded panel height, or a height per row (as in the original VirtualizedList). */
@@ -53,7 +55,7 @@ export function DataTable<T>({
   expandedRowKeys, defaultExpandedRowKeys = [], onExpandedRowChange, expandOnRowClick = false,
   canExpandRow, expandToggleColumnKey,
   rowHeight = 56, maxHeight = 520, overscan = 10,
-  loadMoreThreshold = 8, tableClassName = "", wrapperClassName = "", minTableWidth, onRowClick,
+  loadMoreThreshold = 8, tableClassName = "", wrapperClassName = "", minTableWidth, onRowClick, embedExpandToggle = false,
   loading = false, loadingMore = false, loadingLabel = "טוען נתונים...",
   loadingMoreLabel = "טוען נתונים נוספים...", emptyState = "לא נמצאו נתונים.",
   hasMore = false, onLoadMore,
@@ -174,8 +176,14 @@ export function DataTable<T>({
                     if (expandOnRowClick && rowCanExpand(item) && !(event.target as HTMLElement).closest("button, a, input, select, textarea, [role='button']"))
                       toggleExpanded(item);
                   }}>
-                  {renderCells(item).map((cell, cellIndex) => {
-                    const hasToggle = Boolean(rowCanExpand(item) && (expandToggleColumnKey
+                  {renderCells(item, embedExpandToggle && rowCanExpand(item) ? <button type="button"
+                    className="data-table-expand-toggle data-table-expand-toggle-contained"
+                    aria-label={expanded ? "סגירת פרטי השורה" : "הצגת פרטי השורה"}
+                    aria-expanded={expanded} aria-controls={panelId}
+                    onClick={(event) => { event.stopPropagation(); toggleExpanded(item); }}>
+                    <ChevronDown size={16} className={expanded ? "data-table-chevron-expanded" : ""} />
+                  </button> : undefined).map((cell, cellIndex) => {
+                    const hasToggle = Boolean(!embedExpandToggle && rowCanExpand(item) && (expandToggleColumnKey
                       ? columns[cellIndex]?.key === expandToggleColumnKey : cellIndex === 0));
                     const toggle = hasToggle ? <button type="button"
                       className={`data-table-expand-toggle${expandToggleColumnKey ? " data-table-expand-toggle-contained" : ""}`}
