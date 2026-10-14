@@ -10,6 +10,7 @@ export type AccessUser = {
   displayName: string;
   email: string;
   isActive: boolean;
+  isPlatformAdmin: boolean;
   role: OrganizationRole | null;
   employerAccessMode: EmployerAccessMode;
   canCreateEmployer: boolean;

@@ -58,7 +58,7 @@ Server routes: `src/app/api/backend/[...path]/route.ts` (proxy) and `src/app/api
 - `employers/` — list, creation, profile screen with tabs in `components/profile/` (general, employees, pension payment, billing, reporting); `employer-transfer-modal.tsx` (platform admin), `employer-documents-tab.tsx` + `documents-api.ts` (employer and pension-product PDF library), `employer-status.ts` (Active/Closed).
 - `employees/` — list, creation, profile; `employee-form.tsx`, `employee-pension-mix.tsx` (pension products + product documents), `excel-employee-intake.tsx`, `inline-employee-create-modal.tsx`.
 - `employeesApi.employees` collects the `/employees/search` pages, including beyond 500 rows; the report wizard and employee selectors use the complete list. Profile URL scope and tabs follow Next navigation; employee forms and employer editors are keyed by scope/entity so cached navigation cannot reuse another entity's draft.
-- `access/` — users, roles, permissions, employer assignments and invitations (`access-screen.tsx`).
+- `access/` — users, roles, permissions, employer assignments and invitations (`access-screen.tsx`). The user editor lets authorized managers switch organization/employer access, while platform-admin assignment is restricted to existing platform admins; the backend applies transitions atomically within one organization.
 - `admin/` — platform administration: billing customers, reference-data integrations, platform users, referents (`referents-admin-tab.tsx`).
 
 ### Pension products and reference data

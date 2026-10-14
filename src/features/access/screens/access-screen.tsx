@@ -88,6 +88,7 @@ export default function AccessPage() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [role, setRole] = useState<OrganizationRole>(4);
+  const [userType, setUserType] = useState<"platform" | "organization" | "employer">("organization");
   const [accessMode, setAccessMode] = useState<EmployerAccessMode>(2);
   const [permissions, setPermissions] = useState<PermissionState>(roleDefaults(4, 2));
   const [saving, setSaving] = useState(false);
@@ -109,7 +110,6 @@ export default function AccessPage() {
   const [assignedHasMore, setAssignedHasMore] = useState(false);
   const [employerSearch, setEmployerSearch] = useState("");
   const [employerOptions, setEmployerOptions] = useState<EmployerOption[]>([]);
-  const [initialAssigned, setInitialAssigned] = useState<AccessEmployer[]>([]);
   const [assignedLoaded, setAssignedLoaded] = useState(false);
 
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -157,6 +157,7 @@ export default function AccessPage() {
   useEffect(() => {
     if (!selected) return;
     setRole(selected.role ?? 4);
+    setUserType(selected.isPlatformAdmin ? "platform" : selected.directEmployerOnly ? "employer" : "organization");
     setAccessMode(selected.employerAccessMode);
     setPermissions({
       canCreateEmployer: selected.canCreateEmployer,
@@ -170,12 +171,11 @@ export default function AccessPage() {
     setAssignedSearch("");
     setEmployerSearch("");
     setEmployerOptions([]);
-    setInitialAssigned([]);
     setAssignedLoaded(false);
   }, [selected]);
 
   useEffect(() => {
-    if (!organizationId || !selected || accessMode !== 2) {
+    if (!organizationId || !selected || (userType !== "employer" && (userType !== "organization" || accessMode !== 2))) {
       setAssigned([]);
       setAssignedHasMore(false);
       return;
@@ -188,18 +188,16 @@ export default function AccessPage() {
           if (!active) return;
           if (!assignedSearch.trim() && assignedSkip === 0) {
             setAssigned(result.items);
-            setInitialAssigned(result.items);
             setAssignedLoaded(true);
           } else if (!assignedSearch.trim() && assignedSkip > 0) {
             setAssigned((current) => [...current, ...result.items.filter((item) => !current.some((existing) => existing.id === item.id))]);
-            setInitialAssigned((current) => [...current, ...result.items.filter((item) => !current.some((existing) => existing.id === item.id))]);
           }
           setAssignedHasMore(result.hasMore);
         })
         .catch((err) => { if (active) setError(errorMessage(err, "טעינת המעסיקים המורשים נכשלה")); });
     }, 250);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [organizationId, selected, accessMode, assignedSearch, assignedSkip, assignedLoaded]);
+  }, [organizationId, selected, userType, accessMode, assignedSearch, assignedSkip, assignedLoaded]);
 
   useEffect(() => {
     if (!organizationId || !selected) {
@@ -233,41 +231,28 @@ export default function AccessPage() {
 
   async function saveAccess() {
     if (!selected) return;
+    if (userType !== "platform" &&
+        (userType === "employer" || accessMode === 2) && !assignedLoaded) {
+      setError("יש להמתין לטעינת שיוכי המעסיקים לפני שמירה.");
+      return;
+    }
+    if (userType !== "platform" &&
+        (userType === "employer" || accessMode === 2) && assigned.length === 0) {
+      setError("יש לשייך לפחות מעסיק אחד לסוג הגישה שנבחר.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
-      if (!selected.directEmployerOnly) {
-        await accessApi.updateAccessUser(organizationId, selected.userId, {
-          role,
-          employerAccessMode: accessMode,
-          ...permissions,
-        });
-      }
-
-      if (accessMode === 2) {
-        const initialById = new Map(initialAssigned.map((item) => [item.id, item]));
-        const draftById = new Map(assigned.map((item) => [item.id, item]));
-
-        for (const item of initialAssigned) {
-          if (!draftById.has(item.id)) {
-            await accessApi.revokeEmployerAccess(organizationId, selected.userId, item.id);
-          }
-        }
-        for (const item of assigned) {
-          const initial = initialById.get(item.id);
-          if (!initial) {
-            await accessApi.grantEmployerAccess(organizationId, selected.userId, item.id);
-            if (item.role !== 3) {
-              await accessApi.updateEmployerAccessRole(organizationId, selected.userId, item.id, item.role);
-            }
-          } else if (initial.role !== item.role) {
-            await accessApi.updateEmployerAccessRole(organizationId, selected.userId, item.id, item.role);
-          }
-        }
-      }
-
-      const next = selected.directEmployerOnly ? selected : { ...selected, role, employerAccessMode: accessMode, ...permissions };
-      updateCachedUsers((items) => items.map((item) => item.userId === selected.userId ? next : item));
+      await accessApi.updateUserType(organizationId, selected.userId, {
+        type: userType,
+        role,
+        employerAccessMode: accessMode,
+        ...permissions,
+        employers: userType === "platform" || (userType === "organization" && accessMode === 1)
+          ? [] : assigned.map(({ id, role: employerRole }) => ({ employerId: id, role: employerRole })),
+      });
+      await queryClient.invalidateQueries({ queryKey: accessKeys.organization(organizationId) });
       setSelected(null);
     } catch (err) {
       setError(errorMessage(err, "שמירת ההרשאות נכשלה"));
@@ -483,11 +468,29 @@ export default function AccessPage() {
         <button className="btn btn-danger" type="button" onClick={() => void removeUser()}><Trash2 size={17} />הסרת גישה</button>
         <span className="user-modal-actions-spacer" />
         <button className="btn btn-secondary" type="button" onClick={() => setSelected(null)}>סגירה</button>
-        <button className="btn btn-primary" type="button" disabled={saving} onClick={() => void saveAccess()}><Save size={17} />{saving ? "שומר..." : "שמירת הרשאות"}</button>
+        <button className="btn btn-primary" type="button" disabled={saving || (selected.isPlatformAdmin && !isPlatformAdmin)} onClick={() => void saveAccess()}><Save size={17} />{saving ? "שומר..." : "שמירת הרשאות"}</button>
       </>}
     >
-      {selected.directEmployerOnly ? <div className="notice notice-info" style={{ marginBottom: 16 }}>
-        למשתמש הזה יש גישה ישירה למעסיק בלבד, ללא תפקיד או הרשאות ברמת הארגון.
+      <div className="field" style={{ marginBottom: 16 }}>
+        <label>סוג משתמש</label>
+        <UiSelect value={userType} onChange={(event) => {
+          const next = event.target.value as "platform" | "organization" | "employer";
+          setUserType(next);
+          if (next === "organization" && selected.directEmployerOnly) {
+            setAccessMode(2);
+            setPermissions(roleDefaults(role, 2));
+          }
+        }}>
+          {isPlatformAdmin ? <option value="platform">אדמין מערכת</option> : null}
+          <option value="organization">משתמש ארגון</option>
+          <option value="employer">משתמש מעסיק</option>
+        </UiSelect>
+      </div>
+      {userType === "platform" ? <div className="notice notice-info" style={{ marginBottom: 16 }}>
+        הרשאת אדמין מערכת היא גלובלית ומאפשרת ניהול של כלל הארגונים והמעסיקים.
+        השיוכים הקיימים יישמרו לשימוש במקרה של הסרת ההרשאה בעתיד.
+      </div> : userType === "employer" ? <div className="notice notice-info" style={{ marginBottom: 16 }}>
+        גישה רק למעסיקים המשויכים להלן. חברות המשתמש בארגון הנוכחי תבוטל בעת השמירה.
       </div> : <>
         <div className="user-editor-grid">
           <div className="field">
@@ -520,7 +523,7 @@ export default function AccessPage() {
         </div>
       </>}
 
-      {accessMode === 2 ? <div className="user-employer-access-section">
+      {userType !== "platform" && (userType === "employer" || accessMode === 2) ? <div className="user-employer-access-section">
         <h3>מעסיקים מורשים</h3>
         <div className="grid two-cols">
           <div>
