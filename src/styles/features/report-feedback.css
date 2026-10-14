@@ -49,17 +49,28 @@
   .report-deposits-grid { min-width: 0; }
 }
 
-/* RTL: keep Details at the start and pin the expansion button to the far end of its cell. */
+/* All report actions, including expand/collapse, belong to the same visible cell. */
 .report-feedback-table .data-table-row > td:last-child {
   white-space: nowrap;
   text-align: right;
-  padding-left: 38px;
+  padding-inline: 8px;
 }
+.report-feedback-table .report-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+.report-feedback-table .report-row-actions > * { flex-shrink: 0; }
+.report-feedback-table .report-cell-content { display: block; min-width: 0; }
+.report-feedback-table .report-row-actions .data-table-expand-toggle { position: static; transform: none; flex: 0 0 30px; margin: 0; }
 
 /*
  * The actions column (always last; the column picker cannot hide it) stays pinned to the visible
  * inline end (left in RTL) while the wide report table scrolls horizontally underneath it.
- * Sticky also positions the absolutely placed expansion button.
+ * Expansion now lives inside the action flex layout instead of being absolutely positioned.
  */
 .report-feedback-table .data-table-row > td:last-child,
 .report-feedback-table > thead > tr > th:last-child {
@@ -77,18 +88,11 @@
 
 @media (max-width: 760px) {
   /* Narrower pinned column on phones so more report data stays visible beside it. */
-  .report-feedback-table col:last-child { width: 176px !important; }
-  .report-feedback-table .data-table-row > td:last-child { padding-inline-start: 8px; }
+  .report-feedback-table col:last-child { width: 200px !important; }
+  .report-feedback-table .data-table-row > td:last-child { padding-inline: 6px; }
   .report-feedback-table .report-row-actions { gap: 6px; }
   .report-feedback-table .report-row-actions .feedback-errors-button.compact { padding-inline: 8px; font-size: 11px; gap: 5px; }
-  .report-table-card .data-table-viewport { scroll-padding-inline-end: 184px; }
-}
-.report-feedback-table .data-table-row > td:last-child .data-table-expand-toggle {
-  position: absolute;
-  left: 3px;
-  top: 50%;
-  transform: translateY(-50%);
-  margin: 0;
+  .report-table-card .data-table-viewport { scroll-padding-inline-end: 208px; }
 }
 .report-deposits-header > *, .report-deposits-item > * { align-self: center; }
 
