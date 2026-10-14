@@ -461,7 +461,6 @@ export default function ReportsPage() {
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDateTimeDDMMYYYY(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt, "—")}</small></div>
       : "—" },
     actions: { column: { key: "actions", label: "פעולות", width: "210px" }, render: (row, expandToggle) => <div className="report-row-actions">
-      {expandToggle}
       {!row.canEdit && row.reportIssueCount > 0 ? <FeedbackErrorsButton
         compact
         label={`שגיאות · ${row.reportIssueCount}`}
@@ -533,6 +532,7 @@ export default function ReportsPage() {
           },
         ]}
       />
+      {expandToggle}
     </div> },
   };
 
