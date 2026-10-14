@@ -93,7 +93,7 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <AuthBrand />
-      {checkingSession ? <section className="auth-form-wrap"><LoadingState label="בודקים את פרטי ההתחברות..." /></section> : <section className="auth-form-wrap">
+      {checkingSession ? <section className="auth-form-wrap auth-form-loading"><LoadingState label="בודקים את פרטי ההתחברות..." /></section> : <section className="auth-form-wrap">
         <div className="auth-card">
           <AuthMobileBrand />
           <h2>כניסה למערכת</h2>
