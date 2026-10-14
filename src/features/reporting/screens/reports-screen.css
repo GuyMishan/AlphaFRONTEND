@@ -197,7 +197,7 @@
 .report-deposits-header > :last-child,
 .report-deposits-item > :last-child {
   position: sticky;
-  inset-inline-end: -12px;
+  inset-inline-end: 0;
   z-index: 2;
   min-width: 0;
   box-sizing: border-box;
