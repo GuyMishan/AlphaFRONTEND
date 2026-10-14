@@ -1,126 +1,157 @@
 "use client";
 
-import { Download, AlertCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, ChevronDown, Download, Search } from "lucide-react";
 import * as XLSX from "xlsx";
 import { AppModal } from "@/components/ui/app-modal";
+import { UiInput } from "@/components/ui/ui-controls";
+import { manualReportsApi } from "@/features/reporting/api";
+import { validationGroups, validationIssues, validationStage } from "@/features/reporting/validation-groups";
 import type { ReportValidationIssue, ReportValidationResult } from "@/features/reporting/validation-api";
 
-type FriendlyIssue = { key: string; category: string; title: string; guidance: string; original: string; code: string };
+const PAGE_SIZE = 12;
+type EmployeeLabel = { name: string; employeeNumber: string };
+type GroupedRow = { key: string; employeeId: string | null; productId: string | null; issues: ReportValidationIssue[] };
 
-function explain(issue: ReportValidationIssue, key: string): FriendlyIssue {
-  const message = issue.message || "";
-  const code = issue.code || "VALIDATION";
-  const base = { key, original: message, code };
-  if (/TA-DOAR|postal.box|post.office.box/i.test(message)) return {
-    ...base, category: "פרטי עובדים", title: "תא הדואר של אחד העובדים אינו תקין",
-    guidance: "פתחו את כרטיס העובד ובדקו את תא הדואר. אם יש כתובת רחוב מלאה ואין תא דואר, אפשר להשאיר אותו ריק. לאחר השמירה חזרו לדיווח ובצעו בדיקה חוזרת.",
-  };
-  if (/MIKUD|postal.code/i.test(message)) return {
-    ...base, category: "פרטי עובדים", title: "המיקוד של אחד העובדים אינו תקין",
-    guidance: "בדקו את המיקוד בכרטיס העובד. בממשק 006 הוא יכול להכיל עד שבע ספרות.",
-  };
-  if (/SUG-HAFRASHA.*(5-8|codes)/i.test(message)) return {
-    ...base, category: "הפקדות", title: "נבחר רכיב הפקדה שאינו מתאים לסוג הקופה",
-    guidance: "בדקו בנתוני המוצרים של העובד אם הוזנו רכיבי אובדן כושר עבודה או רכיבים אחרים לקרן פנסיה או לקופת גמל. ניתן לדווח בהן רק על רכיבים המותרים לפי ממשק 006.",
-  };
-  if (/SHIUR-HAFRASHA/i.test(message)) return {
-    ...base, category: "הפקדות", title: "חסר אחוז הפרשה ברכיב שיש בו הפקדה",
-    guidance: "פתחו את המוצר המתאים בשלב רשימת העובדים והשלימו את אחוז ההפרשה בכל רכיב מדווח שנדרש בו אחוז.",
-  };
-  if (code === "SALARY_PAYMENT_DATE_REQUIRED") return {
-    ...base, category: "פרטי הדיווח", title: "לא הוזן תאריך תשלום שכר",
-    guidance: "חזרו לפרטי הדיווח והזינו את תאריך תשלום השכר.",
-  };
-  if (code === "PAYMENT_REQUIRED" || code === "PAYMENT_VALIDATION") return {
-    ...base, category: "פרטי תשלום", title: "יש להשלים או לתקן פרטי תשלום",
-    guidance: message.startsWith("חסרים") ? message : `בדקו את פרטי התשלום בנתוני ההפקדות. ${message}`,
-  };
-  if (code === "PENSION_PRODUCT_REQUIRED") return {
-    ...base, category: "פרטי עובדים", title: "לעובד חסר מוצר פנסיוני",
-    guidance: message,
-  };
-  if (code === "EMPLOYEE_REQUIRED") return {
-    ...base, category: "רשימת עובדים", title: "לא נבחרו עובדים לדיווח",
-    guidance: message,
-  };
-  if (code === "FUND_REQUIRED") return {
-    ...base, category: "פרטי עובדים", title: "לא נבחרה קופה למוצר",
-    guidance: message,
-  };
-  const looksHebrew = /[\u0590-\u05ff]/.test(message);
-  const fieldMatch = message.match(/The '([^']+)' element is invalid/i);
-  if (fieldMatch) return {
-    ...base, category: "מבנה הדיווח", title: `יש ערך שאינו מתאים לדרישות ממשק 006 (שדה ${fieldMatch[1]})`,
-    guidance: "בדקו את הנתון המתאים בדיווח. פרטי השגיאה הטכנית מופיעים למטה וייכללו גם בקובץ להורדה.",
-  };
-  if (looksHebrew) return {
-    ...base,
-    category: issue.scope === "Payment" ? "פרטי תשלום" : issue.scope === "Employee" ? "פרטי עובדים" :
-      issue.scope === "Product" || issue.scope === "Contribution" ? "הפקדות" : "בדיקות הדיווח",
-    title: "נמצא נתון שדורש תיקון",
-    guidance: message,
-  };
-  return {
-    ...base, category: "בדיקות ממשק 006", title: "נמצא נתון שדורש בדיקה",
-    guidance: "הדיווח לא נשלח. אפשר לראות את ההודעה המקורית בפרטים הטכניים שלמטה או להוריד את כל השגיאות ולבדוק את השדות הרלוונטיים.",
-  };
+function groupedRows(issues: ReportValidationIssue[]): GroupedRow[] {
+  const map = new Map<string, GroupedRow>();
+  for (const issue of issues) {
+    const key = [issue.employeeId ?? "", issue.productId ?? ""].join(":");
+    let row = map.get(key);
+    if (!row) {
+      row = { key, employeeId: issue.employeeId ?? null, productId: issue.productId ?? null, issues: [] };
+      map.set(key, row);
+    }
+    row.issues.push(issue);
+  }
+  return [...map.values()];
 }
 
+function excelSafe(value: string) {
+  return /^[=+@\-\t\r]/.test(value) ? "'" + value : value;
+}
 
-export function ReportValidationErrorsModal({ result, onClose, reportMonth }: {
+export function ReportValidationErrorsModal({ result, onClose, reportMonth, organizationId, employerId, reportId, onEdit }: {
   result: ReportValidationResult; onClose: () => void; reportMonth: string;
+  organizationId?: string; employerId?: string; reportId?: string;
+  onEdit?: (issue: ReportValidationIssue) => void;
 }) {
-  const issues: ReportValidationIssue[] = result.issues?.length ? result.issues :
-    (result.errors ?? []).map((message) => ({ code: "VALIDATION", message, scope: "Report" }));
-  // The backend may return one message in several scopes; display each unique finding once.
-  const findings = issues.filter((issue, index, all) =>
-    all.findIndex((other) => other.code === issue.code && other.message === issue.message) === index)
-    .map((issue, index) => explain(issue, String(index)));
+  const issues = useMemo(() => validationIssues(result), [result]);
+  const groups = useMemo(() => validationGroups(issues), [issues]);
+  const [open, setOpen] = useState<string | null>(groups[0]?.code ?? null);
+  const [filter, setFilter] = useState("");
+  const [rowSearch, setRowSearch] = useState("");
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [people, setPeople] = useState<Record<string, EmployeeLabel>>({});
+  const [loadingPeople, setLoadingPeople] = useState(false);
+  const [peopleError, setPeopleError] = useState("");
 
+  useEffect(() => {
+    if (!organizationId || !employerId || !reportId || !issues.some(item => item.employeeId)) return;
+    let active = true;
+    let offset = 0;
+    setLoadingPeople(true);
+    setPeopleError("");
+    async function load() {
+      try {
+        const labels: Record<string, EmployeeLabel> = {};
+        while (active) {
+          const page = await manualReportsApi.manualReportEmployees(organizationId!, employerId!, reportId!, "", offset, 100);
+          for (const person of page.items) labels[person.id] = {
+            name: [person.firstName, person.lastName].filter(Boolean).join(" "), employeeNumber: person.employeeNumber,
+          };
+          offset += page.items.length;
+          if (!page.hasMore || page.items.length === 0) break;
+        }
+        if (active) setPeople(labels);
+      } catch {
+        if (active) setPeopleError("לא ניתן לטעון את שמות העובדים. מזהי השגיאות עדיין זמינים.");
+      } finally {
+        if (active) setLoadingPeople(false);
+      }
+    }
+    void load();
+    return () => { active = false; };
+  }, [organizationId, employerId, reportId, issues]);
+
+  const affected = new Set(issues.map(item => item.employeeId).filter(Boolean)).size;
+  const searchedGroups = groups.filter(group => (group.code + " " + group.title).toLocaleLowerCase("he").includes(filter.trim().toLocaleLowerCase("he")));
+  const selected = groups.find(group => group.code === open);
+  const rows = selected ? groupedRows(selected.issues) : [];
+  const filteredRows = rows.filter(row => {
+    const label = row.employeeId ? people[row.employeeId] : null;
+    const text = [label?.name, label?.employeeNumber, row.employeeId, row.productId, ...row.issues.map(item => item.message)].join(" ").toLocaleLowerCase("he");
+    return text.includes(rowSearch.trim().toLocaleLowerCase("he"));
+  });
   function download() {
-    const header = ["מספר", "תחום", "מה צריך לתקן", "איך מתקנים", "קוד טכני", "הודעה מקורית"];
-    const rows = findings.map((item, index) => [
-      index + 1, item.category, item.title, item.guidance, item.code, item.original,
+    const data = issues.map((issue, i) => [
+      i + 1, issue.code, people[issue.employeeId ?? ""]?.name ?? "", issue.employeeId ?? "",
+      issue.productId ?? "", issue.scope, excelSafe(issue.message),
     ]);
-    const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    worksheet["!cols"] = [
-      { wch: 9 },
-      { wch: 18 },
-      { wch: 34 },
-      { wch: 55 },
-      { wch: 24 },
-      { wch: 70 },
-    ];
-    worksheet["!autofilter"] = { ref: `A1:F${rows.length + 1}` };
-
+    const worksheet = XLSX.utils.aoa_to_sheet([["מספר", "קוד שגיאה", "עובד", "מזהה עובד בדיווח", "מזהה מוצר בדיווח", "רמת שגיאה", "הודעה מקורית"], ...data]);
+    worksheet["!cols"] = [{ wch: 9 }, { wch: 23 }, { wch: 24 }, { wch: 42 }, { wch: 42 }, { wch: 18 }, { wch: 90 }];
+    worksheet["!autofilter"] = { ref: `A1:G${data.length + 1}` };
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "שגיאות בדיווח");
     workbook.Workbook = { Views: [{ RTL: true }] };
     const [year, month] = (reportMonth || "").slice(0, 7).split("-");
-    const monthLabel = year && month ? `${month}-${year}` : "ללא חודש";
-    XLSX.writeFile(workbook, `שגיאות בדיווח - ${monthLabel}.xlsx`, { compression: true });
+    XLSX.writeFile(workbook, `שגיאות בדיווח - ${year && month ? `${month}-${year}` : "ללא חודש"}.xlsx`, { compression: true });
   }
-
   return <AppModal title="נמצאו שגיאות בדיווח"
-    subtitle={`לא ניתן להשלים את הדיווח לפני תיקון ${findings.length} ${findings.length === 1 ? "שגיאה" : "שגיאות"}.`}
-    width="lg" className="report-validation-modal" onClose={onClose}
-    actions={<>
-      <button type="button" className="btn btn-secondary" onClick={onClose}>סגירה וחזרה לדיווח</button>
-      <button type="button" className="btn btn-primary" onClick={download}><Download size={17} /> הורדת דוח השגיאות</button>
+    subtitle="יש לתקן את השגיאות לפני השלמת הדיווח." width="xl" className="report-validation-modal"
+    onClose={onClose} actions={<>
+      <button type="button" className="btn btn-secondary" onClick={onClose}>חזרה לדיווח</button>
+      <button type="button" className="btn btn-primary" onClick={download}><Download size={17} /> הורדת שגיאות XLSX</button>
     </>}>
-    <p className="report-validation-intro">תקנו את הנתונים ברשימה ולאחר מכן הפעילו שוב את בדיקת הדיווח. פירוט טכני זמין לכל שגיאה ולצוות התמיכה.</p>
-    <div className="report-validation-findings">
-      {findings.map((item, index) => <section className="report-validation-finding" key={item.key}>
-        <div className="report-validation-finding-heading">
-          <AlertCircle size={20} aria-hidden="true" />
-          <div><span className="report-validation-category">{item.category} · שגיאה {index + 1}</span><h3>{item.title}</h3></div>
-        </div>
-        <p>{item.guidance}</p>
-        <details><summary>פרטים טכניים</summary><div className="report-validation-technical">
-          <span>קוד: <b dir="ltr">{item.code}</b></span>
-          <p dir="auto">{item.original}</p>
-        </div></details>
+    <div className="report-validation-stats" aria-label="סיכום שגיאות">
+      <div><strong>{issues.length}</strong><span>שגיאות</span></div>
+      <div><strong>{affected}</strong><span>עובדים מושפעים</span></div>
+      <div><strong>{groups.length}</strong><span>קודי שגיאה</span></div>
+    </div>
+    <p className="report-validation-intro">השגיאות מקובצות לפי קוד. לחצו על קוד כדי לראות את העובדים והמוצרים הרלוונטיים. כל שגיאה נשמרת גם בקובץ להורדה.</p>
+    <div className="report-validation-search"><Search size={17} aria-hidden="true" /><UiInput aria-label="חיפוש קוד או שם שגיאה" placeholder="חיפוש קוד או שם שגיאה" value={filter} onChange={event => setFilter(event.target.value)} /></div>
+    <div className="report-validation-groups">
+      {searchedGroups.map(group => <section key={group.code} className="report-validation-group">
+        <button type="button" className="report-validation-group-toggle" aria-expanded={open === group.code}
+          onClick={() => { setOpen(open === group.code ? null : group.code); setRowSearch(""); setLimit(PAGE_SIZE); }}>
+          <ChevronDown size={18} className={open === group.code ? "report-validation-chevron-open" : ""} aria-hidden="true" />
+          <span className="report-validation-group-name"><strong>{group.title}</strong><small>{group.employeeCount} עובדים · {group.issues.length} שגיאות</small></span>
+          <span className="report-validation-code" dir="auto">קוד {group.code.replace(/^SUG_SHGIHA_/, "")}</span>
+        </button>
+        {open === group.code ? <div className="report-validation-group-body">
+          <p>{group.description}</p>
+          {loadingPeople ? <p role="status">טוען שמות עובדים…</p> : null}
+          {peopleError ? <p role="status">{peopleError}</p> : null}
+          <UiInput aria-label="חיפוש עובד או מוצר בשגיאות" placeholder="חיפוש עובד, מוצר או תוכן שגיאה" value={rowSearch}
+            onChange={event => { setRowSearch(event.target.value); setLimit(PAGE_SIZE); }} />
+          <div className="report-validation-rows">
+            {filteredRows.slice(0, limit).map(row => <article className="report-validation-row" key={row.key}>
+              <div className="report-validation-row-heading">
+                <strong>{row.employeeId ? people[row.employeeId]?.name || "עובד בדיווח" : "שגיאה ברמת הדיווח"}</strong>
+                <small>{row.issues.length > 1 ? `${row.issues.length} שגיאות` : "שגיאה אחת"}</small>
+              </div>
+              {row.employeeId && people[row.employeeId]?.employeeNumber ? <small>מספר עובד: {people[row.employeeId].employeeNumber}</small> : null}
+              {row.productId ? <small>מוצר בדיווח: <span dir="ltr">{row.productId.slice(0, 8)}</span></small> : null}
+              {row.issues.map((issue, index) => <div key={index} className="report-validation-row-message">
+                <AlertCircle size={15} aria-hidden="true" />
+                <span dir="auto">{issue.message}</span>
+                {onEdit ? <button type="button" className="btn btn-secondary" onClick={() => onEdit(issue)}>
+                  {validationStage(issue) === 1 ? "פרטי הדיווח" : validationStage(issue) === 3 ? "עריכת תשלום" : "עריכת עובד / מוצר"}
+                </button> : null}
+              </div>)}
+              <details><summary>פרטים טכניים</summary><div className="report-validation-technical">
+                <span>קוד: <b dir="ltr">{group.code}</b></span>
+                {row.employeeId ? <p>מזהה עובד: <span dir="ltr">{row.employeeId}</span></p> : null}
+                {row.productId ? <p>מזהה מוצר: <span dir="ltr">{row.productId}</span></p> : null}
+              </div></details>
+            </article>)}
+            {!filteredRows.length ? <p className="report-validation-empty">לא נמצאו שגיאות התואמות לחיפוש.</p> : null}
+          </div>
+          {filteredRows.length > limit ? <button type="button" className="btn btn-secondary report-validation-more"
+            onClick={() => setLimit(value => value + PAGE_SIZE)}>הצגת {Math.min(PAGE_SIZE, filteredRows.length - limit)} רשומות נוספות (מתוך {filteredRows.length})</button> : null}
+        </div> : null}
       </section>)}
+      {!searchedGroups.length ? <p className="report-validation-empty">לא נמצאו קודי שגיאה התואמים לחיפוש.</p> : null}
     </div>
   </AppModal>;
 }

@@ -124,6 +124,7 @@ export default function NewReportPage() {
   const [excelIntake, setExcelIntake] = useState<ExcelEmployeeIntakeResult | null>(null);
   const [error, setError] = useState("");
   const [validationResult, setValidationResult] = useState<ReportValidationResult | null>(null);
+  const [validationFocus, setValidationFocus] = useState<{ employeeId: string; productId: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [advancing, setAdvancing] = useState(false);
   const [sending, setSending] = useState(false);
@@ -762,8 +763,8 @@ export default function NewReportPage() {
     </div> : null}
     {step === 1 && !showOpenReports && isXml && scope ? <EmployerInterfaceXmlIntake organizationId={scope.organizationId} employerId={scope.employerId} paymentAccountId={selectedPaymentAccountId} salaryPaymentDate={salaryPaymentDate} disabled={!canCreateReport || !selectedPaymentAccountId} onBeforeImport={ensureBillingAccess} onReportImported={handleXmlImported} /> : null}
     {step === 2 && isExcel && scope ? <ExcelEmployeeIntake organizationId={scope.organizationId} employerId={scope.employerId} reportingMonth={month} onChange={(result) => { setExcelIntake(result); setFileName(result?.fileName ?? ""); setError(""); }} /> : null}
-    {((!isExcel && step === 2) || (isExcel && step === 3)) && manualReportId && scope ? <ManualReportData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} month={month} employees={employees} selectedIds={selectedIds} setSelectedIds={setSelectedIds} correctionWorkspace={correctionWorkspaceEntry} focusReportEmployeeId={focusedReportEmployeeId} focusReportProductId={focusedReportProductId} focusMissingFieldNumber={focusMissingFieldNumber} /> : null}
-    {((!isExcel && step === 3) || (isExcel && step === 4)) && manualReportId && scope ? <ManualDepositData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} focusReportProductId={focusedReportProductId} /> : null}
+    {((!isExcel && step === 2) || (isExcel && step === 3)) && manualReportId && scope ? <ManualReportData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} month={month} employees={employees} selectedIds={selectedIds} setSelectedIds={setSelectedIds} correctionWorkspace={correctionWorkspaceEntry} focusReportEmployeeId={validationFocus?.employeeId ?? focusedReportEmployeeId} focusReportProductId={validationFocus?.productId ?? focusedReportProductId} focusMissingFieldNumber={focusMissingFieldNumber} /> : null}
+    {((!isExcel && step === 3) || (isExcel && step === 4)) && manualReportId && scope ? <ManualDepositData organizationId={scope.organizationId} employerId={scope.employerId} reportId={manualReportId} focusReportProductId={validationFocus?.productId ?? focusedReportProductId} /> : null}
     {step === summaryStep ? <>
       <Summary employer={employer} month={month} reportKind={reportKind} mode={mode} correctionOperationCode={isCorrection ? correctionOperationCode : null} selectedCount={selectedIds.length} fileName={fileName} source={selectedSource} paymentAccount={paymentAccounts.find((x) => x.id === selectedPaymentAccountId) ?? null} sentExternalId={sentExternalId} />
       
@@ -795,6 +796,13 @@ export default function NewReportPage() {
     <p style={{ marginTop: 0 }}>הטיוטה עדיין לא נשלחה ולכן ניתן למחוק אותה. דיווח שהיה בו ניסיון שידור נשמר בהיסטוריה ולא ניתן למחיקה.</p>
   </AppModal> : null}
   {validationResult ? <ReportValidationErrorsModal result={validationResult} reportMonth={month}
-    onClose={() => setValidationResult(null)} /> : null}
+    onClose={() => setValidationResult(null)}
+    organizationId={scope?.organizationId} employerId={scope?.employerId} reportId={manualReportId}
+    onEdit={(issue) => {
+      const target = issue.scope === "Payment" || issue.code.startsWith("PAYMENT_") ? (isExcel ? 4 : 3)
+        : issue.scope === "Report" || issue.code === "SALARY_PAYMENT_DATE_REQUIRED" ? 1 : (isExcel ? 3 : 2);
+      setValidationFocus({ employeeId: issue.employeeId ?? "", productId: issue.productId ?? "" });
+      setValidationResult(null); setError(""); setStep(target);
+    }} /> : null}
   </AppShell>;
 }

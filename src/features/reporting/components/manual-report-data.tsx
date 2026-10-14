@@ -226,7 +226,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   }, [query, organizationId, employerId, reportId]);
 
   useEffect(() => {
-    if (!focusReportEmployeeId || !correctionWorkspace) return;
+    if (!focusReportEmployeeId) return;
     const target = reportId + ":" + focusReportEmployeeId;
     if (automaticEditorTarget.current === target) return;
     automaticEditorTarget.current = target;
@@ -239,7 +239,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
         setError(error instanceof Error ? error.message : "לא ניתן לפתוח את העובד בסביבת התיקון");
       });
     return () => { active = false; };
-  }, [organizationId, employerId, reportId, correctionWorkspace, focusReportEmployeeId]);
+  }, [organizationId, employerId, reportId, focusReportEmployeeId]);
 
   const rowByEmployment = useMemo(() => new Map(rows.map((row) => [row.employmentId, row])), [rows]);
 

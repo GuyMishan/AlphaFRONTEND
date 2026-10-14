@@ -98,3 +98,5 @@ Invariants: the backend decides which groups are executable (`canExecute`), the 
 | `scripts/check-v006-preventable-validations.mjs` | V006 validation ownership split |
 | `scripts/check-regex-escaping.mjs` | No double-escaped regex literals |
 | `.github/workflows/ci.yml` | The authoritative CI sequence (same as `npm run verify`) |
+
+Reporting pre-send validation modal: `reporting/components/report-validation-errors-modal.tsx` groups by exact backend error code using `reporting/validation-groups.ts`, preserves every scoped issue in XLSX, resolves report employee names, and navigates to report/employee/product/payment editing in the wizard.
