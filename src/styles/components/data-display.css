@@ -23,9 +23,18 @@ td { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   overscroll-behavior-inline: contain;
   isolation: isolate;
+}
+/* Tables placed directly in cards span the card's content width edge-to-edge.
+   Keep the card padding for headings, filters and other controls. */
+.card > .data-table {
+  margin-inline: calc(-1 * var(--card-padding));
+}
+.card > .data-table > .data-table-viewport {
+  border-inline: 0;
+  border-radius: 0;
 }
 .data-table-grid > thead > tr > th { position: sticky; top: 0; z-index: 5; background: var(--color-surface-sunken); }
 .data-table-grid .data-table-row {
