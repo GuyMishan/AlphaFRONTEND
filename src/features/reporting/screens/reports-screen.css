@@ -166,7 +166,7 @@
   font-weight: 650;
 }
 .report-deposits-grid {
-  min-width: 0;
+  min-width: 1300px;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: visible;
@@ -175,7 +175,7 @@
 .report-deposits-header,
 .report-deposits-item {
   display: grid;
-  grid-template-columns: minmax(0,1fr) minmax(0,.65fr) minmax(0,1.35fr) minmax(0,.75fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.75fr) minmax(120px,.9fr);
+  grid-template-columns: minmax(0,1fr) minmax(0,.65fr) minmax(0,1.35fr) minmax(0,.75fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.75fr) 200px;
   align-items: center;
   gap: 8px; padding: 10px 12px;
 }
@@ -191,7 +191,28 @@
 .report-deposit-feedback-error-list { display: grid; gap: 5px; max-width: 300px; }
 .report-deposit-feedback-error-list > span + span { padding-top: 5px; border-top: 1px solid var(--color-border); }
 .report-deposits-load-more { justify-self: center; }
-.report-deposit-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; min-width: 0; padding-inline-start: 8px; white-space: nowrap; }
+.report-deposit-row-actions { display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; width: 100%; white-space: nowrap; }
+.report-deposit-row-actions > * { flex: 0 0 auto; }
+/* Match the parent report's sticky action column, including a vertical RTL divider. */
+.report-deposits-header > :last-child,
+.report-deposits-item > :last-child {
+  position: sticky;
+  inset-inline-end: -12px;
+  z-index: 2;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border-inline-start: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 10px 0 14px -12px color-mix(in srgb, var(--color-heading) 40%, transparent);
+}
+.report-deposits-header > :last-child {
+  z-index: 3;
+  background: color-mix(in srgb, var(--color-bg) 72%, var(--color-surface));
+}
+.report-deposits-item:nth-child(even) > :last-child {
+  background: color-mix(in srgb, var(--color-surface) 93%, var(--color-primary-soft));
+}
 .report-deposit-row-actions .ui-action-menu { display: inline-flex; flex: 0 0 auto; }
 
 .report-deposit-feedback-modal .app-modal-body { overflow-y: auto; overflow-x: hidden; min-width: 0; }
@@ -654,7 +675,7 @@
   }
 
   .report-deposits-grid {
-    min-width: 1120px;
+    min-width: 1300px;
   }
 
   .report-deposits-header,
@@ -668,13 +689,12 @@
       minmax(110px,.9fr)
       minmax(110px,.9fr)
       minmax(110px,.8fr)
-      minmax(140px,140px);
+      200px;
   }
 
   .report-deposit-row-actions {
-    min-width: 140px;
-    max-width: 140px;
-    padding-inline-start: 8px;
+    min-width: 0;
+    max-width: 100%;
   }
 }
 
