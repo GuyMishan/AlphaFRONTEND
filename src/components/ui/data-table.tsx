@@ -146,7 +146,7 @@ export function DataTable<T>({
 
   return <div className="data-table" aria-busy={loading || loadingMore || undefined}>
     {loading && items.length === 0 ? <span className="sr-only" role="status">{loadingLabel}</span> : null}
-    <div ref={viewportRef} className={`table-wrap data-table-viewport ${wrapperClassName}`.trim()} style={{ maxHeight, overflow: "auto", scrollbarGutter: "stable" }} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}>
+    <div ref={viewportRef} className={`table-wrap data-table-viewport ${wrapperClassName}`.trim()} style={{ maxHeight, overflow: "auto" }} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}>
       <table className={`data-table-grid ${tableClassName}`.trim()} style={{
         "--data-table-row-height": `${rowHeight}px`,
         ...(minTableWidth ? { minWidth: typeof minTableWidth === "number" ? `${minTableWidth}px` : minTableWidth } : {}),
