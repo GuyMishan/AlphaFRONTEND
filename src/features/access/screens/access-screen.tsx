@@ -267,6 +267,10 @@ export default function AccessPage() {
     setSaving(true);
     setError("");
     try {
+      if (viewMode === "platform" && userType === "platform") {
+        setSelected(null);
+        return;
+      }
       await accessApi.updateUserType(organizationId, selected.userId, {
         type: userType,
         role,
@@ -359,7 +363,7 @@ export default function AccessPage() {
 
   return <AppShell title="משתמשים והרשאות" hideScopeController={viewMode === "platform"}>
     <PageHeader title="משתמשים והרשאות" description="ניהול משתמשים והרשאות לפי הארגון והמעסיק שנבחרו."
-      actions={<button className="btn btn-primary" type="button" onClick={() => {
+      actions={viewMode === "scope" ? <button className="btn btn-primary" type="button" onClick={() => {
           // Internal referents are not customer seats; platform admins may choose
           // their user type even when the currently selected customer's quota is full.
           if (!isPlatformAdmin && entitlements && entitlements.users.maximum !== null &&
@@ -369,22 +373,22 @@ export default function AccessPage() {
           }
           setNewUserKind("customer");
           setInviteOpen(true);
-        }}><Mail size={18} />משתמש חדש</button>} />
+        }}><Mail size={18} />משתמש חדש</button> : null} />
 
     {error || loadError ? <div className="notice notice-error" style={{ marginBottom: 18 }}>{error || loadError}</div> : null}
 
 
-      {entitlements?.plan.code === "FREE" ? <section className="card" style={{ marginBottom: 18 }}>
+      {viewMode === "scope" && entitlements?.plan.code === "FREE" ? <section className="card" style={{ marginBottom: 18 }}>
         <div className="card-head" style={{ marginBottom: 10 }}><div><h3>שימוש במסלול {entitlements.plan.name}</h3></div></div>
         <PlanUsage label="משתמשים" usage={entitlements.users} />
       </section> : null}
 
-      {entitlements?.plan.code === "FREE" && entitlements.users.maximum !== null && entitlements.users.current >= entitlements.users.maximum ? <div className="notice notice-info" style={{ marginBottom: 18 }}>
+      {viewMode === "scope" && entitlements?.plan.code === "FREE" && entitlements.users.maximum !== null && entitlements.users.current >= entitlements.users.maximum ? <div className="notice notice-info" style={{ marginBottom: 18 }}>
         <b>הגעתם למגבלת המשתמשים במסלול.</b>
         <div style={{ marginTop: 10 }}><button className="btn btn-primary" type="button" onClick={() => openUpgradeDialog({ reason: "users", planName: entitlements.plan.name, current: entitlements.users.current, maximum: entitlements.users.maximum ?? undefined })}>יצירת קשר לשדרוג</button></div>
       </div> : null}
 
-      {invitations.length ? <section className="card" style={{ marginBottom: 18 }}>
+      {viewMode === "scope" && invitations.length ? <section className="card" style={{ marginBottom: 18 }}>
         <div className="card-head"><div><h2>הזמנות</h2><span style={{ color: "var(--color-text-muted)" }}>הזמנות שנשלחו מהארגון ועדיין מנוהלות כאן.</span></div></div>
         <DataTable
           items={invitations}
@@ -503,12 +507,22 @@ export default function AccessPage() {
       subtitle={selected.email}
       onClose={() => setSelected(null)}
       actions={<>
-        <button className="btn btn-danger" type="button" onClick={() => void removeUser()}><Trash2 size={17} />הסרת גישה</button>
+        {viewMode === "scope" ? <button className="btn btn-danger" type="button" onClick={() => void removeUser()}><Trash2 size={17} />הסרת גישה</button> : null}
         <span className="user-modal-actions-spacer" />
         <button className="btn btn-secondary" type="button" onClick={() => setSelected(null)}>סגירה</button>
         <button className="btn btn-primary" type="button" disabled={saving || (selected.isPlatformAdmin && !isPlatformAdmin)} onClick={() => void saveAccess()}><Save size={17} />{saving ? "שומר..." : "שמירת הרשאות"}</button>
       </>}
     >
+      {viewMode === "platform" ? <div className="field" style={{ marginBottom: 16 }}>
+        <label htmlFor="user-target-organization">ארגון יעד לשינוי סוג משתמש</label>
+        <UiSelect id="user-target-organization" value={organizationId} onChange={(event) => {
+          setOrganizationId(event.target.value);
+          setAssignedLoaded(false);
+          setAssigned([]);
+        }}>
+          {organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
+        </UiSelect>
+      </div> : null}
       <div className="field" style={{ marginBottom: 16 }}>
         <label>סוג משתמש</label>
         <UiSelect value={userType} onChange={(event) => {
