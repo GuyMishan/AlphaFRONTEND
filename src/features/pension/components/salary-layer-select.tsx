@@ -4,6 +4,7 @@ import { UiSelect } from "@/components/ui/ui-controls";
 import { useEffect, useState } from "react";
 import { referenceDataApi } from "@/features/reference-data/api";
 import type { SalaryLayerOption } from "@/features/reference-data/types";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export function SalaryLayerSelect({ value, disabled = false, onChange, suppliedOptions, suppliedLoading, suppliedError }: { value: string; disabled?: boolean; onChange: (value: string) => void; suppliedOptions?: SalaryLayerOption[]; suppliedLoading?: boolean; suppliedError?: string }) {
   const [options, setOptions] = useState<SalaryLayerOption[]>(suppliedOptions ?? []);
@@ -23,7 +24,7 @@ export function SalaryLayerSelect({ value, disabled = false, onChange, suppliedO
     setError("");
     referenceDataApi.salaryLayers()
       .then((items) => { if (active) setOptions(items); })
-      .catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת רובדי השכר נכשלה"); })
+      .catch((err) => { if (active) setError(errorMessage(err, "טעינת רובדי השכר נכשלה")); })
       .finally(() => { if (active) setLoading(false); });
 
     return () => { active = false; };

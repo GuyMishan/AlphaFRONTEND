@@ -16,6 +16,7 @@ import { productNames, shortError, formatEmployerAccount } from "@/features/repo
 import { DepositPaymentEditor } from "@/features/reporting/components/deposit-payment-editor";
 import { LoadingState } from "@/components/loading/loading-state";
 import { TableSkeleton } from "@/components/loading/skeleton";
+import { errorMessage } from "@/lib/api/error-messages";
 
 const receiptTypeFallback: Record<number, string> = {
   1: "שוטף", 2: "חד־פעמי", 4: "הפרשים",
@@ -49,7 +50,7 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
         if (focused) setEditing(focused);
       }
     }
-    catch (err) { const message = shortError(err instanceof Error ? err.message : "טעינת נתוני ההפקדות נכשלה"); setError(message); notify.error(message); }
+    catch (err) { const message = shortError(errorMessage(err, "טעינת נתוני ההפקדות נכשלה")); setError(message); notify.error(message); }
     finally { setLoading(false); }
   }
 
@@ -74,11 +75,13 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
         return groups;
       }, {})))
       .catch(() => setProofs({}));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the report or focused product changes; load reads the current props
   }, [organizationId, employerId, reportId, focusReportProductId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(query), 300);
     return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- debounced search: rerun on query changes only
   }, [query]);
 
   const total = useMemo(() => rows.reduce((sum, row) => sum + Number(row.totalDeposit || 0), 0), [rows]);

@@ -11,6 +11,8 @@ import type { BankBranchOption, BankOption } from "@/features/reference-data/typ
 import { autocompleteLookupTerm } from "@/features/reference-data/lookup-term";
 import { isCompletePaymentAccount, PAYMENT_ACCOUNT_REQUIRED_MESSAGE } from "@/features/payment-accounts/schemas";
 import { CardSkeleton } from "@/components/loading/skeleton";
+import { errorMessage } from "@/lib/api/error-messages";
+import { useLatestRequest } from "@/lib/hooks/use-latest-request";
 
 const EMPTY: EmployerPaymentAccountInput = {
   bankId: 0,
@@ -42,36 +44,49 @@ export function OrganizationPensionPaymentAccount({
   const [documentId, setDocumentId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Replies for a previous organization (or an older load) never reach the form.
+  const loads = useLatestRequest(organizationId);
+  const detailLoads = useLatestRequest(organizationId);
 
   async function load() {
+    const isCurrent = loads.begin();
     setLoading(true);
     try {
       const result = await paymentAccountsApi.organizationPaymentAccount(organizationId);
+      if (!isCurrent()) return;
       setAccount(result.account);
       setEditing(!result.account && canManage);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "טעינת חשבון התשלום הארגוני נכשלה");
+      if (isCurrent()) toast.error(errorMessage(err, "טעינת חשבון התשלום הארגוני נכשלה"));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the scope changes; the loader reads the current props
   useEffect(() => { void load(); }, [organizationId]);
 
   useEffect(() => {
     if (!bankOpen) return;
+    let active = true;
     const timer = window.setTimeout(() => {
-      referenceDataApi.banks(autocompleteLookupTerm(bankSearch), 50).then(setBanks).catch(() => setBanks([]));
+      referenceDataApi.banks(autocompleteLookupTerm(bankSearch), 50)
+        .then((items) => { if (active) setBanks(items); })
+        .catch(() => { if (active) setBanks([]); });
     }, 200);
-    return () => window.clearTimeout(timer);
+    return () => { active = false; window.clearTimeout(timer); };
   }, [bankOpen, bankSearch]);
 
   useEffect(() => {
     if (!branchOpen || !form.bankId) return;
+    // A reply for a previously selected bank must not fill this bank's branch list.
+    let active = true;
     const timer = window.setTimeout(() => {
-      referenceDataApi.bankBranches(form.bankId, autocompleteLookupTerm(branchSearch), 100).then(setBranches).catch(() => setBranches([]));
+      referenceDataApi.bankBranches(form.bankId, autocompleteLookupTerm(branchSearch), 100)
+        .then((items) => { if (active) setBranches(items); })
+        .catch(() => { if (active) setBranches([]); });
     }, 200);
-    return () => window.clearTimeout(timer);
+    return () => { active = false; window.clearTimeout(timer); };
   }, [branchOpen, form.bankId, branchSearch]);
 
   async function startEdit() {
@@ -87,8 +102,10 @@ export function OrganizationPensionPaymentAccount({
       return;
     }
 
+    const isCurrent = detailLoads.begin();
     try {
       const full = await paymentAccountsApi.organizationPaymentAccountEdit(organizationId, account.id);
+      if (!isCurrent()) return;
       setForm({
         bankId: full.bankId,
         branchId: full.branchId,
@@ -104,7 +121,7 @@ export function OrganizationPensionPaymentAccount({
       setDocumentId(full.mandate?.documentId ?? "");
       setEditing(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "טעינת החשבון לעריכה נכשלה");
+      if (isCurrent()) toast.error(errorMessage(err, "טעינת החשבון לעריכה נכשלה"));
     }
   }
 
@@ -130,7 +147,7 @@ export function OrganizationPensionPaymentAccount({
       await load();
       toast.success("חשבון התשלום הפנסיוני הארגוני נשמר");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת החשבון נכשלה");
+      toast.error(errorMessage(err, "שמירת החשבון נכשלה"));
     } finally {
       setSaving(false);
     }

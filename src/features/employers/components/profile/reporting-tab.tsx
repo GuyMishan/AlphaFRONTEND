@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { employersApi } from "@/features/employers/api";
 import type { EmployerProfileCenterSettings } from "@/features/employers/types";
 import { UiSelect, UiTextarea } from "@/components/ui/ui-controls";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
   organizationId: string;
@@ -26,7 +27,7 @@ export function ReportingTab({ organizationId, employerId, canEdit, value, onSav
       onSaved(form);
       toast.success("הגדרות הדיווח נשמרו");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת הגדרות הדיווח נכשלה");
+      toast.error(errorMessage(err, "שמירת הגדרות הדיווח נכשלה"));
     } finally {
       setSaving(false);
     }

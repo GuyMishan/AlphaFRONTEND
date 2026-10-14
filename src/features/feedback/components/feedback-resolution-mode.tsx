@@ -20,6 +20,7 @@ import {
   type FeedbackResolutionProblemSelector,
 } from "@/features/feedback/api";
 import { LoadingState } from "@/components/loading/loading-state";
+import { errorMessage } from "@/lib/api/error-messages";
 
 function loadContext(
   contextType: FeedbackResolutionContextType,
@@ -104,12 +105,13 @@ export function FeedbackResolutionMode({
         }
       })
       .catch(err => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "טעינת תהליך הפתרון נכשלה.");
+        if (!cancelled) setError(errorMessage(err, "טעינת תהליך הפתרון נכשלה."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- selector only seeds the initial issue set once; it must not trigger a reload
   }, [contextType, organizationId, employerId, reportId, reportProductId, refreshToken]);
 
   const groups = useMemo(() => {

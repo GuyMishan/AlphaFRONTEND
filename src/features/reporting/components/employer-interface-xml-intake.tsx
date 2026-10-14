@@ -5,6 +5,7 @@ import { useState } from "react";
 import { UploadCloud, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { employerInterfaceApi, type EmployerInterfaceImportResult, type EmployerInterfaceUploadValidation } from "@/features/reporting/employer-interface-api";
+import { errorMessage } from "@/lib/api/error-messages";
 
 function documentTypeLabel(value: string | null | undefined) {
   switch (value) {
@@ -62,7 +63,7 @@ export function EmployerInterfaceXmlIntake({
         toast.error(result.issues?.[0] || "הקובץ לא עבר ולידציה.");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "בדיקת קובץ ה־XML נכשלה.");
+      toast.error(errorMessage(error, "בדיקת קובץ ה־XML נכשלה."));
     } finally {
       setValidating(false);
     }
@@ -86,7 +87,7 @@ export function EmployerInterfaceXmlIntake({
       }
       toast.error("הקובץ עבר ולידציה אך לא נוצר דיווח או משוב.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "קליטת קובץ ה־XML נכשלה.");
+      toast.error(errorMessage(error, "קליטת קובץ ה־XML נכשלה."));
     } finally {
       setImporting(false);
     }

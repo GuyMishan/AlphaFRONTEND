@@ -129,7 +129,7 @@ export default function AccessPage() {
       setOrganizationId(nextOrganizationId);
       const employer = getEmployerSelection();
       setEmployerId(employer?.organizationId === nextOrganizationId ? employer.employerId : "");
-    }).catch((err) => setError(err instanceof Error ? err.message : "טעינת הארגונים נכשלה"));
+    }).catch((err) => setError(errorMessage(err, "טעינת הארגונים נכשלה")));
 
     const handler = (detail: ScopeChange) => {
       setOrganizationId(detail.organizationId);
@@ -180,9 +180,12 @@ export default function AccessPage() {
       setAssignedHasMore(false);
       return;
     }
+    // Replies for a previous organization, user or search are dropped once this effect is cleaned up.
+    let active = true;
     const timer = window.setTimeout(() => {
       accessApi.assignedEmployers(organizationId, selected.userId, assignedSearch.trim(), assignedSkip, PAGE_SIZE)
         .then((result) => {
+          if (!active) return;
           if (!assignedSearch.trim() && assignedSkip === 0) {
             setAssigned(result.items);
             setInitialAssigned(result.items);
@@ -193,9 +196,9 @@ export default function AccessPage() {
           }
           setAssignedHasMore(result.hasMore);
         })
-        .catch((err) => setError(err instanceof Error ? err.message : "טעינת המעסיקים המורשים נכשלה"));
+        .catch((err) => { if (active) setError(errorMessage(err, "טעינת המעסיקים המורשים נכשלה")); });
     }, 250);
-    return () => window.clearTimeout(timer);
+    return () => { active = false; window.clearTimeout(timer); };
   }, [organizationId, selected, accessMode, assignedSearch, assignedSkip, assignedLoaded]);
 
   useEffect(() => {
@@ -203,12 +206,13 @@ export default function AccessPage() {
       setEmployerOptions([]);
       return;
     }
+    let active = true;
     const timer = window.setTimeout(() => {
       accessApi.employerAccessOptions(organizationId, selected.userId, employerSearch.trim(), 10)
-        .then((items) => setEmployerOptions(items.map((item) => ({ ...item, assigned: assigned.some((x) => x.id === item.id) }))))
-        .catch((err) => setError(err instanceof Error ? err.message : "חיפוש המעסיקים נכשל"));
+        .then((items) => { if (active) setEmployerOptions(items.map((item) => ({ ...item, assigned: assigned.some((x) => x.id === item.id) }))); })
+        .catch((err) => { if (active) setError(errorMessage(err, "חיפוש המעסיקים נכשל")); });
     }, 250);
-    return () => window.clearTimeout(timer);
+    return () => { active = false; window.clearTimeout(timer); };
   }, [organizationId, selected, employerSearch, assigned]);
 
   /** Applies a local edit to every cached page of the current user list. */
@@ -266,7 +270,7 @@ export default function AccessPage() {
       updateCachedUsers((items) => items.map((item) => item.userId === selected.userId ? next : item));
       setSelected(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שמירת ההרשאות נכשלה");
+      setError(errorMessage(err, "שמירת ההרשאות נכשלה"));
     } finally {
       setSaving(false);
     }
@@ -279,7 +283,7 @@ export default function AccessPage() {
       updateCachedUsers((items) => items.filter((item) => item.userId !== selected.userId));
       setSelected(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "הסרת המשתמש נכשלה");
+      setError(errorMessage(err, "הסרת המשתמש נכשלה"));
     }
   }
 
@@ -318,7 +322,7 @@ export default function AccessPage() {
       await accessApi.cancelInvitation(organizationId, invitationId);
       await queryClient.invalidateQueries({ queryKey: accessKeys.invitations(organizationId) });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "ביטול ההזמנה נכשל");
+      setError(errorMessage(err, "ביטול ההזמנה נכשל"));
     }
   }
 

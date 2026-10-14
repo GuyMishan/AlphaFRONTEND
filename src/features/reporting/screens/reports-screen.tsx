@@ -138,7 +138,7 @@ export default function ReportsPage() {
       }));
     } catch (err) {
       if (expandedRequests.current.get(report.id) === request)
-        setExpandedErrors((previous) => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת ההפקדות נכשלה" }));
+        setExpandedErrors((previous) => ({ ...previous, [report.id]: errorMessage(err, "טעינת ההפקדות נכשלה") }));
     } finally {
       if (expandedRequests.current.get(report.id) === request) {
         expandedRequests.current.delete(report.id);
@@ -175,7 +175,7 @@ export default function ReportsPage() {
       }));
     } catch (err) {
       if (expandedRequests.current.get(report.id) === request)
-        setExpandedErrors((previous) => ({ ...previous, [report.id]: err instanceof Error ? err.message : "טעינת הפקדות נוספות נכשלה" }));
+        setExpandedErrors((previous) => ({ ...previous, [report.id]: errorMessage(err, "טעינת הפקדות נוספות נכשלה") }));
     } finally {
       if (expandedRequests.current.get(report.id) === request) {
         expandedRequests.current.delete(report.id);
@@ -296,7 +296,7 @@ export default function ReportsPage() {
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "ייצוא הדוח נכשל");
+      setError(errorMessage(err, "ייצוא הדוח נכשל"));
     } finally {
       setExportingReportId("");
     }
@@ -342,7 +342,7 @@ export default function ReportsPage() {
         resolutionProblemIds,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "טעינת פרטי ההפקדה לעריכה נכשלה");
+      setError(errorMessage(err, "טעינת פרטי ההפקדה לעריכה נכשלה"));
     } finally {
       setCorrectionBusyId("");
     }
@@ -358,7 +358,7 @@ export default function ReportsPage() {
       );
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "המשך השידור ליצרנים נכשל.");
+      setError(errorMessage(err, "המשך השידור ליצרנים נכשל."));
       await load();
     } finally {
       setCorrectionBusyId("");
@@ -375,7 +375,7 @@ export default function ReportsPage() {
       );
       router.push(`/reports/new?resumeReportId=${workspace.reportId}&correctionWorkspace=1`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "פתיחת תיקון הדיווח נכשלה");
+      setError(errorMessage(err, "פתיחת תיקון הדיווח נכשלה"));
     } finally {
       setCorrectionBusyId("");
     }
@@ -401,7 +401,7 @@ export default function ReportsPage() {
         await load();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "יצירת הדיווח החוזר נכשלה");
+      setError(errorMessage(err, "יצירת הדיווח החוזר נכשלה"));
     } finally {
       setCorrectionBusyId("");
     }
@@ -427,7 +427,7 @@ export default function ReportsPage() {
       });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "מחיקת הטיוטה נכשלה");
+      setError(errorMessage(err, "מחיקת הטיוטה נכשלה"));
     } finally {
       setDeletingReportId("");
     }
@@ -751,7 +751,7 @@ export default function ReportsPage() {
             });
           }
         } catch (err) {
-          setError(err instanceof Error ? err.message : "ההפקדה נשמרה אך סימון התקלה כמתוקנת נכשל.");
+          setError(errorMessage(err, "ההפקדה נשמרה אך סימון התקלה כמתוקנת נכשל."));
           setEditingDeposit(null);
           void loadExpanded(sourceReport, true);
           void load();

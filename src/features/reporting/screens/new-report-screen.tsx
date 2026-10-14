@@ -43,6 +43,7 @@ import { ReportDetails } from "@/features/reporting/components/new-report/report
 import { Summary } from "@/features/reporting/components/new-report/report-summary";
 import { LoadingState } from "@/components/loading/loading-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { errorMessage } from "@/lib/api/error-messages";
 
 const manualSteps = ["פרטי הדיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
 const excelSteps = ["פרטי הדיווח", "העלאת קובץ דיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"];
@@ -205,7 +206,7 @@ export default function NewReportPage() {
     } catch (err) {
       if (scopeLoadVersionRef.current !== version) return;
       scopeLoadKeyRef.current = "";
-      setError(err instanceof Error ? err.message : "טעינת הנתונים נכשלה");
+      setError(errorMessage(err, "טעינת הנתונים נכשלה"));
     } finally { if (scopeLoadVersionRef.current === version) setLoading(false); }
   }
 
@@ -218,7 +219,7 @@ export default function NewReportPage() {
       if (scopeLoadVersionRef.current !== version) return;
       setOpenReports((current) => [...current, ...result.items.filter((item) => !current.some((existing) => existing.id === item.id))]);
       setOpenReportsHasMore(result.hasMore);
-    } catch (err) { if (scopeLoadVersionRef.current === version) toast.error(err instanceof Error ? err.message : "טעינת הטיוטות נכשלה"); }
+    } catch (err) { if (scopeLoadVersionRef.current === version) toast.error(errorMessage(err, "טעינת הטיוטות נכשלה")); }
     finally { if (scopeLoadVersionRef.current === version) setLoadingOpenReports(false); }
   }
 
@@ -257,7 +258,7 @@ export default function NewReportPage() {
       setStep(focusedReportProductId && depositResolvers.has(resolutionResolver) ? 3 : 2);
       toast.success("הטיוטה נטענה. ניתן להמשיך לערוך ולשמור.");
     } catch (err) {
-      if (scopeLoadVersionRef.current === version) toast.error(err instanceof Error ? err.message : "לא ניתן לפתוח את הטיוטה");
+      if (scopeLoadVersionRef.current === version) toast.error(errorMessage(err, "לא ניתן לפתוח את הטיוטה"));
     } finally { if (scopeLoadVersionRef.current === version) setAdvancing(false); }
   }
 
@@ -305,7 +306,7 @@ export default function NewReportPage() {
           setSelectedSourceReportId("");
         }
       }
-    } catch (err) { if (sourceRequestVersionRef.current === version) setError(err instanceof Error ? err.message : "טעינת הדיווחים הקודמים נכשלה"); }
+    } catch (err) { if (sourceRequestVersionRef.current === version) setError(errorMessage(err, "טעינת הדיווחים הקודמים נכשלה")); }
     finally { if (sourceRequestVersionRef.current === version) setLoadingSources(false); }
   }
 
@@ -347,6 +348,7 @@ export default function NewReportPage() {
     const selected = getEmployerSelection();
     if (selected) void loadScope(selected); else setLoading(false);
     return invalidateScopeReads;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- resolve the saved scope on mount; loadScope reads the current state
   }, [invalidateScopeReads]);
   useEffect(() => {
     if (!scope || !manualReportId || !correctionWorkspaceEntry || resolutionProblemIds.length) return;
@@ -365,6 +367,7 @@ export default function NewReportPage() {
       // A correction workspace can also be opened for ordinary report correction without feedback.
     });
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by scope ids, not the scope object identity
   }, [
     scope?.organizationId,
     scope?.employerId,
@@ -377,6 +380,7 @@ export default function NewReportPage() {
     if (!scope || !canCreateReport || !requestedResumeReportId || resumeEntryInitialized.current) return;
     resumeEntryInitialized.current = true;
     void resumeReportById(requestedResumeReportId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time resume guarded by resumeEntryInitialized; keyed by scope ids
   }, [scope?.organizationId, scope?.employerId, canCreateReport, requestedResumeReportId]);
   useEffect(() => {
     return subscribeToScopeChanges((detail: ScopeChange) => {
@@ -390,6 +394,7 @@ export default function NewReportPage() {
         setShowBillingGateModal(false); setShowOpenReports(false); setError("");
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the subscription only depends on the current step; loadScope reads the current state
   }, [step, invalidateScopeReads]);
   useEffect(() => {
     if (!scope || !requestedSourceReportId || correctionEntryInitialized.current) return;
@@ -399,6 +404,7 @@ export default function NewReportPage() {
     setShowOpenReports(false);
     setSourceSearch(requestedSourceMonth);
     void loadSources(true, requestedSourceMonth);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time correction entry guarded by correctionEntryInitialized; keyed by scope ids
   }, [scope?.organizationId, scope?.employerId, requestedSourceReportId, requestedSourceMonth, requestedSourceIsNegative]);
   useEffect(() => {
     const needsSources = reportKind !== 1 || mode === "correction";
@@ -406,6 +412,7 @@ export default function NewReportPage() {
     if (reportKind !== 1 && mode !== "manual") setMode("manual");
     const initialSearch = requestedSourceReportId ? requestedSourceMonth : "";
     setSourceSearch(initialSearch); setSentExternalId(""); void loadSources(true, initialSearch);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reload sources when the report kind, mode or scope ids change; requested values only seed the first search
   }, [reportKind, mode, manualReportId, scope?.organizationId, scope?.employerId]);
 
   function chooseSource(report: SourceManualReport) { setSelectedSourceReportId(report.id); setMonth(report.reportingMonth.slice(0, 7)); setSalaryPaymentDate(report.salaryPaymentDate?.slice(0, 10) ?? ""); setError(""); setSentExternalId(""); }
@@ -702,7 +709,7 @@ export default function NewReportPage() {
       }
       if (step === depositsStep && manualReportId) await validatePersistedReport("deposits");
       setStep((value) => value + 1);
-    } catch (err) { setError(err instanceof Error ? err.message : "בדיקת הדיווח נכשלה"); }
+    } catch (err) { setError(errorMessage(err, "בדיקת הדיווח נכשלה")); }
     finally { setAdvancing(false); }
   }
 
@@ -715,7 +722,7 @@ export default function NewReportPage() {
       setDraftToDelete(null);
       toast.success("הטיוטה נמחקה");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "מחיקת הטיוטה נכשלה");
+      toast.error(errorMessage(err, "מחיקת הטיוטה נכשלה"));
     } finally {
       setDeletingDraftId("");
     }
@@ -749,7 +756,7 @@ export default function NewReportPage() {
         router.replace(`/reports/new?resumeReportId=${followUpReportId}&correctionStage=current`);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שליחת הדיווח נכשלה");
+      toast.error(errorMessage(err, "שליחת הדיווח נכשלה"));
     } finally {
       setSending(false);
     }

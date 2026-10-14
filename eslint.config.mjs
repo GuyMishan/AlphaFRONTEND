@@ -10,6 +10,8 @@ export default defineConfig([
   {
     rules: {
       "react-hooks/set-state-in-effect": "off",
+      // `_name` marks a deliberately unused binding, e.g. a field omitted with rest destructuring.
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_", ignoreRestSiblings: true }],
     },
   },
 ]);

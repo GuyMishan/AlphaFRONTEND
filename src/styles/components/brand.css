@@ -29,6 +29,6 @@
   white-space: nowrap;
 }
 
-/* Inverse placement: navigation rail and brand panels. */
+/* Inverse placement: navy brand panels (auth). */
 .brand-inverse { --color-brand-mark: var(--color-brand-mark-inverse); }
-.brand-inverse .brand-tagline { color: var(--nav-text); }
+.brand-inverse .brand-tagline { color: var(--color-on-brand-muted); }

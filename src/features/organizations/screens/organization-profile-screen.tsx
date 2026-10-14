@@ -134,7 +134,7 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
   {getSession()?.platformAdmin && moving ? <EmployerTransferModal open employer={moving} onClose={() => setMoving(null)} onTransferred={onTransferred} /> : null}
   </>;
 }
-function UsersTab({ organizationId, members, canManage }: { organizationId: string; members: OrganizationMemberSummary[]; canManage: boolean }) {
+function UsersTab({ members, canManage }: { organizationId: string; members: OrganizationMemberSummary[]; canManage: boolean }) {
   const roleLabel = (role: number) => role === 1 ? "Admin" : role === 2 ? "Payroll Manager" : role === 3 ? "Operations Agent" : "Viewer";
   return <section className="card">
     <div className="card-head"><div><h2>משתמשים והרשאות</h2><span style={{ color: "var(--color-text-muted)" }}>משתמשי Organization-level והגישה שלהם למעסיקים.</span></div>{canManage ? <Link className="btn btn-primary" href="/access">ניהול הרשאות</Link> : null}</div>

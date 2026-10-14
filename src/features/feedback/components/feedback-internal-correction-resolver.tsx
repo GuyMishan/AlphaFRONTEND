@@ -7,6 +7,7 @@ import {
   reportFeedbackApi,
   type FeedbackResolutionGroup,
 } from "@/features/feedback/api";
+import { errorMessage } from "@/lib/api/error-messages";
 
 type FieldSpec = readonly [key: string, label: string, source?: "reported" | "current" | "feedback"];
 
@@ -127,7 +128,6 @@ export function FeedbackInternalCorrectionResolver({
   employerId,
   group,
   onEditDeposit,
-  onChanged,
 }: {
   organizationId: string;
   employerId: string;
@@ -188,7 +188,7 @@ export function FeedbackInternalCorrectionResolver({
       const problems = `&resolutionProblemIds=${encodeURIComponent(group.problems.map(item => item.problemId).join(","))}`;
       router.push(`/reports/new?resumeReportId=${result.workspaceReportId}&correctionWorkspace=1${product}${employee}${resolver}${sourceReport}${problems}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "פתיחת סביבת התיקון נכשלה.");
+      setError(errorMessage(err, "פתיחת סביבת התיקון נכשלה."));
     } finally {
       setPreparing(false);
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { apiErrorMessage, httpErrorMessage } from "./error-messages";
-import { problemCode, validationErrors } from "./errors";
+import { apiErrorMessage, errorMessage, httpErrorMessage } from "./error-messages";
+import { ApiError, problemCode, validationErrors } from "./errors";
 
 describe("problemCode", () => {
   it("reads errorCode and falls back to the deprecated legacy alias", () => {
@@ -43,5 +43,22 @@ describe("httpErrorMessage", () => {
   it("applies payment gate wording before backend detail", () => {
     expect(httpErrorMessage(409, { errorCode: "BANK_MANDATE_REQUIRED", detail: "mandate missing" }))
       .toBe("לא ניתן לשלוח את הדיווח ללא הרשאה פעילה לחיוב חשבון הבנק שנבחר.");
+  });
+});
+
+describe("errorMessage", () => {
+  it("shows API errors as given", () => {
+    expect(errorMessage(new ApiError("http", 409, "הפריט כבר קיים במערכת."), "נכשל")).toBe("הפריט כבר קיים במערכת.");
+  });
+
+  it("shows Hebrew messages the app throws itself", () => {
+    expect(errorMessage(new Error("יש לבחור קובץ."), "נכשל")).toBe("יש לבחור קובץ.");
+  });
+
+  it("never shows runtime or English library errors", () => {
+    expect(errorMessage(new TypeError("Cannot read properties of undefined (reading 'id')"), "נכשל")).toBe("נכשל");
+    expect(errorMessage(new SyntaxError("Unexpected token < in JSON"), "נכשל")).toBe("נכשל");
+    expect(errorMessage(new Error("Unsupported file"), "נכשל")).toBe("נכשל");
+    expect(errorMessage("boom", "נכשל")).toBe("נכשל");
   });
 });

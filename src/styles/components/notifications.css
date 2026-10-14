@@ -1,0 +1,137 @@
+/*
+ * AlphaToaster (src/components/ui/alpha-toaster.tsx): Sonner owns interaction, announcements,
+ * stacking and swipe; Alpha owns presentation. A compact ink capsule in both themes:
+ * [status glyph] [message] [actions] [close], in RTL reading order.
+ */
+html [data-sonner-toaster].alpha-toaster {
+  direction: rtl;
+  font-family: var(--font-sans);
+  z-index: var(--z-toast);
+}
+
+html [data-sonner-toaster].alpha-toaster[data-sonner-theme] {
+  --normal-bg: var(--color-toast-bg);
+  --normal-border: var(--color-toast-border);
+  --normal-text: var(--color-toast-text);
+  --border-radius: var(--radius-2xl);
+}
+
+html .alpha-toaster [data-sonner-toast][data-styled="true"] {
+  --toast-tone: var(--color-toast-info);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: 0;
+  padding: var(--space-3);
+  padding-inline-start: var(--space-4);
+  border: 1px solid var(--color-toast-border);
+  background: var(--color-toast-bg);
+  color: var(--color-toast-text);
+  box-shadow: var(--shadow-toast);
+  -webkit-backdrop-filter: saturate(1.5) blur(18px);
+  backdrop-filter: saturate(1.5) blur(18px);
+  font-size: var(--text-md);
+  text-align: start;
+}
+html .alpha-toaster [data-sonner-toast][data-type="success"] { --toast-tone: var(--color-toast-success); }
+html .alpha-toaster [data-sonner-toast][data-type="error"] { --toast-tone: var(--color-toast-danger); }
+html .alpha-toaster [data-sonner-toast][data-type="warning"] { --toast-tone: var(--color-toast-warning); }
+
+/* Status glyph: tone color only, no tile; optically centered on the first text line. */
+html .alpha-toaster [data-sonner-toast][data-styled="true"] [data-icon] {
+  order: 1;
+  position: static;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  color: var(--toast-tone);
+}
+html .alpha-toaster [data-sonner-toast] [data-icon] svg { margin: 0; }
+.alpha-toast-loading { width: 18px; height: auto; --color-brand-mark: var(--color-toast-text); }
+
+html .alpha-toaster [data-sonner-toast][data-styled="true"] [data-content] {
+  order: 2;
+  flex: 1 1 auto;
+  gap: var(--space-0-5);
+  min-width: 0;
+  max-height: min(45dvh, 360px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+html .alpha-toaster [data-sonner-toast][data-styled="true"] [data-title] {
+  color: var(--color-toast-text);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+  white-space: pre-line;
+}
+html .alpha-toaster [data-sonner-toast][data-styled="true"] [data-description] {
+  color: var(--color-toast-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  white-space: pre-line;
+}
+
+/* Actions: compact pills that sit on the capsule. */
+html .alpha-toaster [data-sonner-toast][data-styled="true"] :is([data-button], [data-cancel]) {
+  order: 3;
+  align-self: center;
+  height: 28px;
+  margin: 0;
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+html .alpha-toaster [data-sonner-toast][data-styled="true"] [data-button] { background: var(--color-primary-solid); color: var(--color-on-primary); }
+html .alpha-toaster [data-sonner-toast][data-styled="true"] [data-cancel] { background: var(--color-toast-hover); color: var(--color-toast-text); }
+
+/* Close: in the flow at the inline end, quiet until the toast is hovered or focused. */
+html .alpha-toaster [data-sonner-toast][data-styled="true"] [data-close-button] {
+  order: 4;
+  position: static;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  transform: none;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-toast-text-muted);
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
+}
+html .alpha-toaster [data-sonner-toast][data-styled="true"]:is(:hover, :focus-within) [data-close-button] { opacity: 1; }
+html .alpha-toaster [data-sonner-toast][data-styled="true"]:hover [data-close-button]:hover {
+  background: var(--color-toast-hover);
+  border: 0;
+  color: var(--color-toast-text);
+}
+
+html .alpha-toaster [data-sonner-toast]:focus-visible,
+html .alpha-toaster [data-sonner-toast] :is([data-close-button], [data-button], [data-cancel]):focus-visible {
+  outline: 2px solid var(--color-toast-info);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Desktop: the capsule hugs its message and stays centered, up to the toaster width. */
+@media (min-width: 601px) {
+  html .alpha-toaster [data-sonner-toast][data-styled="true"] {
+    inset-inline: 0;
+    width: fit-content;
+    min-width: 240px;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+}
+
+@media (pointer: coarse) {
+  html .alpha-toaster [data-sonner-toast][data-styled="true"] [data-close-button] {
+    width: 32px;
+    height: 32px;
+    margin-block: -4px;
+    opacity: 1;
+  }
+}

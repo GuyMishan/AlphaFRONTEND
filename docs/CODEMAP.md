@@ -8,7 +8,7 @@ Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<fe
 
 | Path | Responsibility |
 | --- | --- |
-| `src/app/layout.tsx` | Root layout: global stylesheets in cascade order, `QueryProvider`, `ThemeProvider`, toaster, `ValidationUxBridge`, `SessionTimeoutGuard` |
+| `src/app/layout.tsx` | Root layout: global stylesheets in cascade order, `QueryProvider`, `ThemeProvider`, `AlphaToaster`, `ValidationUxBridge`, `SessionTimeoutGuard` |
 | `src/features/shell/components/persistent-app-layout.tsx` | Lists the public routes rendered without the shell (`/login`, `/register`, `/invite`, `/session-timeout`); `isPublicPath` |
 | `src/features/shell/components/app-shell.tsx` | Authenticated shell: navigation rail (sections from the access scope, `useLinkStatus` pending state), topbar with the TanStack Query fetch indicator, `AppLoader` while the session and scope resolve, route guards, self-service onboarding, plan-upgrade dialog (`subscribeToApiErrors`) |
 | `src/features/shell/components/route-loading.tsx` | Route loading UI re-exported by `src/app/**/loading.tsx`: page skeleton inside the shell, `AppLoader` on public pages |
@@ -26,7 +26,7 @@ Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<fe
 | `ui/app-modal.tsx` | The only dialog shell: fixed header/footer, scrollable body, nested scroll locking; cancel/back on the RTL right, positive actions on the left (`data-modal-side="positive"`) |
 | `ui/data-table.tsx` | The only table: fixed layout, windowed rows, infinite loading (`hasMore`/`onLoadMore`), optional expandable rows (`expandedRowComponent`, `canExpandRow`, `expandToggleColumnKey`); links use `DataTableLink` (no prefetch) |
 | `ui/ui-file-upload.tsx` | File picker with drag/drop, type and size checks (each caller passes the backend's limit) |
-| `ui/ui-selection-list.tsx`, `ui/app-tabs.tsx`, `ui/tooltip.tsx`, `ui/notifications.tsx` | Searchable multi-select, tabs, tooltip, `notify` toasts |
+| `ui/ui-selection-list.tsx`, `ui/app-tabs.tsx`, `ui/tooltip.tsx`, `ui/notifications.tsx`, `ui/alpha-toaster.tsx` | Searchable multi-select, tabs, tooltip, `notify` toasts and the single branded Sonner host (`AlphaToaster`, mounted by the root layout) |
 | `forms/form-feedback.tsx`, `forms/form-select.tsx` | `Field` (label + error), `FormSelect` (`UiSelect` bound to React Hook Form) |
 | `forms/validation-ux-bridge.tsx` | Highlights fields from error notices and server validation for forms not on React Hook Form |
 | `layout/page-header.tsx`, `layout/accessibility-menu.tsx` | `PageHeader` (every page title), accessibility menu |
@@ -47,7 +47,7 @@ Styles (`docs/DESIGN-SYSTEM.md`): `src/styles/theme` (palette and semantic token
 | `forms/` | `useZodForm`, shared Zod rules, input masks, `applyServerErrors`, validators |
 | `format/` | Dates (DD/MM/YYYY), reporting months, money |
 | `server/backend.ts` | Server-only: backend URL, session cookie, cross-site request check |
-| `download.ts`, `hooks/` | `saveBlob`; `useDebouncedValue`, `useUrlScope` |
+| `download.ts`, `browser-storage.ts`, `hooks/` | `saveBlob`; Web Storage that never throws; `useDebouncedValue`, `useUrlScope`, `useLatestRequest` (drops stale replies after a scope change) |
 
 Server routes: `src/app/api/backend/[...path]/route.ts` (proxy) and `src/app/api/session/logout/route.ts`.
 

@@ -5,10 +5,10 @@
  */
 
 /* ── Layout ─────────────────────────────────────────────────────────────── */
-.form { display: grid; gap: 18px; }
-.field { display: grid; gap: 7px; }
-.field label { color: var(--color-text-secondary); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
-.field small { color: var(--color-text-muted); }
+.form { display: grid; gap: var(--space-5); }
+.field { display: grid; align-content: start; gap: var(--space-2); min-width: 0; }
+.field label { color: var(--color-text-secondary); font-size: var(--text-sm); font-weight: var(--weight-medium); line-height: var(--leading-snug); }
+.field small { color: var(--color-text-muted); font-size: var(--text-xs); line-height: var(--leading-normal); }
 
 /* ── Text controls ──────────────────────────────────────────────────────── */
 .field input,
@@ -16,15 +16,21 @@
 .field textarea,
 .ui-control {
   width: 100%;
+  min-width: 0;
   min-height: var(--control-height);
   padding: 10px 14px;
   border: 1px solid var(--color-control-border);
   border-radius: var(--radius-control);
   background: var(--color-control-bg);
   color: var(--color-text);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
   outline: none;
   transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
 }
+.ui-control::placeholder { color: var(--color-text-placeholder); opacity: 1; }
+.ui-control:is([type="number"], [inputmode="numeric"], [inputmode="decimal"]) { font-variant-numeric: tabular-nums; }
+.ui-control[readonly] { background: var(--color-surface-sunken); }
 .ui-control:hover:not(:disabled):not(:focus) { border-color: var(--color-control-border-hover); }
 .field input:focus,
 .field select:focus,
@@ -50,7 +56,7 @@
 }
 .field textarea, .ui-textarea { resize: vertical; min-height: 88px; }
 .ui-control-default { min-height: var(--control-height); }
-.ui-control-compact { min-height: var(--control-height-compact); height: var(--control-height-compact); padding-top: 5px; padding-bottom: 5px; border-radius: var(--radius-sm); }
+.ui-control-compact { min-height: var(--control-height-compact); height: var(--control-height-compact); padding-top: 5px; padding-bottom: 5px; border-radius: var(--radius-sm); font-size: var(--text-sm); }
 
 /* Computed, non-editable value placed in a form grid (<output className="field-readonly">).
    Dashed and sunken so it never reads as a disabled or broken input. */
@@ -106,7 +112,7 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
 
 /* ── Select (UiSelect): native select kept for forms, custom trigger + portaled listbox ── */
 .ui-select { position: relative; width: 100%; min-width: 0; }
-.ui-select.is-disabled { opacity: 0.6; }
+.ui-select.is-disabled { opacity: 1; }
 .ui-select-native { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important; }
 .ui-select-trigger {
   width: 100%;
@@ -114,11 +120,8 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding-inline: 12px !important;
-  background: var(--color-control-bg) !important;
-  color: var(--color-text) !important;
-  font-size: var(--text-sm) !important;
+  gap: var(--space-2);
+  padding-inline: var(--space-3) !important;
   text-align: right;
   direction: rtl;
   cursor: pointer;
@@ -140,10 +143,10 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
   max-height: 240px;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 6px;
+  padding: var(--space-1-5);
   background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
 }
 .ui-select-menu-portal,
@@ -156,10 +159,10 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
 .pension-fund-options-portal { right: auto !important; bottom: auto !important; }
 .ui-select-menu button {
   width: 100%;
-  min-height: 38px;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  padding: 9px 10px;
+  padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -169,11 +172,14 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
   text-align: right;
   direction: rtl;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
-.ui-select-menu button:hover,
+.ui-select-menu button:hover:not(:disabled),
 .ui-select-menu button:focus-visible,
 .ui-select-menu button.selected { outline: none; background: var(--color-primary-soft); color: var(--color-primary); }
-.ui-select-menu button:disabled { opacity: 0.5; cursor: not-allowed; }
+.ui-select-menu button[aria-selected="true"] { font-weight: var(--weight-semibold); }
+.ui-select-menu button:focus-visible { box-shadow: inset 0 0 0 2px var(--color-primary); }
+.ui-select-menu button:disabled { background: transparent; color: var(--color-text-disabled); cursor: not-allowed; }
 
 /* ── Autocomplete (UiAutocomplete): search stays visible; clear/toggle actions stay available ── */
 .pension-fund-autocomplete { position: relative; }
@@ -201,7 +207,7 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
   display: block;
   width: 100%;
   margin: 0;
-  padding: 9px 10px;
+  padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -210,10 +216,12 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
   text-align: right;
   direction: rtl;
 }
-.pension-fund-option { cursor: pointer; font: inherit; }
-.pension-fund-option:hover,
+.pension-fund-option { min-height: 40px; cursor: pointer; font: inherit; font-size: var(--text-sm); line-height: var(--leading-normal); transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard); }
+.pension-fund-option:hover:not(:disabled),
 .pension-fund-option:focus-visible,
 .pension-fund-option.selected { outline: none; background: var(--color-primary-soft); color: var(--color-primary); }
+.pension-fund-option:focus-visible { box-shadow: inset 0 0 0 2px var(--color-primary); }
+.pension-fund-option:disabled { background: transparent; color: var(--color-text-disabled); cursor: not-allowed; }
 .pension-fund-empty { color: var(--color-text-muted); }
 .pension-fund-loading { display: flex; align-items: center; justify-content: flex-start; gap: var(--space-2); min-height: 38px; color: var(--color-text-muted); }
 
@@ -260,14 +268,16 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
 }
-.choice-card:hover:not(:disabled) { border-color: var(--color-primary-border); box-shadow: var(--shadow-md); }
+.choice-card:hover:not(:disabled) { border-color: var(--color-border-hover); background: var(--color-surface-hover); box-shadow: var(--shadow-sm); }
 .choice-card.selected {
   border-color: var(--color-primary-solid);
-  background: color-mix(in srgb, var(--color-primary-soft) 55%, var(--color-surface));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-solid) 14%, transparent);
+  background: var(--color-surface-selected);
+  box-shadow: inset 0 0 0 1px var(--color-primary-solid);
 }
+.choice-card.selected:hover:not(:disabled) { border-color: var(--color-primary-solid); background: var(--color-surface-selected); }
+.choice-card:disabled { cursor: not-allowed; opacity: 0.55; box-shadow: none; }
 .choice-card:focus-visible { outline: var(--focus-outline); outline-offset: 2px; }
-.choice-card .choice-icon { color: var(--color-primary); margin-bottom: 22px; }
+.choice-card .choice-icon { color: var(--color-primary); margin-bottom: var(--space-4); }
 .choice-card b { display: block; margin-bottom: 5px; color: var(--color-heading); font-size: var(--text-lg); }
 .choice-card p { margin: 0; color: var(--color-text-muted); font-size: var(--text-md); line-height: 1.5; }
 .compact-choice-card { min-height: 0; padding: var(--space-4); }
@@ -283,24 +293,24 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
   place-items: center;
   gap: var(--space-2);
   min-height: 225px;
-  padding: 28px 24px;
+  padding: var(--space-7) var(--space-6);
   border: 1.5px dashed var(--color-control-border);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, var(--color-surface-sunken), color-mix(in srgb, var(--color-primary-soft) 45%, var(--color-surface)));
+  background: var(--color-surface-sunken);
   text-align: center;
   cursor: pointer;
   transition: border-color var(--duration-base) var(--ease-standard), background-color var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
 }
-.upload-zone:hover,
-.upload-zone.drag-active { border-color: var(--color-primary-solid); background: color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary-solid) 10%, transparent); }
-.upload-zone.drag-active { transform: translateY(-1px); }
+.upload-zone:hover:not([aria-disabled="true"]),
+.upload-zone.drag-active:not([aria-disabled="true"]) { border-color: var(--color-primary-solid); background: var(--color-primary-soft); box-shadow: inset 0 0 0 1px var(--color-primary-border); }
 .upload-zone > svg { width: 46px; height: 46px; padding: 11px; border-radius: var(--radius-lg); background: var(--color-primary-soft); color: var(--color-primary); }
 .upload-zone h3 { margin: 4px 0 0; font-size: var(--text-lg); font-weight: var(--weight-bold); }
 .upload-zone p { margin: 0 0 5px; color: var(--color-text-muted); font-size: var(--text-sm); }
 .upload-zone .btn { pointer-events: none; min-width: 124px; padding: 8px 14px; }
 .ui-file-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 0; cursor: pointer; }
 .ui-file-button[aria-disabled="true"],
-.ui-file-field[aria-disabled="true"] { cursor: not-allowed; opacity: 0.6; }
+.ui-file-field[aria-disabled="true"],
+.upload-zone[aria-disabled="true"] { cursor: not-allowed; opacity: 0.6; }
 .ui-file-button:focus-visible,
 .ui-file-field:focus-visible,
 .upload-zone:focus-visible { outline: var(--focus-outline); outline-offset: 3px; }
@@ -338,7 +348,7 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
 .ui-selection-search { position: relative; min-width: 0; }
 .ui-selection-search > svg { position: absolute; right: 13px; top: 50%; z-index: 1; transform: translateY(-50%); color: var(--color-text-muted); pointer-events: none; }
 .ui-selection-search > input.ui-control { padding-inline-start: 38px !important; min-height: 40px; }
-.ui-selection-viewport { display: grid; align-content: start; gap: 7px; min-height: 56px; padding: 2px 2px 2px 8px; overflow-y: auto; overscroll-behavior: contain; }
+.ui-selection-viewport { display: grid; align-content: start; gap: var(--space-2); min-height: 56px; padding: var(--space-1); overflow-y: auto; overscroll-behavior: contain; }
 .ui-selection-item {
   width: 100%;
   min-width: 0;
@@ -357,14 +367,9 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
   cursor: pointer;
   transition: border-color var(--duration-base) var(--ease-standard), background-color var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
 }
-.ui-selection-item:hover:not(:disabled),
-.ui-selection-item:focus-visible {
-  outline: none;
-  background: color-mix(in srgb, var(--color-primary-soft) 55%, var(--color-surface));
-  border-color: var(--color-primary-border);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-solid) 8%, transparent);
-}
-.ui-selection-item.is-selected { background: color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface)); border-color: color-mix(in srgb, var(--color-primary-solid) 43%, var(--color-border)); }
+.ui-selection-item:hover:not(:disabled) { background: var(--color-surface-hover); border-color: var(--color-border-hover); }
+.ui-selection-item:focus-visible { outline: var(--focus-outline); outline-offset: 1px; }
+.ui-selection-item.is-selected { background: var(--color-surface-selected); border-color: var(--color-primary-border); }
 .ui-selection-check {
   width: 22px;
   height: 22px;
@@ -379,7 +384,7 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
 .ui-selection-item.is-selected .ui-selection-check { background: var(--color-primary-solid); border-color: var(--color-primary-solid); color: var(--color-on-primary); }
 .ui-selection-item-copy { display: grid; gap: 3px; min-width: 0; }
 .ui-selection-item-copy strong { font-size: var(--text-sm); font-weight: var(--weight-semibold); overflow-wrap: anywhere; }
-.ui-selection-item-copy small { color: var(--color-text-muted); font-size: 11.5px; overflow-wrap: anywhere; }
+.ui-selection-item-copy small { color: var(--color-text-muted); font-size: var(--text-xs); overflow-wrap: anywhere; }
 .ui-selection-item-copy .ui-selection-inherited { display: flex; align-items: center; gap: 4px; color: var(--color-primary); }
 .ui-selection-item.is-disabled { cursor: default; opacity: 0.8; }
 .ui-selection-empty { min-height: 70px; display: grid; place-items: center; color: var(--color-text-muted); font-size: var(--text-sm); text-align: center; }
@@ -393,10 +398,12 @@ input[type="month"]:disabled::-webkit-calendar-picker-indicator { cursor: not-al
 .field-invalid input,
 .field-invalid select,
 .field-invalid textarea,
+.field-invalid .ui-select-trigger,
 .field.field-error input,
 input[aria-invalid="true"],
 select[aria-invalid="true"],
-textarea[aria-invalid="true"] {
+textarea[aria-invalid="true"],
+.ui-select-trigger[aria-invalid="true"] {
   border-color: var(--color-danger) !important;
   box-shadow: 0 0 0 1px var(--color-danger) !important;
   background: color-mix(in srgb, var(--color-danger) 5%, var(--color-control-bg)) !important;
@@ -404,12 +411,14 @@ textarea[aria-invalid="true"] {
 .field-invalid input:focus,
 .field-invalid select:focus,
 .field-invalid textarea:focus,
+.field-invalid .ui-select-trigger:focus,
 input[aria-invalid="true"]:focus,
 select[aria-invalid="true"]:focus,
-textarea[aria-invalid="true"]:focus { outline: 2px solid color-mix(in srgb, var(--color-danger) 18%, transparent) !important; outline-offset: 1px; }
+textarea[aria-invalid="true"]:focus,
+.ui-select-trigger[aria-invalid="true"]:focus { outline: 2px solid var(--color-danger) !important; outline-offset: 2px; }
 .field-error .ui-date-control { border-color: var(--color-danger) !important; box-shadow: 0 0 0 1px var(--color-danger); }
 .field-error-text,
-span.field-error { display: block; margin-top: 5px; color: var(--color-danger); font-size: var(--text-xs); line-height: 1.35; }
+span.field-error { display: block; margin-top: 0; color: var(--color-danger); font-size: var(--text-xs); line-height: var(--leading-snug); overflow-wrap: anywhere; }
 .field-error-text { cursor: help; }
 .field-invalid[data-error] { position: relative; }
 .field-invalid[data-error]:hover::after,
@@ -417,9 +426,9 @@ span.field-error { display: block; margin-top: 5px; color: var(--color-danger); 
   content: attr(data-error);
   position: absolute;
   z-index: 1000;
-  right: 0;
+  inset-inline-start: 0;
   top: calc(100% + 6px);
-  max-width: min(420px, 92vw);
+  max-width: min(420px, 100%);
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   background: var(--color-danger-solid);
@@ -435,7 +444,7 @@ span.field-error { display: block; margin-top: 5px; color: var(--color-danger); 
   .choice-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
-  .field { min-width: 0; width: 100%; max-width: 100%; overflow: hidden; }
+  .field { min-width: 0; width: 100%; max-width: 100%; }
   .field input, .field select, .field textarea { min-width: 0; max-width: 100%; width: 100%; }
   .field input[type="date"],
   .field input[type="month"] {

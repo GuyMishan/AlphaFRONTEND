@@ -1,6 +1,9 @@
-/** Shekel amount with up to 2 decimals ("₪1,234.5"); "—" when missing. */
+/** Shekel amount: whole amounts without decimals ("₪1,234"), otherwise 2 ("₪1,234.50"); "—" when missing. */
 export function formatMoney(value: number | null | undefined) {
-  return value == null ? "—" : `₪${Number(value).toLocaleString("he-IL", { maximumFractionDigits: 2 })}`;
+  if (value == null) return "—";
+  const amount = Number(value);
+  const fractionDigits = Number.isInteger(amount) ? 0 : 2;
+  return `₪${amount.toLocaleString("he-IL", { minimumFractionDigits: fractionDigits, maximumFractionDigits: 2 })}`;
 }
 
 /** Whole-number count with thousands separators ("1,234"). */

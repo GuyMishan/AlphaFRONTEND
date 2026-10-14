@@ -17,6 +17,7 @@ import { formatMoney } from "@/lib/format/number";
 import { formatReportingMonth } from "@/lib/format/date";
 import { reportKindLabel } from "@/features/reporting/labels";
 import { LoadingState } from "@/components/loading/loading-state";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export type ReportFeedbackModalMode = "employer" | "report" | "deposit";
 
@@ -68,7 +69,7 @@ export function ReportFeedbackModal({
           if (!cancelled) setReportContext(result);
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "טעינת המשוב נכשלה.");
+        if (!cancelled) setError(errorMessage(err, "טעינת המשוב נכשלה."));
       } finally {
         if (!cancelled) setLoading(false);
       }

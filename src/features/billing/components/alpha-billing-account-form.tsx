@@ -9,6 +9,8 @@ import type { AlphaBillingAccount, AlphaBillingAccountInput, BillingPaymentMetho
 import { billingAccountSchema } from "@/features/billing/schemas";
 import { useZodForm } from "@/lib/forms/use-zod-form";
 import { LoadingState } from "@/components/loading/loading-state";
+import { errorMessage } from "@/lib/api/error-messages";
+import { useLatestRequest } from "@/lib/hooks/use-latest-request";
 
 /** The payment provider's HTTPS page, or this app itself (the development fake provider redirects back here). */
 function isAllowedPaymentRedirect(value: unknown): value is string {
@@ -68,13 +70,16 @@ export function AlphaBillingAccountForm({
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const requests = useLatestRequest(organizationId, employerId);
 
   async function load() {
+    const isCurrent = requests.begin();
     setLoading(true);
     try {
       const value = employerId
         ? await billingApi.employerBillingAccount(organizationId, employerId)
         : await billingApi.organizationBillingAccount(organizationId);
+      if (!isCurrent()) return;
       setAccount(value);
       reset({
         billingName: value.billingName,
@@ -85,9 +90,9 @@ export function AlphaBillingAccountForm({
       });
 
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "טעינת Billing Account נכשלה");
+      if (isCurrent()) toast.error(errorMessage(err, "טעינת פרטי החיוב נכשלה"));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }
 
@@ -114,6 +119,7 @@ export function AlphaBillingAccountForm({
   }
 
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the scope changes; the loader reads the current props
   useEffect(() => { void load(); }, [organizationId, employerId]);
 
   useEffect(() => {
@@ -133,6 +139,7 @@ export function AlphaBillingAccountForm({
     } else if (result === "cancelled") {
       toast.info("חיבור אמצעי התשלום בוטל.");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- handle the provider return once per scope; settlePaymentMethodAfterReturn reads the current props
   }, [organizationId, employerId]);
 
   async function saveDetails(normalized: AlphaBillingAccountInput) {
@@ -164,7 +171,7 @@ export function AlphaBillingAccountForm({
 
       toast.success("פרטי החיוב ואמצעי התשלום נשמרו");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת פרטי החיוב ואמצעי התשלום נכשלה");
+      toast.error(errorMessage(err, "שמירת פרטי החיוב ואמצעי התשלום נכשלה"));
     } finally {
       setSaving(false);
     }
@@ -178,7 +185,7 @@ export function AlphaBillingAccountForm({
       await load();
       toast.success("סטטוס אמצעי התשלום סונכרן");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "סנכרון אמצעי התשלום נכשל");
+      toast.error(errorMessage(err, "סנכרון אמצעי התשלום נכשל"));
     } finally {
       setSyncing(false);
     }
@@ -194,7 +201,7 @@ export function AlphaBillingAccountForm({
       await load();
       toast.success("חשבון החיוב ואמצעי התשלום בוטלו");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "ביטול אמצעי התשלום נכשל");
+      toast.error(errorMessage(err, "ביטול אמצעי התשלום נכשל"));
     } finally {
       setCancelling(false);
     }

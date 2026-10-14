@@ -7,6 +7,7 @@ import { employeesApi } from "@/features/employees/api";
 import { reportFeedbackApi, type FeedbackResolutionGroup } from "@/features/feedback/api";
 import type { Employee } from "@/features/employees/types";
 import { LoadingState } from "@/components/loading/loading-state";
+import { errorMessage } from "@/lib/api/error-messages";
 
 // Match employee comparison fields to the official error being resolved.
 const errorFields: Record<number, readonly string[]> = {
@@ -89,7 +90,7 @@ export function FeedbackEmployeeResolver({
         if (!cancelled) setEmployee(result);
       })
       .catch(err => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "טעינת העובד נכשלה.");
+        if (!cancelled) setError(errorMessage(err, "טעינת העובד נכשלה."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -102,7 +103,7 @@ export function FeedbackEmployeeResolver({
     const allowed = new Set(errorFields[problem.code] ?? []);
     const candidates = allowed.size
       ? fields.filter(([key]) => allowed.has(key))
-      : fields.filter(([key, label]) => {
+      : fields.filter(([, label]) => {
         const normalizedDescription = problem.description.replace(/["״׳'\-]/g, "").toLowerCase();
         const normalizedLabel = label.replace(/["״׳'\-]/g, "").toLowerCase();
         return normalizedDescription.includes(normalizedLabel);
@@ -200,7 +201,7 @@ export function FeedbackEmployeeResolver({
             setFormVersion(value => value + 1);
             onChanged();
           } catch (err) {
-            setError(err instanceof Error ? err.message : "פרטי העובד נשמרו אך הכנת התיקון למשוב נכשלה.");
+            setError(errorMessage(err, "פרטי העובד נשמרו אך הכנת התיקון למשוב נכשלה."));
           }
         }}
       />

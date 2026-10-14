@@ -13,6 +13,7 @@ import type { ManualPaymentInput } from "@/features/reporting/deposits-api";
 import type { Employee, EmployeeInput } from "@/features/employees/types";
 import type { ContributionComponent, ManualContributionInput, ManualProductInput, PensionProductType, SalaryAllocationType, Section14Code } from "@/features/pension/types";
 import { SalaryTemplateTools } from "@/features/reporting/components/salary-template-tools";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export type ExcelReportRow = {
   rowNumber: number;
@@ -523,7 +524,7 @@ export function ExcelEmployeeIntake({ organizationId, employerId, reportingMonth
     } catch (err) {
       setFileName("");
       setRows([]);
-      setError(err instanceof Error ? err.message : "קריאת הקובץ נכשלה");
+      setError(errorMessage(err, "קריאת הקובץ נכשלה"));
     } finally { setLoading(false); }
   }
 

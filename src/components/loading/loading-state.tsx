@@ -6,7 +6,7 @@ import { AlphaSymbol } from "@/components/brand/alpha-logo";
  * skeleton. `compact` puts the mark and label on one line (load-more rows, small panels).
  */
 export function LoadingState({ label = "טוען...", compact = false, className }: { label?: ReactNode; compact?: boolean; className?: string }) {
-  return <div role="status" aria-live="polite"
+  return <div role="status" aria-live="polite" aria-atomic="true"
     className={["loading-state", compact ? "loading-state-compact" : "", className].filter(Boolean).join(" ")}>
     <AlphaSymbol animated className="loading-state-symbol" />
     <span>{label}</span>

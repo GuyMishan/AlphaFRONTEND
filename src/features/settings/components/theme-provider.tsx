@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { readStorage, writeStorage } from "@/lib/browser-storage";
 import { getSession } from "@/lib/session/storage";
 import { useAppStore } from "@/lib/session/use-app-store";
 import { userPreferencesApi, type AppearancePreference } from "@/features/settings/api";
@@ -32,8 +33,8 @@ function cacheKey() {
 
 /** Remembers the user's preference, and the device's last one for the pre-paint script (theme-init.ts). */
 function rememberPreference(key: string, preference: AppearancePreference) {
-  localStorage.setItem(key, preference);
-  localStorage.setItem(THEME_LAST_KEY, preference);
+  writeStorage("local", key, preference);
+  writeStorage("local", THEME_LAST_KEY, preference);
 }
 
 function applyTheme(preference: AppearancePreference) {
@@ -48,6 +49,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Follows sign-in, session restore and sign-out without waiting for a navigation.
   const sessionUserKey = useAppStore((state) => state.session ? state.session.userId ?? state.session.displayName : null);
   const loadedUserKey = useRef<string | null>(null);
+  // Last preference known to be stored for the user: restored when a save fails.
+  const savedAppearance = useRef<AppearancePreference>("system");
   const [appearance, setAppearanceState] = useState<AppearancePreference>("system");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [loading, setLoading] = useState(true);
@@ -63,9 +66,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Same order as the pre-paint script, so this never flips the theme it already applied:
     // the user's cached preference, else the device's last one, else the OS setting.
     const key = cacheKey();
-    const cached = session ? localStorage.getItem(key) : null;
-    const lastUsed = localStorage.getItem(THEME_LAST_KEY);
+    const cached = session ? readStorage("local", key) : null;
+    const lastUsed = readStorage("local", THEME_LAST_KEY);
     const initial = isPreference(cached) ? cached : isPreference(lastUsed) ? lastUsed : "system";
+    savedAppearance.current = initial;
     setAppearanceState(initial);
     setResolvedTheme(applyTheme(initial));
 
@@ -76,6 +80,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     userPreferencesApi.get()
       .then((preferences) => {
+        savedAppearance.current = preferences.appearance;
         setAppearanceState(preferences.appearance);
         rememberPreference(key, preferences.appearance);
         setResolvedTheme(applyTheme(preferences.appearance));
@@ -92,13 +97,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => media.removeEventListener("change", update);
   }, [appearance]);
 
+  /** Applies the choice immediately; if the backend rejects it, restores the last saved preference and rethrows. */
   async function setAppearance(next: AppearancePreference) {
+    const previous = savedAppearance.current;
+    const key = cacheKey();
     setSaving(true);
     setAppearanceState(next);
-    rememberPreference(cacheKey(), next);
+    rememberPreference(key, next);
     setResolvedTheme(applyTheme(next));
     try {
       await userPreferencesApi.setAppearance(next);
+      savedAppearance.current = next;
+    } catch (error) {
+      setAppearanceState(previous);
+      rememberPreference(key, previous);
+      setResolvedTheme(applyTheme(previous));
+      throw error;
     } finally {
       setSaving(false);
     }

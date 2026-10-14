@@ -12,6 +12,7 @@ import type { ContributionComponent, PensionProductType, SalaryAllocationType, S
 import { referenceDataApi } from "@/features/reference-data/api";
 import type { PensionEditorContributionLimit, PensionEditorReferenceData } from "@/features/reference-data/types";
 import { calculateContributionAmount, roundMoney, roundPercentage } from "@/features/pension/contribution-math";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export type PensionEditorContribution = {
   component: ContributionComponent;
@@ -343,7 +344,7 @@ export function PensionProductsEditor({ context, month, monthlySalary, products,
         setReferenceData(data);
         onReferenceDataLoadedRef.current?.(data);
       })
-      .catch((err) => { if (active) setReferenceDataError(err instanceof Error ? err.message : "טעינת אפשרויות עורך המוצרים נכשלה"); })
+      .catch((err) => { if (active) setReferenceDataError(errorMessage(err, "טעינת אפשרויות עורך המוצרים נכשלה")); })
       .finally(() => { if (active) setReferenceDataLoading(false); });
     return () => { active = false; };
   }, []);
@@ -461,7 +462,7 @@ function ReadOnlyField({ label, value, hint }: { label: string; value: ReactNode
   </div>;
 }
 
-function ContributionEditor({ context, title, party, product, items, contributionLimits, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; contributionLimits: PensionEditorContributionLimit[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
+function ContributionEditor({ title, party, product, items, contributionLimits, editable, onChange }: { context: "employee" | "report"; title: string; party: "employer" | "employee"; product: PensionEditorProduct; items: PensionEditorContribution[]; contributionLimits: PensionEditorContributionLimit[]; editable: boolean; onChange: (component: ContributionComponent, key: "amount" | "percentage" | "exemptPayments", value: number) => void }) {
   const allLabels = party === "employee" ? employeeComponents : employerComponents;
   const labels = product.productType === 2
     ? allLabels.filter(({ value }) => value === 2)

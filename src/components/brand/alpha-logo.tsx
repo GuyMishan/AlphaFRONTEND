@@ -1,7 +1,7 @@
 /**
  * Alpha brand marks, inlined from /public/branding so they follow the theme:
  * the navy arm and the wordmark use --color-brand-mark (navy on light surfaces,
- * white on the navigation rail and in dark mode). Styles: src/styles/components/brand.css.
+ * white on navy brand panels and in dark mode). Styles: src/styles/components/brand.css.
  */
 const SYMBOL_NAVY = "M61.15,19.84l4.87-8.35C70.88,3.13,77.7,0,86.46,0h19.47c7.79,0,13.63,4.18,18.01,12.53l72.04,136.8h-41.86c-6.33,0-11.68-3.66-15.09-9.92l-47.22-96.07-14.12-23.5c-3.89-6.27-10.71-6.27-16.55,0Z";
 const SYMBOL_BLUE = "M1.67,122.7L60.08,21.4c3.89-7.31,10.71-9.4,16.06-4.18,2.92,2.09,4.87,5.74,7.3,10.44l9.25,17.23L28.44,140.97c-3.89,5.74-9.25,7.31-15.09,6.27-11.68-1.57-16.06-13.05-11.68-24.54Z";

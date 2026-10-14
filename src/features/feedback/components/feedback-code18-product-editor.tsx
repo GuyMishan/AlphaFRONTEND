@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { reportFeedbackApi, type FeedbackResolutionGroup } from "@/features/feedback/api";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export function FeedbackCode18ProductEditor({
   organizationId, employerId, group,
@@ -44,7 +45,7 @@ export function FeedbackCode18ProductEditor({
       });
       router.push(`/reports/new?${params.toString()}`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "פתיחת עורך התיקון נכשלה.");
+      setError(errorMessage(cause, "פתיחת עורך התיקון נכשלה."));
     } finally {
       setPreparing(false);
     }

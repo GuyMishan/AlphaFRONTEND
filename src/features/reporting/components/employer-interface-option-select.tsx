@@ -3,6 +3,7 @@
 import { UiSelect } from "@/components/ui/ui-controls";
 import { useEffect, useMemo, useState } from "react";
 import { employerInterfaceApi, type EmployerInterfaceOption } from "@/features/reporting/employer-interface-api";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export function EmployerInterfaceOptionSelect({
   category,
@@ -47,7 +48,7 @@ export function EmployerInterfaceOptionSelect({
     setError("");
     employerInterfaceApi.options(category, scope, operationCode)
       .then((items) => { if (active) setOptions(items); })
-      .catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת האפשרויות נכשלה"); })
+      .catch((err) => { if (active) setError(errorMessage(err, "טעינת האפשרויות נכשלה")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [category, operationCode, scope, suppliedOptions, suppliedLoading, suppliedError]);

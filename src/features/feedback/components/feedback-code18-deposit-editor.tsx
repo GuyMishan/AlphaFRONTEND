@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ManualDepositData } from "@/features/reporting/components/manual-deposit-data";
 import { reportFeedbackApi, type FeedbackResolutionGroup } from "@/features/feedback/api";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export function FeedbackCode18DepositEditor({
   organizationId, employerId, group, footerTargetId,
@@ -44,7 +45,7 @@ export function FeedbackCode18DepositEditor({
         productId: result.workspaceReportProductId,
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "פתיחת סביבת התיקון נכשלה.");
+      setError(errorMessage(cause, "פתיחת סביבת התיקון נכשלה."));
     } finally {
       setPreparing(false);
     }

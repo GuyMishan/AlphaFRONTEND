@@ -1,21 +1,14 @@
 "use client";
 
-import { toast } from "sonner";
-
-const MAX_ERROR_LENGTH = 220;
-
-function compactError(message: string) {
-  const value = message.trim().replace(/\s+/g, " ");
-  return value.length <= MAX_ERROR_LENGTH ? value : `${value.slice(0, MAX_ERROR_LENGTH - 1).trimEnd()}…`;
-}
+import { toast, type ExternalToast } from "sonner";
 
 /**
- * Toast notifications (rendered by the single <Toaster> in the root layout).
- * `notify.error` compacts long multi-line backend/validation messages; use
- * `toast` from sonner directly when a toast needs a description or actions.
+ * Toast notifications rendered by the single AlphaToaster in the root layout.
+ * Keep error details intact. Use options for descriptions/actions and pass
+ * `duration: Infinity` for critical errors that must remain until dismissed.
  */
 export const notify = {
-  error: (message: string) => { if (message.trim()) toast.error(compactError(message)); },
-  success: (message: string) => { if (message.trim()) toast.success(message.trim()); },
-  info: (message: string) => { if (message.trim()) toast.info(message.trim()); },
+  error: (message: string, options?: ExternalToast) => { if (message.trim()) toast.error(message.trim(), options); },
+  success: (message: string, options?: ExternalToast) => { if (message.trim()) toast.success(message.trim(), options); },
+  info: (message: string, options?: ExternalToast) => { if (message.trim()) toast.info(message.trim(), options); },
 };

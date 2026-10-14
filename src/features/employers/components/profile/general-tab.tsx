@@ -9,6 +9,7 @@ import { editableEmployerStatuses, employerStatusBadgeClass, employerStatusLabel
 import type { Employer, EmployerInput, EmployerAddressSettings } from "@/features/employers/types";
 import { UiInput, UiSelect } from "@/components/ui/ui-controls";
 import { Tooltip } from "@/components/ui/tooltip";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export function GeneralTab({ organizationId, employer, canEdit, canManage, address, onEmployerSaved, onAddressSaved }: {
   organizationId: string;
@@ -95,7 +96,7 @@ export function GeneralTab({ organizationId, employer, canEdit, canManage, addre
       onAddressSaved(normalizedAddress);
       toast.success("פרטי המעסיק נשמרו");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת פרטי המעסיק נכשלה");
+      toast.error(errorMessage(err, "שמירת פרטי המעסיק נכשלה"));
     } finally {
       setSaving(false);
     }

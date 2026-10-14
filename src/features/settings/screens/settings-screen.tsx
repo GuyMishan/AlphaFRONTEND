@@ -2,6 +2,7 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { notify } from "@/components/ui/notifications";
+import { errorMessage } from "@/lib/api/error-messages";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { useAppearance } from "@/features/settings/components/theme-provider";
 import type { AppearancePreference } from "@/features/settings/api";
@@ -21,8 +22,10 @@ export default function SettingsPage() {
     try {
       await setAppearance(value);
       notify.success("הגדרת התצוגה נשמרה למשתמש");
-    } catch {
-      notify.error("שמירת הגדרת התצוגה נכשלה");
+    } catch (error) {
+      // The provider has already restored the last saved theme.
+      const reason = errorMessage(error, "");
+      notify.error("שמירת הגדרת התצוגה נכשלה. התצוגה הוחזרה להגדרה הקודמת.", reason ? { description: reason } : undefined);
     }
   }
 
@@ -34,8 +37,8 @@ export default function SettingsPage() {
         {options.map((option) => {
           const Icon = option.icon;
           const selected = appearance === option.value;
-          return <button key={option.value} type="button" className={`appearance-option${selected ? " selected" : ""}`} disabled={loading || saving} onClick={() => void choose(option.value)}>
-            <span className="appearance-option-icon"><Icon size={22} /></span>
+          return <button key={option.value} type="button" className={`appearance-option${selected ? " selected" : ""}`} aria-pressed={selected} disabled={loading || saving} onClick={() => void choose(option.value)}>
+            <span className="appearance-option-icon"><Icon size={22} aria-hidden="true" /></span>
             <span><b>{option.title}</b><small>{option.description}</small></span>
             <span className="appearance-radio" aria-hidden="true">{selected ? "✓" : ""}</span>
           </button>;

@@ -6,13 +6,13 @@
 /* ── Report wizard ── */
 .wizard { max-width: 1120px; margin: auto; min-width: 0; }
 .wizard.wizard-wide { width: 100%; max-width: 1440px; }
-.wizard-footer { display: flex; justify-content: space-between; align-items: center; margin: 25px calc(-1 * var(--card-padding)) calc(-1 * var(--card-padding)); padding: 18px var(--card-padding); border-top: 1px solid var(--color-border); background: var(--color-surface-sunken); border-radius: 0 0 calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px); }
+.wizard-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-6) calc(-1 * var(--card-padding)) calc(-1 * var(--card-padding)); padding: var(--space-4) var(--card-padding); border-top: 1px solid var(--color-border-subtle); background: var(--color-surface-sunken); border-radius: 0 0 calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px); }
 
 .manual-report-head { gap: 16px; }
 .manual-report-badges { display: flex; gap: 8px; flex-wrap: wrap; }
 .manual-report-toolbar { align-items: stretch; }
-.manual-employee-list { display: grid; gap: 9px; }
-.manual-employee-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: center; border: 1px solid var(--color-border); border-radius: 11px; padding: 12px 14px; background: var(--color-surface); }
+.manual-employee-list { display: grid; gap: var(--space-2); }
+.manual-employee-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: var(--space-3); align-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); background: var(--color-surface); transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard); }
 .manual-employee-row.selected { border-color: var(--color-primary-border); background: color-mix(in srgb, var(--color-primary-soft) 45%, var(--color-surface)); }
 .manual-employee-check { display: inline-flex; align-items: center; cursor: pointer; }
 .manual-employee-main { min-width: 0; }
@@ -27,15 +27,15 @@
 .report-modal-body > .notice { margin-bottom: 10px; }
 .report-modal .field { gap: 4px; }
 .report-modal .field label { font-size: 12px; }
-.report-modal .field input, .report-modal .field select, .report-modal .field textarea { min-height: var(--control-height-compact); padding: 7px 9px; border-radius: 8px; font-size: 13px; }
+.report-modal .field .ui-control { min-height: var(--control-height-editor); padding: 7px 10px; border-radius: var(--radius-control); font-size: var(--text-sm); }
 .employee-report-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 8px; }
 .employee-report-summary > div { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 9px; padding: 7px 10px; }
 .employee-report-summary span, .employee-report-summary b { display: block; }
 .employee-report-summary span { color: var(--color-text-muted); font-size: 11px; }
 .employee-report-summary b { margin-top: 1px; font-size: 13px; }
 
-.product-editor-list { display: grid; gap: 10px; margin-bottom: 10px; }
-.report-product-card { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: var(--radius-lg); padding: 11px; box-shadow: var(--shadow-xs); }
+.product-editor-list { display: grid; gap: var(--space-3); margin-bottom: var(--space-3); }
+.report-product-card { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: var(--radius-card); padding: var(--space-4); }
 .report-product-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
 .report-product-title span, .report-product-title b { display: block; }
 .report-product-title span { color: var(--color-text-muted); font-size: 11px; }
@@ -106,22 +106,13 @@
 }
 
 
-/* Report editor uses theme tokens instead of hard-coded light surfaces. */
-.report-modal,.manual-employee-row,.employee-report-summary>div,.report-product-card {background:var(--color-surface);color:var(--color-text)}
-.report-modal-body{background:var(--color-bg)}
-.employee-report-summary>div{border-color:var(--color-border)}
-.employee-report-summary span{color:var(--color-text-muted)}
-
-/* Pension product editor controls use a consistent 40px field height. */
-.report-product-fields .ui-control,
-.report-product-fields input,
-.report-product-fields select{height:40px;min-height:40px}
-.contribution-table input{height:40px!important;min-height:40px!important;padding:6px 8px;font-size:12px}
-@media(max-width:760px){.contribution-table input{height:40px!important;min-height:40px!important}}
-
-/* All pension product text/number controls, including optional policy number, are 40px. */
-.report-product-card .ui-control:not(textarea){height:40px!important;min-height:40px!important;max-height:40px!important}
-.contribution-table .contribution-input{height:40px!important;min-height:40px!important;max-height:40px!important}
+/* One editor size for inputs, select triggers and computed values. */
+.report-product-card .ui-control:not(textarea),
+.report-product-card .field-readonly {
+  height: var(--control-height-editor);
+  min-height: var(--control-height-editor);
+}
+.contribution-table .contribution-input { padding: 6px 8px; font-size: var(--text-xs); }
 
 /* Payment details now uses the shared AppModal and a compact inferred-data summary. */
 .payment-modal.app-modal{height:min(820px,92vh);max-height:92vh}
@@ -214,15 +205,15 @@
 }
 
 .report-modal-body {
-  padding: 10px 12px 12px !important;
+  padding: var(--space-4) !important;
 }
 
 .report-modal .report-product-card {
   display: grid;
   grid-template-columns: minmax(500px, 560px) minmax(0, 1fr);
-  gap: 10px 12px;
+  gap: var(--space-3) var(--space-4);
   align-items: start;
-  padding: 9px 10px !important;
+  padding: var(--space-4) !important;
 }
 
 .report-modal .report-product-title {
@@ -234,7 +225,7 @@
   grid-column: 1;
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 5px 6px !important;
+  gap: var(--space-3) !important;
   align-items: end;
   min-width: 0;
 }
@@ -244,19 +235,18 @@
   min-width: 0;
 }
 
-.report-modal .report-product-fields input:not([type="checkbox"]),
-.report-modal .report-product-fields select {
+.report-modal .report-product-fields .ui-control:not(textarea) {
   width: 100%;
   min-width: 0;
-  min-height: var(--control-height-dense) !important;
-  height: var(--control-height-dense);
-  padding: 4px 6px !important;
-  font-size: 11.5px !important;
+  min-height: var(--control-height-editor);
+  height: var(--control-height-editor);
+  padding: 7px 10px;
+  font-size: var(--text-sm);
 }
 
 .report-modal .report-product-fields .field label {
-  font-size: 11px;
-  line-height: 1.2;
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
 }
 
 .report-modal .contribution-grid {
@@ -276,10 +266,6 @@
 .report-modal .contribution-table th,
 .report-modal .contribution-table td {
   padding: 2px 4px !important;
-}
-
-.report-modal .contribution-table input {
-  height: var(--control-height-dense) !important;
 }
 
 @media (max-width: 1240px) {
@@ -341,10 +327,10 @@
   .report-editor-app-modal .contribution-table input {
     width: 100%;
     min-width: 0;
-    height: 32px !important;
-    min-height: 32px !important;
+    height: var(--control-height-editor);
+    min-height: var(--control-height-editor);
     padding: 3px 4px !important;
-    font-size: 11px !important;
+    font-size: var(--text-xs);
   }
   .report-editor-app-modal .contribution-table .data-table-row > td {
     overflow: hidden;
@@ -491,7 +477,6 @@
   font-size: var(--text-xs);
 }
 .report-product-insured b { color: var(--color-heading); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
-.report-product-card .field-readonly { min-height: 40px; height: 40px; }
 /* Section titles inside the field grid: a full-width label with a hairline rule. */
 .product-fields-heading {
   grid-column: 1 / -1;

@@ -7,6 +7,7 @@ import { UiFileUpload } from "@/components/ui/ui-file-upload";
 import { DataTable } from "@/components/ui/data-table";
 import { saveBlob } from "@/lib/download";
 import { formatDateDDMMYYYY } from "@/lib/format/date";
+import { errorMessage } from "@/lib/api/error-messages";
 
 const types = [
   { code: 3, label: "תצהיר מעסיק" },
@@ -33,7 +34,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
     let active = true;
     employerDocumentsApi.list(organizationId, employerId, { employmentId, employeePensionProductId })
       .then(items => { if (active) setDocuments(items); })
-      .catch(e => { if (active) toast.error(e instanceof Error ? e.message : "טעינת מסמכים נכשלה"); })
+      .catch(e => { if (active) toast.error(errorMessage(e, "טעינת מסמכים נכשלה")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [organizationId, employerId, employmentId, employeePensionProductId, loadedDocuments]);
@@ -49,13 +50,13 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
       if (loadedDocuments === undefined) setDocuments(current => [created, ...current]);
       else await onChanged?.();
       toast.success(employmentId ? "המסמך נשמר במוצר הפנסיוני" : "המסמך נשמר בפרופיל המעסיק");
-    } catch (error) { toast.error(error instanceof Error ? error.message : "שמירת המסמך נכשלה"); }
+    } catch (error) { toast.error(errorMessage(error, "שמירת המסמך נכשלה")); }
     finally { setBusy(false); }
   }
   async function download(doc: EmployerDocument) {
     try {
       saveBlob(await employerDocumentsApi.download(organizationId, employerId, doc.id), doc.originalFileName);
-    } catch (error) { toast.error(error instanceof Error ? error.message : "הורדת המסמך נכשלה"); }
+    } catch (error) { toast.error(errorMessage(error, "הורדת המסמך נכשלה")); }
   }
   async function remove(id: string) {
     if (!window.confirm("למחוק את המסמך?")) return;
@@ -65,7 +66,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
       if (loadedDocuments === undefined) setDocuments(current => current.filter(item => item.id !== id));
       else await onChanged?.();
       toast.success("המסמך הוסר");
-    } catch (e) { toast.error(e instanceof Error ? e.message : "המחיקה נכשלה"); }
+    } catch (e) { toast.error(errorMessage(e, "המחיקה נכשלה")); }
     finally { setBusy(false); }
   }
   // Embedded inside a pension product card: compact rows and buttons so the card stays readable.

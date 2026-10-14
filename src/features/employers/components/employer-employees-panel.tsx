@@ -10,6 +10,7 @@ import type { Employee } from "@/features/employees/types";
 import type { Employer } from "@/features/employers/types";
 import { formatDateDDMMYYYY } from "@/lib/format/date";
 import { TableSkeleton } from "@/components/loading/skeleton";
+import { errorMessage } from "@/lib/api/error-messages";
 
 const PAGE_SIZE = 100;
 
@@ -40,7 +41,7 @@ export function EmployerEmployeesPanel({
           setEmployees(result.items);
           setHasMore(result.hasMore);
         })
-        .catch((err) => setError(err instanceof Error ? err.message : "טעינת העובדים נכשלה"))
+        .catch((err) => setError(errorMessage(err, "טעינת העובדים נכשלה")))
         .finally(() => setLoading(false));
     }, 300);
     return () => window.clearTimeout(timer);
@@ -88,7 +89,7 @@ export function EmployerEmployeesPanel({
             setEmployees((current) => [...current, ...result.items]);
             setHasMore(result.hasMore);
           } catch (err) {
-            setError(err instanceof Error ? err.message : "טעינת עובדים נוספים נכשלה");
+            setError(errorMessage(err, "טעינת עובדים נוספים נכשלה"));
           } finally {
             setLoadingMore(false);
           }

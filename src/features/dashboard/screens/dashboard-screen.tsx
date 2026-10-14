@@ -252,8 +252,8 @@ export default function DashboardPage() {
       <StatCard label="עובדים" value={formatCount(stats.employees)} icon={<Users size={19} />} tone="teal"
         footer={<span className="badge badge-green">{formatCount(stats.activeEmployees)} פעילים</span>} />
       <StatCard label="עובדים לא פעילים" value={formatCount(stats.inactiveEmployees)} icon={<UserX size={19} />} tone="amber" />
-      <StatCard label="דיווחים החודש" value="—" pending icon={<CircleCheck size={19} />} tone="neutral" footer="יתחבר לנתוני הדיווחים" />
-      <StatCard label="שגיאות פתוחות" value="—" pending icon={<AlertTriangle size={19} />} tone="neutral" footer="יתחבר למשובי המסלקה" />
+      <StatCard label="דיווחים החודש" value="—" pending icon={<CircleCheck size={19} />} tone="neutral" footer="הנתון עדיין לא זמין" />
+      <StatCard label="שגיאות פתוחות" value="—" pending icon={<AlertTriangle size={19} />} tone="neutral" footer="הנתון עדיין לא זמין" />
     </section>
 
     {mode === "organization" ? (
@@ -262,7 +262,13 @@ export default function DashboardPage() {
           <div className="card-head"><div><h2>מעסיקים בארגון</h2><span>בחרו מעסיק כדי לעבוד בהקשר שלו</span></div><span className="badge badge-gray">{formatCount(employers.length)}</span></div>
           <div className="toolbar"><div className="search"><Search size={17} aria-hidden="true" /><UiInput aria-label="חיפוש מעסיק" placeholder="חיפוש לפי שם או ח.פ..." value={query} onChange={(event) => setQuery(event.target.value)} /></div></div>
           {searching ? <LoadingState compact label="מחפש מעסיקים..." /> : employers.length ? <div className="employer-list">{employers.map((employer) => <div key={employer.id} className={`employer${employer.id === employerId ? " active" : ""}`}>
-            <button className="employer-select" onClick={() => chooseEmployer(employer.id)} aria-pressed={employer.id === employerId}><span className="employer-logo" aria-hidden="true">{employer.legalName.slice(0, 2)}</span><span className="employer-info"><b>{employer.legalName}</b><span>ח.פ. {employer.registrationNumber} · תיק ניכויים {employer.withholdingFileNumber}</span></span></button>
+            <button className="employer-select" onClick={() => chooseEmployer(employer.id)} aria-pressed={employer.id === employerId}>
+              <span className="employer-logo" aria-hidden="true">{employer.legalName.slice(0, 2)}</span>
+              <span className="employer-info">
+                <b>{employer.legalName}</b>
+                <span className="employer-identifiers"><span>ח.פ. <bdi dir="ltr">{employer.registrationNumber}</bdi></span><span>תיק ניכויים <bdi dir="ltr">{employer.withholdingFileNumber}</bdi></span></span>
+              </span>
+            </button>
             <Link className="btn btn-soft btn-sm" href={`/employers/${employer.id}?organizationId=${organizationId}`}>לפרופיל</Link>
             <span className={employerStatusBadgeClass(employer.status)}>{employerStatusLabel(employer.status)}</span>
           </div>)}</div> : <EmptyState icon={<Building2 size={22} />} title="לא נמצאו מעסיקים בארגון הזה." description={search ? "נסו לחפש לפי שם אחר או מספר ח.פ." : undefined} />}

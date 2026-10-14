@@ -16,7 +16,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: 10px 17px;
+  min-height: var(--control-height);
+  padding: 10px var(--space-4);
   border: 1px solid var(--btn-border);
   border-radius: var(--radius-control);
   background: var(--btn-bg);
@@ -39,7 +40,7 @@
   border-color: var(--btn-border-hover);
   color: var(--btn-fg-hover);
 }
-.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:active:not(:disabled):not([aria-disabled="true"]) { transform: translateY(1px); }
 .btn:focus-visible { outline: var(--focus-outline); outline-offset: 2px; }
 .btn:disabled,
 .btn[aria-disabled="true"] { cursor: not-allowed; opacity: 0.5; box-shadow: none; transform: none; }
@@ -54,8 +55,8 @@
   --btn-border-hover: var(--color-primary-solid-hover);
   --btn-shadow: var(--shadow-primary-rest);
 }
-.btn-primary:hover:not(:disabled) { box-shadow: var(--shadow-primary); }
-.btn-primary:active:not(:disabled) { background: var(--color-primary-solid-active); }
+.btn-primary:hover:not(:disabled):not([aria-disabled="true"]) { box-shadow: var(--shadow-primary); }
+.btn-primary:active:not(:disabled):not([aria-disabled="true"]) { background: var(--color-primary-solid-active); }
 
 .btn-secondary {
   --btn-bg: var(--color-control-bg);
@@ -100,10 +101,12 @@
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
 }
-.btn-icon:hover:not(:disabled),
-.icon-button:hover:not(:disabled) { background: var(--color-primary-soft); border-color: var(--color-primary-border); color: var(--color-primary); }
+.btn-icon { min-height: 36px; }
+.btn-icon:hover:not(:disabled):not([aria-disabled="true"]),
+.icon-button:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--color-surface-hover); border-color: var(--color-control-border-hover); color: var(--color-text); }
 .btn-icon:disabled,
-.icon-button:disabled { cursor: not-allowed; opacity: 0.5; }
+.icon-button:disabled,
+.icon-button[aria-disabled="true"] { cursor: not-allowed; opacity: 0.5; }
 .icon-button { width: 34px; height: 34px; }
 .icon-button.danger { color: var(--color-danger); background: var(--color-danger-soft); border-color: var(--color-danger-border); }
 

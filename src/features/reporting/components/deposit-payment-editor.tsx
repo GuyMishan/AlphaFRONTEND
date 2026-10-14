@@ -21,6 +21,7 @@ import type { BankBranchOption, BankOption } from "@/features/reference-data/typ
 import { autocompleteLookupTerm } from "@/features/reference-data/lookup-term";
 import { isDifferencesKind, isNegativeKind, requiresPreviousReference, validate006Metadata, validatePaymentDetails, validatePreventableContributionRules } from "@/features/reporting/deposit-validation";
 import { productNames, emptyPreviousReference, shortError, formatEmployerAccount, emptyMetadata, providerAccountFromReference, bankLabel, branchLabel } from "@/features/reporting/deposit-helpers";
+import { errorMessage } from "@/lib/api/error-messages";
 
 export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, contributionLimits, onClose, onSaved, onEvidenceChanged, readOnly = false, embedded = false, footerTargetId }: {
   employer: Employer | null; organizationId: string; employerId: string; reportId: string; row: ManualDepositRow;
@@ -114,7 +115,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
 
     }).catch((err) => {
       if (active) {
-        const message = shortError(err instanceof Error ? err.message : "טעינת נתוני הדיווח נכשלה");
+        const message = shortError(errorMessage(err, "טעינת נתוני הדיווח נכשלה"));
         setError(message);
         setEditorOptionsError(message);
         setEditorOptionsLoading(false);
@@ -122,6 +123,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     })
       .finally(() => { if (active) setLoadingMetadata(false); });
     return () => { active = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per opened deposit; readOnly and the callback are fixed for an open editor
   }, [organizationId, employerId, reportId, row.id]);
 
   useEffect(() => {
@@ -142,6 +144,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       }).catch(() => { if (active) setProviderReference(null); });
     }
     return () => { active = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- look up the provider only when the fund changes; an existing providerAccount is kept
   }, [row.fundExternalKey, row.productType]);
 
   useEffect(() => {
@@ -247,7 +250,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       await refreshAttachments();
       notify.success("המסמך צורף לדיווח.");
     } catch (err) {
-      const message = shortError(err instanceof Error ? err.message : "צירוף המסמך נכשל");
+      const message = shortError(errorMessage(err, "צירוף המסמך נכשל"));
       setError(message); notify.error(message);
     } finally {
       setUploadingAttachment(null);
@@ -267,7 +270,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       await refreshAttachments();
       notify.success("המסמך מהפרופיל צורף לעותק הדיווח.");
     } catch (err) {
-      const message = shortError(err instanceof Error ? err.message : "צירוף המסמך מהפרופיל נכשל");
+      const message = shortError(errorMessage(err, "צירוף המסמך מהפרופיל נכשל"));
       setError(message); notify.error(message);
     } finally {
       setUploadingAttachment(null);
@@ -298,7 +301,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       await refreshAttachments();
       notify.success("המסמך הוסר מהדיווח.");
     } catch (err) {
-      const message = shortError(err instanceof Error ? err.message : "מחיקת המסמך נכשלה");
+      const message = shortError(errorMessage(err, "מחיקת המסמך נכשלה"));
       setError(message); notify.error(message);
     }
   }
@@ -316,7 +319,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       patch("confirmationFileName", saved.originalFileName);
       notify.success("אישור ההעברה הועלה ונשמר.");
     } catch (err) {
-      const message = shortError(err instanceof Error ? err.message : "שמירת האסמכתא נכשלה");
+      const message = shortError(errorMessage(err, "שמירת האסמכתא נכשלה"));
       setError(message); notify.error(message);
     } finally { setUploadingProof(false); }
   }
@@ -357,7 +360,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       }
       onSaved({ ...row, ...persistedPayment, confirmationFileName: paymentProofs[0]?.originalFileName || persistedPayment.confirmationFileName });
     } catch (err) {
-      const message = shortError(err instanceof Error ? err.message : "שמירת פרטי התשלום נכשלה"); setError(message); notify.error(message); setSaving(false);
+      const message = shortError(errorMessage(err, "שמירת פרטי התשלום נכשלה")); setError(message); notify.error(message); setSaving(false);
     }
   }
 

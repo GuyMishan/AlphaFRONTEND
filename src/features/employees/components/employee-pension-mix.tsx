@@ -12,6 +12,7 @@ import type { Employee } from "@/features/employees/types";
 import type { EmployeePensionProductInput, PensionProductType, SalaryAllocationType, Section14Code } from "@/features/pension/types";
 import type { PensionEditorContributionLimit } from "@/features/reference-data/types";
 import { CardSkeleton } from "@/components/loading/skeleton";
+import { errorMessage } from "@/lib/api/error-messages";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -109,7 +110,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
       await reloadDocuments();
       toast.success("המסמך שויך למוצר הפנסיוני.");
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "שיוך המסמך נכשל.");
+      toast.error(errorMessage(cause, "שיוך המסמך נכשל."));
     } finally {
       setAssigningLegacy("");
     }
@@ -127,7 +128,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
       setMonthlySalary(Number(employeeResult.monthlySalary ?? 0));
       setProducts(items.map(toEditorProduct).map(sanitizePensionProductContributions));
       setLibraryDocuments(documents);
-    }).catch((err) => setError(err instanceof Error ? err.message : "טעינת תמהיל העובד נכשלה"))
+    }).catch((err) => setError(errorMessage(err, "טעינת תמהיל העובד נכשלה")))
       .finally(() => setLoading(false));
   }, [organizationId, employerId, employeeId, initialEmployee]);
 
@@ -170,7 +171,7 @@ export function EmployeePensionMix({ organizationId, employerId, employeeId, emp
       setSaved(true);
       if (onSaved) await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שמירת תמהיל העובד נכשלה");
+      setError(errorMessage(err, "שמירת תמהיל העובד נכשלה"));
     } finally {
       setSaving(false);
     }

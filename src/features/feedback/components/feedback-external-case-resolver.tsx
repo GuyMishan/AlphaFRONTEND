@@ -7,6 +7,7 @@ import { UiFileUpload } from "@/components/ui/ui-file-upload";
 import { formatDateTimeDDMMYYYY } from "@/lib/format/date";
 import { reportFeedbackApi, type ExternalFeedbackCase, type FeedbackResolutionGroup } from "@/features/feedback/api";
 import { LoadingState } from "@/components/loading/loading-state";
+import { errorMessage } from "@/lib/api/error-messages";
 
 function statusLabel(status: ExternalFeedbackCase["status"]) {
   if (status === "waiting") return "ממתין לתשובה";
@@ -58,7 +59,7 @@ export function FeedbackExternalCaseResolver({
         if (!cancelled) setExternalCase(result);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "טעינת תיק הטיפול נכשלה.");
+        if (!cancelled) setError(errorMessage(err, "טעינת תיק הטיפול נכשלה."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -81,7 +82,7 @@ export function FeedbackExternalCaseResolver({
       setExternalCase(result);
       onChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "עדכון תיק הטיפול נכשל.");
+      setError(errorMessage(err, "עדכון תיק הטיפול נכשל."));
     } finally {
       setBusy(false);
     }
@@ -115,7 +116,7 @@ export function FeedbackExternalCaseResolver({
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "הורדת הקובץ נכשלה.");
+      setError(errorMessage(err, "הורדת הקובץ נכשלה."));
     }
   }
 

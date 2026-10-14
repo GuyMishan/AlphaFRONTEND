@@ -18,6 +18,7 @@ import {
 import type { Employee } from "@/features/employees/types";
 import type { ScopeEmployer, ScopeOrganization } from "@/features/scope/types";
 import { publishScopeChange } from "@/features/scope/scope-events";
+import { useLatestRequest } from "@/lib/hooks/use-latest-request";
 
 type ScopeLevel = "organization" | "employer" | "employee";
 
@@ -58,13 +59,22 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
   const relevantOrganizations = scope?.organizations.filter((item) => item.hasOrganizationScope) ?? [];
   const organizationEmployers = selectedOrganization?.employers ?? [];
 
-  async function loadEmployees(orgId: string, empId: string) {
+  const employeeLoads = useLatestRequest();
+
+  /**
+   * Loads the employer's employees and picks the selected one. Returns null when a newer
+   * load started meanwhile (fast employer switching): the caller must then do nothing, so a
+   * slow reply for the previous employer never replaces the list or navigates to its employee.
+   */
+  async function loadEmployees(orgId: string, empId: string): Promise<string | null> {
+    const isCurrent = employeeLoads.begin();
     if (!orgId || !empId) {
       setEmployees([]);
       setEmployeeId("");
       return "";
     }
     const items = await employeesApi.employees(orgId, empId);
+    if (!isCurrent()) return null;
     setEmployees(items);
     const saved = getEmployeeSelection();
     const nextId = saved && items.some((item) => item.id === saved) ? saved : items[0]?.id ?? "";
@@ -133,11 +143,11 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
 
         setOrganizationId(orgId);
 
-        let nextEmployeeId = "";
+        let nextEmployeeId: string | null = "";
         if (level === "employee" && employerEntry)
           nextEmployeeId = await loadEmployees(orgId, employerEntry.employer.id);
 
-        if (!active || !orgId) return;
+        if (!active || !orgId || nextEmployeeId === null) return;
         if (!isDashboard) {
           publishScopeChange({
             organizationId: orgId,
@@ -152,6 +162,7 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
 
     void load();
     return () => { active = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- pages read the saved selection on mount; re-resolving on every dashboard/page switch would refetch needlessly
   }, [level, isAdminDashboard, isAdminBilling]);
 
   async function changeOrganization(value: string) {
@@ -184,6 +195,7 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
 
     if (level === "employee") {
       const nextEmployeeId = await loadEmployees(value, nextEmployer.id);
+      if (nextEmployeeId === null) return;
       if (nextEmployeeId) {
         router.replace(`/employees/${nextEmployeeId}`);
         return;
@@ -212,6 +224,7 @@ export function ScopeController({ placement = "bar" }: { placement?: "bar" | "to
 
     if (level === "employee") {
       const nextEmployeeId = await loadEmployees(entry.organization.id, value);
+      if (nextEmployeeId === null) return;
       if (nextEmployeeId) {
         router.replace(`/employees/${nextEmployeeId}`);
         return;

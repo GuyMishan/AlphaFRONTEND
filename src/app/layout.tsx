@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
-import { Toaster } from "sonner";
+import { AlphaToaster } from "@/components/ui/alpha-toaster";
 import { PersistentAppLayout } from "@/features/shell/components/persistent-app-layout";
 import { ThemeProvider } from "@/features/settings/components/theme-provider";
 import { themeInitScript } from "@/features/settings/theme-init";
@@ -16,6 +16,7 @@ import "@/styles/components/brand.css";
 import "@/styles/components/buttons.css";
 import "@/styles/components/surfaces.css";
 import "@/styles/components/feedback.css";
+import "@/styles/components/notifications.css";
 import "@/styles/components/forms.css";
 import "@/styles/components/data-display.css";
 import "@/styles/components/navigation.css";
@@ -46,7 +47,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <QueryProvider>
           <ThemeProvider>
             <PersistentAppLayout>{children}</PersistentAppLayout>
-            <Toaster position="top-center" richColors closeButton dir="rtl" duration={4500} />
+            <AlphaToaster />
             <ValidationUxBridge />
             <SessionTimeoutGuard />
           </ThemeProvider>

@@ -1,4 +1,4 @@
-import { isMachineCode, problemCode, validationErrors, type ProblemDetails } from "./errors";
+import { ApiError, isMachineCode, problemCode, validationErrors, type ProblemDetails } from "./errors";
 
 /**
  * One user-facing Hebrew message policy for backend Problem Details.
@@ -131,8 +131,15 @@ export function httpErrorMessage(status: number, problem: ProblemDetails | undef
   return apiErrorMessage(status, problem, fallback);
 }
 
-/** Display text for any caught error (ApiError, Error or unknown). */
+const HEBREW_TEXT = /[֐-׿]/;
+
+/**
+ * Display text for any caught error. ApiError messages are already user-facing Hebrew;
+ * a plain Error is shown only when the app wrote it in Hebrew. Runtime failures
+ * (TypeError, SyntaxError, ...) and English library text never reach the user.
+ */
 export function errorMessage(error: unknown, fallback = DEFAULT_MESSAGE): string {
-  if (error instanceof Error) return error.message || fallback;
+  if (error instanceof ApiError) return error.message || fallback;
+  if (error instanceof Error && error.name === "Error" && HEBREW_TEXT.test(error.message)) return error.message;
   return fallback;
 }

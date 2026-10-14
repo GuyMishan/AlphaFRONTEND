@@ -4,6 +4,7 @@ import { UiAutocomplete, UiInput } from "@/components/ui/ui-controls";
 import { useEffect, useState } from "react";
 import { referenceDataApi } from "@/features/reference-data/api";
 import type { PensionFundOption, PensionProductType } from "@/features/pension/types";
+import { errorMessage } from "@/lib/api/error-messages";
 
 type FundValue = {
   fundExternalKey?: string;
@@ -39,12 +40,14 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
 
   useEffect(() => {
     setQuery(valueLabel(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- value is a new object each render; its displayed fields are the real dependencies
   }, [value.fundExternalKey, value.fundCode, value.fundName, value.fundCompanyName]);
 
   useEffect(() => {
     if (productType === 99) {
       setOptions([]);
       setError("");
+      setLoading(false);
       setOpen(false);
       return;
     }
@@ -65,8 +68,9 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
       return;
     }
 
+    // Cleared by the effect cleanup, so a slow response for an older query never replaces newer results.
+    let active = true;
     const timer = window.setTimeout(() => {
-      let active = true;
       setLoading(true);
       setError("");
       referenceDataApi.pensionFunds(productType, query.trim(), 30)
@@ -76,18 +80,19 @@ export function PensionFundSelect({ productType, value, disabled = false, onChan
         })
         .catch((err) => {
           if (!active) return;
-          setError(err instanceof Error ? err.message : "טעינת רשימת הקופות נכשלה");
+          setError(errorMessage(err, "טעינת רשימת הקופות נכשלה"));
           setOptions([]);
         })
         .finally(() => {
           if (active) setLoading(false);
         });
-      return () => {
-        active = false;
-      };
     }, 250);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- value only matters through query, which follows it (effect above)
   }, [productType, query, open]);
 
   if (productType === 99) {

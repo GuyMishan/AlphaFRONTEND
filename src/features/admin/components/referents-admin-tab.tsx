@@ -134,7 +134,7 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
       toast.success("פרטי הרפרנט והשיוכים נשמרו.");
       await refreshAdminData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "שמירת הרפרנט נכשלה.");
+      toast.error(errorMessage(error, "שמירת הרפרנט נכשלה."));
     } finally {
       setSaving(false);
     }
@@ -151,7 +151,7 @@ export function ReferentsAdminTab({ autoCreate = false }: { autoCreate?: boolean
       setEditor(null);
       await refreshAdminData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "ביטול הרפרנט נכשל.");
+      toast.error(errorMessage(error, "ביטול הרפרנט נכשל."));
     } finally {
       setSaving(false);
     }

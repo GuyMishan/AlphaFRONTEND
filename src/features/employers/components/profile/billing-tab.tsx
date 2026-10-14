@@ -11,6 +11,8 @@ import type { Employer, EmployerProfileCenterSettings } from "@/features/employe
 import { UiChoiceCard } from "@/components/ui/ui-controls";
 import { Tooltip } from "@/components/ui/tooltip";
 import { CardSkeleton } from "@/components/loading/skeleton";
+import { errorMessage } from "@/lib/api/error-messages";
+import { useLatestRequest } from "@/lib/hooks/use-latest-request";
 
 export function EmployerBillingInheritanceTab({ organizationId, employer, canManageEmployer, billing, hasOrganizationContext, onModeSaved }: {
   organizationId: string;
@@ -24,20 +26,24 @@ export function EmployerBillingInheritanceTab({ organizationId, employer, canMan
   const [selectedMode, setSelectedMode] = useState<1 | 2 | null>(null);
   const [savingMode, setSavingMode] = useState(false);
   const [loading, setLoading] = useState(true);
+  const requests = useLatestRequest(organizationId, employer.id);
 
   async function loadResolution() {
+    const isCurrent = requests.begin();
     setLoading(true);
     try {
       const value = await billingApi.employerBillingResolution(organizationId, employer.id);
+      if (!isCurrent()) return;
       setResolution(value);
       setSelectedMode(value.source === "Organization" ? 2 : 1);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "טעינת הגדרת החיוב נכשלה");
+      if (isCurrent()) toast.error(errorMessage(err, "טעינת הגדרת החיוב נכשלה"));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the scope changes; the loader reads the current props
   useEffect(() => { void loadResolution(); }, [organizationId, employer.id]);
 
   async function persistMode(nextMode: 1 | 2) {
@@ -51,7 +57,7 @@ export function EmployerBillingInheritanceTab({ organizationId, employer, canMan
       await loadResolution();
       toast.success("אופן החיוב של המעסיק נשמר");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת אופן החיוב נכשלה");
+      toast.error(errorMessage(err, "שמירת אופן החיוב נכשלה"));
     } finally {
       setSavingMode(false);
     }

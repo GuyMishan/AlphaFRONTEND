@@ -10,6 +10,7 @@ import { scopeApi } from "@/features/scope/api";
 import { invalidateScopeContext } from "@/features/scope/scope-context";
 import type { Organization } from "@/features/organizations/types";
 import type { ScopeEmployer } from "@/features/scope/types";
+import { errorMessage } from "@/lib/api/error-messages";
 
 type TransferCandidate = ScopeEmployer & { sourceName: string };
 
@@ -44,7 +45,7 @@ export function EmployerTransferModal({
           .filter((org) => !receiveIntoOrganizationId || org.id !== receiveIntoOrganizationId)
           .flatMap((org) => org.employers.map((item) => ({ ...item, sourceName: org.name }))));
       })
-      .catch((error) => toast.error(error instanceof Error ? error.message : "טעינת המעסיקים והארגונים נכשלה"))
+      .catch((error) => toast.error(errorMessage(error, "טעינת המעסיקים והארגונים נכשלה")))
       .finally(() => setLoading(false));
   }, [open, receiveIntoOrganizationId]);
 
@@ -76,7 +77,7 @@ export function EmployerTransferModal({
       onClose();
       await onTransferred(selectedTarget.id);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "העברת המעסיק נכשלה");
+      toast.error(errorMessage(error, "העברת המעסיק נכשלה"));
     } finally {
       setSaving(false);
     }

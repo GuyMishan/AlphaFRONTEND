@@ -23,6 +23,7 @@ import type { GlobalScopeContext } from "@/features/scope/types";
 import { closeUpgradeDialog, openUpgradeDialog, upgradeDetailFromProblem, upgradeDialogStore } from "@/features/billing/upgrade";
 import { subscribeToApiErrors } from "@/lib/api/client";
 import { useStore } from "zustand";
+import { errorMessage } from "@/lib/api/error-messages";
 
 const nav = [
   { href: "/dashboard", label: "דף הבית", icon: Gauge },
@@ -81,6 +82,11 @@ export function AppShell({ children, title = "מרכז התפעול", hideScopeC
   if (parentShell) return <>{children}</>;
 
   return <AppShellFrame initialConfig={{ title, hideScopeController }}>{children}</AppShellFrame>;
+}
+
+/** Up to two initials ("יעל שטרן" → "יש") for the decorative avatar. */
+function initials(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).map((part) => part.slice(0, 1)).join("");
 }
 
 function AppShellFrame({ children, initialConfig }: { children: React.ReactNode; initialConfig: ShellPageConfig }) {
@@ -237,7 +243,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
       setEmployerSelection(result.organizationId, result.employerId);
       return result.employer;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "הקמת המעסיק נכשלה.";
+      const message = errorMessage(err, "הקמת המעסיק נכשלה.");
       setOnboardingError(message);
       throw err;
     }
@@ -297,7 +303,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
     <ShellContext.Provider value={shellContext}>
       <div className="app-shell">
         <aside className="sidebar" aria-label="תפריט צד">
-          <div className="sidebar-brand"><Brand className="brand-inverse" /></div>
+          <div className="sidebar-brand"><Brand /></div>
           {navigation}
         </aside>
 
@@ -305,7 +311,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
         <aside ref={mobileDrawerRef} className={`mobile-sidebar${mobileMenuOpen ? " open" : ""}`} aria-hidden={!mobileMenuOpen} aria-label="תפריט ניווט"
           role={mobileMenuOpen ? "dialog" : undefined}>
           <div className="mobile-sidebar-head">
-            <Brand className="brand-inverse" />
+            <Brand />
             <button className="mobile-close" onClick={() => setMobileMenuOpen(false)} aria-label="סגירת תפריט"><X size={22} /></button>
           </div>
           {navigation}
@@ -320,7 +326,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
             </div>
             <div className="user-chip">
               <div className="user-chip-copy"><b>{session.displayName}</b><div className="api-state"><span className="dot online" />{session.isReferent ? "רפרנט · המערכת מחוברת" : "המערכת מחוברת"}</div></div>
-              <span className="avatar" aria-hidden="true">{session.displayName.slice(0, 1)}</span>
+              <span className="avatar" aria-hidden="true">{initials(session.displayName)}</span>
             </div>
             <FetchIndicator />
           </header>

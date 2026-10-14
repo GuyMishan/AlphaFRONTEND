@@ -6,6 +6,7 @@ import type { Employer } from "@/features/employers/types";
 import { EmployerForm } from "@/features/employers/components/employer-form";
 import type { FeedbackResolutionProblem } from "@/features/feedback/api";
 import { LoadingState } from "@/components/loading/loading-state";
+import { errorMessage } from "@/lib/api/error-messages";
 
 // Only fields actually stored by EmployerForm are editable here.
 // Clearinghouse sender/recipient identifiers must be edited in integration
@@ -41,7 +42,7 @@ export function FeedbackCode18EmployerEditor({
     employersApi.employer(organizationId, employerId)
       .then(result => { if (active) setEmployer(result); })
       .catch(cause => {
-        if (active) setError(cause instanceof Error ? cause.message : "טעינת פרטי מעסיק נכשלה");
+        if (active) setError(errorMessage(cause, "טעינת פרטי מעסיק נכשלה"));
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

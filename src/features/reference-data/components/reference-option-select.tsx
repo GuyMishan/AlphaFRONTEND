@@ -4,6 +4,7 @@ import { UiSelect } from "@/components/ui/ui-controls";
 import { useEffect, useMemo, useState } from "react";
 import { referenceDataApi } from "@/features/reference-data/api";
 import type { ReferenceOption } from "@/features/reference-data/types";
+import { errorMessage } from "@/lib/api/error-messages";
 
 type Props = {
   category: string;
@@ -36,7 +37,7 @@ export function ReferenceOptionSelect({ category, scope = "all", value, onChange
     setError("");
     referenceDataApi.options(category, scope)
       .then((items) => { if (active) setOptions(items); })
-      .catch((err) => { if (active) setError(err instanceof Error ? err.message : "טעינת האפשרויות נכשלה"); })
+      .catch((err) => { if (active) setError(errorMessage(err, "טעינת האפשרויות נכשלה")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [category, scope, suppliedOptions, suppliedLoading, suppliedError]);

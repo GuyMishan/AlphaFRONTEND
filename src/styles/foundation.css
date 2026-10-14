@@ -44,11 +44,15 @@ img, svg { flex-shrink: 0; }
   border: 0;
 }
 
-/* Scrollbars: thin, translucent track, no arrow buttons. */
-html { scrollbar-color: var(--scrollbar-thumb) transparent; scrollbar-width: thin; }
-*:not(svg):not(path) { scrollbar-color: var(--scrollbar-thumb) transparent; scrollbar-width: thin; }
-*:not(svg):not(path):hover,
-*:not(svg):not(path):focus-within { scrollbar-color: var(--scrollbar-thumb-hover) transparent; }
+/* Scrollbars: thin, translucent track, no arrow buttons. Chromium ignores the ::-webkit-scrollbar
+   styling below once scrollbar-width/-color are set (and then draws arrow buttons), so the standard
+   properties apply only to engines without the pseudo-elements (Firefox). */
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-color: var(--scrollbar-thumb) transparent; scrollbar-width: thin; }
+  *:not(svg):not(path) { scrollbar-color: var(--scrollbar-thumb) transparent; scrollbar-width: thin; }
+  *:not(svg):not(path):hover,
+  *:not(svg):not(path):focus-within { scrollbar-color: var(--scrollbar-thumb-hover) transparent; }
+}
 ::-webkit-scrollbar { width: var(--scrollbar-size); height: var(--scrollbar-size); background: transparent; }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-track-piece, ::-webkit-scrollbar-corner {
   background: transparent !important;
@@ -69,35 +73,6 @@ html { scrollbar-color: var(--scrollbar-thumb) transparent; scrollbar-width: thi
 ::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active {
   background: var(--scrollbar-thumb-active);
   background-clip: padding-box;
-}
-
-/* Toasts (sonner) follow the app typography, direction and theme tokens. */
-[data-sonner-toaster] { direction: rtl; font-family: var(--font-sans); }
-html [data-sonner-toaster][data-sonner-theme] {
-  --normal-bg: var(--color-surface-raised);
-  --normal-border: var(--color-border);
-  --normal-text: var(--color-text);
-  --success-bg: var(--color-success-soft);
-  --success-border: var(--color-success-border);
-  --success-text: var(--color-success);
-  --info-bg: var(--color-info-soft);
-  --info-border: var(--color-info-border);
-  --info-text: var(--color-info);
-  --warning-bg: var(--color-warning-soft);
-  --warning-border: var(--color-warning-border);
-  --warning-text: var(--color-warning);
-  --error-bg: var(--color-danger-soft);
-  --error-border: var(--color-danger-border);
-  --error-text: var(--color-danger);
-  --border-radius: var(--radius-lg);
-}
-html [data-sonner-toaster] [data-sonner-toast] { box-shadow: var(--shadow-lg); }
-[data-sonner-toast][data-type="error"] [data-content] {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-  overflow-wrap: anywhere;
 }
 
 /* Accessibility menu modes (src/components/layout/accessibility-menu.tsx). */

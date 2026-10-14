@@ -14,6 +14,7 @@ import type { EmployeePensionProduct, EmployeePensionProductInput, ManualProduct
 import type { ManualReportEmployeeDetail, ManualReportEmployeeSummary } from "@/features/reporting/types";
 import type { PensionEditorContributionLimit } from "@/features/reference-data/types";
 import { LoadingState } from "@/components/loading/loading-state";
+import { errorMessage } from "@/lib/api/error-messages";
 
 type Props = {
   organizationId: string;
@@ -49,7 +50,7 @@ function matchesEmployee(employee: Employee, search: string) {
   return !term || `${employee.firstName} ${employee.lastName} ${employee.nationalId} ${employee.employeeNumber}`.toLowerCase().includes(term);
 }
 
-function toEditorProduct(product: ManualProductInput, index: number): PensionEditorProduct {
+function toEditorProduct(product: ManualProductInput, _index: number): PensionEditorProduct {
   return {
     workspaceReportProductId: product.workspaceReportProductId ?? null,
     sourceReportProductId: product.sourceReportProductId ?? null,
@@ -187,11 +188,11 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       setVisibleEmployees(fromProps.length ? fromProps : reportRows.map(snapshotEmployee));
     }
     if (employeeResult.status === "rejected" && reportResult.status === "rejected") {
-      const message = (employeeResult.reason instanceof Error ? employeeResult.reason.message : "") || (reportResult.reason instanceof Error ? reportResult.reason.message : "") || "טעינת רשימת העובדים נכשלה";
+      const message = errorMessage(employeeResult.reason, "") || errorMessage(reportResult.reason, "") || "טעינת רשימת העובדים נכשלה";
       setError(message);
       notify.error(message);
     } else if (reportResult.status === "rejected") {
-      const message = reportResult.reason instanceof Error ? reportResult.reason.message : "טעינת נתוני העובדים בדיווח נכשלה";
+      const message = errorMessage(reportResult.reason, "טעינת נתוני העובדים בדיווח נכשלה");
       setError(message);
       notify.error(message);
     }
@@ -203,27 +204,37 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       const result = await manualReportsApi.manualReportEmployees(organizationId, employerId, reportId, search, 0, 100);
       setRows(result.items);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "טעינת עובדי הדיווח נכשלה";
+      const message = errorMessage(err, "טעינת עובדי הדיווח נכשלה");
       setError(message);
       notify.error(message);
     }
   }
 
+  // The search last loaded for the current report; the debounced search skips repeats.
+  const loadedSearch = useRef("");
+
   useEffect(() => {
     setQuery("");
     setVisibleEmployees(employees);
+    loadedSearch.current = "";
     void loadList("", true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the report or its employee list changes
   }, [organizationId, employerId, reportId, employees]);
 
   useEffect(() => {
+    // Waits for the initial load; this effect reruns when it ends, so a query typed meanwhile is not lost.
+    if (loading) return;
+    const search = query.trim();
+    if (search === loadedSearch.current) return;
     const timer = window.setTimeout(async () => {
-      if (loading) return;
+      loadedSearch.current = search;
       setSearching(true);
-      await loadList(query.trim(), false);
+      await loadList(search, false);
       setSearching(false);
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [query, organizationId, employerId, reportId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadList reads the current props; the scope is listed explicitly
+  }, [query, loading, organizationId, employerId, reportId]);
 
   useEffect(() => {
     if (!focusReportEmployeeId) return;
@@ -236,7 +247,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       .catch(error => {
         if (!active) return;
         automaticEditorTarget.current = "";
-        setError(error instanceof Error ? error.message : "לא ניתן לפתוח את העובד בסביבת התיקון");
+        setError(errorMessage(error, "לא ניתן לפתוח את העובד בסביבת התיקון"));
       });
     return () => { active = false; };
   }, [organizationId, employerId, reportId, focusReportEmployeeId]);
@@ -255,7 +266,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       }
       await loadRows(query.trim());
     } catch (err) {
-      const message = err instanceof Error ? err.message : "עדכון העובדים בדיווח נכשל";
+      const message = errorMessage(err, "עדכון העובדים בדיווח נכשל");
       setError(message);
       notify.error(message);
     } finally {
@@ -303,7 +314,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
     try {
       setEditing(await manualReportsApi.manualReportEmployee(organizationId, employerId, reportId, row.id));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "טעינת פרטי העובד נכשלה";
+      const message = errorMessage(err, "טעינת פרטי העובד נכשלה");
       setError(message);
       notify.error(message);
     }
@@ -375,7 +386,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
               await loadRows(query.trim());
               notify.success("הנתונים נשמרו לדיווח הנוכחי");
             } catch (err) {
-              notify.error(err instanceof Error ? err.message : "שמירת נתוני העובד בדיווח נכשלה");
+              notify.error(errorMessage(err, "שמירת נתוני העובד בדיווח נכשלה"));
             } finally { setSavingMix(false); }
           })()}>{savingMix ? "שומר..." : "לא, רק לדיווח הזה"}</button>
           <button className="btn btn-primary" disabled={savingMix} onClick={() => void (async () => {
@@ -391,7 +402,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
               await loadRows(query.trim());
               notify.success("הנתונים נשמרו לדיווח ותמהיל העובד עודכן");
             } catch (err) {
-              notify.error(err instanceof Error ? err.message : "שמירת הנתונים נכשלה");
+              notify.error(errorMessage(err, "שמירת הנתונים נכשלה"));
             } finally { setSavingMix(false); }
           })()}><Save size={15} />{savingMix ? "שומר..." : "כן, שמור גם בכרטיס העובד"}</button>
         </>}>
@@ -402,7 +413,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   </>;
 }
 
-function EmployeeProductsModal({ employee, month, onClose, onSave, organizationId, employerId, correctionWorkspace, focusReportProductId = "", focusMissingFieldNumber = "" }: {
+function EmployeeProductsModal({ employee, month, onClose, onSave, organizationId, employerId, focusReportProductId = "", focusMissingFieldNumber = "" }: {
   employee: ManualReportEmployeeDetail; month: string; onClose: () => void;
   onSave: (monthlySalary: number, products: ManualProductInput[]) => Promise<void>;
   organizationId: string; employerId: string; correctionWorkspace: boolean;
@@ -436,7 +447,7 @@ function EmployeeProductsModal({ employee, month, onClose, onSave, organizationI
     try {
       await onSave(monthlySalary, normalized.products.map((product) => toManualProduct(product, month)));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "שמירת נתוני העובד נכשלה";
+      const message = errorMessage(err, "שמירת נתוני העובד נכשלה");
       setError(message);
       notify.error(message);
       setSaving(false);

@@ -75,7 +75,7 @@ export function EmployeeForm({ organizationId, employerId, employee, employer, e
     setFormOptionsError("");
     employerInterfaceApi.optionsBundle(["employee-identifier-type", "gender"])
       .then((items) => { if (active) setFormOptions(items); })
-      .catch((err) => { if (active) setFormOptionsError(err instanceof Error ? err.message : "טעינת אפשרויות העובד נכשלה"); })
+      .catch((err) => { if (active) setFormOptionsError(errorMessage(err, "טעינת אפשרויות העובד נכשלה")); })
       .finally(() => { if (active) setFormOptionsLoading(false); });
     return () => { active = false; };
   }, []);

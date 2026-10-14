@@ -46,7 +46,7 @@ export type ManufacturerRoutingValidation = {
 
 // Transmission-specific wording for billing gates (takes precedence over backend detail).
 const transmissionMessages = {
-  BILLING_ACCOUNT_REQUIRED: "לא הוגדר Billing Account עבור הגורם שמחויב בפועל.",
+  BILLING_ACCOUNT_REQUIRED: "לא הוגדרו פרטי חיוב עבור הגורם שמחויב בפועל.",
   BILLING_PAYMENT_METHOD_NOT_ACTIVE: "אמצעי התשלום של Alpha אינו פעיל ולכן לא ניתן לשדר דיווחים.",
   BILLING_PAYMENT_METHOD_REFERENCE_REQUIRED: "אמצעי התשלום מסומן כפעיל אך חסר token או mandate reference תקין.",
 };

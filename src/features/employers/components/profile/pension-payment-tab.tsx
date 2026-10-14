@@ -14,6 +14,8 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { autocompleteLookupTerm } from "@/features/reference-data/lookup-term";
 import { isCompletePaymentAccount, PAYMENT_ACCOUNT_REQUIRED_MESSAGE } from "@/features/payment-accounts/schemas";
 import { CardSkeleton } from "@/components/loading/skeleton";
+import { errorMessage } from "@/lib/api/error-messages";
+import { useLatestRequest } from "@/lib/hooks/use-latest-request";
 
 export const EMPTY_ACCOUNT: EmployerPaymentAccountInput = {
   bankId: 0,
@@ -23,7 +25,7 @@ export const EMPTY_ACCOUNT: EmployerPaymentAccountInput = {
   accountHolderId: "",
   isDefault: false,
 };
-export function PensionPaymentTab({ organizationId, employerId, canManage, accounts, setAccounts, pensionPayment, hasOrganizationContext, onModeSaved }: {
+export function PensionPaymentTab({ organizationId, employerId, canManage, setAccounts, pensionPayment, hasOrganizationContext, onModeSaved }: {
   organizationId: string;
   employerId: string;
   canManage: boolean;
@@ -49,11 +51,17 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
   const [documentId, setDocumentId] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadingChoice, setLoadingChoice] = useState(true);
+  // Full bank details must never land in another employer's form: replies for a previous
+  // employer, or for an older load, are dropped.
+  const loads = useLatestRequest(organizationId, employerId);
+  const detailLoads = useLatestRequest(organizationId, employerId);
 
   async function loadResolution() {
+    const isCurrent = loads.begin();
     setLoadingChoice(true);
     try {
       const value = await paymentAccountsApi.employerPaymentResolution(organizationId, employerId);
+      if (!isCurrent()) return;
       setResolution(value);
       const effectiveMode: 1 | 2 = value.source === "Organization" ? 2 : 1;
       setSelectedMode(effectiveMode);
@@ -61,6 +69,7 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
       setEditingEmployerAccount(false);
       if (effectiveMode === 1 && value.employerAccount) {
         const full = await paymentAccountsApi.employerPaymentAccount(organizationId, employerId, value.employerAccount.id);
+        if (!isCurrent()) return;
         setEditingId(value.employerAccount.id);
         setForm({
           bankId: full.bankId,
@@ -77,20 +86,24 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
         setDocumentId(full.mandate?.documentId ?? "");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "טעינת חשבון התשלום נכשלה");
+      if (isCurrent()) toast.error(errorMessage(err, "טעינת חשבון התשלום נכשלה"));
     } finally {
-      setLoadingChoice(false);
+      if (isCurrent()) setLoadingChoice(false);
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the scope changes; the loader reads the current props
   useEffect(() => { void loadResolution(); }, [organizationId, employerId]);
 
   useEffect(() => {
     if (!bankOpen) return;
+    let active = true;
     const timer = window.setTimeout(() => {
-      referenceDataApi.banks(autocompleteLookupTerm(bankSearch), 50).then(setBanks).catch(() => setBanks([]));
+      referenceDataApi.banks(autocompleteLookupTerm(bankSearch), 50)
+        .then((items) => { if (active) setBanks(items); })
+        .catch(() => { if (active) setBanks([]); });
     }, 200);
-    return () => window.clearTimeout(timer);
+    return () => { active = false; window.clearTimeout(timer); };
   }, [bankOpen, bankSearch]);
 
   useEffect(() => {
@@ -100,10 +113,14 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
 
   useEffect(() => {
     if (!branchOpen || !form.bankId) return;
+    // A reply for a previously selected bank must not fill this bank's branch list.
+    let active = true;
     const timer = window.setTimeout(() => {
-      referenceDataApi.bankBranches(form.bankId, autocompleteLookupTerm(branchSearch), 100).then(setBranches).catch(() => setBranches([]));
+      referenceDataApi.bankBranches(form.bankId, autocompleteLookupTerm(branchSearch), 100)
+        .then((items) => { if (active) setBranches(items); })
+        .catch(() => { if (active) setBranches([]); });
     }, 200);
-    return () => window.clearTimeout(timer);
+    return () => { active = false; window.clearTimeout(timer); };
   }, [branchOpen, form.bankId, branchSearch]);
 
   useEffect(() => {
@@ -125,8 +142,10 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
       setDocumentId("");
       return;
     }
+    const isCurrent = detailLoads.begin();
     try {
       const full = await paymentAccountsApi.employerPaymentAccount(organizationId, employerId, direct.id);
+      if (!isCurrent()) return;
       setEditingId(direct.id);
       setForm({
         bankId: full.bankId,
@@ -142,14 +161,16 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
       setExternalMandateId(full.mandate?.externalMandateId ?? "");
       setDocumentId(full.mandate?.documentId ?? "");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "טעינת חשבון המעסיק נכשלה");
+      if (isCurrent()) toast.error(errorMessage(err, "טעינת חשבון המעסיק נכשלה"));
     }
   }
 
   async function startEmployerAccountEdit() {
     if (!canManage || !resolution?.employerAccount) return;
+    const isCurrent = detailLoads.begin();
     try {
       const full = await paymentAccountsApi.employerPaymentAccount(organizationId, employerId, resolution.employerAccount.id);
+      if (!isCurrent()) return;
       setEditingId(resolution.employerAccount.id);
       setForm({
         bankId: full.bankId,
@@ -166,7 +187,7 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
       setDocumentId(full.mandate?.documentId ?? "");
       setEditingEmployerAccount(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "טעינת חשבון המעסיק לעריכה נכשלה");
+      if (isCurrent()) toast.error(errorMessage(err, "טעינת חשבון המעסיק לעריכה נכשלה"));
     }
   }
 
@@ -184,7 +205,7 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
       await loadResolution();
       toast.success("חשבון הארגון נשמר כחשבון התשלום הפנסיוני של המעסיק");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת מקור החשבון נכשלה");
+      toast.error(errorMessage(err, "שמירת מקור החשבון נכשלה"));
     } finally {
       setSaving(false);
     }
@@ -218,7 +239,7 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, accou
       await loadResolution();
       toast.success("חשבון המעסיק נשמר");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שמירת חשבון התשלום נכשלה");
+      toast.error(errorMessage(err, "שמירת חשבון התשלום נכשלה"));
     } finally {
       setSaving(false);
     }

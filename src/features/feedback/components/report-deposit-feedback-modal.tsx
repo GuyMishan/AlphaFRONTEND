@@ -17,6 +17,7 @@ import {
 } from "@/features/reporting/payment-confirmations-api";
 import { formatMoney } from "@/lib/format/number";
 import { LoadingState } from "@/components/loading/loading-state";
+import { errorMessage } from "@/lib/api/error-messages";
 
 function percent(value: number | null | undefined) {
   return value == null ? "—" : `${Number(value).toLocaleString("he-IL", { maximumFractionDigits: 2 })}%`;
@@ -105,7 +106,7 @@ export function ReportDepositFeedbackModal({
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "טעינת פרטי ההפקדה נכשלה");
+          setError(errorMessage(err, "טעינת פרטי ההפקדה נכשלה"));
           setDetails(null);
         }
       } finally {
@@ -123,7 +124,7 @@ export function ReportDepositFeedbackModal({
     try {
       await paymentConfirmationsApi.download(organizationId, employerId, reportId, reportProductId, item);
     } catch (err) {
-      setEvidenceError(err instanceof Error ? err.message : "הורדת אישור התשלום נכשלה.");
+      setEvidenceError(errorMessage(err, "הורדת אישור התשלום נכשלה."));
     } finally {
       setDownloadingId("");
     }

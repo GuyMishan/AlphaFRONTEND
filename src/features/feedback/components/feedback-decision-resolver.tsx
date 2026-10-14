@@ -9,6 +9,7 @@ import {
   type FeedbackResolutionGroup,
   type FeedbackResolutionProblem,
 } from "@/features/feedback/api";
+import { errorMessage } from "@/lib/api/error-messages";
 
 type DecisionOutcome = "confirm" | "correction" | "external" | "reconcile" | "link-original";
 
@@ -101,7 +102,7 @@ export function FeedbackDecisionResolver({
 
       onChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שמירת ההחלטה נכשלה.");
+      setError(errorMessage(err, "שמירת ההחלטה נכשלה."));
     } finally {
       setBusyProblemId("");
     }
@@ -192,7 +193,7 @@ export function FeedbackDecisionResolver({
                   );
                   onChanged();
                 } catch (err) {
-                  setError(err instanceof Error ? err.message : "פתיחת תיק הטיפול נכשלה.");
+                  setError(errorMessage(err, "פתיחת תיק הטיפול נכשלה."));
                 } finally {
                   setBusyProblemId("");
                 }
@@ -225,7 +226,7 @@ export function FeedbackDecisionResolver({
                   );
                   onChanged();
                 } catch (err) {
-                  setError(err instanceof Error ? err.message : "פתיחת תיק התאמת הכספים נכשלה.");
+                  setError(errorMessage(err, "פתיחת תיק התאמת הכספים נכשלה."));
                 } finally {
                   setBusyProblemId("");
                 }
@@ -258,7 +259,7 @@ export function FeedbackDecisionResolver({
                     }
                     if (!result.items.length) setError("לא נמצאה תנועה קודמת מתאימה. ניתן להעביר את הבעיה לטיפול חיצוני אם הפעולה זמינה.");
                   } catch (err) {
-                    setError(err instanceof Error ? err.message : "איתור התנועות הקודמות נכשל.");
+                    setError(errorMessage(err, "איתור התנועות הקודמות נכשל."));
                   } finally {
                     setBusyProblemId("");
                   }
@@ -303,7 +304,7 @@ export function FeedbackDecisionResolver({
                       );
                       onChanged();
                     } catch (err) {
-                      setError(err instanceof Error ? err.message : "קישור התנועה המקורית נכשל.");
+                      setError(errorMessage(err, "קישור התנועה המקורית נכשל."));
                     } finally {
                       setBusyProblemId("");
                     }

@@ -2,23 +2,31 @@
  * Data display: tables (DataTable is the only table), row actions (UiActionMenu) and
  * entity links inside tables.
  */
-.table-wrap { overflow-x: auto; }
+.table-wrap { max-width: 100%; overflow-x: auto; }
+.data-table { min-width: 0; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 12px 11px; border-bottom: 1px solid var(--color-border-subtle); text-align: right; white-space: nowrap; }
 th {
   background: var(--color-surface-sunken);
   border-bottom-color: var(--color-border);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
-  letter-spacing: 0.01em;
+  line-height: var(--leading-normal);
 }
 td { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
 
 /* DataTable: fixed layout, windowed rows. Rendered rows must match rowHeight exactly. */
 .data-table-grid { width: 100%; table-layout: fixed; }
 .data-table-grid th, .data-table-grid td { min-width: 0; }
-.data-table-viewport { scrollbar-gutter: stable; }
+.data-table-viewport {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  scrollbar-gutter: stable;
+  overscroll-behavior-inline: contain;
+  isolation: isolate;
+}
 .data-table-grid > thead > tr > th { position: sticky; top: 0; z-index: 5; background: var(--color-surface-sunken); }
 .data-table-grid .data-table-row {
   height: var(--data-table-row-height) !important;
@@ -26,7 +34,8 @@ td { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
   max-height: var(--data-table-row-height) !important;
   transition: background-color var(--duration-fast) var(--ease-standard);
 }
-.data-table-grid .data-table-row:hover { background: var(--color-surface-hover); }
+.data-table-grid .data-table-row:hover,
+.data-table-grid .data-table-row:focus-within { background: var(--color-surface-hover); }
 .data-table-grid .data-table-row > td {
   box-sizing: border-box;
   height: var(--data-table-row-height) !important;
@@ -41,6 +50,7 @@ td { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
 .data-table-grid .data-table-row .status-pill-active { white-space: nowrap; }
 .data-table-grid .data-table-skeleton-row > td { height: var(--data-table-row-height); vertical-align: middle; }
 .data-table-grid .data-table-loading-more > td { padding: var(--space-3); }
+.data-table-grid > tbody > tr:last-child > td { border-bottom: 0; }
 
 /* Expandable rows: panels are separate full-width rows outside the fixed-height rule. */
 .data-table-grid .data-table-expand-toggle {
@@ -57,9 +67,12 @@ td { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
   background: transparent;
   color: var(--color-text-muted);
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 .data-table-grid .data-table-expand-toggle:hover,
 .data-table-grid .data-table-expand-toggle:focus-visible { background: var(--color-primary-soft); color: var(--color-primary); }
+.data-table-grid .data-table-expand-toggle:focus-visible { outline: var(--focus-outline); outline-offset: 1px; }
+.data-table-expand-toggle > svg { transition: transform var(--duration-base) var(--ease-standard); }
 .data-table-chevron-expanded { transform: rotate(180deg); }
 .data-table-grid .data-table-expanded-row > td { padding: 0 !important; overflow: hidden; }
 .data-table-expanded-frame {
@@ -101,6 +114,7 @@ td { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
   cursor: pointer;
 }
 .table-entity-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.table-entity-link:focus-visible { border-radius: var(--radius-xs); outline: var(--focus-outline); outline-offset: 2px; }
 
 /* Row action menu (UiActionMenu); the panel is portaled to <body>. */
 .ui-action-menu { display: inline-flex; align-items: center; justify-content: center; }
@@ -117,6 +131,7 @@ td { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
   background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 .ui-action-menu-trigger:hover,
 .ui-action-menu-trigger[aria-expanded="true"] { border-color: var(--color-primary-border); background: var(--color-primary-soft); color: var(--color-primary); }
@@ -127,29 +142,37 @@ td { font-size: var(--text-md); font-variant-numeric: tabular-nums; }
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 7px;
+  padding: var(--space-1-5);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--color-surface-raised);
   color: var(--color-text);
   box-shadow: var(--shadow-lg);
 }
 .ui-action-menu-panel > div > button {
   width: 100%;
-  min-height: 38px;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 10px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
   text-align: right;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 .ui-action-menu-panel > div > button:hover,
 .ui-action-menu-panel > div > button:focus-visible { outline: none; background: var(--color-primary-soft); color: var(--color-primary); }
+.ui-action-menu-panel > div > button:focus-visible { box-shadow: inset 0 0 0 2px var(--color-primary); }
 .ui-action-menu-panel > div > button:disabled { opacity: 0.45; cursor: default; background: transparent; color: var(--color-text-muted); }
-.ui-action-menu-group-start { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--color-border); }
+.ui-action-menu-group-start { margin-top: var(--space-1-5); padding-top: var(--space-1-5); border-top: 1px solid var(--color-border-subtle); }
 .ui-action-menu-icon { width: 18px; height: 18px; flex: 0 0 18px; display: inline-grid; place-items: center; }
+
+@media (pointer: coarse) {
+  .ui-action-menu-panel > div > button { min-height: var(--control-height); }
+}

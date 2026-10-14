@@ -9,6 +9,8 @@ import { ApiError } from "@/lib/api/errors";
 import { billingApi } from "@/features/billing/api";
 import { openUpgradeDialog } from "@/features/billing/upgrade";
 import type { BillingAccountPricingType, EntitlementSnapshot, SelfServiceBillingPricing } from "@/features/billing/types";
+import { errorMessage } from "@/lib/api/error-messages";
+import { useLatestRequest } from "@/lib/hooks/use-latest-request";
 
 const OPTIONS: { value: BillingAccountPricingType; title: string; description: string }[] = [
   { value: "Free", title: "חינם", description: "מעסיק אחד, משתמש אחד ועד 3 עובדים פעילים." },
@@ -27,15 +29,24 @@ export function SubscriptionBillingPanel({ organizationId, employerId, entitleme
   const [pricing, setPricing] = useState<SelfServiceBillingPricing | null>(null);
   const [selected, setSelected] = useState<BillingAccountPricingType>("Free");
   const [saving, setSaving] = useState(false);
+  const requests = useLatestRequest(organizationId, employerId);
 
+  /** Loads pricing for the current scope; a reply for a previous scope is ignored, and so is its failure. */
   async function loadPricing() {
-    const value = employerId
-      ? await billingApi.employerSelfServicePricing(organizationId, employerId)
-      : await billingApi.organizationSelfServicePricing(organizationId);
-    setPricing(value);
-    setSelected(value.billingType);
+    const isCurrent = requests.begin();
+    try {
+      const value = employerId
+        ? await billingApi.employerSelfServicePricing(organizationId, employerId)
+        : await billingApi.organizationSelfServicePricing(organizationId);
+      if (!isCurrent()) return;
+      setPricing(value);
+      setSelected(value.billingType);
+    } catch (error) {
+      if (isCurrent()) throw error;
+    }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the scope changes; the loader reads the current props
   useEffect(() => { void loadPricing().catch(() => setPricing(null)); }, [organizationId, employerId]);
 
   async function savePricing() {
@@ -53,7 +64,7 @@ export function SubscriptionBillingPanel({ organizationId, employerId, entitleme
       } else if (err instanceof ApiError && (err.code === "BILLING_ACCOUNT_REQUIRED" || err.code === "BILLING_PAYMENT_METHOD_INVALID")) {
         toast.error("לא ניתן לשנות לתוכנית בתשלום", { description: "יש להגדיר ולאמת קודם חשבון ואמצעי תשלום תקינים לחיוב ALPHA.", duration: 9000 });
       } else {
-        toast.error(err instanceof Error ? err.message : "שמירת התוכנית נכשלה");
+        toast.error(errorMessage(err, "שמירת התוכנית נכשלה"));
       }
     } finally {
       setSaving(false);
