@@ -149,7 +149,7 @@
   right: auto;
   bottom: auto;
   z-index: var(--z-popover);
-  transform: translate(-50%, calc(-100% - 8px));
+  transform: translate(-50%, calc(-100% - 4px));
   opacity: 1;
   visibility: visible;
   pointer-events: none;
