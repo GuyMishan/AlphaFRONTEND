@@ -1,6 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
+import { UiSelect } from "@/components/ui/ui-controls";
+import { employersApi } from "@/features/employers/api";
+import { invalidateEmployerData } from "@/features/employers/queries";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Building2, CreditCard, Landmark, Users } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
@@ -15,7 +20,7 @@ import { employerKeys, useOrganizationEmployers } from "@/features/employers/que
 import { organizationKeys, useOrganizationEmployerBilling, useOrganizationMembers, useOrganizationProfile } from "@/features/organizations/queries";
 import { errorMessage } from "@/lib/api/error-messages";
 import { useQueryClient } from "@tanstack/react-query";
-import { employerStatusLabel } from "@/features/employers/employer-status";
+import { editableEmployerStatuses } from "@/features/employers/employer-status";
 import type { EntitlementSnapshot } from "@/features/billing/types";
 import type { Employer } from "@/features/employers/types";
 import type { OrganizationEmployerBilling, OrganizationMemberSummary } from "@/features/organizations/types";
@@ -83,7 +88,7 @@ export default function OrganizationProfilePage() {
     {tab === "employers" ? <>
       <EmployersTab organizationId={id} employers={employers} employerBilling={employerBilling}
         canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))}
-        entitlements={entitlements} />
+        entitlements={entitlements} onStatusChanged={load} />
     </> : null}
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
     {tab === "pension-payment" ? <OrganizationPensionPaymentAccount organizationId={id} canManage={profile.canManageOrganization} /> : null}
@@ -92,7 +97,22 @@ export default function OrganizationProfilePage() {
   </AppShell>;
 }
 
-function EmployersTab({ organizationId, employers, employerBilling, canCreate, entitlements }: { organizationId: string; employers: Employer[]; employerBilling: OrganizationEmployerBilling[]; canCreate: boolean; entitlements: EntitlementSnapshot | null }) {
+function EmployersTab({ organizationId, employers, employerBilling, canCreate, entitlements, onStatusChanged }: { organizationId: string; employers: Employer[]; employerBilling: OrganizationEmployerBilling[]; canCreate: boolean; entitlements: EntitlementSnapshot | null; onStatusChanged: () => Promise<void> }) {
+  const [updatingEmployerId, setUpdatingEmployerId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  async function changeStatus(employerId: string, status: 2 | 4) {
+    if (updatingEmployerId) return;
+    setUpdatingEmployerId(employerId);
+    try {
+      await employersApi.updateEmployerStatus(organizationId, employerId, status);
+      await Promise.all([onStatusChanged(), invalidateEmployerData(queryClient, organizationId)]);
+      toast.success("סטטוס המעסיק עודכן בהצלחה");
+    } catch (error) {
+      toast.error(errorMessage(error, "עדכון סטטוס המעסיק נכשל"));
+    } finally {
+      setUpdatingEmployerId(null);
+    }
+  }
   const billingByEmployer = new Map(employerBilling.map((item) => [item.employerId, item]));
 
   return <><section className="card">
@@ -113,7 +133,7 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
           item.withholdingFileNumber,
           billing ? (billing.billingMode === 2 ? "חיוב דרך הארגון" : "חיוב עצמאי") : "—",
           billing?.billedThroughName || "—",
-          employerStatusLabel(item.status),
+          <UiSelect key="status" aria-label={`סטטוס ${item.legalName}`} disabled={updatingEmployerId !== null} value={String(item.status)} onChange={(event) => void changeStatus(item.id, Number(event.target.value) as 2 | 4)}>{editableEmployerStatuses.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</UiSelect>,
         ];
       }}
     />}
