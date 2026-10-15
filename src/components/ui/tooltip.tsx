@@ -1,7 +1,8 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { cloneElement, isValidElement, useId, useState, type ReactElement, type ReactNode } from "react";
+import { cloneElement, isValidElement, useId, useState, type ReactElement, type ReactNode, type MouseEvent, type FocusEvent } from "react";
+import { createPortal } from "react-dom";
 
 const INTERACTIVE = new Set(["a", "button", "input", "select", "textarea"]);
 
@@ -47,4 +48,60 @@ export function Tooltip({
       <span className="tooltip-bubble" role="tooltip" id={bubbleId}>{content}</span>
     </span>
   );
+}
+
+/** Delegated, viewport-positioned tooltip for text clipped inside DataTable cells.
+ * Uses the same tooltip-bubble design tokens as Tooltip, without native title delays.
+ */
+export function useTableOverflowTooltip() {
+  const [active, setActive] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  const show = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) return;
+    if (target.closest("button, input, select, textarea, [role='button'], .tooltip")) {
+      setActive(null);
+      return;
+    }
+    const cell = target.closest("td");
+    if (!cell?.closest(".data-table-row")) { setActive(null); return; }
+    let clipped: HTMLElement | null = null;
+    for (let node: HTMLElement | null = target; node && cell.contains(node); node = node.parentElement) {
+      if (node.hasAttribute("title") && !node.dataset.tableOverflowTitle) break;
+      const style = getComputedStyle(node);
+      const isClipped = (node.scrollWidth > node.clientWidth + 1 && style.overflowX !== "visible")
+        || (node.scrollHeight > node.clientHeight + 1 && style.overflowY !== "visible");
+      if (isClipped && node.clientWidth && node.textContent?.trim()) { clipped = node; break; }
+      if (node === cell) break;
+    }
+    if (!clipped) { setActive(null); return; }
+    const text = clipped.textContent?.trim() ?? "";
+    const rect = clipped.getBoundingClientRect();
+    // Remove tooltip titles created by the old implementation, to avoid duplicate native bubbles.
+    if (clipped.dataset.tableOverflowTitle === "true") {
+      clipped.removeAttribute("title");
+      delete clipped.dataset.tableOverflowTitle;
+    }
+    setActive({ text, x: Math.min(window.innerWidth - 16, Math.max(16, rect.left + rect.width / 2)), y: rect.top });
+    setDismissed(false);
+  };
+
+  return {
+    onMouseOver: (event: MouseEvent<HTMLTableElement>) => show(event.target),
+    onMouseLeave: () => { setActive(null); setDismissed(false); },
+    onFocusCapture: (event: FocusEvent<HTMLTableElement>) => show(event.target),
+    onBlurCapture: () => setActive(null),
+    onKeyDownCapture: (event: React.KeyboardEvent<HTMLTableElement>) => {
+      if (event.key === "Escape" && active) {
+        event.stopPropagation();
+        setDismissed(true);
+      }
+    },
+    tooltip: active && !dismissed && typeof document !== "undefined"
+      ? createPortal(
+        <span className="tooltip-bubble table-overflow-tooltip" role="tooltip"
+          style={{ left: active.x, top: active.y }}>{active.text}</span>,
+        document.body,
+      ) : null,
+  };
 }
