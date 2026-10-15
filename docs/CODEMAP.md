@@ -55,11 +55,13 @@ Server routes: `src/app/api/backend/[...path]/route.ts` (proxy) and `src/app/api
 
 ### Organizations, employers, employees, access
 - `organizations/` — list and creation (platform admin), profile screen, general details form, `organization-types.ts` (selectable categories).
-- `employers/` — list, creation, profile screen with tabs in `components/profile/` (general, employees, pension payment, billing, reporting); `employer-transfer-modal.tsx` (platform admin), `employer-documents-tab.tsx` + `documents-api.ts` (employer and pension-product PDF library), `employer-status.ts` (Active/Closed).
+- `employers/` — list, creation, profile screen with tabs in `components/profile/` (general, employees, pension payment, billing, reporting); shared `employer-transfer-modal.tsx` (platform admin hierarchy only), `employer-documents-tab.tsx` + `documents-api.ts` (employer and pension-product PDF library), `employer-status.ts` (Active/Closed).
 - `employees/` — list, creation, profile; `employee-form.tsx`, `employee-pension-mix.tsx` (pension products + product documents), `excel-employee-intake.tsx`, `inline-employee-create-modal.tsx`.
 - `employeesApi.employees` collects the `/employees/search` pages, including beyond 500 rows; the report wizard and employee selectors use the complete list. Profile URL scope and tabs follow Next navigation; employee forms and employer editors are keyed by scope/entity so cached navigation cannot reuse another entity's draft.
 - `access/` — users, roles, permissions, employer assignments and invitations (`access-screen.tsx`). The user editor lets authorized managers switch organization/employer access, while platform-admin assignment is restricted to existing platform admins; the backend applies transitions atomically within one organization.
-- `admin/` — platform administration: billing customers, reference-data integrations, platform users, referents (`referents-admin-tab.tsx`).
+- `admin/` — platform administration: billing customers, reference-data integrations, platform users, referents (`referents-admin-tab.tsx`), and the organization/employer hierarchy (`components/organization-hierarchy-admin-tab.tsx`). The hierarchy tab owns reassignment UI, reusing `EmployerTransferModal`. The underlying employer model currently requires an organization; unassigned employers are not supported.
+
+Organization profile → Employers lists employers, allows direct active/closed status changes for users with employer access, and links to the existing new-employer screen with the organization ID. It does not offer transfer or attach-existing operations; these are central to the platform-admin hierarchy tab.
 
 ### Pension products and reference data
 - `pension/components/pension-products-editor.tsx` — the shared product/contribution editor (employee pension mix and report drafts); `pension-fund-select.tsx`, `salary-layer-select.tsx`, `contribution-math.ts`.
