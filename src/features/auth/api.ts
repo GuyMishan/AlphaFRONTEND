@@ -46,6 +46,7 @@ export const authApi = {
 // neutral 200 as known ones, so "wrong details" is only detectable at verification (401).
 const authCodeMessages: Record<string, string> = {
   INVALID_INPUT: "חלק מהפרטים שהוזנו אינם תקינים.",
+  INVALID_CREDENTIALS: "פרטי ההתחברות אינם נכונים. בדקו את הפרטים ונסו שוב.",
   INVALID_CODE: "הזינו קוד בן 6 ספרות.",
   CHANNEL_UNAVAILABLE: "לא ניתן לשלוח קוד לערוץ שנבחר.",
   USER_EXISTS: "כבר קיים משתמש עם תעודת הזהות הזו.",
