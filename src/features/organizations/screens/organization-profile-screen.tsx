@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { UiSelect } from "@/components/ui/ui-controls";
 import { employersApi } from "@/features/employers/api";
 import { invalidateEmployerData } from "@/features/employers/queries";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Building2, CreditCard, Landmark, Users } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { DataTable, DataTableLink } from "@/components/ui/data-table";
@@ -40,7 +40,6 @@ const tabs: { key: TabKey; label: string; icon: typeof Building2 }[] = [
 
 export default function OrganizationProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   // The selected tab lives in the URL (?tab=), so reloads, links and back/forward keep it.
   const requestedTab = useSearchParams().get("tab");
   const tab: TabKey = requestedTab && tabs.some((item) => item.key === requestedTab) ? requestedTab as TabKey : "general";
@@ -77,8 +76,7 @@ export default function OrganizationProfilePage() {
   if (error || !profile) return <AppShell title="פרופיל ארגון" hideScopeController><div className="notice notice-error">{error || "הארגון לא נמצא או שאין לך גישה אליו."}</div></AppShell>;
 
   return <AppShell title="פרופיל ארגון" hideScopeController>
-    <PageHeader title={profile.name} description="מרכז ניהול הארגון"
-      actions={<button className="btn btn-secondary" type="button" onClick={() => router.push("/dashboard")}>חזרה לדף הבית</button>} />
+    <PageHeader title={profile.name} description="מרכז ניהול הארגון" />
 
     <AppTabs id="organization-profile" items={tabs} activeKey={tab} onChange={changeTab} ariaLabel="פרופיל ארגון" />
 
