@@ -122,7 +122,8 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
     {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <DataTable
       items={employers}
       rowKey={(item) => item.id}
-      columns={[{ key: "employer", label: "מעסיק" }, { key: "registration", label: "מספר חברה" }, { key: "withholding", label: "תיק ניכויים" }, { key: "billing", label: "אופן חיוב" }, { key: "billedThrough", label: "מחויב דרך" }, { key: "status", label: "סטטוס" }]}
+      minTableWidth={940}
+      columns={[{ key: "employer", label: "מעסיק", width: "190px" }, { key: "registration", label: "מספר חברה", width: "135px" }, { key: "withholding", label: "תיק ניכויים", width: "135px" }, { key: "billing", label: "אופן חיוב", width: "150px" }, { key: "billedThrough", label: "מחויב דרך", width: "170px" }, { key: "status", label: "סטטוס", width: "160px" }]}
       renderCells={(item) => {
         const billing = billingByEmployer.get(item.id);
         return [
