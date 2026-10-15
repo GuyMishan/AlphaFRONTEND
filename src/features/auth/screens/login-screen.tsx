@@ -54,7 +54,7 @@ export default function LoginPage() {
       setChallenge(await authApi.requestLoginCode(nationalId, phone));
       setCode("");
       setNextSendAt(Date.now() + RESEND_INTERVAL_MS);
-      toast.info("אם הפרטים תואמים לחשבון פעיל, קוד אימות יישלח לדוא״ל הרשום.");
+      toast.success("קוד האימות נשלח בהצלחה לכתובת הדוא״ל הרשומה.");
     } catch (err) {
       toast.error(authErrorMessage(err, SEND_FAILED));
     } finally {
@@ -97,7 +97,7 @@ export default function LoginPage() {
         <div className="auth-card">
           <AuthMobileBrand />
           <h2>כניסה למערכת</h2>
-          <p>{challenge ? "אם הפרטים תואמים לחשבון פעיל, יישלח קוד לדוא״ל הרשום. הזינו אותו כאן." : "התחברו כדי להמשיך לסביבת העבודה שלכם"}</p>
+          <p>{challenge ? "הזינו את קוד האימות בן 6 הספרות שנשלח לכתובת הדוא״ל הרשומה." : "התחברו כדי להמשיך לסביבת העבודה שלכם"}</p>
 
           {!challenge ? (
             <form className="form" onSubmit={submitDetails} noValidate>
