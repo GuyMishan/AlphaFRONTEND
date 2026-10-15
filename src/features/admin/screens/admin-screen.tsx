@@ -287,7 +287,7 @@ export default function AdminPage() {
           return [
             <b key="entity">{item.entityType === "Organization" ? "ארגון" : "מעסיק"}</b>,
             <DataTableLink key="organization" className="profile-link" href={`/organizations/${item.organizationId}`}><b>{item.organizationName}</b></DataTableLink>,
-            item.entityType === "Employer" ? <DataTableLink key="employer" className="profile-link" href={`/employers/${item.employerId}`}><b>{item.employerName || item.payerName}</b></DataTableLink> : "—",
+            item.entityType === "Employer" ? <DataTableLink key="employer" className="profile-link" href={`/employers/${item.employerId}?organizationId=${encodeURIComponent(item.organizationId)}`}><b>{item.employerName || item.payerName}</b></DataTableLink> : "—",
             <span key="alphaPayment" className="admin-payment-status-cell">
               <span>{item.configured ? "מוגדר" : "לא מוגדר"}</span>
               {item.configured && item.inherited && item.entityType === "Employer" ? <span className="tooltip admin-inheritance-tooltip" tabIndex={0} aria-label={`דרך הארגון · ${item.billedThroughName}`}><Info size={15} aria-hidden="true" /><span className="tooltip-bubble" role="tooltip">דרך הארגון · {item.billedThroughName}</span></span> : null}
