@@ -142,3 +142,15 @@
 .tooltip:focus-visible > .tooltip-bubble,
 .tooltip:focus-within > .tooltip-bubble { opacity: 1; visibility: visible; }
 .tooltip.is-dismissed > .tooltip-bubble { opacity: 0; visibility: hidden; }
+
+/* Shared table overflow tooltip: portaled above scroll containers and sticky cells. */
+.table-overflow-tooltip {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: var(--z-tooltip, 1000);
+  transform: translate(-50%, calc(-100% - 8px));
+  opacity: 1;
+  visibility: visible;
+  pointer-events: none;
+}
