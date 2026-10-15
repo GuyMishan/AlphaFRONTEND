@@ -1,19 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Building2, CreditCard, FileSliders, Files, Users, WalletCards } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { EmployerDocumentsTab } from "@/features/employers/components/employer-documents-tab";
-import { EmployerTransferModal } from "@/features/employers/components/employer-transfer-modal";
-import { getSession, setEmployerSelection } from "@/lib/session/storage";
+import { getSession } from "@/lib/session/storage";
 import { AppTabPanel, AppTabs } from "@/components/ui/app-tabs";
 import { replaceSearchParams } from "@/lib/url-search-params";
 import { SubscriptionBillingPanel } from "@/features/billing/components/subscription-billing-panel";
 import { billingKeys, useEntitlements } from "@/features/billing/queries";
 import { employerKeys, useEmployer, useEmployerCapabilities, useEmployerProfileSettings } from "@/features/employers/queries";
 import { paymentAccountKeys, useEmployerPaymentAccounts } from "@/features/payment-accounts/queries";
-import { refreshScopeContext, useScopeContext } from "@/features/scope/scope-context";
+import { useScopeContext } from "@/features/scope/scope-context";
 import { errorMessage } from "@/lib/api/error-messages";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Employer, EmployerCapabilities, EmployerProfileCenterSettings } from "@/features/employers/types";
@@ -64,8 +62,6 @@ const EMPTY_SETTINGS: EmployerProfileCenterSettings = {
 
 export default function EmployerProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const [transferOpen, setTransferOpen] = useState(false);
   const { organizationId } = useUrlScope();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
@@ -118,8 +114,7 @@ export default function EmployerProfilePage() {
   if (error || !employer) return <AppShell title="פרופיל מעסיק" hideScopeController><div className="notice notice-error">{error || "המעסיק לא נמצא."}</div></AppShell>;
 
   return <AppShell title="פרופיל מעסיק" hideScopeController>
-    <PageHeader title={employer.legalName} description={`מרכז ניהול המעסיק · ח.פ./עוסק ${employer.registrationNumber}`}
-      actions={getSession()?.platformAdmin ? <button className="btn btn-secondary" type="button" onClick={() => setTransferOpen(true)}>העברה לארגון אחר</button> : null} />
+    <PageHeader title={employer.legalName} description={`מרכז ניהול המעסיק · ח.פ./עוסק ${employer.registrationNumber}`} />
 
     <AppTabs
       id="employer-profile"
@@ -187,12 +182,5 @@ export default function EmployerProfilePage() {
     /> : null}
     </AppTabPanel>
 
-    {getSession()?.platformAdmin ? <EmployerTransferModal open={transferOpen}
-      employer={employer} onClose={() => setTransferOpen(false)}
-      onTransferred={async (targetOrganizationId) => {
-        setEmployerSelection(targetOrganizationId, employer.id);
-        await refreshScopeContext();
-        router.replace(`/employers/${employer.id}?organizationId=${targetOrganizationId}`);
-      }} /> : null}
   </AppShell>;
 }
