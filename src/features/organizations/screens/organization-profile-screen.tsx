@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Building2, CreditCard, Landmark, Users } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
@@ -9,8 +8,6 @@ import { DataTable, DataTableLink } from "@/components/ui/data-table";
 import { AppTabPanel, AppTabs } from "@/components/ui/app-tabs";
 import { replaceSearchParams } from "@/lib/url-search-params";
 import { SubscriptionBillingPanel } from "@/features/billing/components/subscription-billing-panel";
-import { EmployerTransferModal } from "@/features/employers/components/employer-transfer-modal";
-import { getSession } from "@/lib/session/storage";
 import { OrganizationPensionPaymentAccount } from "@/features/payment-accounts/components/organization-pension-payment-account";
 import { PlanUsage } from "@/features/billing/components/plan-usage";
 import { billingKeys, useEntitlements } from "@/features/billing/queries";
@@ -46,7 +43,6 @@ export default function OrganizationProfilePage() {
   function changeTab(next: string) {
     replaceSearchParams((params) => params.set("tab", next));
   }
-  const [receiveOpen, setReceiveOpen] = useState(false);
   const queryClient = useQueryClient();
   const profileQuery = useOrganizationProfile(id);
   const employersQuery = useOrganizationEmployers(id);
@@ -85,14 +81,9 @@ export default function OrganizationProfilePage() {
 
     {tab === "general" ? <OrganizationGeneralForm profile={profile} onSaved={async () => { await load(); }} /> : null}
     {tab === "employers" ? <>
-      {getSession()?.platformAdmin ? <div className="form-actions" style={{ marginBottom: 16 }}>
-        <button type="button" className="btn btn-primary" onClick={() => setReceiveOpen(true)}>שיוך מעסיק קיים</button>
-      </div> : null}
       <EmployersTab organizationId={id} employers={employers} employerBilling={employerBilling}
         canCreate={Boolean(profile.canManageOrganization && entitlements && (entitlements.employers.maximum === null || entitlements.employers.current < entitlements.employers.maximum))}
-        entitlements={entitlements} onTransferred={load} />
-      {getSession()?.platformAdmin ? <EmployerTransferModal open={receiveOpen}
-        receiveIntoOrganizationId={id} onClose={() => setReceiveOpen(false)} onTransferred={load} /> : null}
+        entitlements={entitlements} />
     </> : null}
     {tab === "users" ? <UsersTab organizationId={id} members={members} canManage={profile.canManageOrganization} /> : null}
     {tab === "pension-payment" ? <OrganizationPensionPaymentAccount organizationId={id} canManage={profile.canManageOrganization} /> : null}
@@ -101,20 +92,19 @@ export default function OrganizationProfilePage() {
   </AppShell>;
 }
 
-function EmployersTab({ organizationId, employers, employerBilling, canCreate, entitlements, onTransferred }: { organizationId: string; employers: Employer[]; employerBilling: OrganizationEmployerBilling[]; canCreate: boolean; entitlements: EntitlementSnapshot | null; onTransferred: () => Promise<void> }) {
-  const [moving, setMoving] = useState<Employer | null>(null);
+function EmployersTab({ organizationId, employers, employerBilling, canCreate, entitlements }: { organizationId: string; employers: Employer[]; employerBilling: OrganizationEmployerBilling[]; canCreate: boolean; entitlements: EntitlementSnapshot | null }) {
   const billingByEmployer = new Map(employerBilling.map((item) => [item.employerId, item]));
 
   return <><section className="card">
     <div className="card-head">
       <div><h2>מעסיקים</h2><span style={{ color: "var(--color-text-muted)" }}>כל המעסיקים בארגון ואופן החיוב שלהם. שינוי הגדרות החיוב מתבצע מתוך כרטיס המעסיק.</span></div>
-      {canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}>מעסיק חדש</Link> : null}
+      {canCreate ? <Link className="btn btn-primary" href={`/employers/new?organizationId=${organizationId}`}>צור מעסיק חדש לארגון</Link> : null}
     </div>
     {entitlements?.plan.code === "FREE" ? <div style={{ marginBottom: 18 }}><PlanUsage label="מעסיקים במסלול" usage={entitlements.employers} /></div> : null}
     {employers.length === 0 ? <div className="empty">אין מעסיקים בארגון.</div> : <DataTable
       items={employers}
       rowKey={(item) => item.id}
-      columns={[{ key: "employer", label: "מעסיק" }, { key: "registration", label: "מספר חברה" }, { key: "withholding", label: "תיק ניכויים" }, { key: "billing", label: "אופן חיוב" }, { key: "billedThrough", label: "מחויב דרך" }, { key: "status", label: "סטטוס" }, ...(getSession()?.platformAdmin ? [{ key: "actions", label: "פעולות" }] : [])]}
+      columns={[{ key: "employer", label: "מעסיק" }, { key: "registration", label: "מספר חברה" }, { key: "withholding", label: "תיק ניכויים" }, { key: "billing", label: "אופן חיוב" }, { key: "billedThrough", label: "מחויב דרך" }, { key: "status", label: "סטטוס" }]}
       renderCells={(item) => {
         const billing = billingByEmployer.get(item.id);
         return [
@@ -124,12 +114,10 @@ function EmployersTab({ organizationId, employers, employerBilling, canCreate, e
           billing ? (billing.billingMode === 2 ? "חיוב דרך הארגון" : "חיוב עצמאי") : "—",
           billing?.billedThroughName || "—",
           employerStatusLabel(item.status),
-          ...(getSession()?.platformAdmin ? [<button key="transfer" className="btn btn-secondary" type="button" onClick={() => setMoving(item)}>העבר / נתק שיוך</button>] : []),
         ];
       }}
     />}
   </section>
-  {getSession()?.platformAdmin && moving ? <EmployerTransferModal open employer={moving} onClose={() => setMoving(null)} onTransferred={onTransferred} /> : null}
   </>;
 }
 function UsersTab({ members, canManage }: { organizationId: string; members: OrganizationMemberSummary[]; canManage: boolean }) {
