@@ -7,6 +7,7 @@ import { Eye, Play, Settings2, CreditCard, Pencil, Info } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { AppModal } from "@/components/ui/app-modal";
 import { ReferentsAdminTab } from "@/features/admin/components/referents-admin-tab";
+import { OrganizationHierarchyAdminTab } from "@/features/admin/components/organization-hierarchy-admin-tab";
 import { AppTabPanel, AppTabs } from "@/components/ui/app-tabs";
 import { DataTable, DataTableLink } from "@/components/ui/data-table";
 import { useBillingCustomers, useReferenceDataIntegrations, useRunReferenceDataIntegration } from "@/features/admin/queries";
@@ -35,7 +36,8 @@ const adminTabs = [
   { key: "interfaces", label: "ממשקים", icon: Settings2 },
   { key: "subscriptions", label: "ניהול גבייה ותמחור", icon: CreditCard },
   { key: "referents", label: "ניהול רפרנטים", icon: Settings2 },
-] satisfies Array<{ key: "interfaces" | "subscriptions" | "referents"; label: string; icon: typeof Settings2 }>;
+  { key: "hierarchy", label: "ניהול מבנה ארגוני", icon: Settings2 },
+] satisfies Array<{ key: "interfaces" | "subscriptions" | "referents" | "hierarchy"; label: string; icon: typeof Settings2 }>;
 
 const entityTypeOptions = [
   { value: "all", label: "כל סוגי הישות" },
@@ -69,7 +71,7 @@ const paymentStatusOptions = [
 
 export default function AdminPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<"interfaces" | "subscriptions" | "referents">("interfaces");
+  const [tab, setTab] = useState<"interfaces" | "subscriptions" | "referents" | "hierarchy">("interfaces");
   const [entityTypeFilter, setEntityTypeFilter] = useState("all");
   const [organizationFilter, setOrganizationFilter] = useState("all");
   const [employerFilter, setEmployerFilter] = useState("all");
@@ -195,7 +197,7 @@ export default function AdminPage() {
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
     <AppTabPanel id="admin" activeKey={tab}>
-    {tab === "referents" ? <ReferentsAdminTab autoCreate={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("create") === "1"} /> : tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
+    {tab === "hierarchy" ? <OrganizationHierarchyAdminTab /> : tab === "referents" ? <ReferentsAdminTab autoCreate={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("create") === "1"} /> : tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--color-border)" }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
         <p style={{ margin: "5px 0 0", color: "var(--color-text-muted)" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>
