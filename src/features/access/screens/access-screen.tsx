@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Mail, Save, Search, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { Building2, Mail, Pencil, Save, Search, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { DataTable } from "@/components/ui/data-table";
 import { PlanUsage } from "@/features/billing/components/plan-usage";
@@ -431,18 +431,19 @@ export default function AccessPage() {
         {loading && users.length === 0 ? <TableSkeleton columns={4} label="טוען משתמשים..." /> : users.length ? <DataTable
           items={users}
           rowKey={(item) => item.userId}
-          onRowClick={setSelected}
           columns={[
             { key: "user", label: "משתמש" },
             { key: "email", label: "אימייל" },
             { key: "role", label: "תפקיד בארגון" },
             { key: "access", label: "גישה למעסיקים" },
+            { key: "actions", label: "פעולות", width: "100px" },
           ]}
           renderCells={(item) => [
-            <button key="cell-553" className="table-entity-link" type="button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>{item.displayName}</button>,
+            <span key="user-name">{item.displayName}</span>,
             item.email,
             item.isPlatformAdmin ? "אדמין מערכת" : item.role ? organizationRoleLabels[item.role] : "—",
             item.isPlatformAdmin ? "גישה גלובלית" : item.directEmployerOnly ? "גישה ישירה למעסיק" : employerAccessLabels[item.employerAccessMode],
+            <button key="edit" className="btn btn-secondary" type="button" aria-label={`עריכת הרשאות של ${item.displayName}`} onClick={() => setSelected(item)}><Pencil size={15} aria-hidden="true" />עריכה</button>,
           ]}
           hasMore={viewMode === "scope" && Boolean(usersQuery.hasNextPage)}
           loadingMore={viewMode === "scope" && usersQuery.isFetchingNextPage}
