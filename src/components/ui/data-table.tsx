@@ -6,6 +6,40 @@ import { ChevronDown } from "lucide-react";
 import { LoadingState } from "@/components/loading/loading-state";
 import { Skeleton, skeletonCellWidth } from "@/components/loading/skeleton";
 
+/** Show the browser's full-text tooltip only on genuinely clipped table text.
+ * Delegated handling covers text rendered inside links, spans and feature cells,
+ * including content that changes with virtualization or responsive column widths.
+ */
+function revealTruncatedTableText(target: EventTarget | null, table: HTMLTableElement) {
+  if (!(target instanceof HTMLElement)) return;
+  const cell = target.closest("td, th");
+  if (!(cell instanceof HTMLElement) || !table.contains(cell) || !cell.closest(".data-table-row")) return;
+  if (target.closest("button, input, select, textarea, [role='button'], .tooltip")) return;
+
+  const chain: HTMLElement[] = [];
+  for (let node: HTMLElement | null = target; node && cell.contains(node); node = node.parentElement) {
+    chain.push(node);
+    if (node === cell) break;
+  }
+  // Prefer a clipped child rather than the entire cell (which may include actions).
+  for (const node of chain) {
+    if (node.hasAttribute("title") && !node.dataset.tableOverflowTitle) return;
+    const style = window.getComputedStyle(node);
+    const clipped = (node.scrollWidth > node.clientWidth + 1 && style.overflowX !== "visible")
+      || (node.scrollHeight > node.clientHeight + 1 && style.overflowY !== "visible");
+    if (!clipped || !node.clientWidth) continue;
+    const text = node.textContent?.trim();
+    if (!text) continue;
+    if (!node.hasAttribute("title")) {
+      node.title = text;
+      node.dataset.tableOverflowTitle = "true";
+    } else if (node.dataset.tableOverflowTitle === "true") {
+      node.title = text;
+    }
+    return;
+  }
+}
+
 export type DataTableColumn = { key: string; label: ReactNode; width?: string };
 
 export function DataTableLink(props: ComponentProps<typeof Link>) {
@@ -149,7 +183,9 @@ export function DataTable<T>({
   return <div className="data-table" aria-busy={loading || loadingMore || undefined}>
     {loading && items.length === 0 ? <span className="sr-only" role="status">{loadingLabel}</span> : null}
     <div ref={viewportRef} className={`table-wrap data-table-viewport ${wrapperClassName}`.trim()} style={{ maxHeight, overflow: "auto" }} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}>
-      <table className={`data-table-grid ${tableClassName}`.trim()} style={{
+      <table onMouseOver={(event) => revealTruncatedTableText(event.target, event.currentTarget)}
+        onFocusCapture={(event) => revealTruncatedTableText(event.target, event.currentTarget)}
+        className={`data-table-grid ${tableClassName}`.trim()} style={{
         "--data-table-row-height": `${rowHeight}px`,
         ...(minTableWidth ? { minWidth: typeof minTableWidth === "number" ? `${minTableWidth}px` : minTableWidth } : {}),
       } as CSSProperties}>
