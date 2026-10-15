@@ -22,7 +22,12 @@ export default function NewEmployerPage() {
   useEffect(() => {
     setOrganizationId(initialOrganizationId());
     setScopeResolved(true);
-    return subscribeToScopeChanges((detail) => setOrganizationId(detail.organizationId));
+    // An explicit organization in the URL is authoritative when arriving from its profile.
+    // The global scope controller may publish an older saved selection on mount.
+    return subscribeToScopeChanges((detail) => {
+      const fromUrl = new URLSearchParams(window.location.search).get("organizationId");
+      if (!fromUrl) setOrganizationId(detail.organizationId);
+    });
   }, []);
 
   const capabilities = useOrganizationCapabilities(organizationId);
