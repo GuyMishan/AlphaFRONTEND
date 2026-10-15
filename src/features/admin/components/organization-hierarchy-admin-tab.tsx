@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { UiInput, UiSelect } from "@/components/ui/ui-controls";
+import { UiInput } from "@/components/ui/ui-controls";
 import { DataTable, DataTableLink } from "@/components/ui/data-table";
 import { EmployerTransferModal } from "@/features/employers/components/employer-transfer-modal";
 import { employersApi } from "@/features/employers/api";
@@ -68,10 +68,12 @@ export function OrganizationHierarchyAdminTab() {
         <h2>ניהול מבנה ארגוני</h2>
         <p>צפייה בארגונים ובמעסיקים, ושינוי שיוך מעסיקים בידי מנהל מערכת.</p>
       </div>
-      <UiSelect aria-label="אופן הצגת המבנה הארגוני" value={view} onChange={(event) => setView(event.target.value as typeof view)}>
-        <option value="organizations">לפי ארגונים</option>
-        <option value="employers">לפי מעסיקים</option>
-      </UiSelect>
+      <div className="admin-actions" role="group" aria-label="אופן הצגת המבנה הארגוני">
+        <button type="button" className={view === "organizations" ? "btn btn-primary" : "btn btn-secondary"}
+          aria-pressed={view === "organizations"} onClick={() => setView("organizations")}>לפי ארגונים</button>
+        <button type="button" className={view === "employers" ? "btn btn-primary" : "btn btn-secondary"}
+          aria-pressed={view === "employers"} onClick={() => setView("employers")}>לפי מעסיקים</button>
+      </div>
     </div>
     <div className="toolbar">
       <UiInput aria-label="חיפוש ארגון או מעסיק" value={search} onChange={(event) => setSearch(event.target.value)}
