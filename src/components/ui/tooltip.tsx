@@ -77,12 +77,19 @@ export function useTableOverflowTooltip() {
     if (!clipped) { setActive(null); return; }
     const text = clipped.textContent?.trim() ?? "";
     const rect = clipped.getBoundingClientRect();
+    // Anchor to the visible text rather than the full-height table cell.
+    const range = document.createRange();
+    range.selectNodeContents(clipped);
+    const textRect = Array.from(range.getClientRects()).find((part) => part.width > 0 && part.height > 0);
+    range.detach();
+    const anchor = textRect && textRect.top >= rect.top - 1 && textRect.top <= rect.bottom
+      ? textRect : rect;
     // Remove tooltip titles created by the old implementation, to avoid duplicate native bubbles.
     if (clipped.dataset.tableOverflowTitle === "true") {
       clipped.removeAttribute("title");
       delete clipped.dataset.tableOverflowTitle;
     }
-    setActive({ text, x: Math.min(window.innerWidth - 16, Math.max(16, rect.left + rect.width / 2)), y: rect.top });
+    setActive({ text, x: Math.min(window.innerWidth - 16, Math.max(16, anchor.left + anchor.width / 2)), y: anchor.top });
     setDismissed(false);
   };
 
