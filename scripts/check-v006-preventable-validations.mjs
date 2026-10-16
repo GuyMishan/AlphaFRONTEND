@@ -8,7 +8,10 @@ const deposits = [
   "src/features/reporting/components/deposit-payment-editor.tsx",
   "src/features/reporting/deposit-validation.ts",
 ].map(read).join("\n");
-const reports = read("src/features/reporting/screens/reports-screen.tsx");
+const reports = [
+  "src/features/reporting/hooks/use-report-actions.ts",
+  "src/features/reporting/components/reports/reports-dialogs.tsx",
+].map(read).join("\n");
 const api = read("src/features/reporting/deposits-api.ts");
 
 const requireText = (source, text, label) => {

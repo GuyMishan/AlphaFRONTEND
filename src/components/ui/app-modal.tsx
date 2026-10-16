@@ -83,13 +83,14 @@ export function AppModal({
       const dialogs = document.querySelectorAll<HTMLElement>(".app-modal[role='dialog']");
       if (dialogs.item(dialogs.length - 1) !== dialog || !dialog.contains(document.activeElement)) return;
       const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE))
-        .filter((element) => element.getClientRects().length > 0);
+        .filter((element) => element.tabIndex >= 0 && !element.closest('[aria-hidden="true"], [inert]')
+          && element.getClientRects().length > 0);
       if (!focusable.length) { event.preventDefault(); return; }
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       const current = document.activeElement;
       if (event.shiftKey && (current === first || current === dialog)) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && current === last) { event.preventDefault(); first.focus(); }
+      else if (!event.shiftKey && (current === last || current === dialog)) { event.preventDefault(); first.focus(); }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {

@@ -26,36 +26,40 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   }
 
   const { path } = await context.params;
-  const backendPath = path.join("/");
-  const url = backendUrl(backendPath, request.nextUrl.search);
-  if (!url) return problem(503, "SERVICE_UNAVAILABLE", "השירות אינו זמין", "השירות אינו מוגדר כרגע. פנו לתמיכה.");
-  // Only the backend API surface is reachable, and never through dot segments.
-  if (backendPath.split(/[\\/]/).some((segment) => segment === "." || segment === "..") || !url.pathname.startsWith("/api/")) {
+  // Validate decoded route segments before URL resolution: an absolute URL can
+  // otherwise replace the configured origin and receive the session token.
+  if (path[0]?.toLowerCase() !== "api" || path.length < 2 || path.some((segment) =>
+    !segment || segment === "." || segment === ".." || /[\\/:%?#\s]/.test(segment))) {
     return problem(404, "RESOURCE_NOT_FOUND", "הכתובת אינה קיימת", "הבקשה אינה מיועדת לשירות המערכת.");
   }
+  const backendPath = path.map(encodeURIComponent).join("/");
+  // ASP.NET routes are case-insensitive; token handling must match that behavior.
+  const authPath = backendPath.toLowerCase();
+  const url = backendUrl(backendPath, request.nextUrl.search);
+  if (!url) return problem(503, "SERVICE_UNAVAILABLE", "השירות אינו זמין", "השירות אינו מוגדר כרגע. פנו לתמיכה.");
 
   const headers = new Headers();
   const cookieToken = request.cookies.get(ACCESS_COOKIE)?.value;
   // Without a cookie the session check can only fail: answer here so anonymous
   // visitors do not use the backend's per-IP /api/auth rate limit.
-  if (!cookieToken && request.method === "GET" && backendPath === SESSION_PATH) {
+  if (!cookieToken && (request.method === "GET" || request.method === "HEAD") && authPath === SESSION_PATH) {
     return problem(401, "AUTHENTICATION_REQUIRED", "נדרשת התחברות", "יש להתחבר כדי להמשיך.");
   }
   const contentType = request.headers.get("content-type");
   // Login/registration endpoints are anonymous by design. Never forward a stale
   // session cookie to them: the backend session middleware would reject an
   // expired server session before the anonymous endpoint can issue a new OTP.
-  if (cookieToken && !ANONYMOUS_AUTH_PATHS.has(backendPath)) {
+  if (cookieToken && !ANONYMOUS_AUTH_PATHS.has(authPath)) {
     headers.set("Authorization", `Bearer ${cookieToken}`);
   }
   if (contentType) headers.set("Content-Type", contentType);
 
-  const body = request.method === "GET" ? undefined : await request.arrayBuffer();
   try {
+    const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer();
     // request.signal propagates browser-side cancellation to the backend call.
-    const response = await fetch(url, { method: request.method, headers, body, cache: "no-store", signal: request.signal });
+    const response = await fetch(url, { method: request.method, headers, body, cache: "no-store", signal: request.signal, redirect: "error" });
     // Auth verification is the only endpoint allowed to convert a bearer token into an HttpOnly session cookie.
-    if (TOKEN_ISSUING_PATHS.has(backendPath) && response.ok) {
+    if (TOKEN_ISSUING_PATHS.has(authPath) && response.ok) {
       const payload = await response.json() as { accessToken?: string; [key: string]: unknown };
       const { accessToken, ...safePayload } = payload;
       const next = NextResponse.json(safePayload, { status: response.status, headers: { "cache-control": "no-store" } });

@@ -89,6 +89,42 @@ describe("backend proxy", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
   });
 
+  it("handles mixed-case authentication routes without exposing tokens or forwarding stale cookies", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ accessToken: "jwt", userId: "u1" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await proxyPost(request("POST", { cookie: "alpha_access=expired" }), params("API/Auth/OTP/Verify"));
+    expect(await response.json()).toEqual({ userId: "u1" });
+    expect(response.headers.get("set-cookie")).toContain("alpha_access=jwt");
+    const init = (fetchMock.mock.calls[0] as unknown as [URL, RequestInit])[1];
+    expect(new Headers(init.headers).has("Authorization")).toBe(false);
+    expect(init.redirect).toBe("error");
+  });
+
+  it.each([
+    ["https:", "", "evil.test", "api", "scope"],
+    ["", "", "evil.test", "api", "scope"],
+    ["api", "%2e%2e", "api", "scope"],
+    ["api", "auth", "otp", "verify", ""],
+    ["api", "auth", "otp", "verify?ignored"],
+    ["api", "auth", "otp", "verify#ignored"],
+    ["api", "auth\\otp\\verify"],
+  ])("rejects ambiguous or external path segments: %j", async (...path) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await proxyGet(request("GET", { cookie: "alpha_access=secret" }), { params: Promise.resolve({ path }) });
+    expect(response.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("supports the HEAD request Next delegates to GET without a request body", async () => {
+    const fetchMock = vi.fn(async () => new Response(null));
+    vi.stubGlobal("fetch", fetchMock);
+    await proxyGet(request("HEAD", { cookie: "alpha_access=jwt" }), params("api/scope"));
+    const init = (fetchMock.mock.calls[0] as unknown as [URL, RequestInit])[1];
+    expect(init.method).toBe("HEAD");
+    expect(init.body).toBeUndefined();
+  });
+
   it("forwards the cookie as a bearer token, except to anonymous auth endpoints", async () => {
     const fetchMock = vi.fn(async () => Response.json({}));
     vi.stubGlobal("fetch", fetchMock);

@@ -23,6 +23,7 @@ Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<fe
 | --- | --- |
 | `ui/ui-controls.tsx` | `UiInput`, `UiTextarea`, `UiCheckbox`, `UiDateInput` (DD/MM/YYYY), `UiSelect`, `UiAutocomplete`, `UiActionMenu`. Option lists and menus are portaled to `document.body` so modals and tables never clip them |
 | `ui/floating-menu.ts` | Shared viewport placement, outside-focus/pointer dismissal and Escape handling for select, autocomplete and action menus; enabled-option navigation |
+| `ui/ui-action-menu.tsx` | Action-menu implementation, exposed through the existing `ui-controls.tsx` import path; owns menu keyboard navigation and focus |
 | `ui/app-modal.tsx` | The only dialog shell: fixed header/footer, scrollable body, nested scroll locking; cancel/back on the RTL right, positive actions on the left (`data-modal-side="positive"`) |
 | `ui/data-table.tsx` | The only table: fixed layout, windowed rows, infinite loading (`hasMore`/`onLoadMore`), optional expandable rows (`expandedRowComponent`, `canExpandRow`, `expandToggleColumnKey`); links use `DataTableLink` (no prefetch) |
 | `ui/ui-file-upload.tsx` | File picker with drag/drop, type and size checks (each caller passes the backend's limit) |
@@ -69,10 +70,15 @@ Organization profile → Employers lists employers, allows direct active/closed 
 - `reference-data/` — banks, branches, cities, streets, option lists, salary layers and the pension-editor option bundle; `reference-option-select.tsx`, `address-autocomplete-fields.tsx`. Autocompletes load suggestions only when opened.
 
 ### Reporting (Employer Interface 006)
-- `reporting/screens/new-report-screen.tsx` — the report wizard: report type, details, employees, deposits, summary/transmission; resumes drafts and correction workspaces (`resumeReportId`, focus parameters from feedback). Steps in `components/new-report/`.
+- `reporting/screens/new-report-screen.tsx` — route composition: resolves employer scope and setup, parses the URL entry and mounts the wizard. Each employer/URL entry gets a fresh workspace, including follow-up corrections and back/forward navigation.
+- `reporting/new-report/model.ts` — typed draft state, URL entry and shared stage numbering. `use-report-wizard.ts` owns local draft state, resumption and import callbacks; `use-report-wizard-actions.ts` owns stage validation/advancement and transmission.
+- `reporting/new-report/use-report-setup.ts`, `use-report-billing.ts`, `use-report-sources.ts`, `use-open-report-drafts.ts`, `use-report-resolution.ts` — setup query, billing gate, correction source search, resumable drafts and feedback links. These responsibilities do not live in screen JSX.
+- `reporting/new-report/draft-operations.ts` and `import-excel-report.ts` — persistence workflows, with no rendering or navigation. A newly created draft ID is retained before later reads/writes so retries can reuse it. Complete employee lists use `collectPages`.
+- `reporting/components/new-report/` — `report-wizard.tsx` composes stages, footer and dialogs; `report-wizard-stages.tsx` selects the active editor, `report-wizard-footer.tsx` renders navigation, and `report-wizard-dialogs.tsx` renders billing, deletion and validation dialogs. Details, summary, source selection and open drafts have their own presentation components.
 - `reporting/components/manual-report-data.tsx` (employees and products), `manual-deposit-data.tsx` + `deposit-payment-editor.tsx` (payment details, V006 metadata, payment evidence, report attachments), `employer-interface-xml-intake.tsx` (XML/DAT/TST import), `report-validation-errors-modal.tsx`, `salary-template-tools.tsx` (template in `public/templates/`).
 - API modules: `api.ts` (drafts), `deposits-api.ts`, `validation-api.ts`, `transmission-api.ts`, `derived-reports-api.ts` (corrections and differences), `attachments-api.ts`, `payment-confirmations-api.ts`, `employer-interface-api.ts` (006 profiles, metadata, preflight, options).
-- `reporting/screens/reports-screen.tsx` — Reports & Feedback: paged report grid with server-side filters, per-report deposit rows, exports and correction entry points The actions column stays pinned to the visible inline end while the wide grid scrolls horizontally (`src/styles/features/report-feedback.css`).
+- `reporting/screens/reports-screen.tsx` — Reports & Feedback composition: header/summary plus the filter, table and dialog components in `components/reports/`. A change of employer mounts a fresh workspace.
+- `reporting/hooks/use-reports-view.ts` owns the filtered query and column preferences; `use-report-deposits.ts` owns expanded deposit paging and manufacturer filtering; `use-report-actions.ts` owns exports, correction/transmission actions and dialog state. `components/reports/report-columns.tsx` owns cell renderers and row actions; `reports-view-model.ts` owns column/filter metadata. The actions column stays pinned while the grid scrolls (`src/styles/features/report-feedback.css`).
 
 Invariants:
 - Submitted reports are immutable; corrections happen in a backend-created correction workspace and are sent again as a whole report.
@@ -106,3 +112,5 @@ Invariants: the backend decides which groups are executable (`canExecute`), the 
 Reporting pre-send validation modal: `reporting/components/report-validation-errors-modal.tsx` groups by exact backend error code using `reporting/validation-groups.ts`, preserves every scoped issue in XLSX, resolves report employee names, and navigates to report/employee/product/payment editing in the wizard.
 
 User list filtering: the global platform-administrator view uses `/api/platform/users` and hides the shell scope picker; organization scope lists all non-platform users linked by membership or direct employer access, while selecting an employer returns direct employer users only. Filtering is enforced server-side for tenant-scoped users.
+
+Address suggestions use `useCities` / `useStreets` in `features/reference-data/queries.ts`, with query keys including the search and city code. `AddressAutocompleteFields` debounces input, hides results for earlier input, and distinguishes loading, no matching city, empty streets and request failures. It preserves free-text entry; reference lookups do not impose new business validation.

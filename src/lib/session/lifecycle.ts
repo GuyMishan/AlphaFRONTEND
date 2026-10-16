@@ -13,9 +13,13 @@ const CHANNEL_NAME = "alpha-session";
 
 function broadcast(message: SessionBroadcast) {
   if (typeof BroadcastChannel === "undefined") return;
-  const channel = new BroadcastChannel(CHANNEL_NAME);
-  channel.postMessage(message);
-  channel.close();
+  try {
+    const channel = new BroadcastChannel(CHANNEL_NAME);
+    try { channel.postMessage(message); }
+    finally { channel.close(); }
+  } catch {
+    // Restricted browser contexts may expose the API but deny access to it.
+  }
 }
 
 /** Drops this tab's user data without touching the (shared) server session. */
@@ -44,6 +48,7 @@ async function endBrowserSession(redirectTo: string): Promise<void> {
       method: "POST",
       credentials: "same-origin",
       cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
     });
   } catch {
     // Local state is already cleared; redirect even if cookie cleanup fails.
@@ -75,7 +80,9 @@ export function announceSignIn(userId: string | undefined) {
 /** Reacts to sign-in/sign-out in other tabs. Returns an unsubscribe function. */
 export function listenForSessionChangesInOtherTabs(): () => void {
   if (typeof BroadcastChannel === "undefined") return () => undefined;
-  const channel = new BroadcastChannel(CHANNEL_NAME);
+  let channel: BroadcastChannel;
+  try { channel = new BroadcastChannel(CHANNEL_NAME); }
+  catch { return () => undefined; }
   channel.onmessage = (event: MessageEvent<SessionBroadcast>) => {
     const current = getSession();
     if (!current) return;

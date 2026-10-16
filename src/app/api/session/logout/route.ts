@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
+        redirect: "error",
         signal: AbortSignal.timeout(BACKEND_LOGOUT_TIMEOUT_MS),
       });
       revoked = response.ok;
