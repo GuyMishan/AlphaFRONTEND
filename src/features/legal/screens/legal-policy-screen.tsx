@@ -1,3 +1,4 @@
+import { LegalMarkdown } from "@/features/legal/components/legal-markdown";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -30,7 +31,7 @@ export default function LegalPolicyScreen() {
       : <article aria-label={document.title} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
           <h2>{document.title}</h2>
           <p>גרסת מסמך {document.version} · פורסם {formatDate(document.publishedAt)} · בתוקף מ־{formatDate(document.effectiveAt)}</p>
-          <div>{document.markdown}</div>
+          <LegalMarkdown markdown={document.markdown} />
         </article>}
     <footer style={{ marginTop: 32 }}>
       <p>גרסת מערכת {packageInfo.version}</p>
