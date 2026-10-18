@@ -31,6 +31,7 @@ export type LegalDocument = { version: number; title: string; markdown: string; 
 
 export const authApi = {
   activeLegalDocument: () => apiRequest<LegalDocument>("/api/legal-document/active", { anonymous: true }),
+  acceptLegal: (legalVersion: number) => apiRequest<void>("/api/auth/legal/accept", { method: "POST", body: { legalVersion, acceptedTerms: true } }),
   refreshSession: (signal?: AbortSignal) => apiRequest<RefreshedSession>("/api/auth/session", { signal }),
   /** Same endpoint, for a tab without session metadata: a 401 only means "not signed in", not expiry. */
   currentSession: () => apiRequest<RefreshedSession>("/api/auth/session", { anonymous: true }),
