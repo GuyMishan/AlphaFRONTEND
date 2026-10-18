@@ -117,6 +117,42 @@ export function useReportWizardActions({ scope, entry, state, patch, canCreate, 
     }
   }
 
+  async function openSource(report: SourceManualReport) {
+    if (busy.current || state.advancing || state.sending || !canCreate) return;
+    busy.current = true;
+    const isCurrent = requests.begin();
+    const nextState: ReportWizardState = {
+      ...state,
+      sourceReportId: report.id,
+      month: report.reportingMonth.slice(0, 7),
+      salaryPaymentDate: report.salaryPaymentDate?.slice(0, 10) ?? "",
+      error: "",
+      stepOneAttempted: true,
+    };
+    patch({ advancing: true, sourceReportId: nextState.sourceReportId,
+      month: nextState.month, salaryPaymentDate: nextState.salaryPaymentDate,
+      error: "", stepOneAttempted: true });
+    try {
+      const issue = detailsError(nextState, entry, report);
+      if (issue) {
+        if (!nextState.paymentAccountId) {
+          await billing.ensureAccess(nextState.paymentAccountId);
+          billing.setOpen(true);
+        } else toast.error(issue, { id: "report-step-one-validation" });
+        return;
+      }
+      if (!await billing.ensureAccess(nextState.paymentAccountId) || !isCurrent()) return;
+      const created = await createReportFromDetails(scope, nextState, entry, reportId => patch({ reportId }));
+      if (!isCurrent()) return;
+      patch({ ...created, step: created.step ?? 2 });
+    } catch (error) {
+      if (isCurrent()) patch({ error: errorMessage(error, "פתיחת הדיווח לתיקון נכשלה") });
+    } finally {
+      busy.current = false;
+      if (isCurrent()) patch({ advancing: false });
+    }
+  }
+
   async function send() {
     if (busy.current || !state.reportId || state.sending || state.sentExternalId || !canTransmit) return;
     if (state.reportKind === 2) {
@@ -148,5 +184,5 @@ export function useReportWizardActions({ scope, entry, state, patch, canCreate, 
     }
   }
 
-  return { next, send };
+  return { next, send, openSource };
 }
