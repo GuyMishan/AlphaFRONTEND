@@ -57,7 +57,7 @@ export function ReportWizardStages({ scope, entry, setup, wizard }: {
     {...scope} reportId={state.reportId} month={state.month}
     employees={state.employees} selectedIds={state.selectedIds}
     setSelectedIds={selectedIds => patch({ selectedIds })}
-    correctionWorkspace={entry.correctionWorkspace}
+    correctionWorkspace={entry.correctionWorkspace || state.reportKind === 2}
     focusReportEmployeeId={state.validationFocus?.employeeId ?? entry.focusEmployeeId}
     focusReportProductId={state.validationFocus?.productId ?? state.focusedProductId}
     focusMissingFieldNumber={entry.missingFieldNumber}
@@ -78,10 +78,8 @@ export function ReportWizardStages({ scope, entry, setup, wizard }: {
       sentExternalId={state.sentExternalId}
     />
     {state.reportKind === 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}>
-      <b>{entry.correctionWorkspace ? "טיוטת תיקון לדיווח שנשלח" : "דיווח הפרשים הוא טיוטת עבודה"}</b>
-      <div>{entry.correctionWorkspace
-        ? "השינויים נשמרים כגרסה חדשה. לאחר שסיימתם, חזרו למסך דיווחים ומשובים ובחרו דיווח חוזר כדי ליצור את רצף התיקון הרשמי."
-        : "לא ניתן לשדר אותו ישירות למסלקה. יש ליצור ממנו דיווח שוטף מתקן או דיווח שלילי בהתאם לכיוון ההפרש."}</div>
+      <b>{"טיוטת תיקון לדיווח שנשלח"}</b>
+      <div>{"השינויים נשמרים בגרסה נפרדת. עדיין אין שליחה ישירה מסביבת התיקון; הסיום יתאפשר לאחר חיבור בחירת המסלול ויצירת מסמכי 006."}</div>
     </div> : null}
     {billing.gate?.canTransmit && state.reportKind !== 2 ? <div className="notice notice-info" style={{ marginTop: 18 }}>
       <b>חיוב Alpha תקין לשידור</b>

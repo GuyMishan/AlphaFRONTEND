@@ -32,16 +32,14 @@ type Props = {
 };
 
 const kindChoices: { value: ManualReportKind; icon: typeof Keyboard; title: string; text: string }[] = [
-  { value: 1, icon: Keyboard, title: "דיווח שוטף", text: "הדיווח החודשי הרגיל עבור תקופת השכר שנבחרה" },
-  { value: 2, icon: FilePenLine, title: "דיווח הפרשים", text: "דיווח המשלים סכומים ביחס לדיווח קודם" },
-  { value: 3, icon: FilePenLine, title: "דיווח שלילי", text: "הפחתה או ביטול של נתונים שכבר דווחו בדיווח קודם" },
+  { value: 1, icon: Keyboard, title: "דיווח חדש", text: "יצירת דיווח חודשי רגיל עבור תקופת השכר שנבחרה" },
+  { value: 2, icon: FilePenLine, title: "תיקון דיווח קיים", text: "בחירת דיווח שנשלח ועריכת הנתונים שדורשים תיקון" },
 ];
 
 const intakeChoices: { value: IntakeMode; icon: typeof Keyboard; title: string; text: string }[] = [
   { value: "manual", icon: Keyboard, title: "דיווח ידני", text: "בחירת עובדים והזנת המוצרים וההפקדות במערכת" },
   { value: "excel", icon: FileSpreadsheet, title: "קובץ Excel", text: "העלאת קובץ דיווח מלא: עובדים, מוצרים, הפרשות ונתוני ממשק 006" },
   { value: "xml", icon: FileCode2, title: "XML ממשק מעסיקים", text: "העלאת קובץ ממשק מעסיקים 006, בדיקת המבנה וקליטת הדיווח" },
-  { value: "correction", icon: FilePenLine, title: "תיקון אחרי שלילי 6", text: "יצירת דיווח שוטף מתקן פעולה 2 או 3 על בסיס דיווח שלילי שביטל את התנועה" },
 ];
 
 function ReportDates({ month, setMonth, salaryPaymentDate, setSalaryPaymentDate, showValidation, disabledMonth = false }: Pick<Props,
@@ -85,7 +83,7 @@ export function ReportDetails(props: Props) {
         <Icon className="choice-icon" size={28} /><b>{title}</b><p>{text}</p>
       </UiChoiceCard>)}
       <UiChoiceCard selected={selectingExisting} onClick={onSelectExisting}>
-        <RotateCcw className="choice-icon" size={28} /><b>המשך דיווח קיים</b>
+        <RotateCcw className="choice-icon" size={28} /><b>המשך טיוטה</b>
         <p>בחירת טיוטה שנשמרה וחזרה לעריכת עובדים והפקדות</p>
       </UiChoiceCard>
     </div>
@@ -118,7 +116,7 @@ export function ReportDetails(props: Props) {
     </> : <>
       <div className="notice" style={{ marginBottom: 18 }}>
         {reportKind === 3 ? "דיווח שלילי חייב להיות מקושר לדיווח שאותו הוא מפחית או מבטל."
-          : "דיווח הפרשים חייב להיות מקושר לדיווח שעליו משלימים את ההפרשים."}
+          : "יש לבחור דיווח שוטף שכבר נשלח. השינויים יישמרו בסביבת תיקון נפרדת, והמקור לא ישתנה."}
       </div>
       {sources}
       {props.selectedSourceReportId ? <ReportDates {...props} disabledMonth /> : null}

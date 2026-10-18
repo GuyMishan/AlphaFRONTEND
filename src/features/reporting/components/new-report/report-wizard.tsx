@@ -45,7 +45,7 @@ export function ReportWizard({ scope, entry, setup }: {
       </div> : null}
       <section className="card">
         <ReportWizardStages scope={scope} entry={entry} setup={setup} wizard={wizard} />
-        <ReportWizardFooter wizard={wizard} capabilities={setup.capabilities} />
+        <ReportWizardFooter wizard={wizard} capabilities={setup.capabilities} scope={scope} />
       </section>
     </div>
     <ReportWizardDialogs scope={scope} setup={setup} wizard={wizard} />
