@@ -11,6 +11,7 @@ import { errorMessage } from "@/lib/api/error-messages";
 
 const types = [
   { code: 3, label: "תצהיר מעסיק" },
+  { code: 7, label: "הסכם התקשרות עם ALPHA" },
   { code: 4, label: "אישור עובד להשבת כספים" },
   { code: 5, label: "בקשת הצטרפות לקרן ברירת מחדל" },
   { code: 6, label: "הצהרת מעסיק – הסכם קיבוצי" },
@@ -25,7 +26,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
   const [busy, setBusy] = useState(false);
   const availableTypes = types.filter(item => employmentId
     ? item.code !== 3 && (item.code !== 5 || productType == null || productType === 1)
-    : item.code === 3);
+    : item.code === 3 || item.code === 7);
   const visibleDocuments = loadedDocuments === undefined ? documents
     : loadedDocuments.filter(doc => doc.employeePensionProductId === (employeePensionProductId ?? null)
         && doc.employmentId === (employmentId ?? null));
@@ -85,7 +86,11 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
         const existing = visibleDocuments.filter(doc => doc.documentTypeCode === item.code)
           .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
         return [
-          <strong key="type">{item.label}</strong>,
+          <div key="type" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            <strong>{item.label}</strong>
+            {item.code === 7 ? <span tabIndex={0} role="note" aria-label="העלאת ההסכם מהווה אישור לתנאי השימוש"
+              title="בהעלאת ההסכם אתם מצהירים שקראתם והסכמתם בשם המעסיק לתנאי השימוש ולמדיניויות ALPHA. ללא ההסכם לא ניתן לשדר דיווחים.">ⓘ</span> : null}
+          </div>,
           <div key="file">
             {existing.length ? existing.map(doc => <div key={doc.id} style={{ marginBottom: 6 }}>
               <span>{doc.originalFileName}</span>
