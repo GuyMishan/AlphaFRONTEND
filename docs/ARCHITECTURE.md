@@ -102,3 +102,7 @@ Loading states use the shared components in `src/components/loading` (branded `A
 `npm run verify` (and CI) runs the guard scripts (UI primitives, hard-coded select data, V006 ownership, double-escaped regexes), ESLint, `tsc`, Vitest and the production build. CI installs with `npm ci` from the committed lockfile.
 
 Dependencies to know: `xlsx` is SheetJS 0.20.3 from the vendor CDN (the npm registry copy is unmaintained and vulnerable), pinned by integrity in `package-lock.json`.
+
+## Legal consent during registration
+
+The registration form reads `/api/legal-document/active` through the existing backend proxy. The current published legal Markdown is displayed as text (not untrusted HTML). Registration sends the consent decision and document version with the OTP request, and the backend binds this evidence to the OTP challenge. No acceptance is inferred from marketing opt-in. The backend refuses new registrations until an approved legal version is published.
