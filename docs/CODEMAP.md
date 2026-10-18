@@ -114,3 +114,7 @@ Reporting pre-send validation modal: `reporting/components/report-validation-err
 User list filtering: the global platform-administrator view uses `/api/platform/users` and hides the shell scope picker; organization scope lists all non-platform users linked by membership or direct employer access, while selecting an employer returns direct employer users only. Filtering is enforced server-side for tenant-scoped users.
 
 Address suggestions use `useCities` / `useStreets` in `features/reference-data/queries.ts`, with query keys including the search and city code. `AddressAutocompleteFields` debounces input, hides results for earlier input, and distinguishes loading, no matching city, empty streets and request failures. It preserves free-text entry; reference lookups do not impose new business validation.
+
+## Registration legal consent
+
+`src/features/auth/screens/register-screen.tsx` loads the published legal document from `authApi.activeLegalDocument`, shows the text inline, and collects mandatory terms acceptance separately from optional marketing email opt-in. Zod validates the acceptance and passes the exact version to the registration OTP request; backend rechecks it at OTP completion.
