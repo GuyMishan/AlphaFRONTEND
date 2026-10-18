@@ -6,6 +6,7 @@ import { reportValidationApi } from "../../validation-api";
 import { reportTransmissionApi } from "../../transmission-api";
 import { errorMessage } from "@/lib/api/error-messages";
 import { AppModal } from "@/components/ui/app-modal";
+import { UiCheckbox } from "@/components/ui/ui-controls";
 import { derivedReportsApi, type CorrectionRoutePreview } from "../../derived-reports-api";
 
 export function CorrectionRouteModal({ organizationId, employerId, workspaceId, onClose }: {
@@ -83,7 +84,7 @@ export function CorrectionRouteModal({ organizationId, employerId, workspaceId, 
     {loading ? <p>בודק מסלולי תיקון...</p> : !routes.length ? <div className="notice notice-info">לא נמצאו מסלולים זמינים. ודאו שקיימים שינויים תקפים.</div>
       : <div className="grid" style={{ gap: 12 }}>
         {routes.map(route => <label key={route.id} className="card" style={{ padding: 16 }}>
-          <input type="checkbox" checked={selected === route.id}
+          <UiCheckbox checked={selected === route.id}
             onChange={event => setSelected(event.target.checked ? route.id : "")} />
           <strong>{route.title}</strong>
           <p>{route.description}</p>
