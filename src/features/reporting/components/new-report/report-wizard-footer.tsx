@@ -19,7 +19,7 @@ export function ReportWizardFooter({ wizard, capabilities }: {
     else if (wizard.canContinue) void wizard.next();
   }
 
-  const sendLabel = state.reportKind === 2 ? "יש לממש את ההפרש לפני שליחה"
+  const sendLabel = state.reportKind === 2 ? "סיום התיקון יהיה זמין לאחר בחירת מסלול"
     : state.sending ? "מבצע ולידציה ושולח..." : sent ? "הדיווח נשלח" : "שליחת דיווח";
 
   return <div className="wizard-footer">
@@ -34,7 +34,7 @@ export function ReportWizardFooter({ wizard, capabilities }: {
       <ArrowLeft size={17} />
     </button> : <>
       {sent || state.reportKind === 2 ? <button type="button" className="btn btn-secondary" onClick={() => router.push("/reports")}>
-        {state.reportKind === 2 ? "שמירה וחזרה לדיווחים" : "יציאה"}
+        {state.reportKind === 2 ? "חזרה לדיווחים" : "יציאה"}
       </button> : null}
       <button type="button" className="btn btn-primary"
         disabled={state.reportKind === 2 || state.sending || sent || !state.reportId || !capabilities.canTransmitReport}
