@@ -3,7 +3,21 @@ import type { ManualReportDraft, ManualReportKind, SourceManualReport } from "@/
 import type { PagedResult } from "@/lib/api/paging";
 
 
+export type CorrectionRoutePreview = {
+  id: string;
+  title: string;
+  description: string;
+  requiresNegative: boolean;
+  requiresCurrent: boolean;
+  pendingChanges: number;
+  negativeProducts: number;
+  currentProducts: number;
+};
+
 export const derivedReportsApi = {
+  correctionRoutes: (organizationId: string, employerId: string, workspaceId: string) =>
+    request<{ routes: CorrectionRoutePreview[]; canComplete: boolean }>(
+      `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${workspaceId}/correction-routes`),
   sourceReports: (organizationId: string, employerId: string, search = "", skip = 0, take = 30) => {
     const params = new URLSearchParams({ search, skip: String(skip), take: String(take) });
     return request<PagedResult<SourceManualReport>>(`/api/organizations/${organizationId}/employers/${employerId}/manual-reports/source-reports?${params}`);
