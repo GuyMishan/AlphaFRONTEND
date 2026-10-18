@@ -116,7 +116,7 @@ export function ReportDetails(props: Props) {
     </> : <>
       <div className="notice" style={{ marginBottom: 18 }}>
         {reportKind === 3 ? "דיווח שלילי חייב להיות מקושר לדיווח שאותו הוא מפחית או מבטל."
-          : "דיווח הפרשים חייב להיות מקושר לדיווח שעליו משלימים את ההפרשים."}
+          : "יש לבחור דיווח שוטף שכבר נשלח. השינויים יישמרו בסביבת תיקון נפרדת, והמקור לא ישתנה."}
       </div>
       {sources}
       {props.selectedSourceReportId ? <ReportDates {...props} disabledMonth /> : null}
