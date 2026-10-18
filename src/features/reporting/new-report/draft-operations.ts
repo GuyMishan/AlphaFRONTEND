@@ -49,7 +49,7 @@ export async function createReportFromDetails(
 
   // Business correction flow: reuse the immutable-source correction workspace rather
   // than creating a legacy Differences draft that cannot be materialized.
-  if (state.reportKind === 2 && !entry.sourceReportId) {
+  if (state.reportKind === 2 && !entry.correctionWorkspace) {
     const workspace = await derivedReportsApi.ensureCorrectionWorkspace(organizationId, employerId, state.sourceReportId);
     onReportCreated(workspace.reportId);
     const selectedIds = await loadReportEmploymentIds(scope, workspace.reportId);
