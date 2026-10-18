@@ -118,3 +118,7 @@ Address suggestions use `useCities` / `useStreets` in `features/reference-data/q
 ## Registration legal consent
 
 `src/features/auth/screens/register-screen.tsx` loads the published legal document from `authApi.activeLegalDocument`, shows the text inline, and collects mandatory terms acceptance separately from optional marketing email opt-in. Zod validates the acceptance and passes the exact version to the registration OTP request; backend rechecks it at OTP completion.
+
+## Shared legal consent experience
+
+The registration screen and `src/features/shell/components/persistent-app-layout.tsx` reuse `src/features/auth/components/legal-consent-modal.tsx` to present and accept the current terms. A restored session is checked with `/api/auth/session`, required reacceptance blocks the shell until server acknowledgement, and Settings includes a separate marketing opt-in checkbox. The backend independently enforces the current consent in production.
