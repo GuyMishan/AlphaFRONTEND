@@ -48,9 +48,9 @@ export function CorrectionRouteModal({ organizationId, employerId, workspaceId, 
         // provider outcome must be reconciled from its saved history.
         const history = await reportTransmissionApi.history(organizationId, employerId, reportId);
         if (history.length > 0) {
-          const latest = history[0];
-          const status = String(latest.status).toLowerCase();
-          if (!["sent", "completed", "accepted", "2", "3"].includes(status))
+          const report = await derivedReportsApi.metadata(organizationId, employerId, reportId);
+          const status = String(report.status).toLowerCase();
+          if (!["sent", "completed", "6", "8"].includes(status))
             throw new Error(`${kind}: קיימת פעולת שידור קודמת. יש לבדוק את הסטטוס במסך הדיווחים לפני ניסיון נוסף.`);
           continue;
         }
