@@ -8,6 +8,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { saveBlob } from "@/lib/download";
 import { formatDateDDMMYYYY } from "@/lib/format/date";
 import { errorMessage } from "@/lib/api/error-messages";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const types = [
   { code: 3, label: "תצהיר מעסיק" },
@@ -88,8 +89,8 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
         return [
           <div key="type" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <strong>{item.label}</strong>
-            {item.code === 7 ? <span tabIndex={0} role="note" aria-label="העלאת ההסכם מהווה אישור לתנאי השימוש"
-              title="בהעלאת ההסכם אתם מצהירים שקראתם והסכמתם בשם המעסיק לתנאי השימוש ולמדיניויות ALPHA. ללא ההסכם לא ניתן לשדר דיווחים.">ⓘ</span> : null}
+            {item.code === 7 ? <Tooltip label="משמעות העלאת הסכם ההתקשרות"
+              content="בהעלאת המסמך אתם מאשרים בשם המעסיק את תנאי השימוש והמדיניויות של ALPHA. כדי לשדר דיווחים חייב להיות הסכם במערכת." /> : null}
           </div>,
           <div key="file">
             {existing.length ? existing.map(doc => <div key={doc.id} style={{ marginBottom: 6 }}>
