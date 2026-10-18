@@ -22,9 +22,16 @@ export type RegistrationRequest = {
   nationalId: string;
   phone: string;
   invitationToken?: string;
+  acceptedTerms: boolean;
+  marketingEmailOptIn: boolean;
+  legalVersion: number;
 };
 
+export type LegalDocument = { version: number; title: string; markdown: string; effectiveAt: string; publishedAt: string; requiresReacceptance: boolean };
+
 export const authApi = {
+  activeLegalDocument: () => apiRequest<LegalDocument>("/api/legal-document/active", { anonymous: true }),
+  acceptLegal: (legalVersion: number) => apiRequest<void>("/api/auth/legal/accept", { method: "POST", body: { legalVersion, acceptedTerms: true } }),
   refreshSession: (signal?: AbortSignal) => apiRequest<RefreshedSession>("/api/auth/session", { signal }),
   /** Same endpoint, for a tab without session metadata: a 401 only means "not signed in", not expiry. */
   currentSession: () => apiRequest<RefreshedSession>("/api/auth/session", { anonymous: true }),
@@ -45,6 +52,9 @@ export const authApi = {
 // Business errors of the anonymous auth endpoints. Unknown users get the same
 // neutral 200 as known ones, so "wrong details" is only detectable at verification (401).
 const authCodeMessages: Record<string, string> = {
+  LEGAL_CONSENT_REQUIRED: "יש לאשר את תנאי השימוש והמדיניויות.",
+  LEGAL_VERSION_OUTDATED: "המדיניות עודכנה. יש להתחיל את ההרשמה מחדש ולאשר את הגרסה העדכנית.",
+  LEGAL_DOCUMENT_UNAVAILABLE: "תנאי השימוש אינם זמינים כרגע. לא ניתן להירשם.",
   INVALID_INPUT: "חלק מהפרטים שהוזנו אינם תקינים.",
   INVALID_CREDENTIALS: "פרטי ההתחברות אינם נכונים. בדקו את הפרטים ונסו שוב.",
   INVALID_CODE: "הזינו קוד בן 6 ספרות.",

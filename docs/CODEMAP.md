@@ -122,3 +122,7 @@ Address suggestions use `useCities` / `useStreets` in `features/reference-data/q
 ## Employer agreement gate (legal stage 4)
 
 The shared `src/features/employers/components/employer-documents-tab.tsx` displays the employer-wide type-7 ALPHA agreement in the existing employer Documents tab, with the shared accessible Tooltip explaining that uploading constitutes employer acceptance. The existing `documents-api.ts` transports the PDF through the backend scan/encryption pathway. `src/features/reporting/transmission-api.ts` and shared API error messages surface HTTP 409 `employer_legal_agreement_required` returned from server-controlled send/resume gates. No separate agreement screen or parallel document store.
+
+## Shared legal consent and settings
+
+Registration and PersistentAppLayout use `features/auth/components/legal-consent-modal.tsx`. The layout checks the server consent version on authenticated session restoration before showing the shell; after acceptance it unlocks navigation. The Settings screen uses `features/settings/api.ts` to edit optional marketing email consent. Backend rejects protected production APIs until latest policy consent is given.

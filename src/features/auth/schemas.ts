@@ -17,6 +17,9 @@ export const registerSchema = z.object({
   nationalId: israeliId(),
   phone: israeliMobile(PHONE_MESSAGE),
   email: email("כתובת האימייל אינה תקינה.", 254).transform((value) => value.toLowerCase()),
+  acceptedTerms: z.boolean().refine(Boolean, "יש לאשר את תנאי השימוש והמדיניויות."),
+  marketingEmailOptIn: z.boolean(),
+  legalVersion: z.number().int().positive("המסמך המשפטי אינו זמין כרגע."),
 });
 
 export type LoginValues = z.output<typeof loginSchema>;
