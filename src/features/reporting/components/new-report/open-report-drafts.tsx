@@ -13,9 +13,10 @@ export function OpenReportDrafts({
   onDelete: (draft: ResumableManualReport) => void;
   search: string; setSearch: (value: string) => void; onSearch: () => void;
 }) {
-  return <div className="resume-report-section">
-    <div id="open-report-drafts" className="resume-report-list">
-      <h3>טיוטות שניתן להמשיך לערוך</h3>
+  return <div id="open-report-drafts">
+    <div className="card-head"><div>
+      <h3 style={{ margin: 0 }}>טיוטות שניתן להמשיך לערוך</h3>
+    </div></div>
       <ReportSelectionTable reports={openReports} loading={loadingOpenReports}
         hasMore={openReportsHasMore} onLoadMore={loadMoreOpenReports}
         search={search} setSearch={setSearch} onSearch={onSearch} searchLoading={loadingOpenReports}
