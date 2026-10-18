@@ -41,6 +41,7 @@ export function ReportWizardStages({ scope, entry, setup, wizard }: {
       openReports={drafts.items} loadingOpenReports={drafts.loading} openReportsHasMore={drafts.hasMore}
       advancing={state.advancing} deletingDraftId={drafts.deletingId} loadMoreOpenReports={drafts.loadMore}
       onResume={draft => void wizard.resume(draft.id)} onDelete={drafts.setSelected}
+      search={drafts.search} setSearch={drafts.setSearch} onSearch={() => void drafts.searchDrafts()}
     /> : null}
     {!state.showOpenReports && isXml ? <EmployerInterfaceXmlIntake
       {...scope} paymentAccountId={state.paymentAccountId} salaryPaymentDate={state.salaryPaymentDate}
