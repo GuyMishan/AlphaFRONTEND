@@ -31,6 +31,5 @@ export function OpenReportDrafts({
             <Trash2 size={15} />
           </button>
         </>} />
-    </div>
   </div>;
 }
