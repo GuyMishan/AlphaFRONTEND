@@ -33,6 +33,7 @@ export type ManufacturerRoutingPreview = {
 
 export type ManufacturerRoutingValidation = {
   reportId: string;
+  employerAgreementRequired?: boolean;
   canTransmit: boolean;
   requiresSplit: boolean;
   packages: Array<{
@@ -46,6 +47,7 @@ export type ManufacturerRoutingValidation = {
 
 // Transmission-specific wording for billing gates (takes precedence over backend detail).
 const transmissionMessages = {
+  EMPLOYER_LEGAL_AGREEMENT_REQUIRED: "נדרש הסכם התקשרות עם ALPHA לפני שידור דיווחים. העלו אותו בטאב מסמכים בפרופיל המעסיק.",
   BILLING_ACCOUNT_REQUIRED: "לא הוגדרו פרטי חיוב עבור הגורם שמחויב בפועל.",
   BILLING_PAYMENT_METHOD_NOT_ACTIVE: "אמצעי התשלום של Alpha אינו פעיל ולכן לא ניתן לשדר דיווחים.",
   BILLING_PAYMENT_METHOD_REFERENCE_REQUIRED: "אמצעי התשלום מסומן כפעיל אך חסר token או mandate reference תקין.",

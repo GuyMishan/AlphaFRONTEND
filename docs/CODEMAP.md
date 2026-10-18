@@ -118,3 +118,7 @@ Address suggestions use `useCities` / `useStreets` in `features/reference-data/q
 ## Public legal policy
 
 `/legal` renders `src/features/legal/screens/legal-policy-screen.tsx` without the authenticated shell. The screen uses `src/features/legal/api.ts` and the anonymous shared API `/api/legal-document/active`; the same backend Markdown is exposed on the marketing website. The app sidebar links to it under Sign out, and the page shows the document version and application package version.
+
+## Employer agreement gate (legal stage 4)
+
+The shared `src/features/employers/components/employer-documents-tab.tsx` displays the employer-wide type-7 ALPHA agreement in the existing employer Documents tab, with the shared accessible Tooltip explaining that uploading constitutes employer acceptance. The existing `documents-api.ts` transports the PDF through the backend scan/encryption pathway. `src/features/reporting/transmission-api.ts` and shared API error messages surface HTTP 409 `employer_legal_agreement_required` returned from server-controlled send/resume gates. No separate agreement screen or parallel document store.

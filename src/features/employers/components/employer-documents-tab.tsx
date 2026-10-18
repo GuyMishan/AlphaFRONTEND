@@ -8,9 +8,11 @@ import { DataTable } from "@/components/ui/data-table";
 import { saveBlob } from "@/lib/download";
 import { formatDateDDMMYYYY } from "@/lib/format/date";
 import { errorMessage } from "@/lib/api/error-messages";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const types = [
   { code: 3, label: "תצהיר מעסיק" },
+  { code: 7, label: "הסכם התקשרות עם ALPHA" },
   { code: 4, label: "אישור עובד להשבת כספים" },
   { code: 5, label: "בקשת הצטרפות לקרן ברירת מחדל" },
   { code: 6, label: "הצהרת מעסיק – הסכם קיבוצי" },
@@ -25,7 +27,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
   const [busy, setBusy] = useState(false);
   const availableTypes = types.filter(item => employmentId
     ? item.code !== 3 && (item.code !== 5 || productType == null || productType === 1)
-    : item.code === 3);
+    : item.code === 3 || item.code === 7);
   const visibleDocuments = loadedDocuments === undefined ? documents
     : loadedDocuments.filter(doc => doc.employeePensionProductId === (employeePensionProductId ?? null)
         && doc.employmentId === (employmentId ?? null));
@@ -85,7 +87,11 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
         const existing = visibleDocuments.filter(doc => doc.documentTypeCode === item.code)
           .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
         return [
-          <strong key="type">{item.label}</strong>,
+          <div key="type" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            <strong>{item.label}</strong>
+            {item.code === 7 ? <Tooltip label="משמעות העלאת הסכם ההתקשרות"
+              content="בהעלאת המסמך אתם מאשרים בשם המעסיק את תנאי השימוש והמדיניויות של ALPHA. כדי לשדר דיווחים חייב להיות הסכם במערכת." /> : null}
+          </div>,
           <div key="file">
             {existing.length ? existing.map(doc => <div key={doc.id} style={{ marginBottom: 6 }}>
               <span>{doc.originalFileName}</span>
