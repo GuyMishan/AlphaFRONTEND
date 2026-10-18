@@ -32,7 +32,8 @@ export function ReportWizardStages({ scope, entry, setup, wizard }: {
       sourceReports={isCorrection ? sources.eligible : sources.items}
       sourceSearch={sources.search} setSourceSearch={sources.setSearch}
       sourceHasMore={sources.hasMore} loadingSources={sources.loading}
-      selectedSourceReportId={state.sourceReportId} chooseSource={sources.choose}
+      selectedSourceReportId={state.sourceReportId} chooseSource={report => void wizard.openSource(report)}
+      advancing={state.advancing}
       searchSources={() => void sources.load()}
       loadMoreSources={() => void sources.load(false)}
     />
