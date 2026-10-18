@@ -7,6 +7,7 @@ export type Session = {
 };
 
 export type RefreshedSession = {
+  legalConsentRequired?: boolean;
   userId: string;
   platformAdmin: boolean;
   isReferent?: boolean;
