@@ -27,6 +27,7 @@ type Props = {
   loadingSources: boolean;
   selectedSourceReportId: string;
   chooseSource: (report: SourceManualReport) => void;
+  advancing: boolean;
   searchSources: () => void;
   loadMoreSources: () => void;
 };
@@ -68,6 +69,7 @@ export function ReportDetails(props: Props) {
     reports={sourceReports} loading={loadingSources} selectedId={props.selectedSourceReportId}
     search={props.sourceSearch} setSearch={props.setSourceSearch} chooseSource={props.chooseSource}
     onSearch={props.searchSources} hasMore={props.sourceHasMore} onLoadMore={props.loadMoreSources}
+    advancing={props.advancing}
   />;
 
   return <>
