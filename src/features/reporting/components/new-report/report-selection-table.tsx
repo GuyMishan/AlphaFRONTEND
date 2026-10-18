@@ -1,6 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
 import { DataTable } from "@/components/ui/data-table";
+import { UiInput } from "@/components/ui/ui-controls";
 import { formatDateDDMMYYYY, formatReportingMonth } from "@/lib/format/date";
 import { reportKindLabel } from "../../labels";
 import type { ResumableManualReport, SourceManualReport } from "../../types";
@@ -15,11 +16,22 @@ function formatUpdated(value: string) {
   const time = new Intl.DateTimeFormat("he-IL", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
   return `${label} בשעה ${time}`;
 }
-export function ReportSelectionTable<T extends Row>({ reports, loading, hasMore, onLoadMore, renderActions, emptyState }: {
+export function ReportSelectionTable<T extends Row>({ reports, loading, hasMore, onLoadMore, renderActions, emptyState, search, setSearch, onSearch, searchLoading }: {
   reports: T[]; loading: boolean; hasMore: boolean; onLoadMore: () => void | Promise<void>;
   renderActions: (report: T) => ReactNode; emptyState: string;
+  search: string; setSearch: (value: string) => void;
+  onSearch: () => void; searchLoading?: boolean;
 }) {
-  return <DataTable items={reports} rowKey={report => report.id}
+  return <div>
+    <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+      <UiInput aria-label="חיפוש לפי חודש" placeholder="חיפוש חודש, למשל 2026-09"
+        maxLength={7} value={search} onChange={event => setSearch(event.target.value)}
+        onKeyDown={event => { if (event.key === "Enter") onSearch(); }}
+        style={{ flex: "1 1 220px" }} />
+      <button type="button" className="btn btn-secondary" onClick={onSearch}
+        disabled={Boolean(searchLoading)}>חיפוש</button>
+    </div>
+    <DataTable items={reports} rowKey={report => report.id}
     columns={[
       { key: "kind", label: "סוג דיווח", width: "16%" },
       { key: "month", label: "חודש", width: "12%" },
@@ -39,5 +51,6 @@ export function ReportSelectionTable<T extends Row>({ reports, loading, hasMore,
       <span key="products">{report.productCount}</span>,
       <span key="updated">{formatUpdated(report.updatedAt)}</span>,
       <div key="action" className="resume-report-actions">{renderActions(report)}</div>,
-    ]} />;
+    ]} />
+  </div>;
 }
