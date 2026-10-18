@@ -132,7 +132,7 @@ export default function RegisterPage() {
         {errors.acceptedTerms ? <p role="alert">{errors.acceptedTerms.message}</p> : null}
         <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
           <UiCheckbox {...register("marketingEmailOptIn")} />
-          <span>אני מסכים/ה לקבל עדכונים והודעות שיווקיות בדוא"ל (לא חובה).</span>
+          <span>אני מסכים/ה לקבל עדכונים והודעות שיווקיות בדוא״ל (לא חובה).</span>
         </label>
         {legalError ? <p role="alert">המסמך המשפטי אינו זמין כרגע, ולא ניתן להשלים הרשמה.</p> : null}
         <button className="btn btn-primary btn-lg wide" disabled={!legal || legalError || loading || invitationLoading || Boolean(invitationToken && !invitation)} type="submit">{loading ? "שולח..." : "שלחו לי קוד אימות"}<ArrowLeft size={18} /></button>
