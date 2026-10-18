@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBrand, AuthMobileBrand } from "@/features/auth/components/auth-brand";
+import { LegalConsentModal } from "@/features/auth/components/legal-consent-modal";
 import { OtpInput } from "@/features/auth/components/otp-input";
 import { authApi, authErrorMessage, sessionFromAuthenticatedUser, type OtpChallenge, type LegalDocument } from "@/features/auth/api";
 import { OTP_CODE_PATTERN, registerSchema, type RegisterValues } from "@/features/auth/schemas";
@@ -26,6 +27,7 @@ export default function RegisterPage() {
   });
   const [legal, setLegal] = useState<LegalDocument | null>(null);
   const [legalError, setLegalError] = useState(false);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
   const [code, setCode] = useState("");
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [loading, setLoading] = useState(false);
@@ -125,10 +127,10 @@ export default function RegisterPage() {
         <Field label="אימייל *" error={errors.email?.message}><UiInput aria-invalid={Boolean(errors.email)} id="email" type="email" maxLength={254} dir="ltr" disabled={Boolean(invitation)} required {...register("email")} /></Field>
         <div className="notice notice-info">לצורך פתיחת חשבון ושימוש בשירות נאספים פרטי זיהוי ויצירת קשר. הפרטים יעובדו בהתאם למדיניות הפרטיות הכלולה במסמך המשפטי.</div>
         <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-          <UiCheckbox {...register("acceptedTerms")} aria-invalid={Boolean(errors.acceptedTerms)} />
-          <span>קראתי ואני מאשר/ת את <a href="#legal-document-content">תנאי השימוש ומדיניות הפרטיות</a> (גרסה {legal?.version ?? "—"}). *</span>
+          <UiCheckbox checked={false} readOnly aria-invalid={Boolean(errors.acceptedTerms)} onClick={() => setLegalModalOpen(true)} />
+          <span>קראתי ואני מאשר/ת את <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLegalModalOpen(true)}>פתיחת תנאי השימוש לאישור</button> (גרסה {legal?.version ?? "—"}). *</span>
         </label>
-        {legal ? <details id="legal-document-content"><summary>הצגת המסמך המשפטי המלא — {legal.title}</summary><div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: 280, overflowY: "auto" }} dir="auto">{legal.markdown}</div></details> : null}
+
         {errors.acceptedTerms ? <p role="alert">{errors.acceptedTerms.message}</p> : null}
         <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
           <UiCheckbox {...register("marketingEmailOptIn")} />
@@ -146,6 +148,8 @@ export default function RegisterPage() {
       </form>
     )}
 
+    <LegalConsentModal open={legalModalOpen} document={legal} onClose={() => setLegalModalOpen(false)}
+      onAccept={(version) => { setValue("acceptedTerms", true, { shouldValidate: true }); setValue("legalVersion", version); setLegalModalOpen(false); }} />
     <div className="auth-footer">כבר יש לך משתמש? <Link href="/login">להתחברות</Link></div>
   </div></section></main>;
 }
