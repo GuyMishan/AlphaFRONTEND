@@ -1,5 +1,6 @@
-import { LegalMarkdown } from "@/features/legal/components/legal-markdown";
 "use client";
+
+import { LegalMarkdown } from "@/features/legal/components/legal-markdown";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
