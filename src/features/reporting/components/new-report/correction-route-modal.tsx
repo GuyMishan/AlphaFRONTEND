@@ -62,7 +62,7 @@ export function CorrectionRouteModal({ organizationId, employerId, workspaceId, 
         setProgress(`משדר את ${kind}...`);
         await reportTransmissionApi.send(organizationId, employerId, reportId);
       }
-      toast.success("מסמכי התיקון שודרו. ממתינים למשובי המסלקה והיצרנים.");
+      toast.success("שידור מסמכי התיקון הסתיים. ממתינים למשובי המסלקה והיצרנים.");
       router.push("/reports");
       router.refresh();
     } catch (cause) {
@@ -75,13 +75,12 @@ export function CorrectionRouteModal({ organizationId, employerId, workspaceId, 
   return <AppModal title="בחירת מסלול תיקון" width="md" onClose={onClose} closeDisabled={submitting}
     actions={<>
       <button type="button" className="btn btn-secondary" disabled={submitting} onClick={onClose}>חזרה לעריכה</button>
-      <button type="button" className="btn btn-primary" disabled={!selected || submitting || loading || !!error} onClick={() => void finish()}>{submitting ? "מבצע תיקון ושידור..." : "אישור ושליחת התיקון"}</button>
+      <button type="button" className="btn btn-primary" disabled={!selected || submitting || loading} onClick={() => void finish()}>{submitting ? "מבצע תיקון ושידור..." : "אישור ושליחת התיקון"}</button>
     </>}>
     {error ? <div className="notice notice-error" role="alert">{error}</div> : null}
     {progress ? <div className="notice notice-info" role="status">{progress}</div> : null}
     {created ? <div className="notice notice-info">מסמכי התיקון נוצרו. {created.negativeReportId ? `שלילי: ${created.negativeReportId}. ` : ""}{created.currentReportId ? `שוטף: ${created.currentReportId}.` : ""} אם השידור לא הושלם, בדקו אותם במסך הדיווחים.</div> : null}
     {loading ? <p>בודק מסלולי תיקון...</p> : !routes.length ? <div className="notice notice-info">לא נמצאו מסלולים זמינים. ודאו שקיימים שינויים תקפים.</div>
-      : routes.length === 0 ? <div className="notice notice-info">לא נמצאו מסלולים זמינים. ודאו שקיימים שינויים תקפים.</div>
       : <div className="grid" style={{ gap: 12 }}>
         {routes.map(route => <label key={route.id} className="card" style={{ padding: 16 }}>
           <input type="checkbox" checked={selected === route.id}
