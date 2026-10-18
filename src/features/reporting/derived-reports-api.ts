@@ -15,6 +15,10 @@ export type CorrectionRoutePreview = {
 };
 
 export const derivedReportsApi = {
+  completeCorrection: (organizationId: string, employerId: string, workspaceId: string, routeId: string) =>
+    request<{ workspaceId: string; negativeReportId: string | null; currentReportId: string | null; pendingChanges: number; revisionNumber: number; transmitted: boolean }>(
+      `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${workspaceId}/complete-correction`,
+      { method: "POST", body: { routeId } }),
   correctionRoutes: (organizationId: string, employerId: string, workspaceId: string) =>
     request<{ routes: CorrectionRoutePreview[]; canComplete: boolean }>(
       `/api/organizations/${organizationId}/employers/${employerId}/manual-reports/${workspaceId}/correction-routes`),
