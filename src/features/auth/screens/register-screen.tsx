@@ -1,6 +1,6 @@
 "use client";
 
-import { UiInput } from "@/components/ui/ui-controls";
+import { UiInput, UiCheckbox } from "@/components/ui/ui-controls";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBrand, AuthMobileBrand } from "@/features/auth/components/auth-brand";
 import { OtpInput } from "@/features/auth/components/otp-input";
-import { authApi, authErrorMessage, sessionFromAuthenticatedUser, type OtpChallenge } from "@/features/auth/api";
+import { authApi, authErrorMessage, sessionFromAuthenticatedUser, type OtpChallenge, type LegalDocument } from "@/features/auth/api";
 import { OTP_CODE_PATTERN, registerSchema, type RegisterValues } from "@/features/auth/schemas";
 import type { PublicInvitation } from "@/features/access/types";
 import { Field } from "@/components/forms/form-feedback";
@@ -22,8 +22,10 @@ const RESEND_INTERVAL_MS = 60_000;
 export default function RegisterPage() {
   const router = useRouter();
   const { register, handleSubmit, setValue, formState: { errors } } = useZodForm(registerSchema, {
-    defaultValues: { displayName: "", email: "", nationalId: "", phone: "" },
+    defaultValues: { displayName: "", email: "", nationalId: "", phone: "", acceptedTerms: false, marketingEmailOptIn: false, legalVersion: 0 },
   });
+  const [legal, setLegal] = useState<LegalDocument | null>(null);
+  const [legalError, setLegalError] = useState(false);
   const [code, setCode] = useState("");
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,6 +33,14 @@ export default function RegisterPage() {
   const [invitationToken, setInvitationToken] = useState("");
   const [invitation, setInvitation] = useState<PublicInvitation | null>(null);
   const [invitationLoading, setInvitationLoading] = useState(false);
+
+  useEffect(() => {
+    authApi.activeLegalDocument().then((doc) => {
+      setLegal(doc);
+      setLegalError(false);
+      setValue("legalVersion", doc.version);
+    }).catch(() => setLegalError(true));
+  }, [setValue]);
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("invitation")?.trim() ?? "";
@@ -51,6 +61,10 @@ export default function RegisterPage() {
   }, [setValue]);
 
   async function requestCode(details: RegisterValues) {
+    if (!legal || legal.version !== details.legalVersion) {
+      toast.error("לא ניתן להירשם ללא מסמך משפטי פעיל.");
+      return;
+    }
     if (Date.now() < nextSendAt) {
       toast.error("ניתן לבקש קוד חדש בעוד דקה.");
       return;
@@ -109,7 +123,18 @@ export default function RegisterPage() {
         <Field label="תעודת זהות *" error={errors.nationalId?.message}><UiInput aria-invalid={Boolean(errors.nationalId)} id="national-id" inputMode="numeric" dir="ltr" maxLength={9} required {...digitsOnly(register("nationalId"), 9)} /></Field>
         <Field label="מספר טלפון *" error={errors.phone?.message}><UiInput aria-invalid={Boolean(errors.phone)} id="phone" type="tel" inputMode="tel" dir="ltr" maxLength={10} required {...digitsOnly(register("phone"), 10)} /></Field>
         <Field label="אימייל *" error={errors.email?.message}><UiInput aria-invalid={Boolean(errors.email)} id="email" type="email" maxLength={254} dir="ltr" disabled={Boolean(invitation)} required {...register("email")} /></Field>
-        <button className="btn btn-primary btn-lg wide" disabled={loading || invitationLoading || Boolean(invitationToken && !invitation)} type="submit">{loading ? "שולח..." : "שלחו לי קוד אימות"}<ArrowLeft size={18} /></button>
+        <div className="notice notice-info">לצורך פתיחת חשבון ושימוש בשירות נאספים פרטי זיהוי ויצירת קשר. הפרטים יעובדו בהתאם למדיניות הפרטיות הכלולה במסמך המשפטי.</div>
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+          <UiCheckbox {...register("acceptedTerms")} aria-invalid={Boolean(errors.acceptedTerms)} />
+          <span>קראתי ואני מאשר/ת את <a href="/api/backend/api/legal-document/active" target="_blank" rel="noopener noreferrer">תנאי השימוש ומדיניות הפרטיות</a> (גרסה {legal?.version ?? "—"}). *</span>
+        </label>
+        {errors.acceptedTerms ? <p role="alert">{errors.acceptedTerms.message}</p> : null}
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+          <UiCheckbox {...register("marketingEmailOptIn")} />
+          <span>אני מסכים/ה לקבל עדכונים והודעות שיווקיות בדוא"ל (לא חובה).</span>
+        </label>
+        {legalError ? <p role="alert">המסמך המשפטי אינו זמין כרגע, ולא ניתן להשלים הרשמה.</p> : null}
+        <button className="btn btn-primary btn-lg wide" disabled={!legal || legalError || loading || invitationLoading || Boolean(invitationToken && !invitation)} type="submit">{loading ? "שולח..." : "שלחו לי קוד אימות"}<ArrowLeft size={18} /></button>
       </form>
     ) : (
       <form className="form" onSubmit={verify} noValidate>
