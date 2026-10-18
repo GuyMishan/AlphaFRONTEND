@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { AppShell } from "@/features/shell/components/app-shell";
 
 // Pages that render without the authenticated shell (no session required).
-const publicPaths = new Set(["/login", "/register", "/invite", "/session-timeout"]);
+const publicPaths = new Set(["/login", "/register", "/invite", "/session-timeout", "/legal"]);
 
 export function isPublicPath(pathname: string) {
   return publicPaths.has(pathname);

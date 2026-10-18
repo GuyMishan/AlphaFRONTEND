@@ -295,6 +295,7 @@ function AppShellFrame({ children, initialConfig }: { children: React.ReactNode;
       <div className="sidebar-bottom">
         <NavSection label="חשבון" items={[{ href: "/settings", label: "הגדרות", icon: Settings, active: pathname === "/settings" }]} />
         <button type="button" className="nav-link nav-logout" onClick={handleLogout}><LogOut size={18} aria-hidden="true" className="nav-icon" /><span className="nav-label">יציאה</span></button>
+        <Link className="nav-link" href="/legal"><ShieldCheck size={18} aria-hidden="true" className="nav-icon" /><span className="nav-label">מדיניות ומידע משפטי</span></Link>
       </div>
     </>
   );
