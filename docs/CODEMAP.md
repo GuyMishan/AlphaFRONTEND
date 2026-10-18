@@ -114,3 +114,7 @@ Reporting pre-send validation modal: `reporting/components/report-validation-err
 User list filtering: the global platform-administrator view uses `/api/platform/users` and hides the shell scope picker; organization scope lists all non-platform users linked by membership or direct employer access, while selecting an employer returns direct employer users only. Filtering is enforced server-side for tenant-scoped users.
 
 Address suggestions use `useCities` / `useStreets` in `features/reference-data/queries.ts`, with query keys including the search and city code. `AddressAutocompleteFields` debounces input, hides results for earlier input, and distinguishes loading, no matching city, empty streets and request failures. It preserves free-text entry; reference lookups do not impose new business validation.
+
+## Public legal policy
+
+`/legal` renders `src/features/legal/screens/legal-policy-screen.tsx` without the authenticated shell. The screen uses `src/features/legal/api.ts` and the anonymous shared API `/api/legal-document/active`; the same backend Markdown is exposed on the marketing website. The app sidebar links to it under Sign out, and the page shows the document version and application package version.
