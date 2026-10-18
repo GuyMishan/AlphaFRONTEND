@@ -1,13 +1,18 @@
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { CorrectionRouteModal } from "./correction-route-modal";
+import type { EmployerSelection } from "@/lib/session/app-store";
 import { ArrowLeft, ArrowRight, Send } from "lucide-react";
 import type { ReportWizard } from "../../new-report/use-report-wizard";
 import type { ReportSetup } from "../../new-report/use-report-setup";
 
-export function ReportWizardFooter({ wizard, capabilities }: {
+export function ReportWizardFooter({ wizard, capabilities, scope }: {
   wizard: ReportWizard;
   capabilities: ReportSetup["capabilities"];
+  scope: EmployerSelection;
 }) {
   const router = useRouter();
+  const [showRoutes, setShowRoutes] = useState(false);
   const { state, patch, steps, isExcel, isXml, billing } = wizard;
   const busy = state.advancing || state.sending;
   const sent = Boolean(state.sentExternalId);
@@ -19,10 +24,11 @@ export function ReportWizardFooter({ wizard, capabilities }: {
     else if (wizard.canContinue) void wizard.next();
   }
 
-  const sendLabel = state.reportKind === 2 ? "סיום התיקון יהיה זמין לאחר בחירת מסלול"
+  const sendLabel = state.reportKind === 2 ? "סיום דיווח"
     : state.sending ? "מבצע ולידציה ושולח..." : sent ? "הדיווח נשלח" : "שליחת דיווח";
 
-  return <div className="wizard-footer">
+  return <>
+  <div className="wizard-footer">
     <button type="button" className="btn btn-secondary"
       disabled={state.step === 1 || (state.resumingDraft && state.step === 2) || busy || sent}
       onClick={() => patch({ error: "", step: state.step - 1 })}>
@@ -37,10 +43,14 @@ export function ReportWizardFooter({ wizard, capabilities }: {
         {state.reportKind === 2 ? "חזרה לדיווחים" : "יציאה"}
       </button> : null}
       <button type="button" className="btn btn-primary"
-        disabled={state.reportKind === 2 || state.sending || sent || !state.reportId || !capabilities.canTransmitReport}
-        onClick={() => void wizard.send()} aria-busy={state.sending}>
+        disabled={state.sending || sent || !state.reportId || (state.reportKind === 2 ? !capabilities.canCreateReport : !capabilities.canTransmitReport)}
+        onClick={() => state.reportKind === 2 ? setShowRoutes(true) : void wizard.send()} aria-busy={state.sending}>
         <Send size={17} />{sendLabel}
       </button>
     </>}
-  </div>;
+  </div>
+  {showRoutes && state.reportKind === 2 && state.reportId ? <CorrectionRouteModal
+    organizationId={scope.organizationId} employerId={scope.employerId}
+    workspaceId={state.reportId} onClose={() => setShowRoutes(false)} /> : null}
+  </>;
 }
