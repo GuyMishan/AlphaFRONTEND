@@ -22,7 +22,7 @@ const RESEND_INTERVAL_MS = 60_000;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, handleSubmit, setValue, formState: { errors } } = useZodForm(registerSchema, {
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useZodForm(registerSchema, {
     defaultValues: { displayName: "", email: "", nationalId: "", phone: "", acceptedTerms: false, marketingEmailOptIn: false, legalVersion: 0 },
   });
   const [legal, setLegal] = useState<LegalDocument | null>(null);
@@ -127,7 +127,7 @@ export default function RegisterPage() {
         <Field label="אימייל *" error={errors.email?.message}><UiInput aria-invalid={Boolean(errors.email)} id="email" type="email" maxLength={254} dir="ltr" disabled={Boolean(invitation)} required {...register("email")} /></Field>
         <div className="notice notice-info">לצורך פתיחת חשבון ושימוש בשירות נאספים פרטי זיהוי ויצירת קשר. הפרטים יעובדו בהתאם למדיניות הפרטיות הכלולה במסמך המשפטי.</div>
         <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-          <UiCheckbox checked={false} readOnly aria-invalid={Boolean(errors.acceptedTerms)} onClick={() => setLegalModalOpen(true)} />
+          <UiCheckbox checked={watch("acceptedTerms")} readOnly aria-invalid={Boolean(errors.acceptedTerms)} onClick={() => setLegalModalOpen(true)} />
           <span>קראתי ואני מאשר/ת את <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLegalModalOpen(true)}>פתיחת תנאי השימוש לאישור</button> (גרסה {legal?.version ?? "—"}). *</span>
         </label>
 
