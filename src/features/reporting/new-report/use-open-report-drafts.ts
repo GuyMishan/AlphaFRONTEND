@@ -13,6 +13,8 @@ export function useOpenReportDrafts(scope: EmployerSelection, initial: PagedResu
   const [items, setItems] = useState(initial.items);
   const [hasMore, setHasMore] = useState(initial.hasMore);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
   const [selected, setSelected] = useState<ResumableManualReport | null>(null);
   const [deletingId, setDeletingId] = useState("");
   const requests = useLatestRequest();
@@ -33,6 +35,33 @@ export function useOpenReportDrafts(scope: EmployerSelection, initial: PagedResu
     }
   }
 
+  async function searchDrafts() {
+    const query = search.trim();
+    setActiveSearch(query);
+    if (!query || !hasMore || loading) return;
+    const isCurrent = requests.begin();
+    setLoading(true);
+    try {
+      let next = [...items];
+      let more = hasMore;
+      while (more && isCurrent()) {
+        const page = await manualReportsApi.openManualReports(scope.organizationId, scope.employerId, next.length);
+        if (!isCurrent()) return;
+        const additions = page.items.filter(item => !next.some(existing => existing.id === item.id));
+        next = [...next, ...additions];
+        more = page.hasMore && additions.length > 0;
+      }
+      if (isCurrent()) {
+        setItems(next);
+        setHasMore(more);
+      }
+    } catch (error) {
+      if (isCurrent()) toast.error(errorMessage(error, "חיפוש הטיוטות נכשל"));
+    } finally {
+      if (isCurrent()) setLoading(false);
+    }
+  }
+
   async function removeSelected() {
     if (!selected || deletingId) return;
     setDeletingId(selected.id);
@@ -48,5 +77,7 @@ export function useOpenReportDrafts(scope: EmployerSelection, initial: PagedResu
     }
   }
 
-  return { items, hasMore, loading, selected, setSelected, deletingId, loadMore, removeSelected };
+  return { items: activeSearch ? items.filter(item => item.reportingMonth.slice(0, 7).includes(activeSearch)) : items,
+    hasMore, loading, selected, setSelected, deletingId, loadMore, removeSelected,
+    search, setSearch, searchDrafts };
 }
