@@ -4,19 +4,21 @@ import type { ResumableManualReport } from "@/features/reporting/types";
 import { ReportSelectionTable } from "./report-selection-table";
 export function OpenReportDrafts({
   openReports, loadingOpenReports, openReportsHasMore, advancing, deletingDraftId,
-  loadMoreOpenReports, onResume, onDelete,
+  loadMoreOpenReports, onResume, onDelete, search, setSearch, onSearch,
 }: {
   openReports: ResumableManualReport[]; loadingOpenReports: boolean;
   openReportsHasMore: boolean; advancing: boolean; deletingDraftId: string;
   loadMoreOpenReports: () => Promise<void>;
   onResume: (draft: ResumableManualReport) => void;
   onDelete: (draft: ResumableManualReport) => void;
+  search: string; setSearch: (value: string) => void; onSearch: () => void;
 }) {
   return <div className="resume-report-section">
     <div id="open-report-drafts" className="resume-report-list">
       <h3>טיוטות שניתן להמשיך לערוך</h3>
       <ReportSelectionTable reports={openReports} loading={loadingOpenReports}
         hasMore={openReportsHasMore} onLoadMore={loadMoreOpenReports}
+        search={search} setSearch={setSearch} onSearch={onSearch} searchLoading={loadingOpenReports}
         emptyState="אין כרגע טיוטות פתוחות למעסיק הנבחר."
         renderActions={report => <>
           <button type="button" className="btn btn-primary resume-report-continue"
