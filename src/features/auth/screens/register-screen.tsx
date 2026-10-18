@@ -126,8 +126,9 @@ export default function RegisterPage() {
         <div className="notice notice-info">לצורך פתיחת חשבון ושימוש בשירות נאספים פרטי זיהוי ויצירת קשר. הפרטים יעובדו בהתאם למדיניות הפרטיות הכלולה במסמך המשפטי.</div>
         <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
           <UiCheckbox {...register("acceptedTerms")} aria-invalid={Boolean(errors.acceptedTerms)} />
-          <span>קראתי ואני מאשר/ת את <a href="/api/backend/api/legal-document/active" target="_blank" rel="noopener noreferrer">תנאי השימוש ומדיניות הפרטיות</a> (גרסה {legal?.version ?? "—"}). *</span>
+          <span>קראתי ואני מאשר/ת את <a href="#legal-document-content">תנאי השימוש ומדיניות הפרטיות</a> (גרסה {legal?.version ?? "—"}). *</span>
         </label>
+        {legal ? <details id="legal-document-content"><summary>הצגת המסמך המשפטי המלא — {legal.title}</summary><div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: 280, overflowY: "auto" }} dir="auto">{legal.markdown}</div></details> : null}
         {errors.acceptedTerms ? <p role="alert">{errors.acceptedTerms.message}</p> : null}
         <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
           <UiCheckbox {...register("marketingEmailOptIn")} />
