@@ -6,6 +6,7 @@ import { ApiError, isMachineCode, problemCode, validationErrors, type ProblemDet
  */
 
 const codeMessages: Record<string, string> = {
+  EMPLOYER_LEGAL_AGREEMENT_REQUIRED: "לא ניתן לשדר דיווח ללא הסכם התקשרות. יש להעלות הסכם התקשרות בטאב מסמכים בפרופיל המעסיק.",
   PLAN_LIMIT_REACHED: "הגעתם למגבלה של המסלול הנוכחי.",
   FEATURE_NOT_AVAILABLE: "האפשרות אינה זמינה במסלול הנוכחי.",
   PAYMENT_ACCOUNT_REQUIRED: "יש לבחור חשבון תשלום פעיל לדיווח.",
