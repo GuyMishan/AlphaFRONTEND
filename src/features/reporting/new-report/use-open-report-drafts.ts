@@ -43,7 +43,7 @@ export function useOpenReportDrafts(scope: EmployerSelection, initial: PagedResu
     setLoading(true);
     try {
       let next = [...items];
-      let more = hasMore;
+      let more: boolean = hasMore;
       while (more && isCurrent()) {
         const page = await manualReportsApi.openManualReports(scope.organizationId, scope.employerId, next.length);
         if (!isCurrent()) return;
