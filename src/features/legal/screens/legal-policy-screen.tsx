@@ -4,7 +4,7 @@ import { LegalMarkdown } from "@/features/legal/components/legal-markdown";
 
 import { useEffect, useState } from "react";
 import { legalApi, type LegalDocument } from "@/features/legal/api";
-import { AppLoader } from "@/components/loading/app-loader";
+import { LoadingState } from "@/components/loading/loading-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { AppShell } from "@/features/shell/components/app-shell";
 import packageInfo from "../../../../package.json";
@@ -28,7 +28,7 @@ export default function LegalPolicyScreen() {
     <section style={{ maxWidth: 900, width: "100%", margin: "0 auto", padding: "32px 20px", direction: "rtl" }}>
       <PageHeader title="מדיניות ומידע משפטי" />
       <p>תנאי השימוש והמדיניויות של ALPHA מתעדכנים במקור מרכזי אחד.</p>
-      {loading ? <AppLoader /> : error || !document
+      {loading ? <LoadingState label="טוען את המסמך המשפטי..." /> : error || !document
         ? <div role="status" className="notice notice-info">המסמך המשפטי אינו זמין כעת או שטרם פורסמה גרסה מאושרת.</div>
         : <article aria-label={document.title} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
             <h2>{document.title}</h2>

@@ -117,7 +117,7 @@ Address suggestions use `useCities` / `useStreets` in `features/reference-data/q
 
 ## Legal policy page
 
-`/legal` renders `src/features/legal/screens/legal-policy-screen.tsx` inside the authenticated `AppShell`, using the same navigation/topbar layout as the rest of the application and hiding the scope selector because the policy is global. The screen uses `src/features/legal/api.ts` and the shared API `/api/legal-document/active`; the same backend Markdown is exposed on the marketing website. The app sidebar links to it under Sign out, and the page shows the document version and application package version without a separate login link.
+`/legal` renders `src/features/legal/screens/legal-policy-screen.tsx` inside the authenticated `AppShell`, using the same navigation/topbar layout as the rest of the application and hiding the scope selector because the policy is global. The screen uses `src/features/legal/api.ts` and the shared API `/api/legal-document/active`; the same backend Markdown is exposed on the marketing website. The app sidebar links to it under Sign out. While the document fetches, the page uses an inline `LoadingState` instead of the full-screen `AppLoader`, keeping sidebar and topbar visible; the page shows the document version and application package version without a separate login link.
 
 ## Employer agreement gate (legal stage 4)
 
