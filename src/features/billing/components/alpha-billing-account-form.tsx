@@ -104,8 +104,11 @@ export function AlphaBillingAccountForm({
         try {
           if (employerId) await billingApi.syncEmployerPaymentMethod(organizationId, employerId);
           else await billingApi.syncOrganizationPaymentMethod(organizationId);
+          const verified = employerId ? await billingApi.employerBillingAccount(organizationId, employerId) : await billingApi.organizationBillingAccount(organizationId);
+          if (verified.paymentMethodStatus !== 3 || !verified.hasProviderPaymentMethod) throw new Error("Payment verification pending");
           await load();
-          toast.success("אמצעי התשלום אומת והופעל");
+          if (onSaved) await onSaved();
+          toast.success("חשבון החיוב ואמצעי התשלום נשמרו והופעלו");
           return;
         } catch {
           await new Promise((resolve) => window.setTimeout(resolve, 750));
@@ -150,9 +153,8 @@ export function AlphaBillingAccountForm({
         : await billingApi.saveOrganizationBillingAccount(organizationId, normalized);
 
       setAccount(value);
-      if (onSaved) await onSaved();
 
-      if (normalized.paymentMethodType === 1 && !value.hasProviderPaymentMethod) {
+      if (normalized.paymentMethodType === 1 && (!value.hasProviderPaymentMethod || value.paymentMethodStatus !== 3)) {
         const url = new URL(window.location.href);
         url.searchParams.delete("payment");
         url.searchParams.set("tab", "billing");
@@ -163,11 +165,12 @@ export function AlphaBillingAccountForm({
 
         // Never navigate to a javascript:/data:/plain-http URL from an API response.
         if (!isAllowedPaymentRedirect(setup.redirectUrl)) throw new Error("לא ניתן לפתוח את דף חיבור אמצעי התשלום.");
-        toast.success("פרטי החיוב נשמרו. ממשיכים לחיבור הכרטיס...");
+        toast.info("מועברים לאימות הכרטיס. ההגדרה תושלם רק לאחר אישור ספק הסליקה.");
         window.location.assign(setup.redirectUrl);
         return;
       }
 
+      if (onSaved) await onSaved();
       toast.success("פרטי החיוב ואמצעי התשלום נשמרו");
     } catch (err) {
       toast.error(errorMessage(err, "שמירת פרטי החיוב ואמצעי התשלום נכשלה"));
@@ -256,7 +259,7 @@ export function AlphaBillingAccountForm({
               <b>כרטיס אשראי</b>
               <p>{cardConnected
                 ? "הכרטיס המחובר יישאר פעיל. שמירה תעדכן גם את פרטי חשבון החיוב."
-                : "בלחיצה על שמירה פרטי החשבון יישמרו ומיד תועברו לחיבור הכרטיס המאובטח."}</p>
+                : "לאחר לחיצה על שמירה תועברו לאימות הכרטיס. החשבון יהיה פעיל רק לאחר אישור ספק הסליקה."}</p>
             </div>
           </div>
         </div>
