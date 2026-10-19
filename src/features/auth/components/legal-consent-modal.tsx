@@ -20,16 +20,16 @@ export function LegalConsentModal({ open, document, saving = false, required = f
     width="lg" onClose={onClose} closeOnBackdrop={!required && !saving} closeDisabled={saving}
     actions={<>
       {onClose ? <button className="btn btn-secondary" type="button" onClick={onClose} disabled={saving}>{required ? "התנתקות" : "חזרה"}</button> : null}
-      <button className="btn btn-primary" type="button" disabled={!checked || saving || !document}
+      <button className="btn btn-primary" type="button" disabled={(required && !checked) || saving || !document}
         onClick={() => { if (document) void onAccept(document.version); }}>{saving ? "שומר..." : "אישור והמשך"}</button>
     </>}>
     {document ? <>
       <p>{document.title}</p>
       <div role="document" dir="rtl" tabIndex={0} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: "45vh", overflowY: "auto" }}>{document.markdown}</div>
-      <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 18 }}>
+      {required ? <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 18 }}>
         <UiCheckbox checked={checked} onChange={(event) => setChecked(event.target.checked)} disabled={saving} />
         <span>קראתי ואני מאשר/ת את תנאי השימוש ומדיניות הפרטיות.</span>
-      </label>
+      </label> : null}
     </> : <p role="status">טוען את תנאי השימוש...</p>}
   </AppModal>;
 }
