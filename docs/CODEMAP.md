@@ -125,4 +125,4 @@ The shared `src/features/employers/components/employer-documents-tab.tsx` displa
 
 ## Shared legal consent and settings
 
-Registration and PersistentAppLayout use `features/auth/components/legal-consent-modal.tsx`. The layout checks the server consent version on authenticated session restoration before showing the shell; after acceptance it unlocks navigation. The Settings screen uses `features/settings/api.ts` to edit optional marketing email consent. Backend rejects protected production APIs until latest policy consent is given.
+Registration and login use `features/auth/components/legal-consent-modal.tsx`. After OTP verification, and when `/login` restores an existing authenticated cookie, the login screen checks `legalConsentRequired` and blocks navigation until the active legal version is accepted. `PersistentAppLayout` repeats the check as a defense-in-depth gate for authenticated routes reached by any other path. The Settings screen uses `features/settings/api.ts` to edit optional marketing email consent. Backend rejects protected production APIs until latest policy consent is given.
