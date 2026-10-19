@@ -155,6 +155,19 @@
 .tooltip:focus-within > .tooltip-bubble { opacity: 1; visibility: visible; }
 .tooltip.is-dismissed > .tooltip-bubble { opacity: 0; visibility: hidden; }
 
+/* Portaled tooltip stays above table scroll areas and inside the viewport. */
+.tooltip-portal-bubble {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: var(--z-popover);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 8px));
+}
+.tooltip-portal-bubble[data-side="bottom"] { transform: translate(-50%, 8px); }
+
 /* Shared table overflow tooltip: portaled above scroll containers and sticky cells. */
 .table-overflow-tooltip {
   position: fixed;
