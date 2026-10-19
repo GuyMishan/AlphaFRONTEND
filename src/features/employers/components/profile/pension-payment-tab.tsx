@@ -36,7 +36,7 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, setAc
   onModeSaved: (value: EmployerProfileCenterSettings["pensionPayment"]) => void;
 }) {
   const [resolution, setResolution] = useState<PensionPaymentResolution | null>(null);
-  const [selectedMode, setSelectedMode] = useState<1 | 2 | null>(null);
+  const [selectedMode, setSelectedMode] = useState<1 | 2 | null>(hasOrganizationContext ? null : 1);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingEmployerAccount, setEditingEmployerAccount] = useState(false);
   const [form, setForm] = useState<EmployerPaymentAccountInput>({ ...EMPTY_ACCOUNT, isDefault: true });
@@ -63,7 +63,7 @@ export function PensionPaymentTab({ organizationId, employerId, canManage, setAc
       const value = await paymentAccountsApi.employerPaymentResolution(organizationId, employerId);
       if (!isCurrent()) return;
       setResolution(value);
-      const effectiveMode: 1 | 2 = value.source === "Organization" ? 2 : 1;
+      const effectiveMode: 1 | 2 = hasOrganizationContext && value.source === "Organization" ? 2 : 1;
       setSelectedMode(effectiveMode);
       setAccounts(value.account ? [value.account] : []);
       setEditingEmployerAccount(false);
