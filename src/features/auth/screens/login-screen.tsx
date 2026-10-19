@@ -7,15 +7,22 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBrand, AuthMobileBrand } from "@/features/auth/components/auth-brand";
+import { LegalConsentModal } from "@/features/auth/components/legal-consent-modal";
 import { LoadingState } from "@/components/loading/loading-state";
 import { OtpInput } from "@/features/auth/components/otp-input";
-import { authApi, authErrorMessage, sessionFromAuthenticatedUser, type OtpChallenge } from "@/features/auth/api";
+import {
+  authApi,
+  authErrorMessage,
+  sessionFromAuthenticatedUser,
+  type AuthenticatedUser,
+  type LegalDocument,
+  type OtpChallenge,
+} from "@/features/auth/api";
 import { loginSchema, OTP_CODE_PATTERN, type LoginValues } from "@/features/auth/schemas";
 import { Field } from "@/components/forms/form-feedback";
 import { digitsOnly } from "@/lib/forms/input-masks";
 import { INVALID_FORM_MESSAGE, useZodForm } from "@/lib/forms/use-zod-form";
-import { resolveSession } from "@/features/auth/restore-session";
-import { announceSignIn } from "@/lib/session/lifecycle";
+import { announceSignIn, logout } from "@/lib/session/lifecycle";
 import { setSession } from "@/lib/session/storage";
 
 const RESEND_INTERVAL_MS = 60_000;
@@ -28,20 +35,47 @@ export default function LoginPage() {
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [loading, setLoading] = useState(false);
   const [nextSendAt, setNextSendAt] = useState(0);
-
   const [checkingSession, setCheckingSession] = useState(true);
+  const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalSaving, setLegalSaving] = useState(false);
 
-  // A returning user whose session cookie is still valid goes straight in;
-  // everyone else (no session, or the check failed) gets the form.
+  async function finishAuthenticatedLogin(user: AuthenticatedUser) {
+    setSession(sessionFromAuthenticatedUser(user));
+    announceSignIn(user.userId);
+
+    if (!user.legalConsentRequired) {
+      toast.success("התחברת בהצלחה");
+      router.replace("/dashboard");
+      return;
+    }
+
+    setCheckingSession(false);
+    setLegalModalOpen(true);
+    try {
+      setLegalDocument(await authApi.activeLegalDocument());
+    } catch {
+      toast.error("לא ניתן לטעון כרגע את תנאי השימוש. נסו להתחבר מחדש.");
+      setLegalModalOpen(false);
+      await logout();
+    }
+  }
+
+  // A returning user whose session cookie is still valid is resolved on the
+  // login screen itself. If legal re-acceptance is required, the login page
+  // owns that gate and does not navigate into the authenticated application.
   useEffect(() => {
     let active = true;
-    void resolveSession().then((resolved) => {
+    void authApi.currentSession().then(async (user) => {
       if (!active) return;
-      if (resolved.status === "authenticated") router.replace("/dashboard");
-      else setCheckingSession(false);
+      await finishAuthenticatedLogin(user);
+    }).catch(() => {
+      if (active) setCheckingSession(false);
     });
     return () => { active = false; };
-  }, [router]);
+    // finishAuthenticatedLogin intentionally stays local to this screen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function requestCode({ nationalId, phone }: LoginValues) {
     if (Date.now() < nextSendAt) {
@@ -70,10 +104,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await authApi.verifyLoginCode(challenge.challengeId, codeToVerify);
-      setSession(sessionFromAuthenticatedUser(user));
-      announceSignIn(user.userId);
-      toast.success("התחברת בהצלחה");
-      router.replace("/dashboard");
+      await finishAuthenticatedLogin(user);
     } catch (err) {
       toast.error(authErrorMessage(err, "לא ניתן להתחבר כרגע."));
     } finally {
@@ -88,6 +119,20 @@ export default function LoginPage() {
       return;
     }
     void verifyCode();
+  }
+
+  async function acceptRequiredLegal(version: number) {
+    setLegalSaving(true);
+    try {
+      await authApi.acceptLegal(version);
+      setLegalModalOpen(false);
+      toast.success("התחברת בהצלחה");
+      router.replace("/dashboard");
+    } catch {
+      toast.error("שמירת האישור נכשלה. נסו שוב.");
+    } finally {
+      setLegalSaving(false);
+    }
   }
 
   return (
@@ -160,6 +205,14 @@ export default function LoginPage() {
           <div className="auth-footer">צריכים ליצור משתמש? <Link href="/register">להרשמה</Link></div>
         </div>
       </section>}
+      <LegalConsentModal
+        open={legalModalOpen}
+        required
+        document={legalDocument}
+        saving={legalSaving}
+        onClose={() => void logout()}
+        onAccept={acceptRequiredLegal}
+      />
     </main>
   );
 }
