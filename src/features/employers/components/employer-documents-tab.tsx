@@ -89,7 +89,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
         return [
           <div key="type" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <strong>{item.label}</strong>
-            {item.code === 7 ? <Tooltip label="משמעות העלאת הסכם ההתקשרות"
+            {item.code === 7 ? <Tooltip portaled label="משמעות העלאת הסכם ההתקשרות"
               content="בהעלאת המסמך אתם מאשרים בשם המעסיק את תנאי השימוש והמדיניויות של ALPHA. כדי לשדר דיווחים חייב להיות הסכם במערכת." /> : null}
           </div>,
           <div key="file">
