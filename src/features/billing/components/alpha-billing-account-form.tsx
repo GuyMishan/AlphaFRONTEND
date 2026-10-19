@@ -134,7 +134,7 @@ export function AlphaBillingAccountForm({
     replaceSearchParams((params) => params.delete("payment"));
 
     if (result === "success") {
-      toast.success("אמצעי התשלום נקלט אצל ספק הסליקה. ממתין לאישור המאומת...");
+      toast.info("ספק הסליקה החזיר אתכם למערכת. מאמתים את אישור הכרטיס...");
       window.setTimeout(() => void settlePaymentMethodAfterReturn(), 300);
     } else if (result === "failed") {
       toast.error("חיבור אמצעי התשלום נכשל אצל ספק הסליקה.");
