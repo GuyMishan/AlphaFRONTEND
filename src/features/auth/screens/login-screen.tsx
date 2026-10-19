@@ -1,14 +1,13 @@
 "use client";
 
 import { UiInput } from "@/components/ui/ui-controls";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBrand, AuthMobileBrand } from "@/features/auth/components/auth-brand";
 import { LegalConsentModal } from "@/features/auth/components/legal-consent-modal";
-import { LoadingState } from "@/components/loading/loading-state";
 import { OtpInput } from "@/features/auth/components/otp-input";
 import {
   authApi,
@@ -35,7 +34,6 @@ export default function LoginPage() {
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [loading, setLoading] = useState(false);
   const [nextSendAt, setNextSendAt] = useState(0);
-  const [checkingSession, setCheckingSession] = useState(true);
   const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
   const [legalModalOpen, setLegalModalOpen] = useState(false);
   const [legalSaving, setLegalSaving] = useState(false);
@@ -50,7 +48,6 @@ export default function LoginPage() {
       return;
     }
 
-    setCheckingSession(false);
     setLegalModalOpen(true);
     try {
       setLegalDocument(await authApi.activeLegalDocument());
@@ -60,22 +57,6 @@ export default function LoginPage() {
       await logout();
     }
   }
-
-  // A returning user whose session cookie is still valid is resolved on the
-  // login screen itself. If legal re-acceptance is required, the login page
-  // owns that gate and does not navigate into the authenticated application.
-  useEffect(() => {
-    let active = true;
-    void authApi.currentSession().then(async (user) => {
-      if (!active) return;
-      await finishAuthenticatedLogin(user);
-    }).catch(() => {
-      if (active) setCheckingSession(false);
-    });
-    return () => { active = false; };
-    // finishAuthenticatedLogin intentionally stays local to this screen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function requestCode({ nationalId, phone }: LoginValues) {
     if (Date.now() < nextSendAt) {
@@ -138,7 +119,7 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <AuthBrand />
-      {checkingSession ? <section className="auth-form-wrap auth-form-loading"><LoadingState label="בודקים את פרטי ההתחברות..." /></section> : <section className="auth-form-wrap">
+      <section className="auth-form-wrap">
         <div className="auth-card">
           <AuthMobileBrand />
           <h2>כניסה למערכת</h2>
@@ -204,7 +185,7 @@ export default function LoginPage() {
 
           <div className="auth-footer">צריכים ליצור משתמש? <Link href="/register">להרשמה</Link></div>
         </div>
-      </section>}
+      </section>
       <LegalConsentModal
         open={legalModalOpen}
         required
