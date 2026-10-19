@@ -97,15 +97,22 @@ export function AlphaBillingAccountForm({
     }
   }
 
-  async function settlePaymentMethodAfterReturn() {
+  async function settlePaymentMethodAfterReturn(expectedReference?: string | null) {
     setSyncing(true);
     try {
       for (let attempt = 0; attempt < 8; attempt += 1) {
         try {
-          if (employerId) await billingApi.syncEmployerPaymentMethod(organizationId, employerId);
-          else await billingApi.syncOrganizationPaymentMethod(organizationId);
+          const verified = employerId ? await billingApi.employerBillingAccount(organizationId, employerId) : await billingApi.organizationBillingAccount(organizationId);
+          const status = expectedReference
+            ? employerId
+              ? await billingApi.employerPaymentSetupStatus(organizationId, employerId, expectedReference)
+              : await billingApi.organizationPaymentSetupStatus(organizationId, expectedReference)
+            : { confirmed: false };
+          if (!status.confirmed || verified.paymentMethodStatus !== 3 || !verified.hasProviderPaymentMethod)
+            throw new Error("Payment verification pending");
           await load();
-          toast.success("אמצעי התשלום אומת והופעל");
+          if (onSaved) await onSaved();
+          toast.success("חשבון החיוב ואמצעי התשלום נשמרו והופעלו");
           return;
         } catch {
           await new Promise((resolve) => window.setTimeout(resolve, 750));
@@ -126,17 +133,23 @@ export function AlphaBillingAccountForm({
   useEffect(() => {
     const url = new URL(window.location.href);
     const result = url.searchParams.get("payment");
+    const setupReference = url.searchParams.get("setup_reference");
     if (!result) return;
 
-    replaceSearchParams((params) => params.delete("payment"));
+    replaceSearchParams((params) => { params.delete("payment"); params.delete("setup_reference"); });
 
     if (result === "success") {
-      toast.success("אמצעי התשלום נקלט אצל ספק הסליקה. ממתין לאישור המאומת...");
-      window.setTimeout(() => void settlePaymentMethodAfterReturn(), 300);
-    } else if (result === "failed") {
-      toast.error("חיבור אמצעי התשלום נכשל אצל ספק הסליקה.");
-    } else if (result === "cancelled") {
-      toast.info("חיבור אמצעי התשלום בוטל.");
+      toast.info("ספק הסליקה החזיר אתכם למערכת. מאמתים את אישור הכרטיס...");
+      window.setTimeout(() => void settlePaymentMethodAfterReturn(setupReference), 300);
+    } else if (result === "failed" || result === "cancelled") {
+      if (setupReference) {
+        const abandon = employerId
+          ? billingApi.abandonEmployerPaymentSetup(organizationId, employerId, setupReference)
+          : billingApi.abandonOrganizationPaymentSetup(organizationId, setupReference);
+        void abandon.then(() => load()).catch(() => load());
+      }
+      if (result === "failed") toast.error("חיבור הכרטיס נכשל. פרטי החיוב לא הופעלו.");
+      else toast.info("חיבור הכרטיס בוטל. פרטי החיוב לא הופעלו.");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- handle the provider return once per scope; settlePaymentMethodAfterReturn reads the current props
   }, [organizationId, employerId]);
@@ -145,29 +158,27 @@ export function AlphaBillingAccountForm({
     if (!canManage) return;
     setSaving(true);
     try {
-      const value = employerId
-        ? await billingApi.saveEmployerBillingAccount(organizationId, employerId, normalized)
-        : await billingApi.saveOrganizationBillingAccount(organizationId, normalized);
-
-      setAccount(value);
-      if (onSaved) await onSaved();
-
-      if (normalized.paymentMethodType === 1 && !value.hasProviderPaymentMethod) {
+      if (normalized.paymentMethodType === 1 && (!account.hasProviderPaymentMethod || account.paymentMethodStatus !== 3)) {
         const url = new URL(window.location.href);
         url.searchParams.delete("payment");
         url.searchParams.set("tab", "billing");
         const returnPath = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "");
         const setup = employerId
-          ? await billingApi.startEmployerPaymentSetup(organizationId, employerId, returnPath)
-          : await billingApi.startOrganizationPaymentSetup(organizationId, returnPath);
+          ? await billingApi.startEmployerPaymentSetup(organizationId, employerId, returnPath, normalized)
+          : await billingApi.startOrganizationPaymentSetup(organizationId, returnPath, normalized);
 
         // Never navigate to a javascript:/data:/plain-http URL from an API response.
         if (!isAllowedPaymentRedirect(setup.redirectUrl)) throw new Error("לא ניתן לפתוח את דף חיבור אמצעי התשלום.");
-        toast.success("פרטי החיוב נשמרו. ממשיכים לחיבור הכרטיס...");
+        toast.info("מועברים לאימות הכרטיס. ההגדרה תושלם רק לאחר אישור ספק הסליקה.");
         window.location.assign(setup.redirectUrl);
         return;
       }
 
+      const value = employerId
+        ? await billingApi.saveEmployerBillingAccount(organizationId, employerId, normalized)
+        : await billingApi.saveOrganizationBillingAccount(organizationId, normalized);
+      setAccount(value);
+      if (onSaved) await onSaved();
       toast.success("פרטי החיוב ואמצעי התשלום נשמרו");
     } catch (err) {
       toast.error(errorMessage(err, "שמירת פרטי החיוב ואמצעי התשלום נכשלה"));
@@ -256,7 +267,7 @@ export function AlphaBillingAccountForm({
               <b>כרטיס אשראי</b>
               <p>{cardConnected
                 ? "הכרטיס המחובר יישאר פעיל. שמירה תעדכן גם את פרטי חשבון החיוב."
-                : "בלחיצה על שמירה פרטי החשבון יישמרו ומיד תועברו לחיבור הכרטיס המאובטח."}</p>
+                : "לאחר לחיצה על שמירה תועברו לאימות הכרטיס. החשבון יהיה פעיל רק לאחר אישור ספק הסליקה."}</p>
             </div>
           </div>
         </div>
