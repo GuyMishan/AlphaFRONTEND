@@ -40,6 +40,8 @@ export const billingApi = {
     apiRequest<AlphaBillingAccount>(`${organizationPath(organizationId)}/billing-account`, { method: "PUT", body: payload }),
   startOrganizationPaymentSetup: (organizationId: string, returnPath: string, details?: AlphaBillingAccountInput) =>
     apiRequest<PaymentMethodSetupResult>(`${organizationPath(organizationId)}/billing-account/provider/setup`, { method: "POST", body: { returnPath, ...details } }),
+  abandonOrganizationPaymentSetup: (organizationId: string, setupReference: string) =>
+    apiRequest<void>(`${organizationPath(organizationId)}/billing-account/provider/abandon`, { method: "POST", body: { setupReference } }),
   syncOrganizationPaymentMethod: (organizationId: string) =>
     apiRequest<PaymentMethodSyncResult>(`${organizationPath(organizationId)}/billing-account/provider/sync`, { method: "POST" }),
   cancelOrganizationPaymentMethod: (organizationId: string) =>
@@ -55,6 +57,8 @@ export const billingApi = {
     apiRequest<AlphaBillingAccount>(`${employerPath(organizationId, employerId)}/billing-account`, { method: "PUT", body: payload }),
   startEmployerPaymentSetup: (organizationId: string, employerId: string, returnPath: string, details?: AlphaBillingAccountInput) =>
     apiRequest<PaymentMethodSetupResult>(`${employerPath(organizationId, employerId)}/billing-account/provider/setup`, { method: "POST", body: { returnPath } }),
+  abandonEmployerPaymentSetup: (organizationId: string, employerId: string, setupReference: string) =>
+    apiRequest<void>(`${employerPath(organizationId, employerId)}/billing-account/provider/abandon`, { method: "POST", body: { setupReference } }),
   syncEmployerPaymentMethod: (organizationId: string, employerId: string) =>
     apiRequest<PaymentMethodSyncResult>(`${employerPath(organizationId, employerId)}/billing-account/provider/sync`, { method: "POST" }),
   cancelEmployerPaymentMethod: (organizationId: string, employerId: string) =>
