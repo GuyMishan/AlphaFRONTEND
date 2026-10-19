@@ -93,7 +93,7 @@ Invariants:
 Invariants: the backend decides which groups are executable (`canExecute`), the target scope and which problems a save resolves; the UI only offers what the context returns and refreshes it after every action.
 
 ### Billing and payments
-- `billing/` — subscription plan and pricing (`subscription-billing-panel.tsx`), the account that pays Alpha (`alpha-billing-account-form.tsx`, provider redirects restricted to HTTPS or this origin), `billing-gate-modal.tsx`, `upgrade-modal.tsx` + `upgrade.ts` (plan-limit dialog store).
+- `billing/` — subscription plan and pricing (`subscription-billing-panel.tsx`), the account that pays Alpha (`alpha-billing-account-form.tsx`, provider redirects restricted to HTTPS or this origin; a new card setup stages billing details via `/provider/setup`, waits for provider callback to activate both, and abandons the draft on failed/cancelled checkout), `billing-gate-modal.tsx`, `upgrade-modal.tsx` + `upgrade.ts` (plan-limit dialog store).
 - `payment-accounts/` — bank accounts that pay pension deposits (organization and employer); unmasked bank details stay in component state.
 - `dashboard/` — statistics from `/api/dashboard/stats` and plan usage; brand hero, employer picker and quick actions (`dashboard-screen.css`).
 
