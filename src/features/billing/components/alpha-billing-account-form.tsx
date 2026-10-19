@@ -97,7 +97,7 @@ export function AlphaBillingAccountForm({
     }
   }
 
-  async function settlePaymentMethodAfterReturn() {
+  async function settlePaymentMethodAfterReturn(expectedReference?: string | null) {
     setSyncing(true);
     try {
       for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -105,7 +105,7 @@ export function AlphaBillingAccountForm({
           if (employerId) await billingApi.syncEmployerPaymentMethod(organizationId, employerId);
           else await billingApi.syncOrganizationPaymentMethod(organizationId);
           const verified = employerId ? await billingApi.employerBillingAccount(organizationId, employerId) : await billingApi.organizationBillingAccount(organizationId);
-          if (verified.paymentMethodStatus !== 3 || !verified.hasProviderPaymentMethod) throw new Error("Payment verification pending");
+          if (verified.paymentMethodStatus !== 3 || !verified.hasProviderPaymentMethod || !expectedReference || verified.defaultPaymentMethodId === null || verified.paymentMethodStatus !== 3) throw new Error("Payment verification pending");
           await load();
           if (onSaved) await onSaved();
           toast.success("חשבון החיוב ואמצעי התשלום נשמרו והופעלו");
@@ -136,7 +136,7 @@ export function AlphaBillingAccountForm({
 
     if (result === "success") {
       toast.info("ספק הסליקה החזיר אתכם למערכת. מאמתים את אישור הכרטיס...");
-      window.setTimeout(() => void settlePaymentMethodAfterReturn(), 300);
+      window.setTimeout(() => void settlePaymentMethodAfterReturn(setupReference), 300);
     } else if (result === "failed" || result === "cancelled") {
       if (setupReference) {
         const abandon = employerId
