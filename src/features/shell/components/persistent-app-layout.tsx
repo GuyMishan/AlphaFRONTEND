@@ -15,7 +15,7 @@ export function PersistentAppLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const userId = useAppStore((state) => state.session?.userId);
-  const [checked, setChecked] = useState<{ userId: string; allowed: boolean } | null>(null);
+  const [checked, setChecked] = useState<{ userId: string; pathname: string; allowed: boolean } | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -27,10 +27,10 @@ export function PersistentAppLayout({ children }: { children: React.ReactNode })
         if (cancelled) return;
         if (session.legalConsentRequired) {
           // The consent dialog belongs to /login, before the authenticated shell.
-          setChecked({ userId, allowed: false });
+          setChecked({ userId, pathname, allowed: false });
           router.replace("/login");
         } else {
-          setChecked({ userId, allowed: true });
+          setChecked({ userId, pathname, allowed: true });
         }
       })
       .catch(() => { if (!cancelled) setError(true); });
@@ -43,6 +43,6 @@ export function PersistentAppLayout({ children }: { children: React.ReactNode })
     <p>לא ניתן לבדוק כעת את גרסת תנאי השימוש.</p>
     <button className="btn" onClick={() => void logout()}>התנתקות</button>
   </div></main>;
-  if (checked?.userId !== userId || !checked.allowed) return <AppLoader />;
+  if (checked?.userId !== userId || checked.pathname !== pathname || !checked.allowed) return <AppLoader />;
   return <AppShell>{children}</AppShell>;
 }
