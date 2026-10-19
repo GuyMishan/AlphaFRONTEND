@@ -102,8 +102,6 @@ export function AlphaBillingAccountForm({
     try {
       for (let attempt = 0; attempt < 8; attempt += 1) {
         try {
-          if (employerId) await billingApi.syncEmployerPaymentMethod(organizationId, employerId);
-          else await billingApi.syncOrganizationPaymentMethod(organizationId);
           const verified = employerId ? await billingApi.employerBillingAccount(organizationId, employerId) : await billingApi.organizationBillingAccount(organizationId);
           const status = expectedReference
             ? employerId
