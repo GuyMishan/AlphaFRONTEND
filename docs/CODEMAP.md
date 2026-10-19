@@ -15,7 +15,7 @@ Route files `src/app/**/page.tsx` only re-export a screen from `src/features/<fe
 | `src/lib/session/` | `app-store.ts` (Zustand: session display metadata, selected organization/employer/employee), `storage.ts` (persistence, never tokens), `lifecycle.ts` (logout, expiry, multi-tab broadcast) |
 | `src/features/auth/` | Login/OTP, registration, invitation and session-timeout screens; `session-timeout-guard.tsx` (local 30-minute idle check, then server validation); `restore-session.ts` (`resolveSession`: one backend check for a tab without session metadata); `api.ts` maps auth error codes to Hebrew |
 | `src/features/scope/` | `scope-context.ts` (`/api/scope` query), `components/scope-controller.tsx` (organization/employer/employee selection), `scope-events.ts` (page scope resolved/changed), `use-employer-scope.ts` |
-| `src/features/settings/` | Theme provider (light/dark/system saved to user preferences; follows the session in the app store), `theme-init.ts` (storage keys and the pre-paint script inlined in the root layout's `<head>`, so the saved theme and accessibility modes apply before first paint), and the settings screen |
+| `src/features/settings/` | Theme provider (light/dark/system cached locally; loads protected user preferences only on authenticated routes after `/api/auth/session` confirms legal consent; follows the session in the app store), `theme-init.ts` (storage keys and the pre-paint script inlined in the root layout's `<head>`, so the saved theme and accessibility modes apply before first paint), and the settings screen |
 
 ## Shared UI (`src/components`)
 
