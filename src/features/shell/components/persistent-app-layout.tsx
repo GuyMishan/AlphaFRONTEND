@@ -15,11 +15,12 @@ export function PersistentAppLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const userId = useAppStore((state) => state.session?.userId);
+  const publicRoute = isPublicPath(pathname);
   const [checked, setChecked] = useState<{ userId: string; allowed: boolean } | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!userId || isPublicPath(pathname)) return;
+    if (!userId || publicRoute) return;
     let cancelled = false;
     setError(false);
     authApi.refreshSession()
@@ -35,9 +36,9 @@ export function PersistentAppLayout({ children }: { children: React.ReactNode })
       })
       .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
-  }, [userId, router]);
+  }, [userId, publicRoute, router]);
 
-  if (isPublicPath(pathname)) return <>{children}</>;
+  if (publicRoute) return <>{children}</>;
   if (!userId) return <AppShell>{children}</AppShell>;
   if (error) return <main className="auth-page"><div className="auth-card">
     <p>לא ניתן לבדוק כעת את גרסת תנאי השימוש.</p>
