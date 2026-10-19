@@ -125,11 +125,10 @@ export default function RegisterPage() {
         <Field label="תעודת זהות *" error={errors.nationalId?.message}><UiInput aria-invalid={Boolean(errors.nationalId)} id="national-id" inputMode="numeric" dir="ltr" maxLength={9} required {...digitsOnly(register("nationalId"), 9)} /></Field>
         <Field label="מספר טלפון *" error={errors.phone?.message}><UiInput aria-invalid={Boolean(errors.phone)} id="phone" type="tel" inputMode="tel" dir="ltr" maxLength={10} required {...digitsOnly(register("phone"), 10)} /></Field>
         <Field label="אימייל *" error={errors.email?.message}><UiInput aria-invalid={Boolean(errors.email)} id="email" type="email" maxLength={254} dir="ltr" disabled={Boolean(invitation)} required {...register("email")} /></Field>
-        <div className="notice notice-info">לצורך פתיחת חשבון ושימוש בשירות נאספים פרטי זיהוי ויצירת קשר. הפרטים יעובדו בהתאם למדיניות הפרטיות הכלולה במסמך המשפטי.</div>
-        <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-          <UiCheckbox checked={watch("acceptedTerms")} readOnly aria-invalid={Boolean(errors.acceptedTerms)} onClick={() => setLegalModalOpen(true)} />
-          <span>קראתי ואני מאשר/ת את <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLegalModalOpen(true)}>פתיחת תנאי השימוש לאישור</button> (גרסה {legal?.version ?? "—"}). *</span>
-        </label>
+        <div className="auth-consent-row">
+          <UiCheckbox checked={watch("acceptedTerms")} readOnly aria-label="אישור תנאי השימוש" aria-invalid={Boolean(errors.acceptedTerms)} onClick={() => setLegalModalOpen(true)} />
+          <span>קראתי ואני מאשר/ת את <button type="button" className="auth-inline-link" onClick={() => setLegalModalOpen(true)}>תנאי השימוש</button></span>
+        </div>
 
         {errors.acceptedTerms ? <p role="alert">{errors.acceptedTerms.message}</p> : null}
         <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
