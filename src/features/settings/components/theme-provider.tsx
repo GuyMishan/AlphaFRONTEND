@@ -1,10 +1,12 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { readStorage, writeStorage } from "@/lib/browser-storage";
 import { getSession } from "@/lib/session/storage";
 import { useAppStore } from "@/lib/session/use-app-store";
 import { userPreferencesApi, type AppearancePreference } from "@/features/settings/api";
+import { authApi } from "@/features/auth/api";
 import { THEME_CACHE_PREFIX, THEME_LAST_KEY } from "@/features/settings/theme-init";
 
 type ThemeContextValue = {
@@ -48,6 +50,8 @@ function applyTheme(preference: AppearancePreference) {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Follows sign-in, session restore and sign-out without waiting for a navigation.
   const sessionUserKey = useAppStore((state) => state.session ? state.session.userId ?? state.session.displayName : null);
+  const pathname = usePathname();
+  const isAuthenticatedPage = !["/login", "/register", "/invite", "/session-timeout", "/legal"].includes(pathname);
   const loadedUserKey = useRef<string | null>(null);
   // Last preference known to be stored for the user: restored when a save fails.
   const savedAppearance = useRef<AppearancePreference>("system");
@@ -59,8 +63,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const session = getSession();
     const userKey = session?.userId ?? session?.displayName ?? "anonymous";
-    if (loadedUserKey.current === userKey) return;
-    loadedUserKey.current = userKey;
+    const loadKey = `${userKey}:${isAuthenticatedPage}`;
+    if (loadedUserKey.current === loadKey) return;
+    loadedUserKey.current = loadKey;
+    let active = true;
     setLoading(true);
 
     // Same order as the pre-paint script, so this never flips the theme it already applied:
@@ -73,21 +79,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setAppearanceState(initial);
     setResolvedTheme(applyTheme(initial));
 
-    if (!session) {
+    if (!session || !isAuthenticatedPage) {
       setLoading(false);
       return;
     }
 
-    userPreferencesApi.get()
+    // Protected preferences must never be requested before legal consent is accepted.
+    // The cached theme is already applied, so login and the consent dialog do not depend on this request.
+    void authApi.refreshSession()
+      .then((current) => current.legalConsentRequired ? null : userPreferencesApi.get())
       .then((preferences) => {
+        if (!active || !preferences) return;
         savedAppearance.current = preferences.appearance;
         setAppearanceState(preferences.appearance);
         rememberPreference(key, preferences.appearance);
         setResolvedTheme(applyTheme(preferences.appearance));
       })
       .catch(() => undefined)
-      .finally(() => setLoading(false));
-  }, [sessionUserKey]);
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [sessionUserKey, isAuthenticatedPage]);
 
   useEffect(() => {
     if (appearance !== "system") return;
