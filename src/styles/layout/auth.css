@@ -48,7 +48,7 @@
 
 /* Form side */
 .auth-form-wrap { display: grid; place-items: center; padding: var(--space-12) var(--space-10); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-3xl); background: var(--color-surface); }
-.auth-card { width: min(400px, 100%); min-width: 0; }
+.auth-card { width: min(500px, 100%); min-width: 0; }
 .auth-card h2 { margin: 0 0 var(--space-3); font-size: var(--text-3xl); font-weight: var(--weight-semibold); line-height: var(--leading-snug); overflow-wrap: anywhere; }
 .auth-card > p { margin: 0 0 var(--space-8); color: var(--color-text-muted); line-height: var(--leading-normal); }
 .auth-card .form > .btn-primary { margin-top: var(--space-1); }
