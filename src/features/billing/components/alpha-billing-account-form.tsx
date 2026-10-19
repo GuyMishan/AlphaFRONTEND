@@ -129,17 +129,23 @@ export function AlphaBillingAccountForm({
   useEffect(() => {
     const url = new URL(window.location.href);
     const result = url.searchParams.get("payment");
+    const setupReference = url.searchParams.get("setup_reference");
     if (!result) return;
 
-    replaceSearchParams((params) => params.delete("payment"));
+    replaceSearchParams((params) => { params.delete("payment"); params.delete("setup_reference"); });
 
     if (result === "success") {
       toast.info("ספק הסליקה החזיר אתכם למערכת. מאמתים את אישור הכרטיס...");
       window.setTimeout(() => void settlePaymentMethodAfterReturn(), 300);
-    } else if (result === "failed") {
-      toast.error("חיבור אמצעי התשלום נכשל אצל ספק הסליקה.");
-    } else if (result === "cancelled") {
-      toast.info("חיבור אמצעי התשלום בוטל.");
+    } else if (result === "failed" || result === "cancelled") {
+      if (setupReference) {
+        const abandon = employerId
+          ? billingApi.abandonEmployerPaymentSetup(organizationId, employerId, setupReference)
+          : billingApi.abandonOrganizationPaymentSetup(organizationId, setupReference);
+        void abandon.then(() => load()).catch(() => load());
+      }
+      if (result === "failed") toast.error("חיבור הכרטיס נכשל. פרטי החיוב לא הופעלו.");
+      else toast.info("חיבור הכרטיס בוטל. פרטי החיוב לא הופעלו.");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- handle the provider return once per scope; settlePaymentMethodAfterReturn reads the current props
   }, [organizationId, employerId]);
