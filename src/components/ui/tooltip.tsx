@@ -42,8 +42,10 @@ export function Tooltip({
       const rect = triggerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const height = bubbleRef.current?.offsetHeight ?? 100;
+      const halfWidth = (bubbleRef.current?.offsetWidth ?? 280) / 2;
+      const safeHalfWidth = Math.min(halfWidth, Math.max(0, window.innerWidth / 2 - 8));
       setPosition({
-        x: Math.min(window.innerWidth - 16, Math.max(16, rect.left + rect.width / 2)),
+        x: Math.min(window.innerWidth - safeHalfWidth - 8, Math.max(safeHalfWidth + 8, rect.left + rect.width / 2)),
         y: rect.top < height + 16 && window.innerHeight - rect.bottom > height + 16 ? rect.bottom : rect.top,
         below: rect.top < height + 16 && window.innerHeight - rect.bottom > height + 16,
       });
