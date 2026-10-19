@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { cloneElement, isValidElement, useId, useState, type ReactElement, type ReactNode, type MouseEvent, type FocusEvent } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ReactElement, type ReactNode, type MouseEvent, type FocusEvent } from "react";
 import { createPortal } from "react-dom";
 
 const INTERACTIVE = new Set(["a", "button", "input", "select", "textarea"]);
@@ -16,22 +16,49 @@ export function Tooltip({
   children,
   label = "מידע נוסף",
   className,
+  portaled = false,
 }: {
   content: ReactNode;
   children?: ReactNode;
   label?: string;
   className?: string;
+  portaled?: boolean;
 }) {
   const bubbleId = useId();
   const [dismissed, setDismissed] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0, below: false });
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const bubbleRef = useRef<HTMLSpanElement>(null);
   const interactiveChild = isValidElement(children) && typeof children.type === "string" && INTERACTIVE.has(children.type);
   const describes = !(typeof content === "string" && content === label);
   const trigger = interactiveChild
     ? cloneElement(children as ReactElement<{ "aria-describedby"?: string }>, { "aria-describedby": bubbleId })
     : children ?? <Info size={14} aria-hidden="true" />;
 
+  useEffect(() => {
+    if (!portaled || !visible) return;
+    function reposition() {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const height = bubbleRef.current?.offsetHeight ?? 100;
+      setPosition({
+        x: Math.min(window.innerWidth - 16, Math.max(16, rect.left + rect.width / 2)),
+        y: rect.top < height + 16 && window.innerHeight - rect.bottom > height + 16 ? rect.bottom : rect.top,
+        below: rect.top < height + 16 && window.innerHeight - rect.bottom > height + 16,
+      });
+    }
+    reposition();
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [portaled, visible, content]);
+
   return (
-    <span className={["tooltip", children ? "" : "tooltip-icon", dismissed ? "is-dismissed" : "", className].filter(Boolean).join(" ")}
+    <span ref={triggerRef} className={["tooltip", children ? "" : "tooltip-icon", dismissed ? "is-dismissed" : "", className].filter(Boolean).join(" ")}
       tabIndex={interactiveChild ? undefined : 0}
       aria-label={interactiveChild ? undefined : label}
       aria-describedby={!interactiveChild && describes ? bubbleId : undefined}
@@ -41,11 +68,18 @@ export function Tooltip({
         event.preventDefault();
         event.stopPropagation();
         setDismissed(true);
+        setVisible(false);
       }}
-      onBlur={() => setDismissed(false)}
-      onMouseLeave={() => setDismissed(false)}>
+      onMouseEnter={() => { if (portaled) { setDismissed(false); setVisible(true); } }}
+      onFocus={() => { if (portaled) { setDismissed(false); setVisible(true); } }}
+      onBlur={() => { setDismissed(false); setVisible(false); }}
+      onMouseLeave={() => { setDismissed(false); setVisible(false); }}>
       <span className="tooltip-trigger">{trigger}</span>
-      <span className="tooltip-bubble" role="tooltip" id={bubbleId}>{content}</span>
+      {portaled ? (visible && !dismissed && typeof document !== "undefined" ? createPortal(
+        <span ref={bubbleRef} className="tooltip-bubble tooltip-portal-bubble" role="tooltip" id={bubbleId}
+          data-side={position.below ? "bottom" : "top"}
+          style={{ left: position.x, top: position.y }}>{content}</span>, document.body,
+      ) : null) : <span className="tooltip-bubble" role="tooltip" id={bubbleId}>{content}</span>}
     </span>
   );
 }
