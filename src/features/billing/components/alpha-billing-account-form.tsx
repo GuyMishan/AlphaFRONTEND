@@ -148,20 +148,14 @@ export function AlphaBillingAccountForm({
     if (!canManage) return;
     setSaving(true);
     try {
-      const value = employerId
-        ? await billingApi.saveEmployerBillingAccount(organizationId, employerId, normalized)
-        : await billingApi.saveOrganizationBillingAccount(organizationId, normalized);
-
-      setAccount(value);
-
-      if (normalized.paymentMethodType === 1 && (!value.hasProviderPaymentMethod || value.paymentMethodStatus !== 3)) {
+      if (normalized.paymentMethodType === 1 && (!account.hasProviderPaymentMethod || account.paymentMethodStatus !== 3)) {
         const url = new URL(window.location.href);
         url.searchParams.delete("payment");
         url.searchParams.set("tab", "billing");
         const returnPath = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "");
         const setup = employerId
-          ? await billingApi.startEmployerPaymentSetup(organizationId, employerId, returnPath)
-          : await billingApi.startOrganizationPaymentSetup(organizationId, returnPath);
+          ? await billingApi.startEmployerPaymentSetup(organizationId, employerId, returnPath, normalized)
+          : await billingApi.startOrganizationPaymentSetup(organizationId, returnPath, normalized);
 
         // Never navigate to a javascript:/data:/plain-http URL from an API response.
         if (!isAllowedPaymentRedirect(setup.redirectUrl)) throw new Error("לא ניתן לפתוח את דף חיבור אמצעי התשלום.");
@@ -170,6 +164,10 @@ export function AlphaBillingAccountForm({
         return;
       }
 
+      const value = employerId
+        ? await billingApi.saveEmployerBillingAccount(organizationId, employerId, normalized)
+        : await billingApi.saveOrganizationBillingAccount(organizationId, normalized);
+      setAccount(value);
       if (onSaved) await onSaved();
       toast.success("פרטי החיוב ואמצעי התשלום נשמרו");
     } catch (err) {
