@@ -115,9 +115,9 @@ User list filtering: the global platform-administrator view uses `/api/platform/
 
 Address suggestions use `useCities` / `useStreets` in `features/reference-data/queries.ts`, with query keys including the search and city code. `AddressAutocompleteFields` debounces input, hides results for earlier input, and distinguishes loading, no matching city, empty streets and request failures. It preserves free-text entry; reference lookups do not impose new business validation.
 
-## Public legal policy
+## Legal policy page
 
-`/legal` renders `src/features/legal/screens/legal-policy-screen.tsx` without the authenticated shell. The screen uses `src/features/legal/api.ts` and the anonymous shared API `/api/legal-document/active`; the same backend Markdown is exposed on the marketing website. The app sidebar links to it under Sign out, and the page shows the document version and application package version.
+`/legal` renders `src/features/legal/screens/legal-policy-screen.tsx` inside the authenticated `AppShell`, using the same navigation/topbar layout as the rest of the application and hiding the scope selector because the policy is global. The screen uses `src/features/legal/api.ts` and the shared API `/api/legal-document/active`; the same backend Markdown is exposed on the marketing website. The app sidebar links to it under Sign out, and the page shows the document version and application package version without a separate login link.
 
 ## Employer agreement gate (legal stage 4)
 

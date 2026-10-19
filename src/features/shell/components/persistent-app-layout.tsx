@@ -8,7 +8,7 @@ import { authApi } from "@/features/auth/api";
 import { useAppStore } from "@/lib/session/use-app-store";
 import { logout } from "@/lib/session/lifecycle";
 
-const publicPaths = new Set(["/login", "/register", "/invite", "/session-timeout", "/legal"]);
+const publicPaths = new Set(["/login", "/register", "/invite", "/session-timeout"]);
 export function isPublicPath(pathname: string) { return publicPaths.has(pathname); }
 
 export function PersistentAppLayout({ children }: { children: React.ReactNode }) {
