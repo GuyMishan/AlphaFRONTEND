@@ -48,11 +48,11 @@ export function ReportingTab({ organizationId, employerId, canEdit, value, onSav
         <div className="field">
           <label>סוג מפקיד</label>
           <UiSelect disabled={!canEdit} value={form.defaultDepositorTypeCode} onChange={(e) => setForm({ ...form, defaultDepositorTypeCode: Number(e.target.value) as 1 | 2 | 3 })}>
-            <option value={1}>קוד 1</option>
-            <option value={2}>קוד 2</option>
-            <option value={3}>מעסיק קטן (קוד 3)</option>
+            <option value={1}>מעסיק – דיווח והפקדה עבור עובדים (קוד 1)</option>
+            <option value={2}>עצמאי – דיווח והפקדה עבור עצמו (קוד 2)</option>
+            <option value={3}>מעסיק קטן – לפי סיווג ממשק 006 (קוד 3)</option>
           </UiSelect>
-          <small style={{ color: "var(--color-text-muted)" }}>בכללי גרסה 6 מוגדר במפורש קוד 3 למעסיק קטן.</small>
+          <small style={{ color: "var(--color-text-muted)" }}>הבחירה קובעת את סוג המפקיד (SUG-MAFKID) בקובץ ממשק 006.</small>
         </div>
         <div className="field">
           <label>סוג מזהה מעסיק בממשק 006</label>
