@@ -38,8 +38,8 @@ export const billingApi = {
     apiRequest<AlphaBillingAccount>(`${organizationPath(organizationId)}/billing-account`),
   saveOrganizationBillingAccount: (organizationId: string, payload: AlphaBillingAccountInput) =>
     apiRequest<AlphaBillingAccount>(`${organizationPath(organizationId)}/billing-account`, { method: "PUT", body: payload }),
-  startOrganizationPaymentSetup: (organizationId: string, returnPath: string) =>
-    apiRequest<PaymentMethodSetupResult>(`${organizationPath(organizationId)}/billing-account/provider/setup`, { method: "POST", body: { returnPath } }),
+  startOrganizationPaymentSetup: (organizationId: string, returnPath: string, details?: AlphaBillingAccountInput) =>
+    apiRequest<PaymentMethodSetupResult>(`${organizationPath(organizationId)}/billing-account/provider/setup`, { method: "POST", body: { returnPath, ...details } }),
   syncOrganizationPaymentMethod: (organizationId: string) =>
     apiRequest<PaymentMethodSyncResult>(`${organizationPath(organizationId)}/billing-account/provider/sync`, { method: "POST" }),
   cancelOrganizationPaymentMethod: (organizationId: string) =>
@@ -53,7 +53,7 @@ export const billingApi = {
     apiRequest<BillingGateStatus>(`${employerPath(organizationId, employerId)}/billing-account/gate`),
   saveEmployerBillingAccount: (organizationId: string, employerId: string, payload: AlphaBillingAccountInput) =>
     apiRequest<AlphaBillingAccount>(`${employerPath(organizationId, employerId)}/billing-account`, { method: "PUT", body: payload }),
-  startEmployerPaymentSetup: (organizationId: string, employerId: string, returnPath: string) =>
+  startEmployerPaymentSetup: (organizationId: string, employerId: string, returnPath: string, details?: AlphaBillingAccountInput) =>
     apiRequest<PaymentMethodSetupResult>(`${employerPath(organizationId, employerId)}/billing-account/provider/setup`, { method: "POST", body: { returnPath } }),
   syncEmployerPaymentMethod: (organizationId: string, employerId: string) =>
     apiRequest<PaymentMethodSyncResult>(`${employerPath(organizationId, employerId)}/billing-account/provider/sync`, { method: "POST" }),
