@@ -24,11 +24,11 @@ export function LegalConsentModal({ open, document, saving = false, required = f
         onClick={() => { if (document) void onAccept(document.version); }}>{saving ? "שומר..." : "אישור והמשך"}</button>
     </>}>
     {document ? <>
-      <p>גרסה {document.version} · {document.title}</p>
+      <p>{document.title}</p>
       <div role="document" dir="rtl" tabIndex={0} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: "45vh", overflowY: "auto" }}>{document.markdown}</div>
       <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 18 }}>
         <UiCheckbox checked={checked} onChange={(event) => setChecked(event.target.checked)} disabled={saving} />
-        <span>קראתי ואני מאשר/ת את תנאי השימוש ומדיניות הפרטיות (גרסה {document.version}).</span>
+        <span>קראתי ואני מאשר/ת את תנאי השימוש ומדיניות הפרטיות.</span>
       </label>
     </> : <p role="status">טוען את תנאי השימוש...</p>}
   </AppModal>;
