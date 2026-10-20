@@ -29,13 +29,13 @@ export function ReportWizardFooter({ wizard, capabilities, scope }: {
 
   return <>
   <div className="wizard-footer">
-    <button type="button" className="btn btn-secondary"
-      disabled={state.step === 1 || (state.resumingDraft && state.step === 2) || busy || sent}
+    {state.step > 1 ? <button type="button" className="btn btn-secondary"
+      disabled={(state.resumingDraft && state.step === 2) || busy || sent}
       onClick={() => patch(state.step === 2 && state.reportKind === 2
         ? { error: "", step: 1, sourceReportId: "", reportId: "", isCorrectionWorkspace: false, resumingDraft: false, stepOneAttempted: false }
         : { error: "", step: state.step - 1 })}>
       <ArrowRight size={17} />חזרה
-    </button>
+    </button> : null}
     {state.step < steps.summary ? <button type="button" className="btn btn-primary"
       disabled={busy || !capabilities.canCreateReport} onClick={continueReport} aria-busy={state.advancing}>
       {state.advancing ? "בודק ושומר..." : isExcel && state.step === 2 ? "אישור עובדים והמשך" : "המשך"}
