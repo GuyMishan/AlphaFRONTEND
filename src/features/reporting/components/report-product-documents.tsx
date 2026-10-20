@@ -37,7 +37,8 @@ export function ReportProductDocuments({ organizationId, employerId, reportId, r
 
   const options = (data?.documentTypes ?? []).filter(type => type.scope === "product" &&
     (type.code === 4 && metadata?.operationCode === 5 && metadata.collectiveAgreementRefund === false ||
-      type.code === 6 && metadata?.operationCode === 5 && metadata.collectiveAgreementRefund === true));
+      type.code === 6 && metadata?.operationCode === 5 && metadata.collectiveAgreementRefund === true ||
+      type.code === 5 && data?.requiredCode5ProductIds?.includes(reportProductId)));
   async function upload(file: File, code: 3 | 4 | 5 | 6) {
     setBusy(true);
     try {
