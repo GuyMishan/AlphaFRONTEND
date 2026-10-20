@@ -7,7 +7,7 @@ import { reportAttachmentsApi, type ReportAttachment, type ReportAttachmentList 
 import { errorMessage } from "@/lib/api/error-messages";
 import { employerInterfaceApi, type EmployerInterfaceProductMetadata } from "../employer-interface-api";
 
-export function ReportProductDocuments({ organizationId, employerId, reportId, reportProductId, productType, correctionWorkspace }: {
+export function ReportProductDocuments({ organizationId, employerId, reportId, reportProductId, correctionWorkspace }: {
   organizationId: string; employerId: string; reportId: string; reportProductId: string;
   productType: number; correctionWorkspace: boolean;
 }) {
