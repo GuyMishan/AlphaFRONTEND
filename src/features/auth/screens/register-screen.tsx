@@ -90,7 +90,10 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const user = await authApi.verifyRegistrationCode(challenge.challengeId, codeToVerify);
+      const verifiedUser = await authApi.verifyRegistrationCode(challenge.challengeId, codeToVerify);
+      // Validate that the issued cookie is usable before entering the protected app.
+      const user = await authApi.refreshSession();
+      if (user.userId !== verifiedUser.userId) throw new Error("Authenticated session mismatch");
       setSession(sessionFromAuthenticatedUser(user));
       announceSignIn(user.userId);
       toast.success("ההרשמה הושלמה בהצלחה");

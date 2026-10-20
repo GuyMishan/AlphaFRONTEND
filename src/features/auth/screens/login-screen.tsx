@@ -82,7 +82,11 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const user = await authApi.verifyLoginCode(challenge.challengeId, codeToVerify);
+      const verifiedUser = await authApi.verifyLoginCode(challenge.challengeId, codeToVerify);
+      // OTP responses do not carry legalConsentRequired. Confirm the new cookie and
+      // read the authoritative consent status before declaring login successful.
+      const user = await authApi.refreshSession();
+      if (user.userId !== verifiedUser.userId) throw new Error("Authenticated session mismatch");
       await finishAuthenticatedLogin(user);
     } catch (err) {
       toast.error(authErrorMessage(err, "לא ניתן להתחבר כרגע."));
