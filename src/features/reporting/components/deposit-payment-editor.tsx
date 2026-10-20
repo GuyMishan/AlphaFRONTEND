@@ -49,6 +49,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   const [branchSelection, setBranchSelection] = useState(row.employerBranch || "");
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [attachments, setAttachments] = useState<ReportAttachment[]>([]);
+  const [requiredCode5ProductIds, setRequiredCode5ProductIds] = useState<string[]>([]);
   const [libraryCandidates, setLibraryCandidates] = useState<LibraryDocumentCandidate[]>([]);
   const [selectedLibraryDocuments, setSelectedLibraryDocuments] = useState<Record<number, string>>({});
   const [paymentProofs, setPaymentProofs] = useState<PaymentConfirmation[]>([]);
@@ -89,6 +90,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
         receiverAccountType: automaticDebit ? 1 : item.receiverAccountType, oldPensionTypeCode: item.oldPensionTypeCode });
       setPreviousReference(previous);
       setAttachments(attachmentList.items);
+      setRequiredCode5ProductIds(attachmentList.requiredCode5ProductIds ?? []);
       setLibraryCandidates(availableLibraryDocuments);
       setPaymentProofs(proofList); onEvidenceChanged(proofList);
       setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
@@ -237,6 +239,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   async function refreshAttachments() {
     const list = await reportAttachmentsApi.list(organizationId, employerId, reportId);
     setAttachments(list.items);
+    setRequiredCode5ProductIds(list.requiredCode5ProductIds ?? []);
     setAnnualEmployerAffidavitSatisfied(list.annualEmployerAffidavitSatisfied);
   }
 
@@ -528,7 +531,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
             </div>
           </section> : null}
 
-          {!negative && !differences && row.productType === 1 && metadataForm.employeeStatus !== 14 ?
+          {!negative && !differences && requiredCode5ProductIds.includes(row.id) ?
             <section className="payment-panel">
               <h3>מסמך הצטרפות לקרן ברירת מחדל</h3>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
