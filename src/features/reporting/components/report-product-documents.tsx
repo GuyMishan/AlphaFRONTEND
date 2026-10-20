@@ -36,7 +36,7 @@ export function ReportProductDocuments({ organizationId, employerId, reportId, r
     <p>כדי לצרף מסמכים למוצר חדש, שמרו תחילה את המוצר בדיווח.</p></section>;
 
   const options = (data?.documentTypes ?? []).filter(type => type.scope === "product" &&
-    (type.code === 4 && metadata?.operationCode === 5 && metadata.collectiveAgreementRefund === false ||
+    ((type.code === 4 && metadata?.operationCode === 5 && metadata.collectiveAgreementRefund === false) ||
       type.code === 6 && metadata?.operationCode === 5 && metadata.collectiveAgreementRefund === true ||
       type.code === 5 && data?.eligibleCode5ProductIds?.includes(reportProductId)));
   async function upload(file: File, code: 3 | 4 | 5 | 6) {
@@ -60,7 +60,7 @@ export function ReportProductDocuments({ organizationId, employerId, reportId, r
   }
   return <section className="profile-form-section" aria-label="מסמכים למוצר בדיווח">
     <h3>מסמכים לדיווח</h3>
-    {!data || !metadata ? <p>טוען תנאי מסמכים...</p> : options.length === 0 ? null
+    {!data ? <p>טוען תנאי מסמכים...</p> : options.length === 0 ? null
       : options.map(type => {
         const existing = data.items.find((item: ReportAttachment) => item.reportProductId === reportProductId && item.documentTypeCode === type.code);
         return <div key={type.code} className="field" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
