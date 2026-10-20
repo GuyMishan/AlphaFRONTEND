@@ -3,7 +3,6 @@
 import { UiInput, UiCheckbox } from "@/components/ui/ui-controls";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBrand, AuthMobileBrand } from "@/features/auth/components/auth-brand";
@@ -21,7 +20,6 @@ import { setSession } from "@/lib/session/storage";
 const RESEND_INTERVAL_MS = 60_000;
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useZodForm(registerSchema, {
     defaultValues: { displayName: "", email: "", nationalId: "", phone: "", acceptedTerms: false, marketingEmailOptIn: false, legalVersion: 0 },
   });
@@ -96,7 +94,7 @@ export default function RegisterPage() {
       setSession(sessionFromAuthenticatedUser(user));
       announceSignIn(user.userId);
       toast.success("ההרשמה הושלמה בהצלחה");
-      router.replace("/dashboard");
+      window.location.replace("/dashboard");
     } catch (err) {
       toast.error(authErrorMessage(err, "לא ניתן להשלים את ההרשמה כרגע."));
     } finally {

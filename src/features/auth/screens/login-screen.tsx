@@ -3,7 +3,6 @@
 import { UiInput } from "@/components/ui/ui-controls";
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBrand, AuthMobileBrand } from "@/features/auth/components/auth-brand";
@@ -28,7 +27,6 @@ const RESEND_INTERVAL_MS = 60_000;
 const SEND_FAILED = "לא ניתן לשלוח קוד כרגע. נסו שוב מאוחר יותר.";
 
 export default function LoginPage() {
-  const router = useRouter();
   const { register, handleSubmit, formState: { errors } } = useZodForm(loginSchema, { defaultValues: { nationalId: "", phone: "" } });
   const [code, setCode] = useState("");
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
@@ -44,7 +42,7 @@ export default function LoginPage() {
 
     if (!user.legalConsentRequired) {
       toast.success("התחברת בהצלחה");
-      router.replace("/dashboard");
+      window.location.replace("/dashboard");
       return;
     }
 
@@ -108,7 +106,7 @@ export default function LoginPage() {
       await authApi.acceptLegal(version);
       setLegalModalOpen(false);
       toast.success("התחברת בהצלחה");
-      router.replace("/dashboard");
+      window.location.replace("/dashboard");
     } catch {
       toast.error("שמירת האישור נכשלה. נסו שוב.");
     } finally {
