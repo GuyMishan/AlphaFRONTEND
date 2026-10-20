@@ -2,7 +2,7 @@
 
 import { UiFileUpload } from "@/components/ui/ui-file-upload";
 import { useState } from "react";
-import { UploadCloud, CheckCircle2, AlertTriangle } from "lucide-react";
+import { UploadCloud, CheckCircle2, AlertTriangle, FileCheck2 } from "lucide-react";
 import { toast } from "sonner";
 import { employerInterfaceApi, type EmployerInterfaceImportResult, type EmployerInterfaceUploadValidation } from "@/features/reporting/employer-interface-api";
 import { errorMessage } from "@/lib/api/error-messages";
@@ -93,43 +93,46 @@ export function EmployerInterfaceXmlIntake({
     }
   }
 
-  return <div style={{ marginTop: 20 }}>
-    <div className="field">
-      <small style={{ display: "block", marginBottom: 8 }}>המערכת מזהה אוטומטית את סוג הקובץ ומבצעת ולידציה מול ה־XSD המתאים.</small>
-      <UiFileUpload id="employer-interface-xml" variant="field" label="קובץ XML ממשק מעסיקים 006"
-        accept=".xml,.dat,.tst,application/xml,text/xml" maxBytes={20 * 1024 * 1024}
-        disabled={disabled} busy={validating || importing}
-        onFileSelected={validateSelected} onInvalid={(message) => toast.error(message)} />
-      <small>עד 20MB. אין צורך לבחור סוג XML מראש.</small>
-    </div>
+  return <div>
+    <div className="card-head"><div>
+      <h2>העלאת קובץ דיווח מלא</h2>
+      <span style={{ color: "var(--color-text-muted)" }}>XML / DAT / TST · ממשק מעסיקים 006 · בדיקת מבנה וסכמה רשמית</span>
+    </div></div>
+    <UiFileUpload id="employer-interface-xml" variant="zone" label="גררו קובץ לכאן או בחרו מהמחשב"
+      fileName={file?.name}
+      description="העלאת ממשק מעסיקים 006. המערכת מזהה את סוג המסמך באופן אוטומטי ומבצעת בדיקה מול סכמת XSD המתאימה. גודל קובץ מרבי: 20MB."
+      accept=".xml,.dat,.tst,application/xml,text/xml" maxBytes={20 * 1024 * 1024}
+      disabled={disabled} busy={validating || importing}
+      onFileSelected={validateSelected} onInvalid={(message) => toast.error(message)} />
 
-    {validating ? <div className="notice" style={{ marginTop: 14 }}><UploadCloud size={16} />בודק מבנה וסכמה רשמית...</div> : null}
+    {validating ? <div className="notice notice-info" role="status" style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 8 }}>
+      <UploadCloud size={18} />בודק מבנה וסכמה רשמית...
+    </div> : null}
 
-    {validation ? <div className={validation.isValid ? "notice notice-info" : "notice notice-error"} style={{ marginTop: 14 }}>
+    {validation ? <div className={validation.isValid ? "notice notice-info" : "notice notice-error"}
+      role="status" style={{ marginTop: 20 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {validation.isValid ? <CheckCircle2 size={17} /> : <AlertTriangle size={17} />}
-        <b>{validation.isValid ? "הקובץ תקין" : "הקובץ אינו תקין"}</b>
+        {validation.isValid ? <CheckCircle2 size={19} /> : <AlertTriangle size={19} />}
+        <b>{validation.isValid ? "הקובץ תקין ומוכן לקליטה" : "הקובץ אינו תקין"}</b>
       </div>
-      <div style={{ marginTop: 6 }}>סוג: {documentTypeLabel(validation.documentType)}</div>
-      {validation.version ? <div>גרסה: {validation.version}</div> : null}
-      {validation.schemaFileName ? <div>סכמה: {validation.schemaFileName}</div> : null}
-      {validation.issues?.length ? <ul style={{ marginBottom: 0 }}>{validation.issues.map((issue, index) => <li key={index}>{issue}</li>)}</ul> : null}
+      <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 12 }}>
+        <span>סוג: {documentTypeLabel(validation.documentType)}</span>
+        {validation.version ? <span>גרסה: {validation.version}</span> : null}
+        {validation.schemaFileName ? <span>סכמה: {validation.schemaFileName}</span> : null}
+      </div>
+      {validation.issues?.length ? <ul style={{ marginBottom: 0, marginTop: 10 }}>{validation.issues.map((issue, index) => <li key={index}>{issue}</li>)}</ul> : null}
     </div> : null}
 
-    {feedbackId ? <div className="notice notice-info" style={{ marginTop: 14 }}>
-      <b>המשוב נשמר במערכת</b>
-      <div>מזהה משוב: {feedbackId}</div>
+    {feedbackId ? <div className="notice notice-info" role="status" style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 8 }}>
+      <FileCheck2 size={18} /><span>המשוב נשמר במערכת · מזהה: {feedbackId}</span>
     </div> : null}
 
-    <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
-      <button
-        type="button"
-        className="btn btn-primary"
-        disabled={disabled || !paymentAccountId || !file || !validation?.isValid || validating || importing}
-        onClick={() => void importFile()}
-      >
+    {validation?.isValid && !feedbackId ? <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
+      <button type="button" className="btn btn-primary"
+        disabled={disabled || !paymentAccountId || !file || validating || importing}
+        onClick={() => void importFile()}>
         {importing ? "קולט קובץ..." : "אישור וקליטת הקובץ"}
       </button>
-    </div>
+    </div> : null}
   </div>;
 }
