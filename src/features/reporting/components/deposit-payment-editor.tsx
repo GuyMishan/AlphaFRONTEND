@@ -347,7 +347,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     if (operation5 && metadataForm.collectiveAgreementRefund === true && !collectiveAgreementDeclaration)
       errors.push("בהשבה מכוח הסכם קיבוצי חובה לצרף הצהרת מעסיק מסוג 6 למוצר זה.");
     if (operation5 && !attachments.some(item => item.documentTypeCode === 3 && item.reportProductId == null))
-      errors.push("בקוד פעולה 5 נדרש תצהיר מעסיק שנתי (סוג מסמך 3) לפחות פעם אחת בשנה.");
+      errors.push("בקוד פעולה 5 חובה לצרף תצהיר מעסיק (מסמך 3) לדיווח השלילי הנוכחי, בשלב העובדים.");
     if (errors.length) { const message = shortError(errors.join(" ")); setError(message); notify.error(message); return; }
     setSaving(true);
     try {
