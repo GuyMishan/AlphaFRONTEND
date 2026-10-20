@@ -53,7 +53,7 @@ export async function createReportFromDetails(
     const workspace = await derivedReportsApi.ensureCorrectionWorkspace(organizationId, employerId, state.sourceReportId);
     onReportCreated(workspace.reportId);
     const selectedIds = await loadReportEmploymentIds(scope, workspace.reportId);
-    return { reportId: workspace.reportId, selectedIds };
+    return { reportId: workspace.reportId, selectedIds, isCorrectionWorkspace: true };
   }
 
   const isFocusedSource = Boolean(entry.sourceProductId && state.sourceReportId === entry.sourceReportId);

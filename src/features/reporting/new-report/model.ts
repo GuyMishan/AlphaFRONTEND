@@ -38,6 +38,7 @@ export type ReportWizardState = {
   employees: Employee[];
   selectedIds: string[];
   resumingDraft: boolean;
+  isCorrectionWorkspace: boolean;
   showOpenReports: boolean;
   stepOneAttempted: boolean;
   excelIntake: ExcelEmployeeIntakeResult | null;

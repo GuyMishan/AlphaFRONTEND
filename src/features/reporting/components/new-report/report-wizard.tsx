@@ -28,8 +28,12 @@ export function ReportWizard({ scope, entry, setup }: {
         </Link>
         {` · ח.פ. ${setup.employer.registrationNumber}`}
       </>} />
-      <ReportTypeBanner reportKind={state.reportKind} source={wizard.selectedSource} month={state.month}
-        correctionOperationCode={wizard.isCorrection ? state.correctionOperationCode : null} />
+      {state.step > 1 ? <ReportTypeBanner
+        reportKind={state.isCorrectionWorkspace ? 1 : state.reportKind}
+        source={wizard.selectedSource}
+        month={state.month}
+        correctionOperationCode={wizard.isCorrection ? state.correctionOperationCode : null}
+      /> : null}
       <div className="steps">
         {steps.labels.map((label, index) => {
           const number = index + 1;

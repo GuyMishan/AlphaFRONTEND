@@ -36,6 +36,7 @@ export function useReportWizard(scope: EmployerSelection, entry: ReportEntry, se
       employees: setup.employees,
       selectedIds: setup.employees.filter(item => item.status === 1).map(item => item.id),
       resumingDraft: false,
+      isCorrectionWorkspace: entry.correctionWorkspace,
       showOpenReports: false,
       stepOneAttempted: false,
       excelIntake: null,
@@ -82,6 +83,7 @@ export function useReportWizard(scope: EmployerSelection, entry: ReportEntry, se
         reportKind: kind === 2 || kind === 3 ? kind : 1,
         mode: "manual",
         resumingDraft: true,
+        isCorrectionWorkspace: Boolean(report.isCorrectionWorkspace),
         reportId: report.id,
         selectedIds,
         month: report.reportingMonth.slice(0, 7),
@@ -120,20 +122,21 @@ export function useReportWizard(scope: EmployerSelection, entry: ReportEntry, se
       salaryPaymentDate: report.salaryPaymentDate?.slice(0, 10) ?? "",
       selectedIds, fileName: result.fileName ?? "",
       reportKind: result.documentType === "NegativeReport" ? 3 : 1,
+      isCorrectionWorkspace: false,
       error: "", sentExternalId: "", step: 2,
     });
   }
 
   function chooseKind(reportKind: ManualReportKind) {
     patch({
-      reportKind, showOpenReports: false, resumingDraft: false, reportId: "", sourceReportId: "",
+      reportKind, showOpenReports: false, resumingDraft: false, isCorrectionWorkspace: false, reportId: "", sourceReportId: "",
       correctionOperationCode: 2, fileName: "", excelIntake: null, error: "", sentExternalId: "",
       ...(reportKind !== 1 ? { mode: "manual" as const } : {}),
     });
   }
 
   function chooseMode(mode: IntakeMode) {
-    patch({ mode, resumingDraft: false, reportId: "", fileName: "", excelIntake: null, error: "", sentExternalId: "", step: 1 });
+    patch({ mode, resumingDraft: false, isCorrectionWorkspace: false, reportId: "", fileName: "", excelIntake: null, error: "", sentExternalId: "", step: 1 });
   }
 
   const canContinue = state.step === 1
