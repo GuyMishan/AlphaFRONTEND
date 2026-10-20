@@ -328,7 +328,6 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       <div className="manual-report-badges"><span className="badge badge-blue">{selectedIds.length} עובדים</span><span className="badge badge-green">{ready} הושלמו</span></div>
     </div>
     {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}
-    {correctionWorkspace ? <div className="notice notice-info" style={{ marginBottom: 14 }}>זהו עותק העבודה של הגרסה הבאה. אפשר לערוך, להוסיף או להסיר עובדים ומוצרים; בלחיצה על “דיווח חוזר” ALPHA תחשב את הדלתא מול הגרסה שנשלחה.</div> : null}
     <div className="toolbar manual-report-toolbar">
       <div className="search"><Search size={17} /><UiInput value={query} maxLength={80} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
       <>
