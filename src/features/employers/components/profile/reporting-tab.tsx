@@ -7,6 +7,7 @@ import { employersApi } from "@/features/employers/api";
 import type { EmployerProfileCenterSettings } from "@/features/employers/types";
 import { UiSelect, UiTextarea } from "@/components/ui/ui-controls";
 import { errorMessage } from "@/lib/api/error-messages";
+import { EmployerDefaultFunds } from "./employer-default-funds";
 
 export function ReportingTab({ organizationId, employerId, canEdit, value, onSaved }: {
   organizationId: string;
@@ -33,7 +34,7 @@ export function ReportingTab({ organizationId, employerId, canEdit, value, onSav
     }
   }
 
-  return <section className="card profile-card reporting-settings-card">
+  return <><section className="card profile-card reporting-settings-card">
     <div className="card-head"><div><h2>הגדרות דיווח</h2><span style={{ color: "var(--color-text-muted)" }}>ברירות מחדל נוחות לדיווחים חדשים. בכל דיווח ניתן לשנות אותן לפי הצורך.</span></div></div>
     {!canEdit ? <div className="notice notice-info" style={{ marginBottom: 18 }}>הגדרות הדיווח מוצגות לקריאה בלבד לפי ההרשאה שלך.</div> : null}
     <form className="form" onSubmit={save}>
@@ -103,5 +104,6 @@ export function ReportingTab({ organizationId, employerId, canEdit, value, onSav
       <div className="field"><label>הערות תפעוליות לדיווח</label><UiTextarea disabled={!canEdit} maxLength={500} value={form.reportingNotes} onChange={(e) => setForm({ ...form, reportingNotes: e.target.value })} placeholder="הערות פנימיות שיופיעו כברירת מחדל בתהליך הדיווח" /></div>
       {canEdit ? <div className="form-actions"><span /><button className="btn btn-primary" type="submit" disabled={saving}><Save size={17} />{saving ? "שומר..." : "שמירת הגדרות"}</button></div> : null}
     </form>
-  </section>;
+  </section>
+  <section className="card profile-card"><EmployerDefaultFunds organizationId={organizationId} employerId={employerId} canEdit={canEdit} /></section></>;
 }

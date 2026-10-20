@@ -46,6 +46,12 @@ export const employersApi = {
     apiRequest<{ mode: EmployerPensionPaymentMode; modeOverridden: boolean }>(`${employerPath(organizationId, employerId)}/profile-center/pension-payment`, {
       method: "PUT", body: { mode },
     }),
+  employerDefaultFunds: (organizationId: string, employerId: string) =>
+    apiRequest<{ overridden: boolean; selectedKeys: string[]; systemDefaultKeys: string[]; selectedFunds: { externalKey: string; fundName: string; companyName: string }[]; systemDefaultFunds: { externalKey: string; fundName: string; companyName: string }[] }>(`${employerPath(organizationId, employerId)}/profile-center/default-funds`),
+  updateEmployerDefaultFunds: (organizationId: string, employerId: string, fundExternalKeys: string[]) =>
+    apiRequest<void>(`${employerPath(organizationId, employerId)}/profile-center/default-funds`, { method: "PUT", body: { fundExternalKeys } }),
+  resetEmployerDefaultFunds: (organizationId: string, employerId: string) =>
+    apiRequest<void>(`${employerPath(organizationId, employerId)}/profile-center/default-funds`, { method: "DELETE" }),
   updateEmployerReportingSettings: (organizationId: string, employerId: string, payload: EmployerProfileCenterSettings["reporting"]) =>
     apiRequest<void>(`${employerPath(organizationId, employerId)}/profile-center/reporting`, { method: "PUT", body: payload }),
 };
