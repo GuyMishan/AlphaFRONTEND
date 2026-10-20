@@ -340,6 +340,8 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       errors.push("בקרן פנסיה ותיקה יש להזין חלקיות משרה או ימי עבודה בחודש.");
     if (operation5 && metadataForm.collectiveAgreementRefund == null)
       errors.push("יש לבחור האם השבת הכספים מתבצעת מכוח הסכם קיבוצי.");
+    if (operation5 && metadataForm.collectiveAgreementRefund === false && !employeeApproval)
+      errors.push("בהשבת כספים שאינה מכוח הסכם קיבוצי חובה לצרף אישור עובד מסוג 4 למוצר זה.");
     if (operation5 && metadataForm.collectiveAgreementRefund === true && !collectiveAgreementDeclaration)
       errors.push("בהשבה מכוח הסכם קיבוצי חובה לצרף הצהרת מעסיק מסוג 6 למוצר זה.");
     if (operation5 && !annualEmployerAffidavitSatisfied)
@@ -499,7 +501,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
             <div className="notice notice-info" style={{ marginBottom: 12 }}>
               בקוד פעולה 5 (בקשת השבת כספים), תצהיר מעסיק מסוג 3 נדרש לפחות פעם אחת בשנה.
               אם ההשבה מתבצעת מכוח הסכם קיבוצי, יש לצרף כאן הצהרת מעסיק להסכם הקיבוצי (סוג 6) לעובד ולמוצר הרלוונטיים.
-              אם ההשבה אינה מכוח הסכם קיבוצי, אין צורך במסמך מסוג 6. אישור עובד (סוג 4) מצורף בהתאם לנסיבות ההשבה.
+              אם ההשבה אינה מכוח הסכם קיבוצי, אין צורך במסמך מסוג 6. אישור עובד (סוג 4) נדרש כאשר ההשבה אינה מכוח הסכם קיבוצי.
               המסמכים נשמרים כ-PDF ונשלחים עם הדיווח השלילי; העלאתם לפרופיל בלבד אינה מצרפת אותם לדיווח.
             </div>
             {annualEmployerAffidavitSatisfied && !reportAffidavit ? <div className="notice notice-success" style={{ marginBottom: 12 }}>תצהיר המעסיק השנתי כבר הועבר בדיווח קודם השנה.</div> : null}
@@ -508,7 +510,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
                 { code: 3 as const, label: "תצהיר מעסיק", item: reportAffidavit, scope: "שנתי ברמת הדיווח" },
                 { code: 4 as const, label: "אישור עובד להשבת כספים", item: employeeApproval, scope: "לעובד/מוצר זה" },
                 { code: 6 as const, label: "הצהרת מעסיק - הסכם קיבוצי", item: collectiveAgreementDeclaration, scope: "לעובד/מוצר זה" },
-              ]).map(({ code, label, item, scope }) => <div key={code} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+              ].filter(({ code }) => code === 3 || (code === 4 && metadataForm.collectiveAgreementRefund === false) || (code === 6 && metadataForm.collectiveAgreementRefund === true))).map(({ code, label, item, scope }) => <div key={code} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
                 <div><b>{label}</b><div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div>
                   {code === 6 ? <small style={{ display: "block", color: "var(--color-text-muted)" }}>
                     נדרש כאשר ההשבה מתבצעת מכוח הסכם קיבוצי. אם זו השבה כזו, צרפו את ה-PDF כאן לפני שליחת הדיווח כדי להימנע מדחיית המסמך (קודים 102–103).
