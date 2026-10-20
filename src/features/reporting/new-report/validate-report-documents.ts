@@ -30,8 +30,8 @@ export async function validateRequiredReportDocuments(scope: EmployerSelection, 
       missing.push(`חסר ${code === 6 ? "מסמך הצהרת מעסיק להסכם קיבוצי (6)" : "אישור עובד להשבת כספים (4)"} עבור ${name}.`);
     }
   }
-  if (refundProducts.some(({ metadata }) => metadata.operationCode === 5) && !attachments.annualEmployerAffidavitSatisfied) {
-    missing.push("חסר תצהיר מעסיק שנתי (קוד 3) להשבת כספים.");
+  if (refundProducts.some(({ metadata }) => metadata.operationCode === 5) && !attachments.items.some(item => item.documentTypeCode === 3 && item.reportProductId == null)) {
+    missing.push("חסר תצהיר מעסיק (קוד 3) לדיווח השלילי הנוכחי. העלו אותו מעל רשימת העובדים.");
   }
   if (missing.length) throw new Error(missing.join(" "));
 }
