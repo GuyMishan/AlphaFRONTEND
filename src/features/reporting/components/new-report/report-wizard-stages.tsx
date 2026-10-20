@@ -61,6 +61,7 @@ export function ReportWizardStages({ scope, entry, setup, wizard }: {
     employees={state.employees} selectedIds={state.selectedIds}
     setSelectedIds={selectedIds => patch({ selectedIds })}
     correctionWorkspace={entry.correctionWorkspace || state.reportKind === 2}
+    negative={state.reportKind === 3}
     focusReportEmployeeId={state.validationFocus?.employeeId ?? entry.focusEmployeeId}
     focusReportProductId={state.validationFocus?.productId ?? state.focusedProductId}
     focusMissingFieldNumber={entry.missingFieldNumber}
