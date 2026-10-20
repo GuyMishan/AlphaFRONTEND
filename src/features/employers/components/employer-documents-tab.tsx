@@ -26,7 +26,7 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const availableTypes = types.filter(item => employmentId
-    ? item.code !== 3 && (item.code !== 5 || productType == null || productType === 1)
+    ? (item.code === 4 || (item.code === 5 && (productType == null || productType === 1)))
     : item.code === 3 || item.code === 7);
   const visibleDocuments = loadedDocuments === undefined ? documents
     : loadedDocuments.filter(doc => doc.employeePensionProductId === (employeePensionProductId ?? null)

@@ -14,6 +14,7 @@ import type { EmployeePensionProduct, EmployeePensionProductInput, ManualProduct
 import type { ManualReportEmployeeDetail, ManualReportEmployeeSummary } from "@/features/reporting/types";
 import type { PensionEditorContributionLimit } from "@/features/reference-data/types";
 import { LoadingState } from "@/components/loading/loading-state";
+import { ReportProductDocuments } from "./report-product-documents";
 import { errorMessage } from "@/lib/api/error-messages";
 
 type Props = {
@@ -348,7 +349,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       })}
     </div>
     {showCreate ? <InlineEmployeeCreateModal organizationId={organizationId} employerId={employerId} onClose={() => setShowCreate(false)} onCreated={employeeCreated} /> : null}
-    {editing ? <EmployeeProductsModal employee={editing} month={month} focusReportProductId={focusReportProductId} focusMissingFieldNumber={focusMissingFieldNumber}
+    {editing ? <EmployeeProductsModal employee={editing} month={month} reportId={reportId} focusReportProductId={focusReportProductId} focusMissingFieldNumber={focusMissingFieldNumber}
       organizationId={organizationId} employerId={employerId} correctionWorkspace={correctionWorkspace} onClose={() => setEditing(null)}
       onSave={async (monthlySalary, products) => {
       const currentEditing = editing;
@@ -412,8 +413,8 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
   </>;
 }
 
-function EmployeeProductsModal({ employee, month, onClose, onSave, organizationId, employerId, focusReportProductId = "", focusMissingFieldNumber = "" }: {
-  employee: ManualReportEmployeeDetail; month: string; onClose: () => void;
+function EmployeeProductsModal({ employee, month, reportId, correctionWorkspace, onClose, onSave, organizationId, employerId, focusReportProductId = "", focusMissingFieldNumber = "" }: {
+  employee: ManualReportEmployeeDetail; month: string; reportId: string; onClose: () => void;
   onSave: (monthlySalary: number, products: ManualProductInput[]) => Promise<void>;
   organizationId: string; employerId: string; correctionWorkspace: boolean;
   focusReportProductId?: string; focusMissingFieldNumber?: string;
@@ -474,6 +475,7 @@ function EmployeeProductsModal({ employee, month, onClose, onSave, organizationI
         </p>
         {focusMissingFieldNumber && focusReportProductId ? <div className="notice notice-info" role="status">שדה {focusMissingFieldNumber}: יש לערוך את הנתון במוצר המודגש מטה ולשמור. שמירה אינה שולחת דיווח חוזר.</div> : null}
         <PensionProductsEditor
+          renderProductExtra={product => <ReportProductDocuments organizationId={organizationId} employerId={employerId} reportId={reportId} reportProductId={product.workspaceReportProductId ?? ""} productType={product.productType} correctionWorkspace={correctionWorkspace} />}
           focusedReportProductId={focusReportProductId}
           context="report"
           month={month}
