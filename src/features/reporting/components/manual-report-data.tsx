@@ -16,6 +16,8 @@ import type { PensionEditorContributionLimit } from "@/features/reference-data/t
 import { LoadingState } from "@/components/loading/loading-state";
 import { ReportProductDocuments } from "./report-product-documents";
 import { errorMessage } from "@/lib/api/error-messages";
+import { reportAttachmentsApi, type ReportAttachment } from "@/features/reporting/attachments-api";
+import { UiFileUpload } from "@/components/ui/ui-file-upload";
 
 type Props = {
   organizationId: string;
@@ -26,6 +28,7 @@ type Props = {
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
   correctionWorkspace?: boolean;
+  negative?: boolean;
   focusReportEmployeeId?: string;
   focusReportProductId?: string;
   focusMissingFieldNumber?: string;
@@ -154,7 +157,7 @@ function toManualProduct(product: PensionEditorProduct, month: string): ManualPr
   };
 }
 
-export function ManualReportData({ organizationId, employerId, reportId, month, employees, selectedIds, setSelectedIds, correctionWorkspace = false, focusReportEmployeeId = "", focusReportProductId = "", focusMissingFieldNumber = "" }: Props) {
+export function ManualReportData({ organizationId, employerId, reportId, month, employees, selectedIds, setSelectedIds, correctionWorkspace = false, negative = false, focusReportEmployeeId = "", focusReportProductId = "", focusMissingFieldNumber = "" }: Props) {
   const [rows, setRows] = useState<ManualReportEmployeeSummary[]>([]);
   const [visibleEmployees, setVisibleEmployees] = useState<Employee[]>(employees);
   const [query, setQuery] = useState("");
@@ -328,6 +331,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       <div><h2>עובדים בדיווח</h2><span style={{ color: "var(--color-text-muted)" }}>בחרו עובד וערכו את השכר החודשי, הקופה וחלוקת השכר בין המוצרים.</span></div>
       <div className="manual-report-badges"><span className="badge badge-blue">{selectedIds.length} עובדים</span><span className="badge badge-green">{ready} הושלמו</span></div>
     </div>
+    {negative ? <NegativeReportAffidavit organizationId={organizationId} employerId={employerId} reportId={reportId} /> : null}
     {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}
     <div className="toolbar manual-report-toolbar">
       <div className="search"><Search size={17} /><UiInput value={query} maxLength={80} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
@@ -489,4 +493,44 @@ function EmployeeProductsModal({ employee, month, reportId, correctionWorkspace,
           onReferenceDataLoaded={(data) => setContributionLimits(data.contributionLimits ?? [])}
         />
     </AppModal>;
+}
+
+function NegativeReportAffidavit({ organizationId, employerId, reportId }: { organizationId: string; employerId: string; reportId: string }) {
+  const [document, setDocument] = useState<ReportAttachment | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let active = true;
+    reportAttachmentsApi.list(organizationId, employerId, reportId)
+      .then(result => { if (active) setDocument(result.items.find(item => item.documentTypeCode === 3 && item.reportProductId == null) ?? null); })
+      .catch(error => notify.error(errorMessage(error, "טעינת תצהיר המעסיק נכשלה")))
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [organizationId, employerId, reportId]);
+  async function upload(file: File) {
+    setBusy(true);
+    try {
+      await reportAttachmentsApi.upload(organizationId, employerId, reportId, 3, file, null);
+      const result = await reportAttachmentsApi.list(organizationId, employerId, reportId);
+      setDocument(result.items.find(item => item.documentTypeCode === 3 && item.reportProductId == null) ?? null);
+      notify.success("תצהיר המעסיק צורף לדיווח.");
+    } catch (error) { notify.error(errorMessage(error, "העלאת תצהיר המעסיק נכשלה")); }
+    finally { setBusy(false); }
+  }
+  async function remove() {
+    if (!document) return;
+    setBusy(true);
+    try {
+      await reportAttachmentsApi.remove(organizationId, employerId, reportId, document.id);
+      setDocument(null);
+      notify.success("תצהיר המעסיק הוסר מהדיווח.");
+    } catch (error) { notify.error(errorMessage(error, "הסרת תצהיר המעסיק נכשלה")); }
+    finally { setBusy(false); }
+  }
+  return <section className="profile-form-section" aria-label="תצהיר מעסיק לדיווח שלילי">
+    <h3>תצהיר מעסיק (קוד 3)</h3>
+    <p>בדיווח שלילי הכולל בקשת השבת כספים יש לצרף תצהיר המיועד לדיווח זה. תצהיר מדיווח קודם אינו מחליף אותו.</p>
+    {loading ? <span>טוען מסמך...</span> : document ? <div className="row" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}><span>{document.originalFileName}</span><button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void remove()}>הסר מסמך</button></div>
+      : <UiFileUpload className="btn btn-secondary" label="העלאת תצהיר PDF" accept="application/pdf,.pdf" maxBytes={3_000_000} busy={busy} onFileSelected={file => void upload(file)} onInvalid={notify.error} />}
+  </section>;
 }
