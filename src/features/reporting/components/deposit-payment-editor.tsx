@@ -50,11 +50,11 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [attachments, setAttachments] = useState<ReportAttachment[]>([]);
   const [requiredCode5ProductIds, setRequiredCode5ProductIds] = useState<string[]>([]);
+  const [eligibleCode5ProductIds, setEligibleCode5ProductIds] = useState<string[]>([]);
   const [libraryCandidates, setLibraryCandidates] = useState<LibraryDocumentCandidate[]>([]);
   const [selectedLibraryDocuments, setSelectedLibraryDocuments] = useState<Record<number, string>>({});
   const [paymentProofs, setPaymentProofs] = useState<PaymentConfirmation[]>([]);
   const [uploadingProof, setUploadingProof] = useState(false);
-  const [annualEmployerAffidavitSatisfied, setAnnualEmployerAffidavitSatisfied] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -91,9 +91,9 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
       setPreviousReference(previous);
       setAttachments(attachmentList.items);
       setRequiredCode5ProductIds(attachmentList.requiredCode5ProductIds ?? []);
+      setEligibleCode5ProductIds(attachmentList.eligibleCode5ProductIds ?? []);
       setLibraryCandidates(availableLibraryDocuments);
       setPaymentProofs(proofList); onEvidenceChanged(proofList);
-      setAnnualEmployerAffidavitSatisfied(attachmentList.annualEmployerAffidavitSatisfied);
       setEditorOptions(bundledOptions);
       setEditorOptionsError("");
       setEditorOptionsLoading(false);
@@ -231,7 +231,6 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   const isOldPensionFund = row.productType === 1 && (row.fundClassification || "").includes("ותיק");
   const bankRequired = !differences && ((!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 7))
     || (operation5 && metadataForm.paymentMethodCode === 1));
-  const reportAffidavit = attachments.find((item) => item.documentTypeCode === 3 && item.reportProductId == null) ?? null;
   const employeeApproval = attachments.find((item) => item.documentTypeCode === 4 && item.reportProductId === row.id) ?? null;
   const collectiveAgreementDeclaration = attachments.find((item) => item.documentTypeCode === 6 && item.reportProductId === row.id) ?? null;
   const defaultFundJoinRequest = attachments.find((item) => item.documentTypeCode === 5 && item.reportProductId === row.id) ?? null;
@@ -240,7 +239,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     const list = await reportAttachmentsApi.list(organizationId, employerId, reportId);
     setAttachments(list.items);
     setRequiredCode5ProductIds(list.requiredCode5ProductIds ?? []);
-    setAnnualEmployerAffidavitSatisfied(list.annualEmployerAffidavitSatisfied);
+    setEligibleCode5ProductIds(list.eligibleCode5ProductIds ?? []);
   }
 
   async function uploadAttachment(documentTypeCode: 3 | 4 | 5 | 6, file: File | null) {
@@ -249,7 +248,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     setUploadingAttachment(documentTypeCode);
     try {
       await reportAttachmentsApi.upload(organizationId, employerId, reportId, documentTypeCode, file,
-        documentTypeCode === 3 ? null : row.id);
+        row.id);
       await refreshAttachments();
       notify.success("המסמך צורף לדיווח.");
     } catch (err) {
@@ -269,7 +268,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     setError("");
     try {
       await reportAttachmentsApi.attachFromLibrary(organizationId, employerId, reportId, selectedId,
-        documentTypeCode === 3 ? null : row.id);
+        row.id);
       await refreshAttachments();
       notify.success("המסמך מהפרופיל צורף לעותק הדיווח.");
     } catch (err) {
@@ -501,19 +500,12 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
               </div>
             </div>
             <h3>מסמכים מצורפים לדיווח השלילי</h3>
-            <div className="notice notice-info" style={{ marginBottom: 12 }}>
-              בקוד פעולה 5 (בקשת השבת כספים), תצהיר מעסיק מסוג 3 נדרש לפחות פעם אחת בשנה.
-              אם ההשבה מתבצעת מכוח הסכם קיבוצי, יש לצרף כאן הצהרת מעסיק להסכם הקיבוצי (סוג 6) לעובד ולמוצר הרלוונטיים.
-              אם ההשבה אינה מכוח הסכם קיבוצי, אין צורך במסמך מסוג 6. אישור עובד (סוג 4) נדרש כאשר ההשבה אינה מכוח הסכם קיבוצי.
-              המסמכים נשמרים כ-PDF ונשלחים עם הדיווח השלילי; העלאתם לפרופיל בלבד אינה מצרפת אותם לדיווח.
-            </div>
-            {annualEmployerAffidavitSatisfied && !reportAffidavit ? <div className="notice notice-success" style={{ marginBottom: 12 }}>תצהיר המעסיק השנתי כבר הועבר בדיווח קודם השנה.</div> : null}
+            <p>אישור עובד (4) או הצהרת הסכם קיבוצי (6) מצורפים בנפרד לכל מוצר שעבורו מבקשים השבה. תצהיר המעסיק (3) מועלה בשלב רשימת העובדים.</p>
             <div style={{ display: "grid", gap: 10 }}>
               {([
-                { code: 3 as const, label: "תצהיר מעסיק", item: reportAffidavit, scope: "שנתי ברמת הדיווח" },
                 { code: 4 as const, label: "אישור עובד להשבת כספים", item: employeeApproval, scope: "לעובד/מוצר זה" },
                 { code: 6 as const, label: "הצהרת מעסיק - הסכם קיבוצי", item: collectiveAgreementDeclaration, scope: "לעובד/מוצר זה" },
-              ].filter(({ code }) => code === 3 || (code === 4 && metadataForm.collectiveAgreementRefund === false) || (code === 6 && metadataForm.collectiveAgreementRefund === true))).map(({ code, label, item, scope }) => <div key={code} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+              ].filter(({ code }) => (code === 4 && metadataForm.collectiveAgreementRefund === false) || (code === 6 && metadataForm.collectiveAgreementRefund === true))).map(({ code, label, item, scope }) => <div key={code} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
                 <div><b>{label}</b><div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div>
                   {code === 6 ? <small style={{ display: "block", color: "var(--color-text-muted)" }}>
                     נדרש כאשר ההשבה מתבצעת מכוח הסכם קיבוצי. אם זו השבה כזו, צרפו את ה-PDF כאן לפני שליחת הדיווח כדי להימנע מדחיית המסמך (קודים 102–103).
@@ -531,11 +523,11 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
             </div>
           </section> : null}
 
-          {!negative && !differences && requiredCode5ProductIds.includes(row.id) ?
+          {!negative && !differences && eligibleCode5ProductIds.includes(row.id) ?
             <section className="payment-panel">
               <h3>מסמך הצטרפות לקרן ברירת מחדל</h3>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                <div><b>קוד 5 — בקשת עובד להצטרפות לקרן ברירת מחדל</b>
+                <div><b>קוד 5 — בקשת עובד להצטרפות לקרן ברירת מחדל {requiredCode5ProductIds.includes(row.id) ? "(חובה למוצר חדש)" : "(רשות למוצר קיים)"}</b>
                   <div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>
                     {defaultFundJoinRequest ? defaultFundJoinRequest.originalFileName : "מסמך לעובד ולקרן הפנסיה בדיווח זה"}
                   </div>
