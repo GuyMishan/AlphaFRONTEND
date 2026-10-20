@@ -35,7 +35,7 @@ export function ReportWizardFooter({ wizard, capabilities, scope }: {
         ? { error: "", step: 1, sourceReportId: "", reportId: "", isCorrectionWorkspace: false, resumingDraft: false, stepOneAttempted: false }
         : { error: "", step: state.step - 1 })}>
       <ArrowRight size={17} />חזרה
-    </button> : null}
+    </button> : <span aria-hidden="true" />}
     {state.step < steps.summary ? <button type="button" className="btn btn-primary"
       disabled={busy || !capabilities.canCreateReport} onClick={continueReport} aria-busy={state.advancing}>
       {state.advancing ? "בודק ושומר..." : isExcel && state.step === 2 ? "אישור עובדים והמשך" : "המשך"}
