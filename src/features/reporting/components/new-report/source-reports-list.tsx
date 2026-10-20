@@ -1,6 +1,7 @@
 "use client";
 import type { SourceManualReport } from "../../types";
 import { ReportSelectionTable } from "./report-selection-table";
+import { LoadingState, Spinner } from "@/components/loading/loading-state";
 type Props = {
   reports: SourceManualReport[]; loading: boolean; selectedId: string;
   search: string; setSearch: (value: string) => void;
@@ -14,13 +15,14 @@ export function SourceReportsList({ reports, loading, selectedId, search, setSea
       <h3 style={{ margin: 0 }}>בחרו את הדיווח שאותו מתקנים</h3>
       <span style={{ color: "var(--color-text-muted)" }}>ניתן לטעון דיווחים נוספים לפי הצורך.</span>
     </div></div>
+    {advancing ? <LoadingState compact label="פותח את הדיווח ומכין סביבת תיקון..." /> : null}
     <ReportSelectionTable reports={reports} loading={loading} hasMore={hasMore} onLoadMore={onLoadMore}
       search={search} setSearch={setSearch} onSearch={onSearch} searchLoading={loading}
       emptyState="אין כרגע דיווח זמין לבסס עליו את התיקון."
       renderActions={report => <button type="button"
         className={`btn ${report.id === selectedId ? "btn-secondary" : "btn-primary"} resume-report-continue`}
         aria-pressed={report.id === selectedId} disabled={advancing} onClick={() => chooseSource(report)}>
-        {advancing && report.id === selectedId ? "פותח..." : "תקן דיווח"}
+        {advancing && report.id === selectedId ? <><Spinner /> פותח...</> : "תקן דיווח"}
       </button>} />
   </div>;
 }

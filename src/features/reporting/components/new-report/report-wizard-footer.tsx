@@ -16,7 +16,7 @@ export function ReportWizardFooter({ wizard, capabilities, scope }: {
   const { state, patch, steps, isExcel, isXml, billing } = wizard;
   const busy = state.advancing || state.sending;
   const sent = Boolean(state.sentExternalId);
-  if (state.step === 1 && (state.showOpenReports || isXml)) return null;
+  if (state.step === 1 && (state.showOpenReports || isXml || state.reportKind === 2)) return null;
 
   function continueReport() {
     if (state.step === 1) void wizard.next();
@@ -31,7 +31,9 @@ export function ReportWizardFooter({ wizard, capabilities, scope }: {
   <div className="wizard-footer">
     <button type="button" className="btn btn-secondary"
       disabled={state.step === 1 || (state.resumingDraft && state.step === 2) || busy || sent}
-      onClick={() => patch({ error: "", step: state.step - 1 })}>
+      onClick={() => patch(state.step === 2 && state.reportKind === 2
+        ? { error: "", step: 1, sourceReportId: "", reportId: "", isCorrectionWorkspace: false, resumingDraft: false, stepOneAttempted: false }
+        : { error: "", step: state.step - 1 })}>
       <ArrowRight size={17} />חזרה
     </button>
     {state.step < steps.summary ? <button type="button" className="btn btn-primary"

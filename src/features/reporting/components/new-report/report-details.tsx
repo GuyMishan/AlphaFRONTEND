@@ -120,7 +120,7 @@ export function ReportDetails(props: Props) {
         דיווח שלילי חייב להיות מקושר לדיווח שאותו הוא מפחית או מבטל.
       </div> : null}
       {sources}
-      {props.selectedSourceReportId ? <ReportDates {...props} disabledMonth /> : null}
+      {reportKind === 2 ? null : props.selectedSourceReportId ? <ReportDates {...props} disabledMonth /> : null}
     </>}
   </>;
 }
