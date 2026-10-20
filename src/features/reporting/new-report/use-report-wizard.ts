@@ -55,7 +55,7 @@ export function useReportWizard(scope: EmployerSelection, entry: ReportEntry, se
   const isCorrection = state.reportKind === 1 && state.mode === "correction";
   const isExcel = state.reportKind === 1 && state.mode === "excel";
   const isXml = state.mode === "xml";
-  const steps = reportSteps(isExcel);
+  const steps = reportSteps(isExcel || isXml);
   const sourceSelectionKey = (state.reportKind !== 1 || isCorrection) && !state.reportId
     ? `${state.reportKind}:${state.mode}` : null;
   const sources = useReportSources(scope, entry, sourceSelectionKey, patch);
@@ -123,7 +123,7 @@ export function useReportWizard(scope: EmployerSelection, entry: ReportEntry, se
       selectedIds, fileName: result.fileName ?? "",
       reportKind: result.documentType === "NegativeReport" ? 3 : 1,
       isCorrectionWorkspace: false,
-      error: "", sentExternalId: "", step: 2,
+      error: "", sentExternalId: "", step: 3,
     });
   }
 
@@ -140,8 +140,9 @@ export function useReportWizard(scope: EmployerSelection, entry: ReportEntry, se
   }
 
   const canContinue = state.step === 1
-    ? Boolean(!state.showOpenReports && !isXml && state.month && state.salaryPaymentDate && state.paymentAccountId
+    ? Boolean(!state.showOpenReports && state.month && state.salaryPaymentDate && state.paymentAccountId
       && (state.reportKind !== 1 || isCorrection ? state.sourceReportId : true))
+    : isXml && state.step === 2 ? false
     : isExcel && state.step === 2
       ? Boolean(state.excelIntake && !state.excelIntake.blockedCount
         && state.excelIntake.matchedEmploymentIds.length + state.excelIntake.newEmployees.length > 0)

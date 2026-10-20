@@ -43,12 +43,13 @@ export function ReportWizardStages({ scope, entry, setup, wizard }: {
       onResume={draft => void wizard.resume(draft.id)} onDelete={drafts.setSelected}
       search={drafts.search} setSearch={drafts.setSearch} onSearch={() => void drafts.searchDrafts()}
     /> : null}
-    {!state.showOpenReports && isXml ? <EmployerInterfaceXmlIntake
+  </>;
+
+  if (isXml && state.step === 2) return <EmployerInterfaceXmlIntake
       {...scope} paymentAccountId={state.paymentAccountId} salaryPaymentDate={state.salaryPaymentDate}
       disabled={!setup.capabilities.canCreateReport || !state.paymentAccountId}
       onBeforeImport={() => billing.ensureAccess(state.paymentAccountId)} onReportImported={wizard.onXmlImported}
-    /> : null}
-  </>;
+    />;
 
   if (isExcel && state.step === 2) return <ExcelEmployeeIntake
     {...scope} reportingMonth={state.month}

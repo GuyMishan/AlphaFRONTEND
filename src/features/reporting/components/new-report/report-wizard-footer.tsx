@@ -16,7 +16,7 @@ export function ReportWizardFooter({ wizard, capabilities, scope }: {
   const { state, patch, steps, isExcel, isXml, billing } = wizard;
   const busy = state.advancing || state.sending;
   const sent = Boolean(state.sentExternalId);
-  if (state.step === 1 && (state.showOpenReports || isXml || state.reportKind === 2)) return null;
+  if (state.step === 1 && (state.showOpenReports || state.reportKind === 2)) return null;
 
   function continueReport() {
     if (state.step === 1) void wizard.next();
@@ -36,7 +36,7 @@ export function ReportWizardFooter({ wizard, capabilities, scope }: {
         : { error: "", step: state.step - 1 })}>
       <ArrowRight size={17} />חזרה
     </button> : <span aria-hidden="true" />}
-    {state.step < steps.summary ? <button type="button" className="btn btn-primary"
+    {isXml && state.step === 2 ? null : state.step < steps.summary ? <button type="button" className="btn btn-primary"
       disabled={busy || !capabilities.canCreateReport} onClick={continueReport} aria-busy={state.advancing}>
       {state.advancing ? "בודק ושומר..." : isExcel && state.step === 2 ? "אישור עובדים והמשך" : "המשך"}
       <ArrowLeft size={17} />

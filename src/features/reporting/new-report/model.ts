@@ -54,14 +54,14 @@ export type ReportWizardState = {
 
 export type PatchReportWizard = (change: Partial<ReportWizardState>) => void;
 
-export function reportSteps(isExcel: boolean) {
+export function reportSteps(hasFileUpload: boolean) {
   return {
-    labels: isExcel
+    labels: hasFileUpload
       ? ["פרטי הדיווח", "העלאת קובץ דיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"]
       : ["פרטי הדיווח", "רשימת עובדים", "נתוני הפקדות", "סיכום ושליחה"],
-    employees: isExcel ? 3 : 2,
-    deposits: isExcel ? 4 : 3,
-    summary: isExcel ? 5 : 4,
+    employees: hasFileUpload ? 3 : 2,
+    deposits: hasFileUpload ? 4 : 3,
+    summary: hasFileUpload ? 5 : 4,
   };
 }
 

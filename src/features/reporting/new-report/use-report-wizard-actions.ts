@@ -48,7 +48,8 @@ export function useReportWizardActions({ scope, entry, state, patch, canCreate, 
   const busy = useRef(false);
   const requests = useLatestRequest();
   const isExcel = state.reportKind === 1 && state.mode === "excel";
-  const steps = reportSteps(isExcel);
+  const isXml = state.reportKind === 1 && state.mode === "xml";
+  const steps = reportSteps(isExcel || isXml);
 
   async function validateStage(stage: "employees" | "deposits") {
     const result = await reportValidationApi.validate(scope.organizationId, scope.employerId, state.reportId, stage);
@@ -96,10 +97,12 @@ export function useReportWizardActions({ scope, entry, state, patch, canCreate, 
           return;
         }
         if (!await billing.ensureAccess(state.paymentAccountId) || !isCurrent()) return;
-        const created = await createReportFromDetails(scope, state, entry, reportId => patch({ reportId }));
-        if (!isCurrent()) return;
-        patch(created);
-        if (created.step) return;
+        if (!isXml) {
+          const created = await createReportFromDetails(scope, state, entry, reportId => patch({ reportId }));
+          if (!isCurrent()) return;
+          patch(created);
+          if (created.step) return;
+        }
       }
       if (isExcel && state.step === 2) await importExcel();
       if (state.step === steps.employees && state.reportId) {
