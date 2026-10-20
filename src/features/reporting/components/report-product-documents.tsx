@@ -38,7 +38,7 @@ export function ReportProductDocuments({ organizationId, employerId, reportId, r
   const options = (data?.documentTypes ?? []).filter(type => type.scope === "product" &&
     (type.code === 4 && metadata?.operationCode === 5 && metadata.collectiveAgreementRefund === false ||
       type.code === 6 && metadata?.operationCode === 5 && metadata.collectiveAgreementRefund === true ||
-      type.code === 5 && data?.requiredCode5ProductIds?.includes(reportProductId)));
+      type.code === 5 && data?.eligibleCode5ProductIds?.includes(reportProductId)));
   async function upload(file: File, code: 3 | 4 | 5 | 6) {
     setBusy(true);
     try {
@@ -64,7 +64,7 @@ export function ReportProductDocuments({ organizationId, employerId, reportId, r
       : options.map(type => {
         const existing = data.items.find((item: ReportAttachment) => item.reportProductId === reportProductId && item.documentTypeCode === type.code);
         return <div key={type.code} className="field" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
-          <strong>{type.name} *</strong>
+          <strong>{type.name}{type.code !== 5 || data?.requiredCode5ProductIds?.includes(reportProductId) ? " *" : " (רשות)"}</strong>
           {existing ? <><span>{existing.originalFileName}</span>
             <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={() => void remove(existing.id)}>הסרה</button></>
           : <UiFileUpload id={`report-document-${reportProductId}-${type.code}`} label="העלאת PDF"
