@@ -11,9 +11,7 @@ import { errorMessage } from "@/lib/api/error-messages";
 import { Tooltip } from "@/components/ui/tooltip";
 
 const types = [
-  { code: 3, label: "תצהיר מעסיק" },
   { code: 7, label: "הסכם התקשרות עם ALPHA" },
-  { code: 4, label: "אישור עובד להשבת כספים" },
   { code: 5, label: "בקשת הצטרפות לקרן ברירת מחדל" },
   { code: 6, label: "הצהרת מעסיק – הסכם קיבוצי" },
 ];
@@ -26,8 +24,8 @@ export function EmployerDocumentsTab({ organizationId, employerId, canEdit, empl
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const availableTypes = types.filter(item => employmentId
-    ? (item.code === 4 || (item.code === 5 && (productType == null || productType === 1)))
-    : item.code === 3 || item.code === 7);
+    ? item.code === 5 && (productType == null || productType === 1)
+    : item.code === 7);
   const visibleDocuments = loadedDocuments === undefined ? documents
     : loadedDocuments.filter(doc => doc.employeePensionProductId === (employeePensionProductId ?? null)
         && doc.employmentId === (employmentId ?? null));
