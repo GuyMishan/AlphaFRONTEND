@@ -12,6 +12,7 @@ import { reportTransmissionApi } from "../transmission-api";
 import type { SourceManualReport } from "../types";
 import { createReportFromDetails } from "./draft-operations";
 import { importExcelReport } from "./import-excel-report";
+import { validateRequiredReportDocuments } from "./validate-report-documents";
 import { reportSteps, validationMessage, type PatchReportWizard, type ReportEntry, type ReportWizardState } from "./model";
 import type { useReportBilling } from "./use-report-billing";
 
@@ -57,7 +58,10 @@ export function useReportWizardActions({ scope, entry, state, patch, canCreate, 
       patch({ validationResult: result });
       throw new Error(validationMessage(result.errors));
     }
-    if (stage === "deposits") await resolveAfterValidation();
+    if (stage === "deposits") {
+      await validateRequiredReportDocuments(scope, state.reportId);
+      await resolveAfterValidation();
+    }
   }
 
   async function importExcel() {
@@ -167,6 +171,7 @@ export function useReportWizardActions({ scope, entry, state, patch, canCreate, 
     patch({ sending: true });
     try {
       if (!await billing.checkTransmission() || !isCurrent()) return;
+      await validateRequiredReportDocuments(scope, state.reportId);
       const validation = await reportValidationApi.commit(scope.organizationId, scope.employerId, state.reportId, "final");
       if (!isCurrent()) return;
       if (!validation.isValid) {
