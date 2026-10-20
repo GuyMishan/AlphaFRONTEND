@@ -16,6 +16,7 @@ export type LibraryDocumentCandidate = { id: string; documentTypeCode: 3 | 4 | 5
 
 export type ReportAttachmentList = {
   items: ReportAttachment[];
+  requiredCode5ProductIds: string[];
   annualEmployerAffidavitSatisfied: boolean;
   documentTypes: { code: 3 | 4 | 5 | 6; name: string; scope: "report" | "product" }[];
 };
