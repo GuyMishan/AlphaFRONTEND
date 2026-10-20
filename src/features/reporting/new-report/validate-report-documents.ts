@@ -11,6 +11,8 @@ export async function validateRequiredReportDocuments(scope: EmployerSelection, 
     collectPages(skip => manualDepositsApi.list(organizationId, employerId, reportId, "", skip, 100)),
     reportAttachmentsApi.list(organizationId, employerId, reportId),
   ]);
+  // Current reports cannot carry refund documents; skip per-product metadata calls.
+  if (!attachments.documentTypes.some(type => type.code === 4)) return;
   const refundProducts = await Promise.all(deposits.map(async product => ({
     product,
     metadata: await employerInterfaceApi.productMetadata(organizationId, employerId, reportId, product.id),
