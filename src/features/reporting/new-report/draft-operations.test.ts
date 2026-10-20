@@ -24,7 +24,7 @@ function draft(change: Partial<ReportWizardState> = {}): ReportWizardState {
   return {
     step: 1, reportKind: 1, mode: "manual", month: "2026-09", salaryPaymentDate: "2026-10-01",
     paymentAccountId: "account", reportId: "", sourceReportId: "", correctionOperationCode: 2,
-    employees: [], selectedIds: ["employee"], resumingDraft: false, showOpenReports: false,
+    employees: [], selectedIds: ["employee"], resumingDraft: false, isCorrectionWorkspace: false, showOpenReports: false,
     stepOneAttempted: false, excelIntake: null, fileName: "", sentExternalId: "", error: "",
     advancing: false, sending: false, validationResult: null, validationFocus: null, focusedProductId: "",
     ...change,
