@@ -10,8 +10,9 @@ import type { PatchReportWizard, ReportEntry } from "./model";
 
 /** Source search/paging remains independent of the draft being edited. */
 // Drafts belong exclusively to the "continue draft" flow, not correction sources.
-function isDraft(report: SourceManualReport) {
-  return String(report.status).toLowerCase() === "draft";
+function isEligibleSource(report: SourceManualReport) {
+  const status = String(report.status).toLowerCase();
+  return status === "sent" || status === "completed";
 }
 
 export function useReportSources(scope: EmployerSelection, entry: ReportEntry, selectionKey: string | null, patch: PatchReportWizard) {
@@ -22,6 +23,7 @@ export function useReportSources(scope: EmployerSelection, entry: ReportEntry, s
   const requests = useLatestRequest();
 
   function choose(report: SourceManualReport) {
+    if (!isEligibleSource(report)) return;
     patch({
       sourceReportId: report.id,
       month: report.reportingMonth.slice(0, 7),
@@ -52,7 +54,7 @@ export function useReportSources(scope: EmployerSelection, entry: ReportEntry, s
       setItems(current => reset ? nextItems : [...current, ...nextItems.filter(item => !current.some(existing => existing.id === item.id))]);
       setHasMore(more);
       if (reset) {
-        const requested = nextItems.find(item => item.id === entry.sourceReportId && !isDraft(item));
+        const requested = nextItems.find(item => item.id === entry.sourceReportId && isEligibleSource(item));
         if (requested) choose(requested);
         else patch({ sourceReportId: "" });
       }
@@ -73,7 +75,8 @@ export function useReportSources(scope: EmployerSelection, entry: ReportEntry, s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectionKey]);
 
-  const eligible = items.filter(report => !isDraft(report) && (report.canBeCurrentCorrectionSource
-    || Boolean(entry.sourceProductId && report.id === entry.sourceReportId)));
-  return { items, eligible, search, setSearch, hasMore, loading, choose, load };
+  const sourceItems = items.filter(isEligibleSource);
+  const eligible = sourceItems.filter(report => report.canBeCurrentCorrectionSource
+    || Boolean(entry.sourceProductId && report.id === entry.sourceReportId));
+  return { items: sourceItems, eligible, search, setSearch, hasMore, loading, choose, load };
 }
