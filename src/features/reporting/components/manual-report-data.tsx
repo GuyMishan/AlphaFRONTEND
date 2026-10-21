@@ -512,8 +512,8 @@ function NegativeReportAffidavit({ organizationId, employerId, reportId, focusDo
     if (!focusDocument || loading) return;
     const target = window.document.getElementById("negative-report-affidavit-focus");
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
-    target?.focus({ preventScroll: true });
-  }, [focusDocument, loading]);
+    (document ? target : (window.document.querySelector('label[for="negative-report-affidavit-upload"]') ?? target))?.focus({ preventScroll: true });
+  }, [focusDocument, loading, document]);
   async function upload(file: File) {
     setBusy(true);
     try {
@@ -538,6 +538,6 @@ function NegativeReportAffidavit({ organizationId, employerId, reportId, focusDo
     <h3>תצהיר מעסיק (קוד 3)</h3>
     <p>בדיווח שלילי הכולל בקשת השבת כספים יש לצרף תצהיר המיועד לדיווח זה. תצהיר מדיווח קודם אינו מחליף אותו.</p>
     {loading ? <span>טוען מסמך...</span> : document ? <div className="row" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}><span>{document.originalFileName}</span><button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void remove()}>הסר מסמך</button></div>
-      : <UiFileUpload className="btn btn-secondary" label="העלאת תצהיר PDF" accept="application/pdf,.pdf" maxBytes={3_000_000} busy={busy} onFileSelected={file => void upload(file)} onInvalid={notify.error} />}
+      : <UiFileUpload id="negative-report-affidavit-upload" className="btn btn-secondary" label="העלאת תצהיר PDF" accept="application/pdf,.pdf" maxBytes={3_000_000} busy={busy} onFileSelected={file => void upload(file)} onInvalid={notify.error} />}
   </section>;
 }
