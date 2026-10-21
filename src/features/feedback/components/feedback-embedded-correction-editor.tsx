@@ -35,8 +35,12 @@ export function FeedbackEmbeddedCorrectionEditor({
   const isMissingField = problem?.feedbackValues.missingFieldMapped === "true";
   const employerField = employerContactFields[tag];
   const employerMode = isMissingField && problem?.targetScope === "employer" && Boolean(employerField);
-  const depositMode = isMissingField && problem?.targetScope === "deposit"
+  const hasConcreteEdit = problem?.availableActions.some(action =>
+    ["editProduct", "editContribution", "editPayment", "editEmployment", "prepareCorrection"].includes(action)) ?? false;
+  const depositMode = problem?.targetScope === "deposit"
     && Boolean(problem?.reportProductId)
+    && Boolean(problem?.treatmentCanCorrect)
+    && (isMissingField || hasConcreteEdit)
     && problem?.feedbackValues.missingFieldCorrectionSupported !== "false"
     && problem?.feedbackValues.missingFieldEditSurface !== "employeeProfile"
     && !["57", "58"].includes(fieldNumber ?? "");
@@ -85,7 +89,7 @@ export function FeedbackEmbeddedCorrectionEditor({
 
   if (!problem || (!employerMode && !depositMode)) return null;
 
-  return <section className="feedback-code18-embedded-editor" aria-label="תיקון מוטמע">
+  return <section className="feedback-embedded-correction-editor" aria-label="תיקון מוטמע">
     <div className="notice notice-info" role="status">
       <strong>{fieldName ? `תיקון: ${fieldName}` : "תיקון הנתון הרלוונטי"}</strong>
       {fieldNumber ? <div>מספר שדה {fieldNumber} · <code dir="ltr">{tag}</code></div> : null}
