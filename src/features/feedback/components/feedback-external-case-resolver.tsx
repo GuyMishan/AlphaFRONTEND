@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Clock3, Download, ExternalLink, UserRoundCheck } from "lucide-react";
 import { UiInput, UiTextarea } from "@/components/ui/ui-controls";
 import { UiFileUpload } from "@/components/ui/ui-file-upload";
@@ -21,11 +21,13 @@ export function FeedbackExternalCaseResolver({
   employerId,
   group,
   onChanged,
+  mailMode = false,
 }: {
   organizationId: string;
   employerId: string;
   group: FeedbackResolutionGroup;
   onChanged: () => void;
+  mailMode?: boolean;
 }) {
   const initialCaseId = group.problems.find((problem) => problem.externalCaseId)?.externalCaseId ?? "";
   const [externalCase, setExternalCase] = useState<ExternalFeedbackCase | null>(null);
@@ -36,6 +38,7 @@ export function FeedbackExternalCaseResolver({
   const [destination, setDestination] = useState("");
   const [subject, setSubject] = useState("");
   const [messageTemplate, setMessageTemplate] = useState("");
+  const openedFor = useRef("");
 
   const externalProblems = useMemo(
     () => group.problems.filter((problem) =>
@@ -105,6 +108,28 @@ export function FeedbackExternalCaseResolver({
     setNote("");
   }
 
+  useEffect(() => {
+    if (!mailMode || initialCaseId || !group.canExecute || !externalProblems.length) return;
+    const currentKey = group.groupKey;
+    if (openedFor.current === currentKey) return;
+    openedFor.current = currentKey;
+    const first = externalProblems[0];
+    setBusy(true);
+    setError("");
+    reportFeedbackApi.openExternalCase(
+      organizationId, employerId, first.reportId, currentKey,
+      externalProblems.filter(item => item.reportId === first.reportId).map(item => item.problemId),
+      "", "external",
+    ).then(result => {
+      setExternalCase(result);
+      onChanged();
+    }).catch(err => {
+      setError(errorMessage(err, "פתיחת תיק הפנייה נכשלה."));
+    }).finally(() => setBusy(false));
+  // The case is created at most once per selected treatment group.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mailMode, initialCaseId, group.groupKey, group.canExecute, organizationId, employerId]);
+
   async function download(id: string, name: string) {
     try {
       const blob = await reportFeedbackApi.downloadExternalCaseAttachment(
@@ -122,6 +147,8 @@ export function FeedbackExternalCaseResolver({
   }
 
   if (loading) return <section className="feedback-external-case"><LoadingState label="טוען תיק טיפול..." /></section>;
+
+  if (mailMode && !externalCase) return <section className="feedback-external-case">{error ? <div role="alert" className="notice notice-error">{error}</div> : <LoadingState label="מכין פנייה ליצרן..." />}</section>;
 
   if (!externalCase) return <section className="feedback-external-case">
     <div className="feedback-resolution-section-head">
@@ -147,6 +174,20 @@ export function FeedbackExternalCaseResolver({
         <Clock3 size={16} />{busy ? "שומר..." : "שמור"}
       </button> : null}
     </div>
+  </section>;
+
+  if (mailMode) return <section className="feedback-external-case" aria-label="תכתובת עם היצרן">
+    <div className="feedback-resolution-section-head">
+      <h3>תכתובת עם היצרן</h3>
+      <p>סטטוס טיפול: {statusLabel(externalCase.status)}</p>
+    </div>
+    {error ? <div className="notice notice-error" role="alert">{error}</div> : null}
+    <ManufacturerInquiryPanel organizationId={organizationId} employerId={employerId} caseId={externalCase.id}
+      onSent={() => {
+        void reportFeedbackApi.externalCase(organizationId, employerId, externalCase.id)
+          .then(result => { setExternalCase(result); onChanged(); })
+          .catch(err => setError(errorMessage(err, "רענון הפנייה נכשל.")));
+      }} />
   </section>;
 
   return <section className="feedback-external-case">
