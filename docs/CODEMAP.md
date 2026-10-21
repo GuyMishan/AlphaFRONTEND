@@ -132,3 +132,5 @@ Employer reporting defaults: `src/features/employers/components/profile/employer
 - `admin/components/manufacturer-contacts-admin-tab.tsx` — platform-admin manager for verified manufacturer contact email addresses and pension-product overrides (via `admin/api.ts` and the backend ReferenceData admin endpoints). The screen never sends email.
 
 - `admin/components/manufacturer-email-templates-admin-tab.tsx` — platform-admin editor for manufacturer inquiry templates by official feedback error code, exposed as a tab in `admin-screen.tsx`; API methods in `admin/api.ts`.
+
+- `feedback/components/manufacturer-inquiry-panel.tsx` — previews enabled error-code templates with resolved verified manufacturer/product recipients inside an existing external case; explicit confirm-to-send and recorded provider-dispatch history via typed `feedback/api.ts` methods. Backend requires dedicated mail provider configuration.
