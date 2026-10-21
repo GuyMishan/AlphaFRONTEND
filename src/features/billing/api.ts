@@ -24,6 +24,8 @@ export const billingApi = {
     apiRequest<EntitlementSnapshot>(`${organizationPath(organizationId)}/entitlements`, { signal }),
   billingCustomers: (signal?: AbortSignal) =>
     apiRequest<BillingCustomerRow[]>("/api/platform/billing/customers", { signal }),
+  updateBillingCustomerPricing: (payerType: "Organization" | "Employer", payerId: string, billingType: BillingAccountPricingType, unitPrice: number | null) =>
+    apiRequest<void>("/api/platform/billing/customers/pricing", { method: "PUT", body: { payerType, payerId, billingType, unitPrice } }),
 
   organizationSelfServicePricing: (organizationId: string) =>
     apiRequest<SelfServiceBillingPricing>(`${organizationPath(organizationId)}/billing/pricing`),
