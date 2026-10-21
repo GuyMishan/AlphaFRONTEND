@@ -135,7 +135,7 @@ export function FeedbackResolutionMode({
   }, [safeIndex, issueOptions]);
   const primaryProblem = activeGroup?.problems[0];
   const useEmbeddedCorrection = Boolean(primaryProblem && embeddedCorrectionSurface(primaryProblem));
-  const useReportWorkspace = primaryProblem?.treatmentCanCorrect && primaryProblem.correctionTarget === "reportCorrection";
+  const useReportWorkspace = Boolean(primaryProblem?.treatmentCanCorrect && ["reportCorrection", "documents"].includes(primaryProblem.correctionTarget ?? "") && activeGroup.problems.every(problem => problem.treatmentCanCorrect));
   useEffect(() => { setWorkMode("choose"); }, [activeGroup?.groupKey]);
   const editableProblems = activeGroup?.problems.filter(problem => problem.resolutionType === "edit") ?? [];
 
