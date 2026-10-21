@@ -15,7 +15,8 @@ export function ReportsTable({ view, deposits, actions }: {
   const { expandedKeys, setExpanded, loadExpanded, expandedLoading, expandedContent,
     expandedErrors, expandedMoreLoading, loadMoreDeposits, expandedManufacturerInput, changeExpandedManufacturer } = deposits;
   const { setFeedbackModal } = actions;
-  const { allColumns, activeColumns } = useReportColumns(visibleColumns, actions);
+  const hasInlineErrors = rows.some(row => !row.canEdit && row.reportIssueCount > 0);
+  const { allColumns, activeColumns } = useReportColumns(visibleColumns, actions, hasInlineErrors);
   return <div className="card report-table-card">
     <DataTable
       items={rows}
