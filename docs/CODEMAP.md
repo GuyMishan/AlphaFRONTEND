@@ -89,6 +89,9 @@ Invariants:
 - Backend validation and preflight responses are authoritative; the frontend never auto-corrects them.
 
 ### Feedback (`src/features/feedback`)
+
+- `document-focus.ts` normalizes the DB-provided `correctionFields.documentTypeCode` into a restricted 3/4/5/6 upload target; `document-focus.test.ts` rejects malformed or unsupported mappings. This metadata is passed through report entry, report wizard, deposit and negative-report affidavit editors to focus the **existing** matching upload control, without inferring the file type from the error code.
+
 - `api.ts` — feedback grid, deposit details, treatments, resolution context and actions, external cases, exports. `queries.ts` caches the grid, employer context and treatment statuses.
 - `report-feedback-modal.tsx` — single entry point with `employer`, `report` and `deposit` modes, each with `view` and `resolve` states; `report-deposit-feedback-modal.tsx` — employee/product detail with reconciliation and treatment history.
 - `feedback-resolution-mode.tsx` — the resolution queue built from the backend `groups` contract; resolvers: `feedback-employee-resolver.tsx`, `feedback-internal-correction-resolver.tsx`, `feedback-decision-resolver.tsx`, `feedback-external-case-resolver.tsx`, `feedback-embedded-correction-editor.tsx` (field-driven shared employer/deposit editor); the modal selects correction/inquiry/information from backend `treatmentChoice` and verifies embedded editor compatibility by resolver metadata.
