@@ -40,7 +40,7 @@
 .report-deposits-item > div { min-width: 0; align-self: center; overflow-wrap: anywhere; }
 .report-deposits-item b, .report-deposits-item small { display: block; }
 .report-deposits-item small { color: var(--color-text-muted); font-size: 11px; line-height: 1.55; }
-.report-deposits-money { font-weight: 700; white-space: nowrap; direction: ltr; text-align: right; }
+.report-deposits-money { font-weight: 700; white-space: nowrap; direction: ltr; text-align: center; }
 
 .report-deposits-load-more { justify-self: start; }
 
