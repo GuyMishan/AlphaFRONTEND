@@ -318,6 +318,18 @@ export type FeedbackResolutionContext = {
   groups: FeedbackResolutionGroup[];
 };
 
+export type ManufacturerInquiry = {
+  reportProductId: string; errorCode: number; recipient: string;
+  manufacturer: string; product: string; subject: string; body: string;
+};
+export type ManufacturerInquiryHistory = {
+  id: string; recipient: string; subject: string; status: "pending" | "sent" | "failed";
+  failureCode: string | null; createdAt: string;
+};
+export type ManufacturerInquiriesResponse = {
+  inquiries: ManufacturerInquiry[]; history: ManufacturerInquiryHistory[];
+};
+
 export type ExternalFeedbackCase = {
   id: string;
   caseKey: string;
@@ -477,6 +489,14 @@ export const reportFeedbackApi = {
     { method: "POST", body: { groupKey, problemIds, note, action } },
   ),
 
+  manufacturerInquiries: (organizationId: string, employerId: string, caseId: string) =>
+    request<ManufacturerInquiriesResponse>(`${base(organizationId, employerId)}/external-cases/${caseId}/manufacturer-inquiries`),
+  sendManufacturerInquiry: (organizationId: string, employerId: string, caseId: string,
+    reportProductId: string, errorCode: number, subject: string, body: string) =>
+    request<{ dispatchId: string; status: string; recipient: string }>(
+      `${base(organizationId, employerId)}/external-cases/${caseId}/manufacturer-inquiries`,
+      { method: "POST", body: { reportProductId, errorCode, subject, body } },
+    ),
   externalCase: (organizationId: string, employerId: string, caseId: string) =>
     request<ExternalFeedbackCase>(
       `${base(organizationId, employerId)}/external-cases/${caseId}`,
