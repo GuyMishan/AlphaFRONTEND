@@ -510,7 +510,7 @@ function NegativeReportAffidavit({ organizationId, employerId, reportId, focusDo
   }, [organizationId, employerId, reportId]);
   useEffect(() => {
     if (!focusDocument || loading) return;
-    const target = document.getElementById("negative-report-affidavit-focus");
+    const target = window.document.getElementById("negative-report-affidavit-focus");
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
     target?.focus({ preventScroll: true });
   }, [focusDocument, loading]);
