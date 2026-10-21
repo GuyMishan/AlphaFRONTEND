@@ -65,6 +65,17 @@
   min-width: 0;
 }
 .report-feedback-table .report-row-actions > * { flex-shrink: 0; }
+/* A fixed first slot keeps the menu and expand arrow aligned across rows with/without errors. */
+.report-feedback-table .report-actions-errors-slot {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 110px;
+  min-width: 0;
+}
+.report-feedback-table .report-actions-errors-slot .feedback-errors-button.compact {
+  max-width: 100%;
+}
+
 .report-feedback-table .data-table-row > td:last-child .data-table-inline-actions {
   display: flex;
   align-items: center;
