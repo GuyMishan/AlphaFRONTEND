@@ -8,6 +8,7 @@ import { AppShell } from "@/features/shell/components/app-shell";
 import { AppModal } from "@/components/ui/app-modal";
 import { ReferentsAdminTab } from "@/features/admin/components/referents-admin-tab";
 import { ManufacturerContactsAdminTab } from "@/features/admin/components/manufacturer-contacts-admin-tab";
+import { ManufacturerEmailTemplatesAdminTab } from "@/features/admin/components/manufacturer-email-templates-admin-tab";
 import { OrganizationHierarchyAdminTab } from "@/features/admin/components/organization-hierarchy-admin-tab";
 import { AppTabPanel, AppTabs } from "@/components/ui/app-tabs";
 import { DataTable, DataTableLink } from "@/components/ui/data-table";
@@ -39,7 +40,8 @@ const adminTabs = [
   { key: "referents", label: "ניהול רפרנטים", icon: Settings2 },
   { key: "hierarchy", label: "ניהול מבנה ארגוני", icon: Settings2 },
   { key: "manufacturer-contacts", label: "מיילים ליצרנים", icon: Settings2 },
-] satisfies Array<{ key: "interfaces" | "subscriptions" | "referents" | "hierarchy" | "manufacturer-contacts"; label: string; icon: typeof Settings2 }>;
+  { key: "manufacturer-email-templates", label: "תבניות מייל לשגיאות", icon: Settings2 },
+] satisfies Array<{ key: "interfaces" | "subscriptions" | "referents" | "hierarchy" | "manufacturer-contacts" | "manufacturer-email-templates"; label: string; icon: typeof Settings2 }>;
 
 const entityTypeOptions = [
   { value: "all", label: "כל סוגי הישות" },
@@ -73,7 +75,7 @@ const paymentStatusOptions = [
 
 export default function AdminPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<"interfaces" | "subscriptions" | "referents" | "hierarchy" | "manufacturer-contacts">("interfaces");
+  const [tab, setTab] = useState<"interfaces" | "subscriptions" | "referents" | "hierarchy" | "manufacturer-contacts" | "manufacturer-email-templates">("interfaces");
   const [entityTypeFilter, setEntityTypeFilter] = useState("all");
   const [organizationFilter, setOrganizationFilter] = useState("all");
   const [employerFilter, setEmployerFilter] = useState("all");
@@ -199,7 +201,7 @@ export default function AdminPage() {
     {error ? <div className="notice notice-error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
     <AppTabPanel id="admin" activeKey={tab}>
-    {tab === "manufacturer-contacts" ? <ManufacturerContactsAdminTab /> : tab === "hierarchy" ? <OrganizationHierarchyAdminTab /> : tab === "referents" ? <ReferentsAdminTab autoCreate={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("create") === "1"} /> : tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
+    {tab === "manufacturer-email-templates" ? <ManufacturerEmailTemplatesAdminTab /> : tab === "manufacturer-contacts" ? <ManufacturerContactsAdminTab /> : tab === "hierarchy" ? <OrganizationHierarchyAdminTab /> : tab === "referents" ? <ReferentsAdminTab autoCreate={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("create") === "1"} /> : tab === "interfaces" ? <section className="card admin-section-card" style={{ overflow: "hidden" }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--color-border)" }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>ממשקי סנכרון</h2>
         <p style={{ margin: "5px 0 0", color: "var(--color-text-muted)" }}>הנתונים נשמרים מקומית ב־DB. ההרצה אינה תלויה במשתמש או בדיווח.</p>
