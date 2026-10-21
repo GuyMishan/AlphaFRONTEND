@@ -86,6 +86,7 @@ export function FeedbackResolutionMode({
   const [issueSearch, setIssueSearch] = useState("");
   const [initialIssueCodes, setInitialIssueCodes] = useState<Set<number> | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [workMode, setWorkMode] = useState<"choose" | "correct" | "inquire">("choose");
 
   useEffect(() => {
     let cancelled = false;
@@ -132,6 +133,7 @@ export function FeedbackResolutionMode({
     setIssueSearch(issueOptions[safeIndex]?.label ?? "");
   }, [safeIndex, issueOptions]);
   const primaryProblem = activeGroup?.problems[0];
+  useEffect(() => { setWorkMode("choose"); }, [activeGroup?.groupKey]);
   const editableProblems = activeGroup?.problems.filter(problem => problem.resolutionType === "edit") ?? [];
 
   const editableGroup = activeGroup && editableProblems.length
@@ -230,7 +232,7 @@ export function FeedbackResolutionMode({
           {Boolean(primaryProblem.feedbackValues.missingFieldNumber)
             ? <section className="feedback-missing-fields" aria-label="השדות החסרים במשוב">
                 <strong>שדות חסרים שדורשים בדיקה</strong>
-                <p>לפי קוד 18, פירוט הסכום במשוב מכיל את מספר השדה החסר. המיפוי מוצג לפי סוג הדיווח המקורי.</p>
+                <p>פרטי השדה החסר זוהו מתוך המשוב ומוצגים לפי סוג הדיווח המקורי.</p>
                 <div className="feedback-missing-fields-list">
                   {[...new Map(activeGroup.problems.map(problem => {
                     const number = problem.feedbackValues.missingFieldNumber;
@@ -276,6 +278,15 @@ export function FeedbackResolutionMode({
               : null}
       </section>
 
+      <div className="feedback-resolution-section-head" role="group" aria-label="בחירת מסלול טיפול">
+        {workMode !== "choose" ? <button type="button" className="btn btn-secondary" onClick={() => setWorkMode("choose")}>חזרה לבחירת טיפול</button> : null}
+        {workMode === "choose" ? <>
+          {primaryProblem.treatmentCanCorrect ? <button type="button" className="btn btn-primary" disabled={!activeGroup.canExecute} onClick={() => setWorkMode("correct")}>תיקון במערכת</button> : null}
+          {primaryProblem.treatmentCanInquire ? <button type="button" className="btn btn-secondary" disabled={!activeGroup.canExecute} onClick={() => setWorkMode("inquire")}>פנייה ליצרן / לגורם מוסדי</button> : null}
+          {!primaryProblem.treatmentCanCorrect && !primaryProblem.treatmentCanInquire ? <div className="notice notice-info">מידע בלבד — אין פעולה נדרשת.</div> : null}
+        </> : null}
+      </div>
+      {workMode === "correct" ? <>
       {activeGroup.problems.some(problem => problem.code === 56 && problem.targetScope === "employer")
         ? <section className="notice notice-info">
             <strong>מקור התקלה: חשבון התשלום הכללי של המעסיק</strong>
@@ -314,21 +325,6 @@ export function FeedbackResolutionMode({
           onEditDeposit={onEditDeposit}
         /> : null}
 
-      {activeGroup.problems.some(problem =>
-        !(problem.code === 56 && problem.targetScope === "employer") && (
-        problem.resolutionType === "external"
-        || Boolean(problem.externalCaseId)
-        || (problem.resolutionType === "edit"
-          && (problem.availableActions.includes("openExternalCase")
-            || problem.availableActions.includes("reconcile")))))
-        ? <FeedbackExternalCaseResolver
-            organizationId={organizationId}
-            employerId={employerId}
-            group={activeGroup}
-            onChanged={() => setRefreshToken(value => value + 1)}
-          />
-        : null}
-
       {activeGroup.resolverType === "employee"
         ? <FeedbackEmployeeResolver
             organizationId={organizationId}
@@ -363,6 +359,24 @@ export function FeedbackResolutionMode({
               </p>
             </div>
           </section>}
+      </> : null}
+      {workMode === "inquire" ? <>
+      {activeGroup.problems.some(problem =>
+        !(problem.code === 56 && problem.targetScope === "employer") && (
+        problem.resolutionType === "external"
+        || Boolean(problem.externalCaseId)
+        || (problem.resolutionType === "edit"
+          && (problem.availableActions.includes("openExternalCase")
+            || problem.availableActions.includes("reconcile")))))
+        ? <FeedbackExternalCaseResolver
+            organizationId={organizationId}
+            employerId={employerId}
+            group={activeGroup}
+            onChanged={() => setRefreshToken(value => value + 1)}
+          />
+        : null}
+
+      </> : null}
     </> : null}
   </AppModal>;
 }
