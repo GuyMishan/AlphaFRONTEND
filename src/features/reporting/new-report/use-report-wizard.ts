@@ -78,7 +78,8 @@ export function useReportWizard(scope: EmployerSelection, entry: ReportEntry, se
       const { report, selectedIds } = await loadEditableReport(scope, reportId);
       if (!isCurrent()) return;
       const kind = Number(report.reportKind);
-      const depositResolver = ["employmentStatus", "payment", "documents"].includes(resolution.resolver);
+      const depositResolver = ["employmentStatus", "payment", "documents"].includes(resolution.resolver)
+        && entry.documentTypeCode !== 3;
       patch({
         reportKind: kind === 2 || kind === 3 ? kind : 1,
         mode: "manual",
