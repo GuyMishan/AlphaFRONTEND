@@ -143,12 +143,13 @@ export function FeedbackInternalCorrectionResolver({
 
   if (!problem || !config) return null;
 
-  const reportPairIssues = group.resolverType === "reportCorrection" && group.problems.every(item => item.code === 100 || item.code === 101);
   const documentGroup = group.resolverType === "documents";
-  const reportDeclarations = documentGroup && group.problems.every(item => [102, 103, 111, 112].includes(item.code));
-  const employeeDeclarations = documentGroup && group.problems.every(item => [109, 110].includes(item.code));
-  const otherDocumentIssues = documentGroup && !reportDeclarations && !employeeDeclarations;
-
+  const documentType = (() => {
+    try {
+      const parsed = JSON.parse(problem.correctionFields ?? "[]") as { documentTypeCode?: unknown };
+      return [3, 4, 5, 6].includes(Number(parsed?.documentTypeCode)) ? Number(parsed.documentTypeCode) : null;
+    } catch { return null; }
+  })();
 
   const canPrepareWorkspace = group.problems.every(item =>
     item.resolutionType === "edit"
@@ -202,17 +203,10 @@ export function FeedbackInternalCorrectionResolver({
       </div>
     </div>
 
-    {reportPairIssues ? <div className="notice notice-info" role="status">
-      <strong>{group.problems.every(item => item.code === 100) ? "חסר דיווח שלילי לתיקון" : group.problems.every(item => item.code === 101) ? "חסר דיווח שוטף מתקן" : "רצף תיקון דיווחים לא הושלם"}</strong>
-      <p>{group.problems.every(item => item.code === 100) ? "נשלח דיווח מתקן (פעולה 2 או 3), אך חסרה פעולת ביטול תואמת (6) בדיווח השלילי." : group.problems.every(item => item.code === 101) ? "דווחה פעולת ביטול (6) בממשק השלילי, אך חסרה פעולת תיקון תואמת (2 או 3) בדיווח השוטף." : "יש להתאים בין פעולות הביטול והתיקון בשני הדיווחים."}</p>
-      <p><strong>כך מטפלים:</strong> בודקים בהיסטוריית הדיווחים ששתי הפעולות התואמות (ביטול 6 ותיקון 2 או 3) קיימות ונקלטו עבור אותן רשומות.</p>
-      <ul>
-        <li><strong>חסרה אחת הפעולות:</strong> משלימים את רצף התיקון ברמת הדיווח, בלי לערוך הפקדה רגילה.</li>
-        <li><strong>פעולה נשלחה אך נדחתה:</strong> בודקים את המשוב ומטפלים בדחייה לפני שליחה נוספת.</li>
-        <li><strong>שתיהן נקלטו:</strong> בודקים התאמה בין מזהי הרשומות והפעולות. אם הכול תואם, פונים לגוף המוסדי לבירור.</li>
-      </ul>
-      <small>אין ליצור ביטול כפול בלי לוודא מה כבר נקלט. לאחר הטיפול יש להמתין למשוב מעודכן.</small>
-      <a className="btn btn-primary" href="/reports">פתיחת היסטוריית הדיווחים <ArrowLeft size={16} aria-hidden="true" /></a>
+    {group.resolverType === "reportCorrection" ? <div className="notice notice-info" role="status">
+      <strong>בדיקת רצף תיקון דיווח</strong>
+      <p>לפני יצירת דיווח נוסף יש לוודא בהיסטוריית הדיווחים אילו פעולות תיקון וביטול כבר נקלטו. אל תיצרו תנועת ביטול כפולה.</p>
+      <a className="btn btn-secondary" href="/reports">פתיחת היסטוריית הדיווחים <ArrowLeft size={16} aria-hidden="true" /></a>
     </div> : null}
     {!canPrepareWorkspace && nonWorkspaceMessage ? <div className="feedback-resolution-internal-note">
       <FilePenLine size={18} aria-hidden="true" />
@@ -231,56 +225,15 @@ export function FeedbackInternalCorrectionResolver({
       <ArrowLeft size={16} aria-hidden="true" />
     </button> : null}
 
-    {reportDeclarations ? <div className="notice notice-info" role="status">
-      <strong>תצהיר מעסיק חסר או לא תקין</strong>
-      <p>קודים {Array.from(new Set(group.problems.map(item => item.code))).join(", ")} — {group.problems.some(item => [102, 103].includes(item.code)) ? "תצהיר מעסיק בקשר להסכם קיבוצי" : "תצהיר מעסיק"}.</p>
-      <p>{group.problems.some(item => [102, 103].includes(item.code))
-        ? "מסמך מסוג 6 (הצהרת מעסיק להסכם קיבוצי) נדרש רק כשהשבת הכספים נעשית מכוח הסכם קיבוצי, במסגרת דיווח שלילי בפעולה 5 — ולא לפי סוג הקופה. בדיווח השלילי בחרו האם ההשבה מכוח הסכם קיבוצי; אם כן, צרפו את מסמך 6 לעובד ולמוצר המתאימים תחת ״מסמכים מצורפים לדיווח השלילי״. קוד 102 מציין שהתצהיר אינו תקין, וקוד 103 מציין שהוא חסר. תצהיר מעסיק כללי מסוג 3 אינו תחליף. העלאה לפרופיל בלבד אינה מצרפת את המסמך לדיווח שכבר נשלח."
-        : "נדרש תצהיר מעסיק כללי מסוג 3. בדקו אם הועלה מסמך תקין בפרופיל המעסיק וצרפו אותו לגרסת הדיווח הרלוונטית. אין צורך בהעלאה נפרדת לכל הפקדה."}</p>
-      {group.problems.some(item => [102, 103].includes(item.code)
-          && item.feedbackValues.negativeCorrectionSourceReportId
-          && item.feedbackValues.negativeCorrectionSourceProductId)
-        ? <a className="btn btn-primary"
-            href={`/reports/new?sourceReportId=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceReportId)?.feedbackValues.negativeCorrectionSourceReportId ?? "")}&sourceProductId=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceProductId)?.feedbackValues.negativeCorrectionSourceProductId ?? "")}&sourceKind=1&sourceMonth=${encodeURIComponent(group.problems.find(item => item.feedbackValues.negativeCorrectionSourceMonth)?.feedbackValues.negativeCorrectionSourceMonth ?? "")}&resolutionResolver=documents`}>
-            פתיחת דיווח שלילי לתיקון המסמך <ArrowLeft size={16} aria-hidden="true" />
-          </a> : null}
-      {group.problems.some(item => [102, 103].includes(item.code)) ? <small>
-        הקישור פותח דיווח שלילי חדש על בסיס הדיווח השוטף המקורי והמוצר הרלוונטי. יש לבדוק את נתוני התנועה והאסמכתאות לפני שליחה כדי להימנע מביטול או החזר כפול.
-      </small> : null}
-      {group.problems.some(item => [102, 103].includes(item.code))
-        ? Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
-            .map(id => <a key={id} className="btn btn-secondary"
-              href={`/employees/${id}?organizationId=${encodeURIComponent(organizationId)}&employerId=${encodeURIComponent(employerId)}&tab=mix`}>
-              פתיחת מסמכי המוצר של העובד <ArrowLeft size={16} aria-hidden="true" />
-            </a>)
-        : <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=documents`}>פתיחת מסמכי המעסיק <ArrowLeft size={16} aria-hidden="true" /></a>}
-      <small>לאחר הצירוף בדקו את הדיווח לפני שליחה כדי למנוע השבת כספים כפולה. השגיאה לא נסגרת בהעלאת קובץ בלבד; נדרש משוב מתאים מהגוף המוסדי.</small>
+    {documentGroup ? <div className="notice notice-info" role="status">
+      <strong>{documentType ? `מסמך מסוג ${documentType}` : "מסמכים נדרשים לטיפול"}</strong>
+      <p>{documentType
+        ? "סוג המסמך שנדרש מגיע מהגדרות הטיפול במסד הנתונים. יש לצרף אותו לדיווח ולעובד/מוצר הרלוונטיים באמצעות העורך הקיים."
+        : "המשוב אינו מציין סוג מסמך חד־משמעי. יש לבדוק איזה אישור דורש הגוף המוסדי לפני הצירוף."}</p>
+      <small>צירוף מסמך לספרייה בלבד אינו מעדכן דיווח שנשלח, והשגיאה תיסגר רק לאחר קבלת משוב מאשר.</small>
     </div> : null}
 
-    {employeeDeclarations ? <div className="notice notice-info" role="status">
-      <strong>תצהיר עובד חסר או לא תקין</strong>
-      <p>יש לבדוק את תצהיר העובד המשויך למוצר הפנסיוני, לתקן אותו בפרטי המוצר ולצרף את הגרסה התקינה לדיווח המתאים. אין צורך לצרף את אותו מסמך לכל רכיב הפרשה.</p>
-      {Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
-        .map(id => <a key={id} className="btn btn-secondary"
-          href={`/employees/${id}?organizationId=${encodeURIComponent(organizationId)}&employerId=${encodeURIComponent(employerId)}&tab=mix`}>
-          פתיחת מסמכי המוצר של העובד <ArrowLeft size={16} aria-hidden="true" />
-        </a>)}
-    </div> : null}
-
-    {otherDocumentIssues ? <div className="notice notice-info" role="status">
-      <strong>{group.problems.some(item => [69, 70].includes(item.code)) ? "תצהיר חסר או לא תקין לצורך החזר כספים" : "חסרים מסמכים לקליטת הפקדה או שינוי פוליסה"}</strong>
-      <p>{group.problems.some(item => [69, 70].includes(item.code))
-        ? "בדקו את התצהיר שנדרש לבקשת החזר הכספים ואת סיבת הדחייה. יש לתקן את התצהיר ולצרף אותו לבקשת ההחזר המתאימה, ולא לשלוח מסמך עבור כל רכיב הפקדה."
-        : "בדקו במשוב אילו מסמכים נדרשים לקליטת ההפקדה או לשינוי בפוליסה. השלימו אותם עבור המוצר והעובד הרלוונטיים."}</p>
-      <small>העלאת PDF לתיק משוב בלבד אינה מהווה שליחת המסמך ליצרן ואינה מסיימת את הטיפול.</small>
-      {Array.from(new Set(group.problems.map(item => item.employmentId).filter((id): id is string => Boolean(id))))
-        .map(id => <a key={id} className="btn btn-secondary"
-          href={`/employees/${id}?organizationId=${encodeURIComponent(organizationId)}&employerId=${encodeURIComponent(employerId)}&tab=mix`}>
-          פתיחת מוצרי העובד <ArrowLeft size={16} aria-hidden="true" />
-        </a>)}
-    </div> : null}
-
-    {canPrepareWorkspace && !reportPairIssues ? <button
+    {canPrepareWorkspace ? <button
       type="button"
       className="btn btn-primary feedback-resolution-open-workspace"
       disabled={preparing || !group.canExecute}
