@@ -288,14 +288,14 @@ export function FeedbackResolutionMode({
         </> : null}
       </div>
       {workMode === "correct" ? <>
-      {activeGroup.problems.some(problem => problem.code === 56 && problem.targetScope === "employer")
+      {activeGroup.problems.some(problem => problem.targetScope === "employer"
+        && problem.correctionTarget === "payment")
         ? <section className="notice notice-info">
-            <strong>מקור התקלה: חשבון התשלום הכללי של המעסיק</strong>
-            <p>יש לתקן את חשבון התשלום הפנסיוני בהגדרות המעסיק. עדכון החשבון לא סוגר משוב על דיווח שכבר נשלח.</p>
-            <Link
-              className="btn btn-secondary"
-              href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=pension-payment`}
-            >פתיחת אמצעי התשלום הפנסיוני</Link>
+            <strong>תיקון אמצעי התשלום של המעסיק</strong>
+            <p>עדכון אמצעי התשלום לא סוגר את המשוב לדיווח שנשלח. יש להמשיך בטיפול עד לקבלת משוב חוזר.</p>
+            <Link className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${encodeURIComponent(organizationId)}&tab=pension-payment`}>
+              פתיחת אמצעי התשלום
+            </Link>
           </section> : null}
 
       {activeGroup.problems.some(problem => Boolean(problem.feedbackValues.missingFieldNumber)) ? <section className="notice notice-info" aria-label="טיפול בשדה חסר">
