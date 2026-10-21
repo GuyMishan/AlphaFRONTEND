@@ -371,6 +371,7 @@ export function FeedbackResolutionMode({
         Boolean(problem.externalCaseId)
         || (problem.treatmentCanInquire && problem.availableActions.includes("openExternalCase")))
         ? <FeedbackExternalCaseResolver
+            mailMode
             organizationId={organizationId}
             employerId={employerId}
             group={activeGroup}
