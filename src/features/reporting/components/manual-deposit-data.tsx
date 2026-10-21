@@ -23,7 +23,7 @@ const receiptTypeFallback: Record<number, string> = {
   6: "השלמת פיצויים עד השכר המבוטח כפול הוותק",
   8: "הפקדה לפיצויים מעל השכר המבוטח כפול הוותק",
 };
-export function ManualDepositData({ organizationId, employerId, reportId, focusReportProductId = "", embeddedEditor = false, footerTargetId }: { organizationId: string; employerId: string; reportId: string; focusReportProductId?: string; embeddedEditor?: boolean; footerTargetId?: string }) {
+export function ManualDepositData({ organizationId, employerId, reportId, focusReportProductId = "", embeddedEditor = false, footerTargetId, focusDocumentTypeCode = 0 }: { organizationId: string; employerId: string; reportId: string; focusReportProductId?: string; embeddedEditor?: boolean; footerTargetId?: string; focusDocumentTypeCode?: number }) {
   const [rows, setRows] = useState<ManualDepositRow[]>([]);
   const [contributionLimits, setContributionLimits] = useState<ManualDepositContributionLimit[]>([]);
   const [query, setQuery] = useState("");
@@ -98,7 +98,7 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
     {error ? <div className="notice notice-error" role="alert">{error}</div> : null}
     {loading ? <LoadingState label="טוען את ההפקדה לעריכה..." /> : !editing ? <div className="empty" role="status">
       לא נמצאה ההפקדה שנבחרה בסביבת התיקון.
-    </div> : <DepositPaymentEditor embedded footerTargetId={footerTargetId}
+    </div> : <DepositPaymentEditor embedded footerTargetId={footerTargetId} focusDocumentTypeCode={focusDocumentTypeCode}
       employer={employer} organizationId={organizationId} employerId={employerId}
       reportId={reportId} row={editing} contributionLimits={contributionLimits}
       onEvidenceChanged={(items) => setProofs(current => ({ ...current, [editing.id]: items }))}
@@ -158,7 +158,7 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
         <button key="cell-153" className="icon-button deposit-edit-icon" aria-label="עריכת פרטי תשלום" onClick={() => setEditing(row)}><Pencil size={17} /></button>,
       ]}
     />}
-    {editing ? <DepositPaymentEditor embedded={embeddedEditor} footerTargetId={footerTargetId} employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} contributionLimits={contributionLimits}
+    {editing ? <DepositPaymentEditor embedded={embeddedEditor} footerTargetId={footerTargetId} focusDocumentTypeCode={focusDocumentTypeCode} employer={employer} organizationId={organizationId} employerId={employerId} reportId={reportId} row={editing} contributionLimits={contributionLimits}
       onEvidenceChanged={(items) => setProofs((current) => ({ ...current, [editing.id]: items }))}
       onClose={() => setEditing(null)} onSaved={(updated) => {
       setRows((current) => current.map((item) => item.id === updated.id ? updated : item));
