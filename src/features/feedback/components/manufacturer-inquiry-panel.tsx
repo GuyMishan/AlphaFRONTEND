@@ -7,8 +7,8 @@ import { reportFeedbackApi, type ManufacturerInquiry, type ManufacturerInquiryHi
 import { errorMessage } from "@/lib/api/error-messages";
 import { formatDateTimeDDMMYYYY } from "@/lib/format/date";
 
-export function ManufacturerInquiryPanel({ organizationId, employerId, caseId }: {
-  organizationId: string; employerId: string; caseId: string;
+export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, onSent }: {
+  organizationId: string; employerId: string; caseId: string; onSent?: () => void;
 }) {
   const [inquiries, setInquiries] = useState<ManufacturerInquiry[]>([]);
   const [history, setHistory] = useState<ManufacturerInquiryHistory[]>([]);
@@ -45,6 +45,7 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId }:
       );
       setSuccess("הפנייה נשלחה לספק הדואר ותועדה בתיק.");
       await refresh();
+      onSent?.();
     } catch (err) { setError(errorMessage(err, "שליחת הפנייה נכשלה")); }
     finally { setBusy(false); }
   }
