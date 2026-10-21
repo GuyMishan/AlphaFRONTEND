@@ -42,7 +42,7 @@ export function ReportWizardFooter({ wizard, capabilities, scope, embedded = fal
       {state.advancing ? "בודק ושומר..." : isExcel && state.step === 2 ? "אישור עובדים והמשך" : "המשך"}
       <ArrowLeft size={17} />
     </button> : <>
-      {sent || state.reportKind === 2 ? <button type="button" className="btn btn-secondary" onClick={() => router.push("/reports")}>
+      {!embedded && (sent || state.reportKind === 2) ? <button type="button" className="btn btn-secondary" onClick={() => router.push("/reports")}>
         {state.reportKind === 2 ? "חזרה לדיווחים" : "יציאה"}
       </button> : null}
       {!embedded ? <button type="button" className="btn btn-primary"
