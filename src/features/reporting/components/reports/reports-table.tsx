@@ -16,13 +16,19 @@ export function ReportsTable({ view, deposits, actions }: {
     expandedErrors, expandedMoreLoading, loadMoreDeposits, expandedManufacturerInput, changeExpandedManufacturer } = deposits;
   const { setFeedbackModal } = actions;
   const { allColumns, activeColumns } = useReportColumns(visibleColumns, actions);
-  // Give the remaining viewport width to a data column, never to the fixed-size
-  // action controls. All three table sections continue to share one colgroup.
-  const minTableWidth = activeColumns.reduce((total, column) => total + Number.parseInt(column.width ?? "0", 10), 0);
-  const flexibleKey = activeColumns.find((column) => column.key === "status")?.key
-    ?? activeColumns.find((column) => column.key !== "actions")?.key;
+  // Distribute any extra width across the data columns in proportion to
+  // their designed widths. Keep actions fixed so controls do not drift apart.
+  // minTableWidth also provides the horizontal-scroll threshold on small screens.
+  const widthOf = (width?: string) => Number.parseInt(width ?? "0", 10);
+  const minTableWidth = activeColumns.reduce((total, column) => total + widthOf(column.width), 0);
+  const actionsWidth = activeColumns.find((column) => column.key === "actions")?.width ?? "0px";
+  const dataWidth = activeColumns
+    .filter((column) => column.key !== "actions")
+    .reduce((total, column) => total + widthOf(column.width), 0);
   const sizedColumns = activeColumns.map((column) =>
-    column.key === flexibleKey ? { ...column, width: undefined } : column);
+    column.key === "actions" || !dataWidth
+      ? column
+      : { ...column, width: `calc((100% - ${actionsWidth}) * ${widthOf(column.width) / dataWidth})` });
   return <div className="card report-table-card">
     <DataTable
       minTableWidth={minTableWidth}
