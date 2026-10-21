@@ -1,9 +1,9 @@
 "use client";
 
-import { UiSelect } from "@/components/ui/ui-controls";
+import { UiInput, UiSelect } from "@/components/ui/ui-controls";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Play, Settings2, CreditCard, Pencil, Info } from "lucide-react";
+import { Eye, Play, Settings2, CreditCard, Pencil, Info, Save } from "lucide-react";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { AppModal } from "@/components/ui/app-modal";
 import { ReferentsAdminTab } from "@/features/admin/components/referents-admin-tab";
@@ -16,6 +16,7 @@ import { useBillingCustomers, useReferenceDataIntegrations, useRunReferenceDataI
 import { errorMessage } from "@/lib/api/error-messages";
 import { getSession } from "@/lib/session/storage";
 import { adminApi } from "@/features/admin/api";
+import { billingApi } from "@/features/billing/api";
 import type { IntegrationRow, RunDetail } from "@/features/admin/types";
 import type { BillingAccountPricingType, BillingCustomerRow } from "@/features/billing/types";
 import { formatDateTimeDDMMYYYY } from "@/lib/format/date";
@@ -88,6 +89,11 @@ export default function AdminPage() {
   const [historyKey, setHistoryKey] = useState<string | null>(null);
   const [history, setHistory] = useState<RunDetail[]>([]);
   const [selectedRun, setSelectedRun] = useState<RunDetail | null>(null);
+  const [editingBillingCustomer, setEditingBillingCustomer] = useState<BillingCustomerRow | null>(null);
+  const [billingTypeDraft, setBillingTypeDraft] = useState<BillingAccountPricingType>("Free");
+  const [unitPriceDraft, setUnitPriceDraft] = useState("");
+  const [savingPricing, setSavingPricing] = useState(false);
+  const [pricingError, setPricingError] = useState("");
 
   const integrations = useReferenceDataIntegrations(isPlatformAdmin);
   const customers = useBillingCustomers(isPlatformAdmin);
@@ -141,6 +147,38 @@ export default function AdminPage() {
     } catch (err) {
       setActionError(errorMessage(err, "טעינת היסטוריית ההרצות נכשלה"));
       setHistory([]);
+    }
+  }
+
+  function openPricingEditor(customer: BillingCustomerRow) {
+    setEditingBillingCustomer(customer);
+    setBillingTypeDraft(customer.billingType);
+    setUnitPriceDraft(customer.billingType === "Free" ? "" : String(customer.unitPrice));
+    setPricingError("");
+  }
+
+  async function saveBillingEdit() {
+    if (!editingBillingCustomer || savingPricing) return;
+    const price = Number(unitPriceDraft);
+    if (billingTypeDraft !== "Free" && (!unitPriceDraft.trim() || !Number.isFinite(price) || price <= 0 || !/^\\d+(\\.\\d{1,2})?$/.test(unitPriceDraft.trim()))) {
+      setPricingError("יש להזין תעריף חיובי עם עד שתי ספרות אחרי הנקודה.");
+      return;
+    }
+    setSavingPricing(true);
+    setPricingError("");
+    try {
+      await billingApi.updateBillingCustomerPricing(
+        editingBillingCustomer.payerType,
+        editingBillingCustomer.payerId,
+        billingTypeDraft,
+        billingTypeDraft === "Free" ? null : price,
+      );
+      await customers.refetch();
+      setEditingBillingCustomer(null);
+    } catch (err) {
+      setPricingError(errorMessage(err, "שמירת המסלול והתעריף נכשלה"));
+    } finally {
+      setSavingPricing(false);
     }
   }
 
@@ -278,7 +316,7 @@ export default function AdminPage() {
         emptyState="לא נמצאו מנויים בהתאם לסינון."
         rowKey={(item) => `${item.payerType}:${item.payerId}`}
         tableClassName="admin-subscriptions-table"
-        minTableWidth={1480}
+        minTableWidth={1600}
         columns={[
           { key: "entity", label: "סוג ישות" },
           { key: "organization", label: "ארגון" },
@@ -287,7 +325,7 @@ export default function AdminPage() {
           { key: "plan", label: "מסלול" },
           { key: "price", label: "תעריף" },
           { key: "pensionPayment", label: "אמצעי תשלום פנסיוני" },
-          { key: "actions", label: "פעולות", width: "460px" },
+          { key: "actions", label: "פעולות", width: "580px" },
         ]}
         renderCells={(item) => {
           return [
@@ -305,6 +343,7 @@ export default function AdminPage() {
               {item.pensionPaymentConfigured && item.pensionPaymentSource === "Organization" && item.entityType === "Employer" ? <span className="tooltip admin-inheritance-tooltip" tabIndex={0} aria-label={`דרך הארגון · ${item.pensionPaymentThroughName}`}><Info size={15} aria-hidden="true" /><span className="tooltip-bubble" role="tooltip">דרך הארגון · {item.pensionPaymentThroughName}</span></span> : null}
             </span>,
             <div key="actions" className="admin-actions">
+              <button className="btn btn-secondary" type="button" onClick={() => openPricingEditor(item)}><Pencil size={15} />עריכת מסלול ותעריף</button>
               <DataTableLink className="btn btn-secondary" href={customerPaymentHref(item, "billing")}><Pencil size={15} />אמצעי תשלום ALPHA</DataTableLink>
               <DataTableLink className="btn btn-secondary" href={customerPaymentHref(item, "pension-payment")}><Pencil size={15} />אמצעי תשלום פנסיוני</DataTableLink>
             </div>,
@@ -313,6 +352,32 @@ export default function AdminPage() {
       />
     </section>}
     </AppTabPanel>
+
+    {editingBillingCustomer ? <AppModal width="md" title="עריכת מסלול ותעריף" subtitle={editingBillingCustomer.payerName}
+      onClose={() => setEditingBillingCustomer(null)} closeDisabled={savingPricing}
+      actions={<>
+        <button className="btn btn-secondary" type="button" onClick={() => setEditingBillingCustomer(null)} disabled={savingPricing}>ביטול</button>
+        <button className="btn btn-primary" type="button" disabled={savingPricing} onClick={() => void saveBillingEdit()}>
+          <Save size={15} />{savingPricing ? "שומר..." : "שמירה"}
+        </button>
+      </>}>
+      {editingBillingCustomer.inherited ? <div className="notice notice-info" style={{ marginBottom: 16 }}>
+        כרגע התמחור עובר בירושה מהארגון. שמירה כאן תגדיר למעסיק מסלול ותעריף עצמאיים.
+      </div> : null}
+      <div style={{ display: "grid", gap: 14 }}>
+        <label className="field">
+          <span>מסלול</span>
+          <UiSelect value={billingTypeDraft} onChange={(event) => { setBillingTypeDraft(event.target.value as BillingAccountPricingType); setPricingError(""); }}>
+            {billingTypeOptions.filter((option) => option.value !== "all").map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </UiSelect>
+        </label>
+        {billingTypeDraft !== "Free" ? <label className="field">
+          <span>{billingTypeDraft === "PerEmployee" ? "מחיר לעובד (₪)" : "מחיר לשורה (₪)"}</span>
+          <UiInput type="number" min={0.01} step="0.01" value={unitPriceDraft} onChange={(event) => { setUnitPriceDraft(event.target.value); setPricingError(""); }} />
+        </label> : null}
+        {pricingError ? <div className="notice notice-error" role="alert">{pricingError}</div> : null}
+      </div>
+    </AppModal> : null}
 
     {historyKey ? <AppModal title="דוחות הרצה" subtitle={rows.find(x => x.key === historyKey)?.name}
       onClose={() => setHistoryKey(null)} width="xl">
