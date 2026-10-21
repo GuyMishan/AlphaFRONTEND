@@ -11,6 +11,13 @@ export const adminApi = {
     apiRequest<PlatformUser>("/api/platform/users", { method: "POST", body: payload }),
   updatePlatformUser: (userId: string, payload: { email: string; displayName: string; isActive: boolean; isPlatformAdmin: boolean }) =>
     apiRequest<void>(`/api/platform/users/${userId}`, { method: "PUT", body: payload }),
+  manufacturerEmailTemplates: (search = ""): Promise<{
+    items: Array<{ errorCode: number; description: string; subject: string; body: string; isEnabled: boolean }>;
+    allowedTokens: string[];
+  }> => apiRequest(`/api/platform/reference-data/manufacturer-email-templates?${new URLSearchParams({ search, take: "200" })}`),
+  saveManufacturerEmailTemplate: (errorCode: number, subject: string, body: string, isEnabled: boolean) =>
+    apiRequest(`/api/platform/reference-data/manufacturer-email-templates/${errorCode}`,
+      { method: "PUT", body: { subject, body, isEnabled } }),
   manufacturerContacts: (): Promise<Array<{ manufacturerName: string; email: string; isVerified: boolean; companyCount: number }>> =>
     apiRequest("/api/platform/reference-data/manufacturer-contacts"),
   saveManufacturerContact: (name: string, email: string, isVerified: boolean) =>
