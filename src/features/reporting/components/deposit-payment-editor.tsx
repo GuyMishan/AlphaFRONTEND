@@ -3,7 +3,7 @@
 import { UiAutocomplete, UiDateInput, UiInput, UiSelect } from "@/components/ui/ui-controls";
 import { UiFileUpload } from "@/components/ui/ui-file-upload";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BriefcaseBusiness, Download, Trash2 } from "lucide-react";
 import { AppModal } from "@/components/ui/app-modal";
@@ -260,6 +260,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     patch("employerBranch", String(branch.branchCode));
   }
 
+  const focusedDocument = useRef("");
   const negative = isNegativeKind(metadata?.reportKind);
   const correctionWorkspace = row.isCorrectionWorkspace === true;
   const addedCorrectionProduct = correctionWorkspace && !row.sourceReportProductId;
@@ -278,10 +279,18 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     || (operation5 && metadataForm.paymentMethodCode === 1));
   useEffect(() => {
     if (![4, 5, 6].includes(focusDocumentTypeCode)) return;
-    const target = document.getElementById(`report-document-target-${row.id}-${focusDocumentTypeCode}`);
-    target?.scrollIntoView({ behavior: "smooth", block: "center" });
-    target?.focus({ preventScroll: true });
-  }, [focusDocumentTypeCode, row.id, metadataForm.collectiveAgreementRefund, attachments.length]);
+    const targetKey = `${row.id}:${focusDocumentTypeCode}`;
+    if (focusedDocument.current === targetKey) return;
+    const container = document.getElementById(`report-document-target-${row.id}-${focusDocumentTypeCode}`);
+    // The negative refund's Yes/No selection determines which upload is legally applicable.
+    // Never set that financial declaration automatically merely to display a file picker.
+    const target = container ?? (operation5 ? document.getElementById("collective-agreement-refund") : null);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    const upload = container?.querySelector<HTMLElement>("label.ui-file-button:not([aria-disabled='true'])");
+    (upload ?? target).focus({ preventScroll: true });
+    if (container) focusedDocument.current = targetKey;
+  }, [focusDocumentTypeCode, row.id, operation5, metadataForm.collectiveAgreementRefund, attachments.length]);
 
   const employeeApproval = attachments.find((item) => item.documentTypeCode === 4 && item.reportProductId === row.id) ?? null;
   const collectiveAgreementDeclaration = attachments.find((item) => item.documentTypeCode === 6 && item.reportProductId === row.id) ?? null;
@@ -542,7 +551,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
           {operation5 ? <section className="payment-panel">
             <div className="field" style={{ marginBottom: 12 }}>
               <label htmlFor="collective-agreement-refund">האם השבת הכספים מתבצעת מכוח הסכם קיבוצי? *</label>
-              <div id="collective-agreement-refund" role="group" aria-label="האם השבת הכספים מתבצעת מכוח הסכם קיבוצי?" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div id="collective-agreement-refund" tabIndex={-1} role="group" aria-label="האם השבת הכספים מתבצעת מכוח הסכם קיבוצי?" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button type="button" className={metadataForm.collectiveAgreementRefund === true ? "btn btn-primary" : "btn btn-secondary"}
                   aria-pressed={metadataForm.collectiveAgreementRefund === true} disabled={readOnly}
                   onClick={() => patchMetadata("collectiveAgreementRefund", true)}>כן — נדרש מסמך מסוג 6</button>
