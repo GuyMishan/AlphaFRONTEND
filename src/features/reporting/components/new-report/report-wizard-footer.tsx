@@ -6,10 +6,11 @@ import { ArrowLeft, ArrowRight, Send } from "lucide-react";
 import type { ReportWizard } from "../../new-report/use-report-wizard";
 import type { ReportSetup } from "../../new-report/use-report-setup";
 
-export function ReportWizardFooter({ wizard, capabilities, scope }: {
+export function ReportWizardFooter({ wizard, capabilities, scope, embedded = false }: {
   wizard: ReportWizard;
   capabilities: ReportSetup["capabilities"];
   scope: EmployerSelection;
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const [showRoutes, setShowRoutes] = useState(false);
@@ -44,13 +45,16 @@ export function ReportWizardFooter({ wizard, capabilities, scope }: {
       {sent || state.reportKind === 2 ? <button type="button" className="btn btn-secondary" onClick={() => router.push("/reports")}>
         {state.reportKind === 2 ? "חזרה לדיווחים" : "יציאה"}
       </button> : null}
-      <button type="button" className="btn btn-primary"
+      {!embedded ? <button type="button" className="btn btn-primary"
         disabled={state.sending || sent || !state.reportId || (state.reportKind === 2 ? !capabilities.canCreateReport : !capabilities.canTransmitReport)}
         onClick={() => state.reportKind === 2 ? setShowRoutes(true) : void wizard.send()} aria-busy={state.sending}>
         <Send size={17} />{sendLabel}
-      </button>
+      </button> : null}
     </>}
   </div>
+  {embedded && state.step >= steps.summary ? <div role="status" className="notice notice-info">
+    התיקונים נשמרים בטיוטת הדיווח. שליחה תתבצע ממסך הדיווחים לאחר טיפול בכלל השגיאות.
+  </div> : null}
   {showRoutes && state.reportKind === 2 && state.reportId ? <CorrectionRouteModal
     organizationId={scope.organizationId} employerId={scope.employerId}
     workspaceId={state.reportId} onClose={() => setShowRoutes(false)} /> : null}
