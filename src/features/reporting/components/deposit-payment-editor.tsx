@@ -191,7 +191,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   // open either autocomplete. Never overwrite a search the user has typed.
   useEffect(() => {
     const code = Number(form.employerBankCode);
-    if (!code || !/^\\d+$/.test(form.employerBankCode)) return;
+    if (!code || !/^\d+$/.test(form.employerBankCode)) return;
     let active = true;
     void referenceDataApi.banks(String(code), 100).then(items => {
       if (!active) return;
@@ -205,7 +205,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   useEffect(() => {
     const bankCode = Number(form.employerBankCode);
     const branchCode = Number(form.employerBranch);
-    if (!bankCode || !branchCode || !/^\\d+$/.test(form.employerBranch)) return;
+    if (!bankCode || !branchCode || !/^\d+$/.test(form.employerBranch)) return;
     let active = true;
     void referenceDataApi.bankBranches(bankCode, String(branchCode), 200).then(items => {
       if (!active) return;
