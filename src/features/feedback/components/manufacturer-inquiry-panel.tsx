@@ -80,12 +80,16 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
         disabled={busy || !item.recipient || !item.subject || !item.body}
         onClick={() => void send()}><Send size={16} />{busy ? "שולח..." : testMode ? "שלח מייל בדיקה" : "שלח מייל ליצרן"}</button>
     </>}
-    {history.length ? <div style={{ display: "grid", gap: 8 }}>
-      <strong>היסטוריית שליחת פניות</strong>
-      {history.map(x => <div key={x.id}>
-        <span>{formatDateTimeDDMMYYYY(x.createdAt)} · {x.recipient} · {x.status === "sent" ? "נשלח לספק הדואר" : x.status === "failed" ? "נכשל" : "בתהליך"}</span>
-        {x.failureCode ? <small>{x.failureCode}</small> : null}
-      </div>)}
-    </div> : null}
+    {history.length ? <section className="feedback-external-case-history" aria-label="שרשור פניות ליצרן">
+      <strong>שרשור הודעות יוצאות</strong>
+      <p>המיילים היוצאים נשמרים לפי זמן השליחה. תשובות מהיצרן יוצגו כאן לאחר חיבור תיבת דואר נכנס.</p>
+      {[...history].reverse().map(x => <article key={x.id} className="feedback-external-case-template" dir="rtl">
+        <header><strong>ALPHA ← {x.recipient}</strong></header>
+        <small>{formatDateTimeDDMMYYYY(x.createdAt)} · {x.status === "sent" ? "נשלח לספק הדואר" : x.status === "failed" ? "נכשל" : "בתהליך"}</small>
+        <div><strong>{x.subject}</strong></div>
+        {x.body ? <p style={{ whiteSpace: "pre-wrap" }}>{x.body}</p> : null}
+        {x.failureCode ? <small role="status">{x.failureCode}</small> : null}
+      </article>)}
+    </section> : null}
   </div>;
 }
