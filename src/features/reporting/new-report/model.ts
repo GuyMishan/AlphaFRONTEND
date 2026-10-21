@@ -17,6 +17,7 @@ export function parseReportEntry(params: Pick<URLSearchParams, "get">) {
     focusProductId: params.get("focusReportProductId") ?? "",
     focusEmployeeId: params.get("focusReportEmployeeId") ?? "",
     missingFieldNumber: params.get("focusMissingFieldNumber") ?? "",
+    documentTypeCode: Number(params.get("focusDocumentTypeCode") ?? 0),
     resolver: params.get("resolutionResolver") ?? "",
     resolutionSourceReportId: params.get("resolutionSourceReportId") ?? "",
     problemIds: (params.get("resolutionProblemIds") ?? "").split(",").map(id => id.trim()).filter(Boolean),
