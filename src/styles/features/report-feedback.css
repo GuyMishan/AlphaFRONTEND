@@ -58,11 +58,16 @@
 }
 .report-feedback-table .data-table-row > td:last-child .data-table-inline-actions,
 .report-feedback-table .data-table-row > td:last-child .report-cell-content {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  height: var(--data-table-row-height);
   box-sizing: border-box;
+}
+.report-feedback-table .data-table-row > td:last-child .report-cell-content {
+  justify-content: flex-start;
 }
 .report-feedback-table .report-row-actions {
   display: grid;
