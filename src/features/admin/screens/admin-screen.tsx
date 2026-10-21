@@ -160,7 +160,7 @@ export default function AdminPage() {
   async function saveBillingEdit() {
     if (!editingBillingCustomer || savingPricing) return;
     const price = Number(unitPriceDraft);
-    if (billingTypeDraft !== "Free" && (!unitPriceDraft.trim() || !Number.isFinite(price) || price <= 0 || !/^\\d+(\\.\\d{1,2})?$/.test(unitPriceDraft.trim()))) {
+    if (billingTypeDraft !== "Free" && (!unitPriceDraft.trim() || !Number.isFinite(price) || price <= 0 || !/^\d+(\.\d{1,2})?$/.test(unitPriceDraft.trim()))) {
       setPricingError("יש להזין תעריף חיובי עם עד שתי ספרות אחרי הנקודה.");
       return;
     }
