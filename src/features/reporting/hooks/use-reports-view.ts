@@ -27,7 +27,11 @@ export function useReportsView(scope: EmployerSelection) {
       const parsed = JSON.parse(stored) as ColumnKey[];
       const allowed = new Set(columnOptions.map((item) => item.key));
       const next = parsed.filter((item) => allowed.has(item));
-      if (next.includes("actions") && next.length > 1) setVisibleColumns(next);
+      if (next.includes("actions") && next.length > 1) {
+        // Old saved preferences could place actions in the middle of the table.
+        // The actions column is always the final (leftmost in RTL) column.
+        setVisibleColumns([...new Set(next.filter((key) => key !== "actions")), "actions"]);
+      }
     } catch { /* keep defaults */ }
   }, []);
 
