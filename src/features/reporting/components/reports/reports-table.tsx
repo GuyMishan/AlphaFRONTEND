@@ -54,7 +54,7 @@ export function ReportsTable({ view, deposits, actions }: {
         /> : null}
       </div>}
       columns={activeColumns}
-      renderCells={(row, expandToggle) => visibleColumns.map((key) => <span key={key} className="report-cell-content">{allColumns[key].render(row, key === "actions" ? expandToggle : undefined)}</span>)}
+      renderCells={(row, expandToggle) => visibleColumns.map((key) => <div key={key} className="report-cell-content">{allColumns[key].render(row, key === "actions" ? expandToggle : undefined)}</div>)}
     />
   </div>;
 }
