@@ -24,6 +24,10 @@ export function FeedbackReportWorkspaceEditor({ organizationId, employerId, grou
   const [error, setError] = useState("");
   const [preparing, setPreparing] = useState(true);
   const source = group.problems[0];
+  const configuredDocumentType = (() => {
+    try { const value = JSON.parse(source?.correctionFields ?? "[]"); return [3, 4, 5, 6].includes(value?.documentTypeCode) ? Number(value.documentTypeCode) : 0; }
+    catch { return 0; }
+  })();
   const negativeSourceReportId = group.resolverType === "documents" ? source?.feedbackValues.negativeCorrectionSourceReportId : null;
   const negativeSourceProductId = group.resolverType === "documents" ? source?.feedbackValues.negativeCorrectionSourceProductId : null;
   const negativeReferencePresent = group.resolverType === "documents" && group.problems.some(problem =>
@@ -75,6 +79,7 @@ export function FeedbackReportWorkspaceEditor({ organizationId, employerId, grou
   const entry = useMemo(() => {
     const params = new URLSearchParams();
     if (!source) return parseReportEntry(params);
+    if (configuredDocumentType) params.set("focusDocumentTypeCode", String(configuredDocumentType));
     if (negativeDocumentRoute && negativeSourceReportId && negativeSourceProductId) {
       params.set("sourceReportId", negativeSourceReportId);
       params.set("sourceProductId", negativeSourceProductId);
@@ -93,7 +98,7 @@ export function FeedbackReportWorkspaceEditor({ organizationId, employerId, grou
     params.set("resolutionSourceReportId", source.reportId);
     params.set("resolutionProblemIds", group.problems.map(problem => problem.problemId).join(","));
     return parseReportEntry(params);
-  }, [workspace, source, group.resolverType, group.problems, negativeDocumentRoute, negativeSourceReportId, negativeSourceProductId]);
+  }, [workspace, source, group.resolverType, group.problems, configuredDocumentType, negativeDocumentRoute, negativeSourceReportId, negativeSourceProductId]);
 
   if (error) return <div role="alert" className="notice notice-error">{error}</div>;
   if (preparing || setup.isLoading) return <LoadingState label="מכין את אשף הדיווח הקיים לתיקון..." />;
