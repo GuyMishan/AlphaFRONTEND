@@ -328,9 +328,6 @@ export function ReportDepositFeedbackModal({
                       </div>)}
                     </div>
                   : null}
-                {manufacturer?.sourceFileName
-                  ? <small className="feedback-source">מקור: {manufacturer.sourceFileName} · {formatDateTimeDDMMYYYY(manufacturer.receivedAt, "—")}</small>
-                  : null}
                 {errorsOnly && additionalManufacturerRows.length ? <div className="manufacturer-extra-rows">
                   <small>משובי יצרן נוספים לאותו רכיב</small>
                   {additionalManufacturerRows.map((item) => <div key={`${item.recordIdentifier}:${item.sequence}`}>
