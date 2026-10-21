@@ -16,8 +16,11 @@ export function ReportsTable({ view, deposits, actions }: {
     expandedErrors, expandedMoreLoading, loadMoreDeposits, expandedManufacturerInput, changeExpandedManufacturer } = deposits;
   const { setFeedbackModal } = actions;
   const { allColumns, activeColumns } = useReportColumns(visibleColumns, actions);
+  // Keep colgroup, header and body on one sizing grid; narrower screens scroll the table.
+  const minTableWidth = activeColumns.reduce((total, column) => total + Number.parseInt(column.width ?? "0", 10), 0);
   return <div className="card report-table-card">
     <DataTable
+      minTableWidth={minTableWidth}
       items={rows}
       hasMore={hasMoreReports}
       onLoadMore={loadMoreReports}
