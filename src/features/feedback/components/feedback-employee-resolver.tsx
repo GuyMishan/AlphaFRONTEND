@@ -71,7 +71,6 @@ export function FeedbackEmployeeResolver({
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
-  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
 
   useEffect(() => {
     if (!employmentId) {
@@ -154,14 +153,7 @@ export function FeedbackEmployeeResolver({
     {loading ? <LoadingState label="טוען את פרטי העובד..." /> : null}
     {error ? <div className="notice notice-error">{error}</div> : null}
 
-    {!loading && !error && employee && canEdit ? <button
-      type="button"
-      className="btn btn-secondary"
-      aria-expanded={showEmployeeForm}
-      onClick={() => setShowEmployeeForm(value => !value)}
-    >{showEmployeeForm ? "סגירת עריכת כרטיס העובד" : "תיקון בכרטיס העובד"}</button> : null}
-
-    {!loading && !error && employee && showEmployeeForm ? <div className="feedback-resolution-employee-form">
+    {!loading && !error && employee && canEdit ? <div className="feedback-resolution-employee-form">
       <EmployeeForm
         key={`${employee.id}:${formVersion}`}
         organizationId={organizationId}
