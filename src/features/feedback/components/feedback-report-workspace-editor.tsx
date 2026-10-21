@@ -42,6 +42,12 @@ export function FeedbackReportWorkspaceEditor({ organizationId, employerId, grou
       setPreparing(false);
       return;
     }
+    if ([3, 4, 6].includes(configuredDocumentType) && !negativeDocumentRoute) {
+      setWorkspace(null);
+      setError("לסוג המסמך שנדרש יש לצרף PDF בדיווח שלילי המשויך למוצר המקורי. לא נמצאו במשוב מזהי מקור מלאים; לא נפתח עורך דיווח שגוי.");
+      setPreparing(false);
+      return;
+    }
     if (negativeReferencePresent && !negativeDocumentRoute) {
       setWorkspace(null);
       setError("מסמכי הדיווח משויכים למקורות שונים או שחסר מזהה מקור. יש לפתור כל מסמך בהקשר המקור הנכון.");
@@ -74,7 +80,7 @@ export function FeedbackReportWorkspaceEditor({ organizationId, employerId, grou
     return () => { cancelled = true; };
   // The group key uniquely identifies the selected correction operation.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, employerId, group.groupKey, negativeDocumentRoute, negativeReferencePresent]);
+  }, [organizationId, employerId, group.groupKey, configuredDocumentType, negativeDocumentRoute, negativeReferencePresent]);
 
   const entry = useMemo(() => {
     const params = new URLSearchParams();
