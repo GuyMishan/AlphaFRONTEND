@@ -7,6 +7,7 @@ import { UiFileUpload } from "@/components/ui/ui-file-upload";
 import { formatDateTimeDDMMYYYY } from "@/lib/format/date";
 import { reportFeedbackApi, type ExternalFeedbackCase, type FeedbackResolutionGroup } from "@/features/feedback/api";
 import { LoadingState } from "@/components/loading/loading-state";
+import { ManufacturerInquiryPanel } from "@/features/feedback/components/manufacturer-inquiry-panel";
 import { errorMessage } from "@/lib/api/error-messages";
 
 function statusLabel(status: ExternalFeedbackCase["status"]) {
@@ -191,6 +192,8 @@ export function FeedbackExternalCaseResolver({
           organizationId, employerId, externalCase.id, destination, subject, messageTemplate,
         ))}>שמירת תבנית</button>
     </div>
+
+    <ManufacturerInquiryPanel organizationId={organizationId} employerId={employerId} caseId={externalCase.id} />
 
     <div className="feedback-external-case-note-row">
       <UiTextarea rows={3} maxLength={4000} value={note} disabled={busy}
