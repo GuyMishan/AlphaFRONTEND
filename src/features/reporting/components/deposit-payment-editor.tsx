@@ -23,12 +23,13 @@ import { isDifferencesKind, isNegativeKind, requiresPreviousReference, validate0
 import { productNames, emptyPreviousReference, shortError, formatEmployerAccount, emptyMetadata, providerAccountFromReference, bankLabel, branchLabel } from "@/features/reporting/deposit-helpers";
 import { errorMessage } from "@/lib/api/error-messages";
 
-export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, contributionLimits, onClose, onSaved, onEvidenceChanged, readOnly = false, embedded = false, footerTargetId }: {
+export function DepositPaymentEditor({ employer, organizationId, employerId, reportId, row, contributionLimits, onClose, onSaved, onEvidenceChanged, readOnly = false, embedded = false, footerTargetId, focusDocumentTypeCode = 0 }: {
   employer: Employer | null; organizationId: string; employerId: string; reportId: string; row: ManualDepositRow;
   contributionLimits: ManualDepositContributionLimit[];
   onClose: () => void; onSaved: (row: ManualDepositRow) => void; onEvidenceChanged: (items: PaymentConfirmation[]) => void; footerTargetId?: string;
   readOnly?: boolean;
   embedded?: boolean;
+  focusDocumentTypeCode?: number;
 }) {
   const [form, setForm] = useState<ManualPaymentInput>({
     providerName: row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "", providerAccount: row.providerAccount || "", paymentMethod: row.paymentMethod || "",
@@ -275,6 +276,13 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   const isOldPensionFund = row.productType === 1 && (row.fundClassification || "").includes("ותיק");
   const bankRequired = !differences && ((!negative && !noMoneyCorrection && (metadataForm.paymentMethodCode === 1 || metadataForm.paymentMethodCode === 7))
     || (operation5 && metadataForm.paymentMethodCode === 1));
+  useEffect(() => {
+    if (![4, 5, 6].includes(focusDocumentTypeCode)) return;
+    const target = document.getElementById(`report-document-target-${row.id}-${focusDocumentTypeCode}`);
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    target?.focus({ preventScroll: true });
+  }, [focusDocumentTypeCode, row.id, metadataForm.collectiveAgreementRefund, attachments.length]);
+
   const employeeApproval = attachments.find((item) => item.documentTypeCode === 4 && item.reportProductId === row.id) ?? null;
   const collectiveAgreementDeclaration = attachments.find((item) => item.documentTypeCode === 6 && item.reportProductId === row.id) ?? null;
   const defaultFundJoinRequest = attachments.find((item) => item.documentTypeCode === 5 && item.reportProductId === row.id) ?? null;
@@ -549,7 +557,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
               {([
                 { code: 4 as const, label: "אישור עובד להשבת כספים", item: employeeApproval, scope: "לעובד/מוצר זה" },
                 { code: 6 as const, label: "הצהרת מעסיק - הסכם קיבוצי", item: collectiveAgreementDeclaration, scope: "לעובד/מוצר זה" },
-              ].filter(({ code }) => (code === 4 && metadataForm.collectiveAgreementRefund === false) || (code === 6 && metadataForm.collectiveAgreementRefund === true))).map(({ code, label, item, scope }) => <div key={code} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+              ].filter(({ code }) => (code === 4 && metadataForm.collectiveAgreementRefund === false) || (code === 6 && metadataForm.collectiveAgreementRefund === true))).map(({ code, label, item, scope }) => <div key={code} id={`report-document-target-${row.id}-${code}`} tabIndex={-1} style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
                 <div><b>{label}</b><div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{scope}{item ? ` · ${item.originalFileName}` : ""}</div>
                   {code === 6 ? <small style={{ display: "block", color: "var(--color-text-muted)" }}>
                     נדרש כאשר ההשבה מתבצעת מכוח הסכם קיבוצי. אם זו השבה כזו, צרפו את ה-PDF כאן לפני שליחת הדיווח כדי להימנע מדחיית המסמך (קודים 102–103).
@@ -568,7 +576,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
           </section> : null}
 
           {!negative && !differences && eligibleCode5ProductIds.includes(row.id) ?
-            <section className="payment-panel">
+            <section className="payment-panel" id={`report-document-target-${row.id}-5`} tabIndex={-1}>
               <h3>מסמך הצטרפות לקרן ברירת מחדל</h3>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                 <div><b>קוד 5 — בקשת עובד להצטרפות לקרן ברירת מחדל {requiredCode5ProductIds.includes(row.id) ? "(חובה למוצר חדש)" : "(רשות למוצר קיים)"}</b>
