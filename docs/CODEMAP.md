@@ -70,7 +70,7 @@ Organization profile → Employers lists employers, allows direct active/closed 
 - `reference-data/` — banks, branches, cities, streets, option lists, salary layers and the pension-editor option bundle; `reference-option-select.tsx`, `address-autocomplete-fields.tsx`. Autocompletes load suggestions only when opened.
 
 #
-- `src/features/feedback/components/feedback-report-workspace-editor.tsx` embeds the existing `ReportWizard` (shared normal report editor) in the feedback modal after preparing a correction workspace. `ReportWizard` accepts an `embedded` flag to omit the page shell; the report-creation logic and validations are reused.
+- `src/features/feedback/components/feedback-report-workspace-editor.tsx` embeds the existing `ReportWizard` (shared normal report editor) in the feedback modal after preparing a correction workspace for report-level and document corrections. `ReportWizard` accepts an `embedded` flag to omit the page shell; its footer hides transmission and keeps submission in the normal reports workflow after all corrections. The existing report editor owns document-type selection, file requirements and validation. The report-creation logic and validations are reused.
 
 ## Reporting (Employer Interface 006)
 - `reporting/screens/new-report-screen.tsx` — route composition: resolves employer scope and setup, parses the URL entry and mounts the wizard. Each employer/URL entry gets a fresh workspace, including follow-up corrections and back/forward navigation.
