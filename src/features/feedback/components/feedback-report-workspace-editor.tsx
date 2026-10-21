@@ -26,11 +26,21 @@ export function FeedbackReportWorkspaceEditor({ organizationId, employerId, grou
   const source = group.problems[0];
   const negativeSourceReportId = group.resolverType === "documents" ? source?.feedbackValues.negativeCorrectionSourceReportId : null;
   const negativeSourceProductId = group.resolverType === "documents" ? source?.feedbackValues.negativeCorrectionSourceProductId : null;
-  const negativeDocumentRoute = Boolean(negativeSourceReportId && negativeSourceProductId);
+  const negativeReferencePresent = group.resolverType === "documents" && group.problems.some(problem =>
+    Boolean(problem.feedbackValues.negativeCorrectionSourceReportId || problem.feedbackValues.negativeCorrectionSourceProductId));
+  const negativeDocumentRoute = Boolean(negativeSourceReportId && negativeSourceProductId
+    && group.problems.every(problem => problem.feedbackValues.negativeCorrectionSourceReportId === negativeSourceReportId
+      && problem.feedbackValues.negativeCorrectionSourceProductId === negativeSourceProductId));
 
   useEffect(() => {
     if (!source || !group.canExecute || !group.problems.every(problem => problem.treatmentCanCorrect)) {
       setError("אין הרשאה לתקן את קבוצת השגיאות שנבחרה.");
+      setPreparing(false);
+      return;
+    }
+    if (negativeReferencePresent && !negativeDocumentRoute) {
+      setWorkspace(null);
+      setError("מסמכי הדיווח משויכים למקורות שונים או שחסר מזהה מקור. יש לפתור כל מסמך בהקשר המקור הנכון.");
       setPreparing(false);
       return;
     }
@@ -60,7 +70,7 @@ export function FeedbackReportWorkspaceEditor({ organizationId, employerId, grou
     return () => { cancelled = true; };
   // The group key uniquely identifies the selected correction operation.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, employerId, group.groupKey, negativeDocumentRoute]);
+  }, [organizationId, employerId, group.groupKey, negativeDocumentRoute, negativeReferencePresent]);
 
   const entry = useMemo(() => {
     const params = new URLSearchParams();
