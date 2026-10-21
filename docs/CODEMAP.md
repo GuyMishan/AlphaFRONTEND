@@ -130,3 +130,5 @@ Registration and login use `features/auth/components/legal-consent-modal.tsx`. O
 Employer reporting defaults: `src/features/employers/components/profile/employer-default-funds.tsx` manages inherited system-selected pension funds and per-employer override/reset via `employersApi.*DefaultFunds` endpoints; `reporting-tab.tsx` embeds it under employer reporting settings.
 
 - `admin/components/manufacturer-contacts-admin-tab.tsx` — platform-admin manager for verified manufacturer contact email addresses and pension-product overrides (via `admin/api.ts` and the backend ReferenceData admin endpoints). The screen never sends email.
+
+- `admin/components/manufacturer-email-templates-admin-tab.tsx` — platform-admin editor for manufacturer inquiry templates by official feedback error code, exposed as a tab in `admin-screen.tsx`; API methods in `admin/api.ts`.
