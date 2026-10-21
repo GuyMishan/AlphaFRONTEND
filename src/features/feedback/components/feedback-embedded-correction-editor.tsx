@@ -107,7 +107,7 @@ export function FeedbackEmbeddedCorrectionEditor({
       showBackLink={false}
       onCreated={saved => { setEmployer(saved); onSaved(); }}
     /> : null}
-    {depositMode && workspace && !loading && !error ? <ManualDepositData
+    {depositMode && workspace && !loading && !error ? <div className="feedback-embedded-deposit-workspace"><ManualDepositData
       key={workspace.reportId + workspace.productId}
       organizationId={organizationId}
       employerId={employerId}
@@ -115,6 +115,6 @@ export function FeedbackEmbeddedCorrectionEditor({
       embeddedEditor
       footerTargetId={footerTargetId}
       focusReportProductId={workspace.productId}
-    /> : null}
+    /></div> : null}
   </section>;
 }
