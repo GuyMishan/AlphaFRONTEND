@@ -15,8 +15,7 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
   const [testMode, setTestMode] = useState(true);
   const [testRecipient, setTestRecipient] = useState("alphapensia@gmail.com");
   const [selected, setSelected] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [additionalInformation, setAdditionalInformation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -36,8 +35,7 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
   const itemKey = item ? `${item.reportProductId}:${item.errorCode}` : "";
   useEffect(() => {
     if (!item) return;
-    setSubject(item.subject);
-    setBody(item.body);
+    setAdditionalInformation("");
   }, [itemKey, item?.subject, item?.body, item]);
 
   async function send() {
@@ -45,7 +43,7 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
     setBusy(true); setError(""); setSuccess("");
     try {
       await reportFeedbackApi.sendManufacturerInquiry(
-        organizationId, employerId, caseId, item.reportProductId, item.errorCode, subject, body,
+        organizationId, employerId, caseId, item.reportProductId, item.errorCode, additionalInformation,
       );
       setSuccess(testMode ? "מייל בדיקה נשלח לתיבת ALPHA ותועד בתיק. לא נשלח מייל ליצרן." : "הפנייה נשלחה לספק הדואר ותועדה בתיק.");
       await refresh();
@@ -72,13 +70,14 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
       <div><strong>מוצר:</strong> {item.product || "לא זוהה"}</div>
       <label><span>נמען בפועל</span><UiInput dir="ltr" readOnly value={testMode ? testRecipient : item.recipient || "לא הוגדרה כתובת מאומתת"} /></label>
       {testMode ? <label><span>הנמען המקורי (יצרן)</span><UiInput dir="ltr" readOnly value={item.recipient || "לא מוגדר"} /></label> : null}
-      <label><span>נושא</span><UiInput value={subject} onChange={e => setSubject(e.target.value)} maxLength={200} disabled={busy} /></label>
-      <label><span>תוכן ההודעה</span><UiTextarea rows={10} value={body}
-        onChange={e => setBody(e.target.value)} maxLength={8000} disabled={busy} /></label>
+      <label><span>נושא קבוע מהמערכת</span><UiInput value={item.subject} readOnly /></label>
+      <label><span>תוכן מובנה — ללא אפשרות עריכה</span><UiTextarea rows={10} value={item.body} readOnly /></label>
+      <label><span>מידע נוסף (יתווסף אחרי התבנית)</span><UiTextarea rows={4} value={additionalInformation}
+        onChange={e => setAdditionalInformation(e.target.value)} maxLength={3000} disabled={busy} /></label>
       {(!item.recipient || !item.subject || !item.body) ?
         <p>לא ניתן לשלוח עד להגדרת כתובת מאומתת ותבנית פעילה לקוד השגיאה.</p> : null}
       <button type="button" className="btn btn-primary"
-        disabled={busy || !item.recipient || !item.subject || !item.body || !subject.trim() || !body.trim()}
+        disabled={busy || !item.recipient || !item.subject || !item.body}
         onClick={() => void send()}><Send size={16} />{busy ? "שולח..." : testMode ? "שלח מייל בדיקה" : "שלח מייל ליצרן"}</button>
     </>}
     {history.length ? <div style={{ display: "grid", gap: 8 }}>
