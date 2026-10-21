@@ -51,30 +51,37 @@
 
 /* All report actions, including expand/collapse, belong to the same visible cell. */
 .report-feedback-table .data-table-row > td:last-child {
+  box-sizing: border-box;
   white-space: nowrap;
   text-align: right;
   padding-inline: 8px;
 }
+/* Three fixed-position RTL slots, constrained by the real TD width (including padding).
+ * Grid avoids the 110px error placeholder + menu + arrow overflowing narrow cells. */
 .report-feedback-table .report-row-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content 30px;
   align-items: center;
-  justify-content: flex-start;
   direction: rtl;
   gap: 6px;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
-.report-feedback-table .report-row-actions > * { flex-shrink: 0; }
-/* A fixed first slot keeps the menu and expand arrow aligned across rows with/without errors. */
 .report-feedback-table .report-actions-errors-slot {
   display: inline-flex;
   align-items: center;
-  flex: 0 0 110px;
+  justify-content: flex-start;
+  width: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 .report-feedback-table .report-actions-errors-slot .feedback-errors-button.compact {
   max-width: 100%;
+  min-width: 0;
 }
+.report-feedback-table .report-row-actions > .ui-action-menu { min-width: 0; }
 
 .report-feedback-table .data-table-row > td:last-child .data-table-inline-actions {
   display: flex;
