@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLatestRequest } from "@/lib/hooks/use-latest-request";
 import { errorMessage } from "@/lib/api/error-messages";
@@ -9,7 +9,7 @@ import type { PagedResult } from "@/lib/api/paging";
 import type { ResumableManualReport } from "../types";
 import { manualReportsApi } from "../api";
 
-export function useOpenReportDrafts(scope: EmployerSelection, initial: PagedResult<ResumableManualReport>) {
+export function useOpenReportDrafts(scope: EmployerSelection, initial: PagedResult<ResumableManualReport>, active: boolean) {
   const [items, setItems] = useState(initial.items);
   const [hasMore, setHasMore] = useState(initial.hasMore);
   const [loading, setLoading] = useState(false);
@@ -18,6 +18,21 @@ export function useOpenReportDrafts(scope: EmployerSelection, initial: PagedResu
   const [selected, setSelected] = useState<ResumableManualReport | null>(null);
   const [deletingId, setDeletingId] = useState("");
   const requests = useLatestRequest();
+
+  // Refresh on every entry, so drafts created after initial wizard setup are not hidden.
+  useEffect(() => {
+    if (!active) return;
+    const isCurrent = requests.begin();
+    setLoading(true);
+    void manualReportsApi.openManualReports(scope.organizationId, scope.employerId).then(page => {
+      if (!isCurrent()) return;
+      setItems(page.items);
+      setHasMore(page.hasMore);
+    }).catch(error => {
+      if (isCurrent()) toast.error(errorMessage(error, "טעינת הטיוטות נכשלה"));
+    }).finally(() => { if (isCurrent()) setLoading(false); });
+    return requests.cancel;
+  }, [active, scope.organizationId, scope.employerId, requests]);
 
   async function loadMore() {
     if (loading || !hasMore) return;
