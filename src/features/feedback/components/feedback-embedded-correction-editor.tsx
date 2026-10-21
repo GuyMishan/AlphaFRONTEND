@@ -32,7 +32,10 @@ export function embeddedCorrectionSurface(problem: FeedbackResolutionProblem): "
       || values.missingFieldEditSurface === "employeeProfile"
       || ["57", "58"].includes(values.missingFieldNumber ?? "")) return null;
   // Restrict to correction resolvers supported by the backend workspace contract.
-  if (!["split", "conditionalField", "contribution", "productPolicy", "employmentStatus", "payment"].includes(problem.resolverType)) return null;
+  const target = problem.correctionTarget || problem.resolverType;
+  if (!["split", "conditionalField", "contribution", "productPolicy", "employmentStatus", "payment"].includes(target)) return null;
+  // A configurable target is a selected existing editor, never an arbitrary component name.
+  if (target !== problem.resolverType) return null;
   return "deposit";
 }
 
