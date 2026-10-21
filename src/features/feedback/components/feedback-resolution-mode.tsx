@@ -10,7 +10,7 @@ import { FeedbackEmployeeResolver } from "@/features/feedback/components/feedbac
 import { FeedbackDecisionResolver } from "@/features/feedback/components/feedback-decision-resolver";
 import { FeedbackExternalCaseResolver } from "@/features/feedback/components/feedback-external-case-resolver";
 import { FeedbackInternalCorrectionResolver } from "@/features/feedback/components/feedback-internal-correction-resolver";
-import { FeedbackEmbeddedCorrectionEditor } from "@/features/feedback/components/feedback-embedded-correction-editor";
+import { FeedbackEmbeddedCorrectionEditor, embeddedCorrectionSurface } from "@/features/feedback/components/feedback-embedded-correction-editor";
 import {
   reportFeedbackApi,
   type FeedbackResolutionContext,
@@ -133,12 +133,7 @@ export function FeedbackResolutionMode({
     setIssueSearch(issueOptions[safeIndex]?.label ?? "");
   }, [safeIndex, issueOptions]);
   const primaryProblem = activeGroup?.problems[0];
-  const useEmbeddedCorrection = Boolean(primaryProblem?.feedbackValues.missingFieldMapped === "true"
-    || (primaryProblem?.treatmentCanCorrect
-      && primaryProblem.targetScope === "deposit"
-      && ["split", "contribution", "payment", "productPolicy", "employmentStatus"].includes(primaryProblem.resolverType)
-      && primaryProblem.availableActions.some(action =>
-        ["editProduct", "editContribution", "editPayment", "editEmployment", "prepareCorrection"].includes(action))));
+  const useEmbeddedCorrection = Boolean(primaryProblem && embeddedCorrectionSurface(primaryProblem));
   useEffect(() => { setWorkMode("choose"); }, [activeGroup?.groupKey]);
   const editableProblems = activeGroup?.problems.filter(problem => problem.resolutionType === "edit") ?? [];
 
