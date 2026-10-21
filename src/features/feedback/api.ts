@@ -328,6 +328,7 @@ export type ManufacturerInquiryHistory = {
 };
 export type ManufacturerInquiriesResponse = {
   inquiries: ManufacturerInquiry[]; history: ManufacturerInquiryHistory[];
+  testMode: boolean; testRecipient: string | null;
 };
 
 export type ExternalFeedbackCase = {
