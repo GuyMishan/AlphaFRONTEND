@@ -512,7 +512,7 @@ function NegativeReportAffidavit({ organizationId, employerId, reportId, focusDo
     if (!focusDocument || loading) return;
     const target = window.document.getElementById("negative-report-affidavit-focus");
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
-    (document ? target : (window.document.querySelector('label[for="negative-report-affidavit-upload"]') ?? target))?.focus({ preventScroll: true });
+    (document ? target : (window.document.querySelector<HTMLElement>('label[for="negative-report-affidavit-upload"]') ?? target))?.focus({ preventScroll: true });
   }, [focusDocument, loading, document]);
   async function upload(file: File) {
     setBusy(true);
