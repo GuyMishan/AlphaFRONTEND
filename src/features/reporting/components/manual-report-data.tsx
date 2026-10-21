@@ -32,6 +32,7 @@ type Props = {
   focusReportEmployeeId?: string;
   focusReportProductId?: string;
   focusMissingFieldNumber?: string;
+  focusDocumentTypeCode?: number;
 };
 
 function snapshotEmployee(row: ManualReportEmployeeSummary): Employee {
@@ -157,7 +158,7 @@ function toManualProduct(product: PensionEditorProduct, month: string): ManualPr
   };
 }
 
-export function ManualReportData({ organizationId, employerId, reportId, month, employees, selectedIds, setSelectedIds, correctionWorkspace = false, negative = false, focusReportEmployeeId = "", focusReportProductId = "", focusMissingFieldNumber = "" }: Props) {
+export function ManualReportData({ organizationId, employerId, reportId, month, employees, selectedIds, setSelectedIds, correctionWorkspace = false, negative = false, focusReportEmployeeId = "", focusReportProductId = "", focusMissingFieldNumber = "", focusDocumentTypeCode = 0 }: Props) {
   const [rows, setRows] = useState<ManualReportEmployeeSummary[]>([]);
   const [visibleEmployees, setVisibleEmployees] = useState<Employee[]>(employees);
   const [query, setQuery] = useState("");
@@ -331,7 +332,7 @@ export function ManualReportData({ organizationId, employerId, reportId, month, 
       <div><h2>עובדים בדיווח</h2><span style={{ color: "var(--color-text-muted)" }}>בחרו עובד וערכו את השכר החודשי, הקופה וחלוקת השכר בין המוצרים.</span></div>
       <div className="manual-report-badges"><span className="badge badge-blue">{selectedIds.length} עובדים</span><span className="badge badge-green">{ready} הושלמו</span></div>
     </div>
-    {negative ? <NegativeReportAffidavit organizationId={organizationId} employerId={employerId} reportId={reportId} /> : null}
+    {negative ? <NegativeReportAffidavit organizationId={organizationId} employerId={employerId} reportId={reportId} focusDocument={focusDocumentTypeCode === 3} /> : null}
     {error ? <div className="notice notice-error" style={{ marginBottom: 14 }}>{error}</div> : null}
     <div className="toolbar manual-report-toolbar">
       <div className="search"><Search size={17} /><UiInput value={query} maxLength={80} onChange={(event) => setQuery(event.target.value)} placeholder="חיפוש לפי שם, ת״ז או מספר עובד" /></div>
@@ -495,7 +496,7 @@ function EmployeeProductsModal({ employee, month, reportId, correctionWorkspace,
     </AppModal>;
 }
 
-function NegativeReportAffidavit({ organizationId, employerId, reportId }: { organizationId: string; employerId: string; reportId: string }) {
+function NegativeReportAffidavit({ organizationId, employerId, reportId, focusDocument = false }: { organizationId: string; employerId: string; reportId: string; focusDocument?: boolean }) {
   const [document, setDocument] = useState<ReportAttachment | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -507,6 +508,12 @@ function NegativeReportAffidavit({ organizationId, employerId, reportId }: { org
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [organizationId, employerId, reportId]);
+  useEffect(() => {
+    if (!focusDocument || loading) return;
+    const target = document.getElementById("negative-report-affidavit-focus");
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    target?.focus({ preventScroll: true });
+  }, [focusDocument, loading]);
   async function upload(file: File) {
     setBusy(true);
     try {
@@ -527,7 +534,7 @@ function NegativeReportAffidavit({ organizationId, employerId, reportId }: { org
     } catch (error) { notify.error(errorMessage(error, "הסרת תצהיר המעסיק נכשלה")); }
     finally { setBusy(false); }
   }
-  return <section className="profile-form-section" aria-label="תצהיר מעסיק לדיווח שלילי">
+  return <section className="profile-form-section" id="negative-report-affidavit-focus" tabIndex={-1} aria-label="תצהיר מעסיק לדיווח שלילי">
     <h3>תצהיר מעסיק (קוד 3)</h3>
     <p>בדיווח שלילי הכולל בקשת השבת כספים יש לצרף תצהיר המיועד לדיווח זה. תצהיר מדיווח קודם אינו מחליף אותו.</p>
     {loading ? <span>טוען מסמך...</span> : document ? <div className="row" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}><span>{document.originalFileName}</span><button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void remove()}>הסר מסמך</button></div>
