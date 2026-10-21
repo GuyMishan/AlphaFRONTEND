@@ -59,7 +59,7 @@
 /* Fixed RTL action slots remain inside the real column width. */
 .report-feedback-table .report-row-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 32px 30px;
+  grid-template-columns: minmax(0, 1fr) 40px 30px;
   align-items: center;
   direction: rtl;
   gap: 6px;
