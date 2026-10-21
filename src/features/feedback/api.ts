@@ -327,7 +327,7 @@ export type ManufacturerInquiry = {
 };
 export type ManufacturerInquiryHistory = {
   id: string; recipient: string; subject: string; status: "pending" | "sent" | "failed";
-  failureCode: string | null; createdAt: string;
+  failureCode: string | null; createdAt: string; body?: string;
 };
 export type ManufacturerInquiriesResponse = {
   inquiries: ManufacturerInquiry[]; history: ManufacturerInquiryHistory[];
