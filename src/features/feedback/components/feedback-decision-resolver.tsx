@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, CheckCircle2, ExternalLink, FilePenLine, Link2, Scale, WalletCards } from "lucide-react";
+import { ArrowLeft, ExternalLink, FilePenLine, Link2, Scale, WalletCards } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { UiSelect, UiTextarea } from "@/components/ui/ui-controls";
 import {
@@ -22,12 +22,6 @@ function latestDecisionLabel(value: string | null) {
     case "link-original": return "נדרש קישור לתנועה מקורית";
     default: return "";
   }
-}
-
-function confirmLabel(problem: FeedbackResolutionProblem) {
-  return problem.resolverType === "split"
-    ? "אישור הפיצול כפי שנקלט"
-    : "אישור המצב כפי שנקלט";
 }
 
 export function FeedbackDecisionResolver({
@@ -143,15 +137,6 @@ export function FeedbackDecisionResolver({
           </div> : null}
 
           <div className="feedback-decision-actions">
-            {actions.has("confirm") ? <button
-              type="button"
-              className="btn btn-primary"
-              disabled={busy || !group.canExecute}
-              onClick={() => void decide(problem, "confirm")}
-            >
-              <CheckCircle2 size={16} />{confirmLabel(problem)}
-            </button> : null}
-
             {actions.has("prepareCorrection") ? <button
               type="button"
               className="btn btn-primary"
