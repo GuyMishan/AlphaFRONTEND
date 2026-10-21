@@ -130,6 +130,8 @@
 .payment-modal .app-modal-actions{margin-top:auto;flex:0 0 auto;background:var(--color-surface);z-index:2}
 .payment-modal-body{min-height:0}
 .account-number{direction:ltr;unicode-bidi:isolate;display:inline-block;text-align:left}
+/* Summary account text follows the Hebrew field alignment, without changing payment modals. */
+.report-summary-account-number{direction:rtl;text-align:right;display:block}
 
 /* The reporting workspace can use the full app width on desktop; mobile keeps stacked cards. */
 .resume-report-section { margin-bottom: 20px; }
