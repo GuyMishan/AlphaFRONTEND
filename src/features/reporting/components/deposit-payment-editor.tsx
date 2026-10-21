@@ -5,7 +5,7 @@ import { UiFileUpload } from "@/components/ui/ui-file-upload";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { BriefcaseBusiness, CreditCard, Download, Trash2 } from "lucide-react";
+import { BriefcaseBusiness, Download, Trash2 } from "lucide-react";
 import { AppModal } from "@/components/ui/app-modal";
 import { EmployerInterfaceOptionSelect } from "@/features/reporting/components/employer-interface-option-select";
 import { notify } from "@/components/ui/notifications";
@@ -171,6 +171,21 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     }, 180);
     return () => { active = false; window.clearTimeout(timer); };
   }, [branchOpen, branchSelection, form.employerBankCode]);
+
+  // The stored payment details can be supplemented asynchronously by the
+  // employer's default debit account. Keep the controlled autocomplete text in
+  // sync with the resolved codes even when the dropdown has never been opened.
+  useEffect(() => {
+    const code = form.employerBankCode?.trim();
+    if (!code || /^0+$/.test(code)) return;
+    setBankSelection(current => current.trim() ? current : code);
+  }, [form.employerBankCode]);
+
+  useEffect(() => {
+    const code = form.employerBranch?.trim();
+    if (!code || /^0+$/.test(code)) return;
+    setBranchSelection(current => current.trim() ? current : code);
+  }, [form.employerBranch]);
 
   // Bank/branch option lists arrive after the payment account. Upgrade a numeric
   // selection to its full human-readable label without replacing user-typed searches.
@@ -388,7 +403,7 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
   </section> : null;
 
   const editorContent = <>{""}
-      <div className="payment-employer-chip"><BriefcaseBusiness size={17} /><b>{employer?.legalName || "המעסיק"}</b><span>{employer?.registrationNumber || ""}</span><CreditCard size={15} /></div>
+      <div className="payment-employer-chip"><BriefcaseBusiness size={17} aria-hidden="true" /><span className="payment-employer-label">מעסיק</span><b>{employer?.legalName || "המעסיק"}</b>{employer?.registrationNumber ? <span className="payment-employer-registration">{employer.registrationNumber}</span> : null}</div>
       {error ? <Tooltip content={error} label={error}><div className="notice notice-error payment-error">{error}</div></Tooltip> : null}
       {differences && !correctionWorkspace ? <div className="notice notice-info payment-error">בדיווח הפרשים אין צורך להשלים את פרטי הדיווח הנוספים בשלב הזה. הם יושלמו בעת יצירת דיווח שוטף או שלילי המבוסס עליו.</div> : null}
       {correctionWorkspace ? <div className="notice notice-info payment-error">{addedCorrectionProduct
