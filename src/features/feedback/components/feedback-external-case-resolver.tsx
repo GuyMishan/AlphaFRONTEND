@@ -193,7 +193,12 @@ export function FeedbackExternalCaseResolver({
         ))}>שמירת תבנית</button>
     </div>
 
-    <ManufacturerInquiryPanel organizationId={organizationId} employerId={employerId} caseId={externalCase.id} />
+    <ManufacturerInquiryPanel organizationId={organizationId} employerId={employerId} caseId={externalCase.id}
+      onSent={() => {
+        void reportFeedbackApi.externalCase(organizationId, employerId, externalCase.id)
+          .then(result => { setExternalCase(result); onChanged(); })
+          .catch(err => setError(errorMessage(err, "רענון סטטוס התיק נכשל.")));
+      }} />
 
     <div className="feedback-external-case-note-row">
       <UiTextarea rows={3} maxLength={4000} value={note} disabled={busy}
