@@ -11,6 +11,7 @@ import { FeedbackDecisionResolver } from "@/features/feedback/components/feedbac
 import { FeedbackExternalCaseResolver } from "@/features/feedback/components/feedback-external-case-resolver";
 import { FeedbackInternalCorrectionResolver } from "@/features/feedback/components/feedback-internal-correction-resolver";
 import { FeedbackEmbeddedCorrectionEditor, embeddedCorrectionSurface } from "@/features/feedback/components/feedback-embedded-correction-editor";
+import { FeedbackReportWorkspaceEditor } from "@/features/feedback/components/feedback-report-workspace-editor";
 import {
   reportFeedbackApi,
   type FeedbackResolutionContext,
@@ -134,6 +135,7 @@ export function FeedbackResolutionMode({
   }, [safeIndex, issueOptions]);
   const primaryProblem = activeGroup?.problems[0];
   const useEmbeddedCorrection = Boolean(primaryProblem && embeddedCorrectionSurface(primaryProblem));
+  const useReportWorkspace = primaryProblem?.treatmentCanCorrect && primaryProblem.correctionTarget === "reportCorrection";
   useEffect(() => { setWorkMode("choose"); }, [activeGroup?.groupKey]);
   const editableProblems = activeGroup?.problems.filter(problem => problem.resolutionType === "edit") ?? [];
 
@@ -318,7 +320,14 @@ export function FeedbackResolutionMode({
         onSaved={() => setRefreshToken(value => value + 1)}
       /> : null}
 
-      {!useEmbeddedCorrection && activeGroup.problems.some(problem => problem.resolutionType === "decision" && !problem.feedbackValues.missingFieldNumber) ? <FeedbackDecisionResolver
+      {useReportWorkspace ? <FeedbackReportWorkspaceEditor
+        key={activeGroup.groupKey}
+        organizationId={organizationId}
+        employerId={employerId}
+        group={activeGroup}
+      /> : null}
+
+      {!useEmbeddedCorrection && !useReportWorkspace && activeGroup.problems.some(problem => problem.resolutionType === "decision" && !problem.feedbackValues.missingFieldNumber) ? <FeedbackDecisionResolver
           organizationId={organizationId}
           employerId={employerId}
           group={activeGroup}
@@ -334,7 +343,7 @@ export function FeedbackResolutionMode({
             canEdit={Boolean(context?.canEditEmployee)}
             onChanged={() => setRefreshToken(value => value + 1)}
           />
-        : !useEmbeddedCorrection && editableGroup
+        : !useEmbeddedCorrection && !useReportWorkspace && editableGroup
           && ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection", "refund"].includes(activeGroup.resolverType)
           ? <FeedbackInternalCorrectionResolver
               organizationId={organizationId}
@@ -361,6 +370,7 @@ export function FeedbackResolutionMode({
             </div>
           </section>}
       {!useEmbeddedCorrection
+        && !useReportWorkspace
         && activeGroup.resolverType !== "employee"
         && !editableGroup
         && !activeGroup.problems.some(problem => problem.resolutionType === "decision")
