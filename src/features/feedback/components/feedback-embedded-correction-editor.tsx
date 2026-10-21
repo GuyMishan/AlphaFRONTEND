@@ -5,7 +5,7 @@ import { ManualDepositData } from "@/features/reporting/components/manual-deposi
 import { EmployerForm } from "@/features/employers/components/employer-form";
 import { employersApi } from "@/features/employers/api";
 import type { Employer } from "@/features/employers/types";
-import { reportFeedbackApi, type FeedbackResolutionGroup } from "@/features/feedback/api";
+import { reportFeedbackApi, type FeedbackResolutionGroup, type FeedbackResolutionProblem } from "@/features/feedback/api";
 import { LoadingState } from "@/components/loading/loading-state";
 import { errorMessage } from "@/lib/api/error-messages";
 
@@ -17,6 +17,24 @@ const employerContactFields: Record<string, keyof import("@/features/employers/t
   "E-MAIL-PONE-LEMISLAKA": "contactEmail",
   "MISPAR-CELLULARI": "contactMobile",
 };
+
+
+export function embeddedCorrectionSurface(problem: FeedbackResolutionProblem): "employer" | "deposit" | null {
+  const values = problem.feedbackValues;
+  const missing = values.missingFieldMapped === "true";
+  if (missing && problem.targetScope === "employer"
+      && Boolean(employerContactFields[values.missingFieldXmlTag ?? ""])) return "employer";
+  const hasConcreteEdit = problem.availableActions.some(action =>
+    ["editProduct", "editContribution", "editPayment", "editEmployment", "prepareCorrection"].includes(action));
+  if (problem.targetScope !== "deposit" || !problem.reportProductId
+      || !problem.treatmentCanCorrect || (!missing && !hasConcreteEdit)
+      || values.missingFieldCorrectionSupported === "false"
+      || values.missingFieldEditSurface === "employeeProfile"
+      || ["57", "58"].includes(values.missingFieldNumber ?? "")) return null;
+  // Restrict to correction resolvers supported by the backend workspace contract.
+  if (!["split", "conditionalField", "contribution", "productPolicy", "employmentStatus", "payment"].includes(problem.resolverType)) return null;
+  return "deposit";
+}
 
 export function FeedbackEmbeddedCorrectionEditor({
   organizationId, employerId, group, footerTargetId, canEditEmployer, onSaved,
@@ -32,18 +50,10 @@ export function FeedbackEmbeddedCorrectionEditor({
   const tag = problem?.feedbackValues.missingFieldXmlTag ?? "";
   const fieldName = problem?.feedbackValues.missingFieldName;
   const fieldNumber = problem?.feedbackValues.missingFieldNumber;
-  const isMissingField = problem?.feedbackValues.missingFieldMapped === "true";
   const employerField = employerContactFields[tag];
-  const employerMode = isMissingField && problem?.targetScope === "employer" && Boolean(employerField);
-  const hasConcreteEdit = problem?.availableActions.some(action =>
-    ["editProduct", "editContribution", "editPayment", "editEmployment", "prepareCorrection"].includes(action)) ?? false;
-  const depositMode = problem?.targetScope === "deposit"
-    && Boolean(problem?.reportProductId)
-    && Boolean(problem?.treatmentCanCorrect)
-    && (isMissingField || hasConcreteEdit)
-    && problem?.feedbackValues.missingFieldCorrectionSupported !== "false"
-    && problem?.feedbackValues.missingFieldEditSurface !== "employeeProfile"
-    && !["57", "58"].includes(fieldNumber ?? "");
+  const surface = problem ? embeddedCorrectionSurface(problem) : null;
+  const employerMode = surface === "employer";
+  const depositMode = surface === "deposit";
 
   const [employer, setEmployer] = useState<Employer | null>(null);
   const [workspace, setWorkspace] = useState<{ reportId: string; productId: string } | null>(null);
