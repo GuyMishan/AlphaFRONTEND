@@ -3,7 +3,7 @@
 .report-feedback-summary strong { font-size:24px; }
 .report-feedback-summary span { color:var(--color-text-muted); font-size:12px; }
 
-.report-feedback-table { width:100%; border-collapse:collapse; min-width: 0; }
+.report-feedback-table { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; min-width: 0; }
 .report-feedback-table th, .report-feedback-table td { padding:12px 14px; border-bottom:1px solid var(--color-border); text-align:right; vertical-align:middle; }
 .report-feedback-table th { color:var(--color-text-muted); font-size:12px; font-weight:650; background:var(--color-surface); }
 .report-feedback-table tr:last-child td { border-bottom:0; }
@@ -96,31 +96,24 @@
 }
 .report-feedback-table .report-row-actions .data-table-expand-toggle { position: static; transform: none; flex: 0 0 30px; margin: 0; }
 
-/*
- * The actions column (always last; the column picker cannot hide it) stays pinned to the visible
- * inline end (left in RTL) while the wide report table scrolls horizontally underneath it.
- * Expansion now lives inside the action flex layout instead of being absolutely positioned.
- */
+/* Keep the action TH and TD in the table's normal column layout.
+ * Sticky table cells with RTL scrolling detached the entire column from its
+ * measured colgroup track and clipped controls at the viewport edge. */
 .report-feedback-table .data-table-row > td:last-child,
 .report-feedback-table > thead > tr > th:last-child {
-  position: sticky;
-  inset-inline-end: 0;
-  z-index: 2;
+  position: static;
   background: var(--color-surface);
-  /* Physical offsets: the app is RTL-only, so the scrolled content is on the cell's right. */
-  box-shadow: inset -1px 0 0 var(--color-border), 10px 0 14px -12px color-mix(in srgb, var(--color-heading) 40%, transparent);
+  box-shadow: inset -1px 0 0 var(--color-border);
 }
-.report-feedback-table > thead > tr > th:last-child { z-index: 6; background: var(--color-surface-sunken); }
+.report-feedback-table > thead > tr > th:last-child { background: var(--color-surface-sunken); }
 .report-feedback-table .data-table-row:hover > td:last-child { background: var(--color-surface-hover); }
-/* Cells reached by keyboard scroll clear of the pinned column. */
-.report-table-card .data-table-viewport { scroll-padding-inline-end: 220px; }
+.report-table-card { min-width: 0; }
+.report-table-card .data-table-viewport { max-width: 100%; overflow-x: auto; }
 
 @media (max-width: 760px) {
-  /* Keep the full action group visible on phones. */
   .report-feedback-table .data-table-row > td:last-child { padding-inline: 6px; }
   .report-feedback-table .report-row-actions { gap: 6px; }
   .report-feedback-table .report-row-actions .feedback-errors-button.compact { padding-inline: 8px; font-size: 11px; gap: 5px; }
-  .report-table-card .data-table-viewport { scroll-padding-inline-end: 220px; }
 }
 .report-deposits-header > *, .report-deposits-item > * { align-self: center; }
 
