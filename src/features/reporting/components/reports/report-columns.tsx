@@ -12,7 +12,7 @@ import { reportKindLabel } from "../../labels";
 import type { ColumnKey } from "./reports-view-model";
 import type { useReportActions } from "../../hooks/use-report-actions";
 
-export function useReportColumns(visibleColumns: ColumnKey[], actions: ReturnType<typeof useReportActions>, hasInlineErrors: boolean) {
+export function useReportColumns(visibleColumns: ColumnKey[], actions: ReturnType<typeof useReportActions>) {
   const router = useRouter();
   const { setFeedbackModal, correctionBusyId, resumeHybridTransmission, openCorrectionWorkspace,
     setRetransmitReport, setDeleteReport, exportingReportId, exportReport } = actions;
@@ -43,7 +43,7 @@ export function useReportColumns(visibleColumns: ColumnKey[], actions: ReturnTyp
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDateTimeDDMMYYYY(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt, "—")}</small></div>
       : "—" },
-    actions: { column: { key: "actions", label: "פעולות", width: hasInlineErrors ? "190px" : "86px" }, render: (row, expandToggle) => <div className="report-row-actions">
+    actions: { column: { key: "actions", label: "פעולות", width: "210px" }, render: (row, expandToggle) => <div className="report-row-actions">
       {!row.canEdit && row.reportIssueCount > 0 ? <FeedbackErrorsButton
         compact
         label={`שגיאות · ${row.reportIssueCount}`}
