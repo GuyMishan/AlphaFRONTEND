@@ -496,10 +496,10 @@ export const reportFeedbackApi = {
   manufacturerInquiries: (organizationId: string, employerId: string, caseId: string) =>
     request<ManufacturerInquiriesResponse>(`${base(organizationId, employerId)}/external-cases/${caseId}/manufacturer-inquiries`),
   sendManufacturerInquiry: (organizationId: string, employerId: string, caseId: string,
-    reportProductId: string, errorCode: number, subject: string, body: string) =>
+    reportProductId: string, errorCode: number, additionalInformation: string) =>
     request<{ dispatchId: string; status: string; recipient: string }>(
       `${base(organizationId, employerId)}/external-cases/${caseId}/manufacturer-inquiries`,
-      { method: "POST", body: { reportProductId, errorCode, subject, body } },
+      { method: "POST", body: { reportProductId, errorCode, additionalInformation } },
     ),
   externalCase: (organizationId: string, employerId: string, caseId: string) =>
     request<ExternalFeedbackCase>(
