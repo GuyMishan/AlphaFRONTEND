@@ -61,7 +61,7 @@ export function useReportWizard(scope: EmployerSelection, entry: ReportEntry, se
   const sources = useReportSources(scope, entry, sourceSelectionKey, patch);
   const selectedSource = sources.items.find(item => item.id === state.sourceReportId) ?? null;
   const billing = useReportBilling(scope, setup.accounts, patch);
-  const drafts = useOpenReportDrafts(scope, setup.drafts);
+  const drafts = useOpenReportDrafts(scope, setup.drafts, state.showOpenReports);
   const resolution = useReportResolution(scope, entry, state.reportId);
   const actions = useReportWizardActions({
     scope, entry: { ...entry, resolver: resolution.resolver }, state, patch,
