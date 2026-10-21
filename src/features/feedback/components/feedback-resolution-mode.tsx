@@ -134,6 +134,10 @@ export function FeedbackResolutionMode({
     setIssueSearch(issueOptions[safeIndex]?.label ?? "");
   }, [safeIndex, issueOptions]);
   const primaryProblem = activeGroup?.problems[0];
+  // A grouped feedback item may contain different codes and therefore different DB modes.
+  // Never advertise a group action unless every problem in that group permits it.
+  const canCorrectGroup = Boolean(activeGroup?.problems.length && activeGroup.problems.every(problem => problem.treatmentCanCorrect));
+  const canInquireGroup = Boolean(activeGroup?.problems.length && activeGroup.problems.every(problem => problem.treatmentCanInquire));
   const useEmbeddedCorrection = Boolean(primaryProblem && embeddedCorrectionSurface(primaryProblem));
   const useReportWorkspace = Boolean(primaryProblem?.treatmentCanCorrect && ["reportCorrection", "documents"].includes(primaryProblem.correctionTarget ?? "") && activeGroup.problems.every(problem => problem.treatmentCanCorrect));
   useEffect(() => { setWorkMode("choose"); }, [activeGroup?.groupKey]);
@@ -284,9 +288,9 @@ export function FeedbackResolutionMode({
       <div className="feedback-resolution-section-head" role="group" aria-label="בחירת מסלול טיפול">
         {workMode !== "choose" ? <button type="button" className="btn btn-secondary" onClick={() => setWorkMode("choose")}>חזרה לבחירת טיפול</button> : null}
         {workMode === "choose" ? <>
-          {primaryProblem.treatmentCanCorrect ? <button type="button" className="btn btn-primary" disabled={!activeGroup.canExecute} onClick={() => setWorkMode("correct")}>תיקון במערכת</button> : null}
-          {primaryProblem.treatmentCanInquire ? <button type="button" className="btn btn-secondary" disabled={!activeGroup.canExecute} onClick={() => setWorkMode("inquire")}>פנייה ליצרן / לגורם מוסדי</button> : null}
-          {!primaryProblem.treatmentCanCorrect && !primaryProblem.treatmentCanInquire ? <div className="notice notice-info">מידע בלבד — אין פעולה נדרשת.</div> : null}
+          {canCorrectGroup ? <button type="button" className="btn btn-primary" disabled={!activeGroup.canExecute} onClick={() => setWorkMode("correct")}>תיקון במערכת</button> : null}
+          {canInquireGroup ? <button type="button" className="btn btn-secondary" disabled={!activeGroup.canExecute} onClick={() => setWorkMode("inquire")}>פנייה ליצרן / לגורם מוסדי</button> : null}
+          {!canCorrectGroup && !canInquireGroup ? <div className="notice notice-info">אין פעולה אחת המותרת לכל השגיאות בקבוצה. יש לטפל בכל שגיאה לפי מצב הטיפול שלה.</div> : null}
         </> : null}
       </div>
       {workMode === "correct" ? <>
