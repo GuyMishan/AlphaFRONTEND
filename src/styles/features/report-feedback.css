@@ -59,6 +59,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  direction: rtl;
   gap: 6px;
   width: 100%;
   min-width: 0;
@@ -95,10 +96,11 @@
 .report-feedback-table > thead > tr > th:last-child { z-index: 6; background: var(--color-surface-sunken); }
 .report-feedback-table .data-table-row:hover > td:last-child { background: var(--color-surface-hover); }
 /* Cells reached by keyboard scroll clear of the pinned column. */
-.report-table-card .data-table-viewport { scroll-padding-inline-end: 190px; }
+.report-table-card .data-table-viewport { scroll-padding-inline-end: 220px; }
 
 @media (max-width: 760px) {
-  /* Narrower pinned column on phones so more report data stays visible beside it. */
+  /* Keep the full action group visible on phones. */
+  .report-feedback-table col:last-child { width: 200px !important; }
   .report-feedback-table .data-table-row > td:last-child { padding-inline: 6px; }
   .report-feedback-table .report-row-actions { gap: 6px; }
   .report-feedback-table .report-row-actions .feedback-errors-button.compact { padding-inline: 8px; font-size: 11px; gap: 5px; }
