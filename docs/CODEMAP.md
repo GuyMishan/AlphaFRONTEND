@@ -88,7 +88,7 @@ Invariants:
 ### Feedback (`src/features/feedback`)
 - `api.ts` — feedback grid, deposit details, treatments, resolution context and actions, external cases, exports. `queries.ts` caches the grid, employer context and treatment statuses.
 - `report-feedback-modal.tsx` — single entry point with `employer`, `report` and `deposit` modes, each with `view` and `resolve` states; `report-deposit-feedback-modal.tsx` — employee/product detail with reconciliation and treatment history.
-- `feedback-resolution-mode.tsx` — the resolution queue built from the backend `groups` contract; resolvers: `feedback-employee-resolver.tsx`, `feedback-internal-correction-resolver.tsx`, `feedback-decision-resolver.tsx`, `feedback-external-case-resolver.tsx`, `feedback-code18-*-editor.tsx` (missing-field corrections).
+- `feedback-resolution-mode.tsx` — the resolution queue built from the backend `groups` contract; resolvers: `feedback-employee-resolver.tsx`, `feedback-internal-correction-resolver.tsx`, `feedback-decision-resolver.tsx`, `feedback-external-case-resolver.tsx`, `feedback-embedded-correction-editor.tsx` (field-driven shared employer/deposit editor).
 
 Invariants: the backend decides which groups are executable (`canExecute`), the target scope and which problems a save resolves; the UI only offers what the context returns and refreshes it after every action.
 
