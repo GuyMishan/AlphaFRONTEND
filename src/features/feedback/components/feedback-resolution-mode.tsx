@@ -360,6 +360,15 @@ export function FeedbackResolutionMode({
               </p>
             </div>
           </section>}
+      {!useEmbeddedCorrection
+        && activeGroup.resolverType !== "employee"
+        && !editableGroup
+        && !activeGroup.problems.some(problem => problem.resolutionType === "decision")
+        && !activeGroup.problems.some(problem => problem.targetScope === "employer" && problem.correctionTarget === "payment")
+        ? <div className="notice notice-info" role="status">
+            עדיין אין עורך מוטמע מאומת לסוג התיקון שנבחר. לא יבוצע שינוי בדיווח המקורי.
+          </div>
+        : null}
       </> : null}
       {workMode === "inquire" ? <>
       {activeGroup.problems.some(problem =>
