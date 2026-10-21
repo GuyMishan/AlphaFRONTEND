@@ -50,7 +50,7 @@ export function ReportWizard({ scope, entry, setup, embedded = false }: {
       </div> : null}
       <section className="card">
         <ReportWizardStages scope={scope} entry={entry} setup={setup} wizard={wizard} />
-        <ReportWizardFooter wizard={wizard} capabilities={setup.capabilities} scope={scope} />
+        <ReportWizardFooter wizard={wizard} capabilities={setup.capabilities} scope={scope} embedded={embedded} />
       </section>
     </div>
     <ReportWizardDialogs scope={scope} setup={setup} wizard={wizard} />
