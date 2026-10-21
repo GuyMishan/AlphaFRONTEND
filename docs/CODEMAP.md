@@ -69,7 +69,10 @@ Organization profile → Employers lists employers, allows direct active/closed 
 - `pension/components/pension-products-editor.tsx` validates local, status-independent 006 input rules (e.g. insurance exempt payments/code 74, monetary precision, policy length and product dates) in both employee and report editors; salaried Regulation-19 relationship rules remain employee-only until the report's deposit status is known.
 - `reference-data/` — banks, branches, cities, streets, option lists, salary layers and the pension-editor option bundle; `reference-option-select.tsx`, `address-autocomplete-fields.tsx`. Autocompletes load suggestions only when opened.
 
-### Reporting (Employer Interface 006)
+#
+- `src/features/feedback/components/feedback-report-workspace-editor.tsx` embeds the existing `ReportWizard` (shared normal report editor) in the feedback modal after preparing a correction workspace. `ReportWizard` accepts an `embedded` flag to omit the page shell; the report-creation logic and validations are reused.
+
+## Reporting (Employer Interface 006)
 - `reporting/screens/new-report-screen.tsx` — route composition: resolves employer scope and setup, parses the URL entry and mounts the wizard. Each employer/URL entry gets a fresh workspace, including follow-up corrections and back/forward navigation.
 - `reporting/new-report/model.ts` — typed draft state, URL entry and shared stage numbering. `use-report-wizard.ts` owns local draft state, resumption and import callbacks; `use-report-wizard-actions.ts` owns stage validation/advancement and transmission; `validate-report-documents.ts` checks required refund documentation (codes 3/4/6) before advancing from deposits or sending.
 - `reporting/new-report/use-report-setup.ts`, `use-report-billing.ts`, `use-report-sources.ts`, `use-open-report-drafts.ts`, `use-report-resolution.ts` — setup query, billing gate, correction source search, resumable drafts and feedback links. These responsibilities do not live in screen JSX.
