@@ -274,6 +274,9 @@ export type FeedbackResolutionProblem = {
   correctionBehavior: string;
   availableActions: string[];
   canEscalateExternally: boolean;
+  treatmentChoice?: "correctionOnly" | "correctionOrExternalInquiry" | "externalInquiryOnly" | "informationOnly";
+  treatmentCanCorrect?: boolean;
+  treatmentCanInquire?: boolean;
   feedbackId: string;
   reportId: string;
   reportProductId: string | null;
