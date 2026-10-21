@@ -10,9 +10,7 @@ import { FeedbackEmployeeResolver } from "@/features/feedback/components/feedbac
 import { FeedbackDecisionResolver } from "@/features/feedback/components/feedback-decision-resolver";
 import { FeedbackExternalCaseResolver } from "@/features/feedback/components/feedback-external-case-resolver";
 import { FeedbackInternalCorrectionResolver } from "@/features/feedback/components/feedback-internal-correction-resolver";
-import { FeedbackCode18ProductEditor } from "@/features/feedback/components/feedback-code18-product-editor";
-import { FeedbackCode18DepositEditor } from "@/features/feedback/components/feedback-code18-deposit-editor";
-import { FeedbackCode18EmployerEditor } from "@/features/feedback/components/feedback-code18-employer-editor";
+import { FeedbackEmbeddedCorrectionEditor } from "@/features/feedback/components/feedback-embedded-correction-editor";
 import {
   reportFeedbackApi,
   type FeedbackResolutionContext,
@@ -229,7 +227,7 @@ export function FeedbackResolutionMode({
       <section className="feedback-resolution-problem-card" aria-label="הבעיה שנבחרה">
         <div className="feedback-resolution-problem-head">
           <strong>קוד {primaryProblem.code} — {primaryProblem.description}</strong>
-          {primaryProblem.code === 18
+          {Boolean(primaryProblem.feedbackValues.missingFieldNumber)
             ? <section className="feedback-missing-fields" aria-label="השדות החסרים במשוב">
                 <strong>שדות חסרים שדורשים בדיקה</strong>
                 <p>לפי קוד 18, פירוט הסכום במשוב מכיל את מספר השדה החסר. המיפוי מוצג לפי סוג הדיווח המקורי.</p>
@@ -288,63 +286,27 @@ export function FeedbackResolutionMode({
             >פתיחת אמצעי התשלום הפנסיוני</Link>
           </section> : null}
 
-      {activeGroup.problems.some(problem => problem.code === 18) ? <section className="notice notice-info" aria-label="טיפול בשדה חסר">
+      {activeGroup.problems.some(problem => Boolean(problem.feedbackValues.missingFieldNumber)) ? <section className="notice notice-info" aria-label="טיפול בשדה חסר">
         <strong>תיקון השדה החסר</strong>
         <p>יש לתקן את השדות המופיעים למעלה ולשמור את השינויים. דיווח מתקן ייווצר רק אחרי השלמת הטיפול בכל שגיאות הדיווח, ולא אחרי כל שדה.</p>
 
-        {activeGroup.problems.some(problem => problem.code === 18 && problem.targetScope === "report")
+        {activeGroup.problems.some(problem => Boolean(problem.feedbackValues.missingFieldNumber) && problem.targetScope === "report")
           ? <small>השדה שייך לדיווח. יש לתקן אותו בסביבת התיקון של הדיווח כולו.</small> : null}
-        {activeGroup.problems.some(problem => problem.code === 18 && problem.targetScope === "employer")
+        {activeGroup.problems.some(problem => Boolean(problem.feedbackValues.missingFieldNumber) && problem.targetScope === "employer")
           ? <small>השדה שייך לפרטי המעסיק או לאיש הקשר שלו. יש לתקן את נתוני המעסיק ולא את שורת ההפקדה.</small> : null}
       </section> : null}
 
-      {primaryProblem.code === 18 && primaryProblem.targetScope === "employer"
-        ? <FeedbackCode18EmployerEditor
-            key={primaryProblem.problemId}
-            organizationId={organizationId}
-            employerId={employerId}
-            problem={primaryProblem}
-            canEdit={activeGroup.canExecute}
-            onSaved={() => setRefreshToken(value => value + 1)}
-          /> : null}
-      {primaryProblem.code === 18
-        && primaryProblem.targetScope === "deposit"
-        && ["depositEmployeeStatus", "depositProduct", "reportTransfer"].includes(primaryProblem.feedbackValues.missingFieldEditSurface ?? "")
-        && ["60", "71", "74", "75", "76", "77", "35", "37", "38", "40", "41", "42", "44", "45", "46", "49", "50", "51", "52", "53"].includes(primaryProblem.feedbackValues.missingFieldNumber ?? "")
-        ? <FeedbackCode18DepositEditor
-            key={activeGroup.groupKey}
-            organizationId={organizationId}
-            employerId={employerId}
-            group={activeGroup}
-            footerTargetId={footerTargetId}
-          /> : null}
+      {primaryProblem.feedbackValues.missingFieldMapped === "true" ? <FeedbackEmbeddedCorrectionEditor
+        key={activeGroup.groupKey}
+        organizationId={organizationId}
+        employerId={employerId}
+        group={activeGroup}
+        footerTargetId={footerTargetId}
+        canEditEmployer={activeGroup.canExecute}
+        onSaved={() => setRefreshToken(value => value + 1)}
+      /> : null}
 
-      {primaryProblem.code === 18 && ["57", "58"].includes(primaryProblem.feedbackValues.missingFieldNumber ?? "") ?
-        <div className="notice notice-info">
-          שדות 57–58 מתארים את קובץ המסמך הרשמי וסוגו. המסמך מנוהל במאגר מסמכי המעסיק.
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            <a className="btn btn-secondary" href={`/employers/${employerId}?organizationId=${organizationId}&tab=documents`}>מסמכי המעסיק</a>
-            {primaryProblem.employmentId ? <a className="btn btn-secondary"
-              href={`/employees/${primaryProblem.employmentId}?organizationId=${organizationId}&employerId=${employerId}&tab=mix`}>
-              מסמכי המוצר בתמהיל העובד
-            </a> : null}
-          </div>
-          <small>לתיקון דיווח שכבר נשלח יש לצרף את הגרסה הנכונה בסביבת התיקון; שינוי המאגר אינו משנה דיווח היסטורי.</small>
-        </div> : null}
-
-      {primaryProblem.code === 18
-        && ["59", "70", "72", "73", "78", "79", "80", "81", "82"].includes(primaryProblem.feedbackValues.missingFieldNumber ?? "")
-        && primaryProblem.feedbackValues.missingFieldMapped === "true"
-        ? <FeedbackCode18ProductEditor organizationId={organizationId} employerId={employerId} group={activeGroup} /> : null}
-      {primaryProblem.code === 18
-        && !["25","26","27","28","29","35","37","38","40","41","42","44","45","46","49","50","51","52","53","57","58","59","60","63","64","65","66","67","68","70","71","72","73","74","75","76","77","78","79","80","81","82"].includes(
-          primaryProblem.feedbackValues.missingFieldNumber ?? "")
-        ? <div className="notice notice-info" role="status">
-            השדה זוהה במפרט, אך עדיין לא קיים עבורו עורך ייעודי ומאומת במסך פתרון בעיות.
-            אין לבצע עריכה של שדה אחר כתחליף. יש לטפל בו דרך תהליך תיקון הדיווח המתאים.
-          </div> : null}
-
-      {activeGroup.problems.some(problem => problem.resolutionType === "decision" && problem.code !== 18) ? <FeedbackDecisionResolver
+      {activeGroup.problems.some(problem => problem.resolutionType === "decision" && !problem.feedbackValues.missingFieldNumber) ? <FeedbackDecisionResolver
           organizationId={organizationId}
           employerId={employerId}
           group={activeGroup}
@@ -385,7 +347,7 @@ export function FeedbackResolutionMode({
               onChanged={() => setRefreshToken(value => value + 1)}
             />
           : activeGroup.problems.some(problem =>
-              problem.code === 18
+              Boolean(problem.feedbackValues.missingFieldNumber)
               || problem.resolutionType === "decision"
               || problem.resolutionType === "external")
             ? null
