@@ -187,6 +187,35 @@ export function DepositPaymentEditor({ employer, organizationId, employerId, rep
     setBranchSelection(current => current.trim() ? current : code);
   }, [form.employerBranch]);
 
+  // Resolve saved codes into readable labels without requiring the user to
+  // open either autocomplete. Never overwrite a search the user has typed.
+  useEffect(() => {
+    const code = Number(form.employerBankCode);
+    if (!code || !/^\\d+$/.test(form.employerBankCode)) return;
+    let active = true;
+    void referenceDataApi.banks(String(code), 100).then(items => {
+      if (!active) return;
+      const match = items.find(item => item.bankCode === code);
+      if (match) setBankSelection(current =>
+        !current.trim() || current.trim() === String(code) ? bankLabel(match) : current);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [form.employerBankCode]);
+
+  useEffect(() => {
+    const bankCode = Number(form.employerBankCode);
+    const branchCode = Number(form.employerBranch);
+    if (!bankCode || !branchCode || !/^\\d+$/.test(form.employerBranch)) return;
+    let active = true;
+    void referenceDataApi.bankBranches(bankCode, String(branchCode), 200).then(items => {
+      if (!active) return;
+      const match = items.find(item => item.branchCode === branchCode);
+      if (match) setBranchSelection(current =>
+        !current.trim() || current.trim() === String(branchCode) ? branchLabel(match) : current);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [form.employerBankCode, form.employerBranch]);
+
   // Bank/branch option lists arrive after the payment account. Upgrade a numeric
   // selection to its full human-readable label without replacing user-typed searches.
   useEffect(() => {
