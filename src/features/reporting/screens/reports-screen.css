@@ -206,14 +206,29 @@
 .report-deposits-item > div { min-width: 0; }
 .report-deposits-item b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .report-deposits-item small { display: block; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.report-deposits-money { font-weight: 750; white-space: nowrap; }
+.report-deposits-header > :nth-child(4),
+.report-deposits-header > :nth-child(5),
+.report-deposits-item > :nth-child(4),
+.report-deposits-item > :nth-child(5) { text-align: center; }
+.report-deposits-money { font-weight: 750; white-space: nowrap; direction: ltr; text-align: center; }
+.report-deposits-item > .report-deposit-feedback-status-cell { display: flex; justify-content: center; }
 .report-deposit-feedback-status-cell { display: inline-flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; }
 .report-deposit-feedback-info { flex: 0 0 auto; }
 .report-deposit-feedback-error-list { display: grid; gap: 5px; max-width: 300px; }
 .report-deposit-feedback-error-list > span + span { padding-top: 5px; border-top: 1px solid var(--color-border); }
 .report-deposits-load-more { justify-self: center; }
-.report-deposit-row-actions { display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; width: 100%; white-space: nowrap; }
-.report-deposit-row-actions > * { flex: 0 0 auto; }
+.report-deposit-row-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 6px;
+  direction: rtl;
+  min-width: 0;
+  width: 100%;
+  white-space: nowrap;
+}
+.report-deposit-errors-slot { display: flex; justify-content: flex-start; align-items: center; min-width: 0; }
+.report-deposit-row-actions > .ui-action-menu { justify-self: end; }
 /* Match the parent report's sticky action column, including a vertical RTL divider. */
 .report-deposits-header > :last-child,
 .report-deposits-item > :last-child {
