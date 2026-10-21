@@ -65,11 +65,13 @@ export function ReportWizardStages({ scope, entry, setup, wizard }: {
     focusReportEmployeeId={state.validationFocus?.employeeId ?? entry.focusEmployeeId}
     focusReportProductId={state.validationFocus?.productId ?? state.focusedProductId}
     focusMissingFieldNumber={entry.missingFieldNumber}
+    focusDocumentTypeCode={entry.documentTypeCode}
   />;
 
   if (state.step === steps.deposits && state.reportId) return <ManualDepositData
     {...scope} reportId={state.reportId}
     focusReportProductId={state.validationFocus?.productId ?? state.focusedProductId}
+    focusDocumentTypeCode={entry.documentTypeCode}
   />;
 
   if (state.step !== steps.summary) return null;
