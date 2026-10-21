@@ -12,6 +12,8 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
 }) {
   const [inquiries, setInquiries] = useState<ManufacturerInquiry[]>([]);
   const [history, setHistory] = useState<ManufacturerInquiryHistory[]>([]);
+  const [testMode, setTestMode] = useState(true);
+  const [testRecipient, setTestRecipient] = useState("alphapensia@gmail.com");
   const [selected, setSelected] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -24,6 +26,8 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
       const result = await reportFeedbackApi.manufacturerInquiries(organizationId, employerId, caseId);
       setInquiries(result.inquiries);
       setHistory(result.history);
+      setTestMode(result.testMode);
+      if (result.testRecipient) setTestRecipient(result.testRecipient);
     } catch (err) { setError(errorMessage(err, "טעינת פניות ליצרן נכשלה")); }
   }, [organizationId, employerId, caseId]);
 
@@ -37,13 +41,13 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
   }, [itemKey, item?.subject, item?.body, item]);
 
   async function send() {
-    if (!item || busy || !window.confirm(`לשלוח מייל אל ${item.recipient}?\nיש לוודא שתוכן ההודעה אינו חושף מידע שאינו נחוץ.`)) return;
+    if (!item || busy || !window.confirm(`לשלוח מייל אל ${testMode ? testRecipient : item.recipient}?\n${testMode ? `זו הודעת בדיקה בלבד. הנמען המקורי: ${item.recipient}.\n` : ""}יש לוודא שתוכן ההודעה אינו חושף מידע שאינו נחוץ.`)) return;
     setBusy(true); setError(""); setSuccess("");
     try {
       await reportFeedbackApi.sendManufacturerInquiry(
         organizationId, employerId, caseId, item.reportProductId, item.errorCode, subject, body,
       );
-      setSuccess("הפנייה נשלחה לספק הדואר ותועדה בתיק.");
+      setSuccess(testMode ? "מייל בדיקה נשלח לתיבת ALPHA ותועד בתיק. לא נשלח מייל ליצרן." : "הפנייה נשלחה לספק הדואר ותועדה בתיק.");
       await refresh();
       onSent?.();
     } catch (err) { setError(errorMessage(err, "שליחת הפנייה נכשלה")); }
@@ -53,6 +57,7 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
   return <div className="feedback-external-case-template">
     <h3>צור קשר עם היצרן</h3>
     <p>הנמען מזוהה אוטומטית מתוך המוצר. נושא ותוכן הפנייה מבוססים על תבנית קוד השגיאה המאושרת.</p>
+    {testMode ? <p role="status"><strong>סביבת בדיקות:</strong> ההודעה תישלח רק אל <bdi dir="ltr">{testRecipient}</bdi>, ובגוף המייל יצוין הנמען המקורי. היצרן לא יקבל הודעה.</p> : null}
     {inquiries.length > 1 ? <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
       {inquiries.map(x => <button type="button" key={`${x.reportProductId}:${x.errorCode}`}
         className={itemKey === `${x.reportProductId}:${x.errorCode}` ? "btn btn-primary" : "btn btn-secondary"}
@@ -65,7 +70,8 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
     {!item ? <p>אין הפקדות המקושרות לתיק לצורך פנייה.</p> : <>
       <div><strong>יצרן:</strong> {item.manufacturer || "לא זוהה"}</div>
       <div><strong>מוצר:</strong> {item.product || "לא זוהה"}</div>
-      <label><span>אל</span><UiInput dir="ltr" readOnly value={item.recipient || "לא הוגדרה כתובת מאומתת"} /></label>
+      <label><span>נמען בפועל</span><UiInput dir="ltr" readOnly value={testMode ? testRecipient : item.recipient || "לא הוגדרה כתובת מאומתת"} /></label>
+      {testMode ? <label><span>הנמען המקורי (יצרן)</span><UiInput dir="ltr" readOnly value={item.recipient || "לא מוגדר"} /></label> : null}
       <label><span>נושא</span><UiInput value={subject} onChange={e => setSubject(e.target.value)} maxLength={200} disabled={busy} /></label>
       <label><span>תוכן ההודעה</span><UiTextarea rows={10} value={body}
         onChange={e => setBody(e.target.value)} maxLength={8000} disabled={busy} /></label>
@@ -73,7 +79,7 @@ export function ManufacturerInquiryPanel({ organizationId, employerId, caseId, o
         <p>לא ניתן לשלוח עד להגדרת כתובת מאומתת ותבנית פעילה לקוד השגיאה.</p> : null}
       <button type="button" className="btn btn-primary"
         disabled={busy || !item.recipient || !item.subject || !item.body || !subject.trim() || !body.trim()}
-        onClick={() => void send()}><Send size={16} />{busy ? "שולח..." : "שלח מייל ליצרן"}</button>
+        onClick={() => void send()}><Send size={16} />{busy ? "שולח..." : testMode ? "שלח מייל בדיקה" : "שלח מייל ליצרן"}</button>
     </>}
     {history.length ? <div style={{ display: "grid", gap: 8 }}>
       <strong>היסטוריית שליחת פניות</strong>
