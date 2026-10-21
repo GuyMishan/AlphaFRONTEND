@@ -7,6 +7,7 @@ import { parseReportEntry } from "@/features/reporting/new-report/model";
 import { reportFeedbackApi, type FeedbackResolutionGroup } from "@/features/feedback/api";
 import { LoadingState } from "@/components/loading/loading-state";
 import { errorMessage } from "@/lib/api/error-messages";
+import { documentFocusFromFields } from "@/features/feedback/document-focus";
 
 /** Reuses the normal report wizard, but on an isolated correction copy of the sent report. */
 export function FeedbackReportWorkspaceEditor({ organizationId, employerId, group }: {
@@ -24,10 +25,7 @@ export function FeedbackReportWorkspaceEditor({ organizationId, employerId, grou
   const [error, setError] = useState("");
   const [preparing, setPreparing] = useState(true);
   const source = group.problems[0];
-  const configuredDocumentType = (() => {
-    try { const value = JSON.parse(source?.correctionFields ?? "[]"); return [3, 4, 5, 6].includes(value?.documentTypeCode) ? Number(value.documentTypeCode) : 0; }
-    catch { return 0; }
-  })();
+  const configuredDocumentType = documentFocusFromFields(source?.correctionFields);
   const negativeSourceReportId = group.resolverType === "documents" ? source?.feedbackValues.negativeCorrectionSourceReportId : null;
   const negativeSourceProductId = group.resolverType === "documents" ? source?.feedbackValues.negativeCorrectionSourceProductId : null;
   const negativeReferencePresent = group.resolverType === "documents" && group.problems.some(problem =>
