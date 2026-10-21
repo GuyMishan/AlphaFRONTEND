@@ -46,7 +46,7 @@ export function Summary({
       <div className="field"><label>עובדים בדיווח</label><b>{selectedCount}</b></div>
       {paymentAccount ? <div className="field">
         <label>חשבון תשלום</label>
-        <b className="account-number">בנק {paymentAccount.bankId} · סניף {paymentAccount.branchId} · {paymentAccount.maskedAccountNumber}</b>
+        <b className="account-number report-summary-account-number">בנק {paymentAccount.bankId} · סניף {paymentAccount.branchId} · {paymentAccount.maskedAccountNumber}</b>
       </div> : null}
     </div>
     {reportKind !== 1 || correctionOperationCode ? <div className="notice" style={{ marginTop: 20 }}>
