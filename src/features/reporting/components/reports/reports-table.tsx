@@ -16,8 +16,13 @@ export function ReportsTable({ view, deposits, actions }: {
     expandedErrors, expandedMoreLoading, loadMoreDeposits, expandedManufacturerInput, changeExpandedManufacturer } = deposits;
   const { setFeedbackModal } = actions;
   const { allColumns, activeColumns } = useReportColumns(visibleColumns, actions);
-  // Keep colgroup, header and body on one sizing grid; narrower screens scroll the table.
+  // Give the remaining viewport width to a data column, never to the fixed-size
+  // action controls. All three table sections continue to share one colgroup.
   const minTableWidth = activeColumns.reduce((total, column) => total + Number.parseInt(column.width ?? "0", 10), 0);
+  const flexibleKey = activeColumns.find((column) => column.key === "status")?.key
+    ?? activeColumns.find((column) => column.key !== "actions")?.key;
+  const sizedColumns = activeColumns.map((column) =>
+    column.key === flexibleKey ? { ...column, width: undefined } : column);
   return <div className="card report-table-card">
     <DataTable
       minTableWidth={minTableWidth}
@@ -53,7 +58,7 @@ export function ReportsTable({ view, deposits, actions }: {
           onManufacturerValueChange={(value) => changeExpandedManufacturer(report, value)}
         /> : null}
       </div>}
-      columns={activeColumns}
+      columns={sizedColumns}
       renderCells={(row, expandToggle) => visibleColumns.map((key) => <div key={key} className="report-cell-content">{allColumns[key].render(row, key === "actions" ? expandToggle : undefined)}</div>)}
     />
   </div>;
