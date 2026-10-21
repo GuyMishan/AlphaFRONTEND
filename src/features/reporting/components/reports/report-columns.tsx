@@ -43,7 +43,7 @@ export function useReportColumns(visibleColumns: ColumnKey[], actions: ReturnTyp
     transmission: { column: { key: "transmission", label: "שידור אחרון", width: "180px" }, render: (row) => row.lastTransmission
       ? <div className="report-feedback-transmission"><span>{row.lastTransmission.provider}</span><small>{formatDateTimeDDMMYYYY(row.lastTransmission.completedAt ?? row.lastTransmission.sentAt ?? row.lastTransmission.startedAt, "—")}</small></div>
       : "—" },
-    actions: { column: { key: "actions", label: "פעולות", width: "210px" }, render: (row, expandToggle) => <div className="report-row-actions">
+    actions: { column: { key: "actions", label: "פעולות", width: "200px" }, render: (row, expandToggle) => <div className="report-row-actions">
       <span className="report-actions-errors-slot">
         {!row.canEdit && row.reportIssueCount > 0 ? <FeedbackErrorsButton
           compact
