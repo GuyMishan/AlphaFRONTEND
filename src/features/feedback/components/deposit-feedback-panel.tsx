@@ -99,11 +99,13 @@ export function DepositFeedbackPanel({
           </div>
           <div role="cell" className="muted-inline">{formatDateTimeDDMMYYYY(deposit.updatedAt, "—")}</div>
           <div role="cell" className="report-deposit-row-actions">
+            <span className="report-deposit-errors-slot">
             {depositOwnedErrorCount(deposit) > 0 ? <FeedbackErrorsButton
               compact
               count={depositOwnedErrorCount(deposit)}
               onClick={() => onOpen(deposit, "errors")}
             /> : null}
+            </span>
             <UiActionMenu
               ariaLabel={`פעולות עבור ${deposit.employeeName}`}
               items={[
