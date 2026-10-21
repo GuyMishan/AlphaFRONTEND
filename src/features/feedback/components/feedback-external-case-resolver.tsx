@@ -138,9 +138,9 @@ export function FeedbackExternalCaseResolver({
         placeholder="רשמו הערה או את הפעולה שבוצעה..." />
     </label>
     <div className="feedback-external-case-actions">
-      {externalProblems.length ? <button type="button" className="btn btn-primary" disabled={busy || !group.canExecute || !note.trim()}
+      {externalProblems.length ? <button type="button" className="btn btn-primary" disabled={busy || !group.canExecute}
         onClick={() => void openCase("external")}>
-        <ExternalLink size={16} />{busy ? "שומר..." : "שמור"}
+        <ExternalLink size={16} />{busy ? "פותח..." : "צור קשר עם היצרן"}
       </button> : null}
       {reconciliationProblems.length ? <button type="button" className="btn btn-secondary" disabled={busy || !group.canExecute || !note.trim()}
         onClick={() => void openCase("reconcile")}>
