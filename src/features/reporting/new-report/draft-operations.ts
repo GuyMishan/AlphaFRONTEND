@@ -17,7 +17,7 @@ export async function loadEditableReport(scope: EmployerSelection, reportId: str
     manualReportsApi.manualReport(scope.organizationId, scope.employerId, reportId),
     loadReportEmploymentIds(scope, reportId),
   ]);
-  if (!["1", "2", "9", "Draft", "ReadyForValidation", "Error"].includes(String(report.status))) {
+  if (!["1", "2", "3", "9", "Draft", "ReadyForValidation", "Validated", "Error"].includes(String(report.status))) {
     throw new Error("הדיווח כבר אינו ניתן לעריכה.");
   }
   return { report, selectedIds };
