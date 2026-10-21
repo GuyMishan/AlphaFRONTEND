@@ -13,14 +13,15 @@ import { ReportWizardStages } from "./report-wizard-stages";
 import { ReportWizardFooter } from "./report-wizard-footer";
 import { ReportWizardDialogs } from "./report-wizard-dialogs";
 
-export function ReportWizard({ scope, entry, setup }: {
+export function ReportWizard({ scope, entry, setup, embedded = false }: {
   scope: EmployerSelection;
   entry: ReportEntry;
   setup: ReportSetup;
+  embedded?: boolean;
 }) {
   const wizard = useReportWizard(scope, entry, setup);
   const { state, steps } = wizard;
-  return <AppShell title="דיווח חדש" hideScopeController={state.step > 1 || state.advancing || state.sending}>
+  const content = <>
     <div className={state.step > 1 ? "wizard wizard-wide" : "wizard"}>
       <PageHeader title="יצירת דיווח פנסיוני" description={<>
         <Link className="profile-link" href={`/employers/${setup.employer.id}?organizationId=${scope.organizationId}`}>
@@ -53,5 +54,6 @@ export function ReportWizard({ scope, entry, setup }: {
       </section>
     </div>
     <ReportWizardDialogs scope={scope} setup={setup} wizard={wizard} />
-  </AppShell>;
+  </>;
+  return embedded ? <div className="report-wizard-embedded">{content}</div> : <AppShell title="דיווח חדש" hideScopeController={state.step > 1 || state.advancing || state.sending}>{content}</AppShell>;
 }
