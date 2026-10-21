@@ -49,81 +49,54 @@
   .report-deposits-grid { min-width: 0; }
 }
 
-/* All report actions, including expand/collapse, belong to the same visible cell. */
+/* Reports: exactly three RTL tracks (errors, menu, optional expand).
+ * A missing errors button/expand button leaves its track empty. No nested
+ * flex sizing, positioning or clipping can push controls out of the cell. */
 .report-feedback-table .data-table-row > td:last-child {
-  box-sizing: border-box;
-  white-space: nowrap;
+  padding-inline: 6px;
   text-align: right;
-  padding-inline: 8px;
 }
-/* Fixed RTL action slots remain inside the real column width. */
-.report-feedback-table .report-row-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 30px;
-  align-items: center;
-  direction: rtl;
-  gap: 6px;
+.report-feedback-table .data-table-row > td:last-child .data-table-inline-actions,
+.report-feedback-table .data-table-row > td:last-child .report-cell-content {
+  display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
 }
-.report-feedback-table .report-actions-errors-slot {
-  display: inline-flex;
+.report-feedback-table .report-row-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px 30px;
   align-items: center;
-  justify-content: flex-start;
+  column-gap: 6px;
+  direction: rtl;
   width: 100%;
+  min-width: 0;
+}
+.report-feedback-table .report-actions-errors-slot {
+  display: flex;
+  align-items: center;
   min-width: 0;
   overflow: hidden;
 }
 .report-feedback-table .report-actions-errors-slot .feedback-errors-button.compact {
-  max-width: 100%;
   min-width: 0;
-}
-.report-feedback-table .report-row-actions > .ui-action-menu { min-width: 0; }
-
-/* The shared DataTable wraps each cell in an additional flex container.
- * Both wrappers must shrink inside TD instead of using their intrinsic width. */
-.report-feedback-table .data-table-row > td:last-child .data-table-inline-actions {
-  display: flex;
-  align-items: center;
-  width: 100%;
   max-width: 100%;
-  min-width: 0;
-  height: 100%;
-  box-sizing: border-box;
+  padding-inline: 6px;
+  font-size: 11px;
+  gap: 4px;
 }
-.report-feedback-table .data-table-row > td:last-child .report-cell-content {
-  display: flex;
-  flex: 1 1 0%;
-  align-items: center;
-  width: 100%;
-  max-width: 100%;
-  height: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-.report-feedback-table .report-row-actions .data-table-expand-toggle { position: static; transform: none; flex: 0 0 30px; margin: 0; }
-
-/* Keep the action TH and TD in the table's normal column layout.
- * Sticky table cells with RTL scrolling detached the entire column from its
- * measured colgroup track and clipped controls at the viewport edge. */
-.report-feedback-table .data-table-row > td:last-child,
-.report-feedback-table > thead > tr > th:last-child {
+.report-feedback-table .report-row-actions > .ui-action-menu { width: 30px; min-width: 0; }
+.report-feedback-table .report-row-actions .data-table-expand-toggle {
   position: static;
-  background: var(--color-surface);
-  box-shadow: inset -1px 0 0 var(--color-border);
+  margin: 0;
+  transform: none;
+  width: 30px;
+  height: 30px;
 }
-.report-feedback-table > thead > tr > th:last-child { background: var(--color-surface-sunken); }
-.report-feedback-table .data-table-row:hover > td:last-child { background: var(--color-surface-hover); }
 .report-table-card { min-width: 0; }
 .report-table-card .data-table-viewport { max-width: 100%; overflow-x: auto; }
 
-@media (max-width: 760px) {
-  .report-feedback-table .data-table-row > td:last-child { padding-inline: 6px; }
-  .report-feedback-table .report-row-actions { gap: 6px; }
-  .report-feedback-table .report-row-actions .feedback-errors-button.compact { padding-inline: 8px; font-size: 11px; gap: 5px; }
-}
 .report-deposits-header > *, .report-deposits-item > * { align-self: center; }
 
 /* Deposit feedback modal: keep payment metadata compact; reconciliation already repeats contributions when feedback exists. */
