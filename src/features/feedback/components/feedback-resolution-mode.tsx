@@ -133,6 +133,12 @@ export function FeedbackResolutionMode({
     setIssueSearch(issueOptions[safeIndex]?.label ?? "");
   }, [safeIndex, issueOptions]);
   const primaryProblem = activeGroup?.problems[0];
+  const useEmbeddedCorrection = Boolean(primaryProblem?.feedbackValues.missingFieldMapped === "true"
+    || (primaryProblem?.treatmentCanCorrect
+      && primaryProblem.targetScope === "deposit"
+      && ["split", "contribution", "payment", "productPolicy", "employmentStatus"].includes(primaryProblem.resolverType)
+      && primaryProblem.availableActions.some(action =>
+        ["editProduct", "editContribution", "editPayment", "editEmployment", "prepareCorrection"].includes(action))));
   useEffect(() => { setWorkMode("choose"); }, [activeGroup?.groupKey]);
   const editableProblems = activeGroup?.problems.filter(problem => problem.resolutionType === "edit") ?? [];
 
@@ -307,7 +313,7 @@ export function FeedbackResolutionMode({
           ? <small>השדה שייך לפרטי המעסיק או לאיש הקשר שלו. יש לתקן את נתוני המעסיק ולא את שורת ההפקדה.</small> : null}
       </section> : null}
 
-      {primaryProblem.feedbackValues.missingFieldMapped === "true" ? <FeedbackEmbeddedCorrectionEditor
+      {useEmbeddedCorrection ? <FeedbackEmbeddedCorrectionEditor
         key={activeGroup.groupKey}
         organizationId={organizationId}
         employerId={employerId}
@@ -317,7 +323,7 @@ export function FeedbackResolutionMode({
         onSaved={() => setRefreshToken(value => value + 1)}
       /> : null}
 
-      {activeGroup.problems.some(problem => problem.resolutionType === "decision" && !problem.feedbackValues.missingFieldNumber) ? <FeedbackDecisionResolver
+      {!useEmbeddedCorrection && activeGroup.problems.some(problem => problem.resolutionType === "decision" && !problem.feedbackValues.missingFieldNumber) ? <FeedbackDecisionResolver
           organizationId={organizationId}
           employerId={employerId}
           group={activeGroup}
@@ -333,7 +339,7 @@ export function FeedbackResolutionMode({
             canEdit={Boolean(context?.canEditEmployee)}
             onChanged={() => setRefreshToken(value => value + 1)}
           />
-        : editableGroup
+        : !useEmbeddedCorrection && editableGroup
           && ["contribution", "productPolicy", "employmentStatus", "payment", "documents", "reportCorrection", "refund"].includes(activeGroup.resolverType)
           ? <FeedbackInternalCorrectionResolver
               organizationId={organizationId}
