@@ -122,16 +122,16 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
       rowKey={(row) => row.id}
       rowHeight={56}
       maxHeight={560}
-      minTableWidth={1080}
+      minTableWidth={1400}
       columns={[
-        { key: "employee", label: "עובד", width: "11%" },
-        { key: "provider", label: "שם יצרן / מוצר", width: "17%" },
-        { key: "providerAccount", label: "חשבון יצרן", width: "9%" },
+        { key: "employee", label: "עובד", width: "10%" },
+        { key: "provider", label: "שם יצרן / מוצר", width: "15%" },
+        { key: "providerAccount", label: "חשבון יצרן", width: "14%" },
         { key: "amount", label: "סכום", width: "8%" },
-        { key: "employerAccount", label: "חשבון מעסיק", width: "11%" },
+        { key: "employerAccount", label: "חשבון מעסיק", width: "10%" },
         { key: "reference", label: "אסמכתא", width: "8%" },
         { key: "date", label: "תאריך ערך", width: "8%" },
-        { key: "type", label: "סוג תקבול", width: "10%" },
+        { key: "type", label: "סוג תקבול", width: "9%" },
         { key: "status", label: "סטטוס", width: "7%" },
         { key: "files", label: "קבצים", width: "5%" },
         { key: "edit", label: "", width: "6%" },
@@ -139,7 +139,7 @@ export function ManualDepositData({ organizationId, employerId, reportId, focusR
       renderCells={(row) => [
         <b key="cell-135">{row.employeeName}</b>,
         <span key="cell-136" title={[row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני", row.policyNumber || ""].filter(Boolean).join(" · ")}>{row.providerName || row.fundCompanyName || row.fundName || productNames[row.productType] || "מוצר פנסיוני"}</span>,
-        <span key="cell-137" className="account-number">{row.providerAccount || "—"}</span>,
+        <span key="cell-137" className="account-number" title={row.providerAccount || "—"}>{row.providerAccount || "—"}</span>,
         `₪${Number(row.totalDeposit).toLocaleString("he-IL")}`,
         <span key="cell-139" className="account-number">{formatEmployerAccount(row, paymentAccount)}</span>,
         row.referenceNumber || "—",
